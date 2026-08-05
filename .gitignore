@@ -1,0 +1,30 @@
+# Dependencies
+node_modules/
+.npm/
+
+# Secrets — never commit credentials, even to a private repo
+server/config.json
+server/alipay.config.json
+server/antmotors.db
+server/antmotors.db-*
+
+# Local runtime data
+.workbuddy/
+.workbuddy-data/
+data/
+.tmp/
+*.log
+
+# Native prototype mirrors — they are rebuilt from app/index.html at deploy time
+native/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editors
+.vscode/
+.idea/
+
+# Test scratch
+test-auth.js

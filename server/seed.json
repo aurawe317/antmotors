@@ -1,0 +1,582 @@
+{
+  "cars": {
+    "lc": {
+      "name": "Toyota Land Cruiser 2021",
+      "cond": "USED",
+      "grad": "g1",
+      "brand": "Toyota",
+      "body": "SUV",
+      "branch": "Accra Branch",
+      "sub": "V8 5.7L · Automatic · 56,000 km · Petrol · Accra Branch",
+      "specs": [
+        [
+          "Engine",
+          "V8 5.7L"
+        ],
+        [
+          "Transmission",
+          "Automatic"
+        ],
+        [
+          "Mileage",
+          "56,000 km"
+        ],
+        [
+          "Fuel",
+          "Petrol"
+        ],
+        [
+          "Drivetrain",
+          "4WD"
+        ],
+        [
+          "Seats",
+          "8"
+        ]
+      ],
+      "hl": [
+        "Leather Seats",
+        "Sunroof",
+        "360 Camera",
+        "Adaptive Cruise",
+        "3rd Row"
+      ],
+      "loc": {
+        "name": "Accra Branch",
+        "addr": "Tema Motorway, Accra · Open 8:00–18:00"
+      },
+      "price": {
+        "cost": 28500,
+        "floorA": 33000,
+        "floorB": 34500,
+        "quote": 38500
+      }
+    },
+    "tuc": {
+      "name": "Hyundai Tucson 2022",
+      "cond": "USED",
+      "grad": "g2",
+      "brand": "Hyundai",
+      "body": "SUV",
+      "branch": "Tema Branch",
+      "sub": "1.6L Turbo · DCT · 31,000 km · Petrol · Tema Branch",
+      "specs": [
+        [
+          "Engine",
+          "1.6L Turbo"
+        ],
+        [
+          "Transmission",
+          "DCT"
+        ],
+        [
+          "Mileage",
+          "31,000 km"
+        ],
+        [
+          "Fuel",
+          "Petrol"
+        ],
+        [
+          "Drivetrain",
+          "FWD"
+        ],
+        [
+          "Seats",
+          "5"
+        ]
+      ],
+      "hl": [
+        "Apple CarPlay",
+        "Blind Spot",
+        "Heated Seats",
+        "Lane Assist"
+      ],
+      "loc": {
+        "name": "Tema Branch",
+        "addr": "Community 25, Tema · Open 8:00–18:00"
+      },
+      "price": {
+        "cost": 19800,
+        "floorA": 23500,
+        "floorB": 24500,
+        "quote": 27900
+      }
+    },
+    "son": {
+      "name": "Kia Sportage 2023",
+      "cond": "NEW",
+      "grad": "g3",
+      "brand": "Kia",
+      "body": "SUV",
+      "branch": "Accra Branch",
+      "sub": "1.5L Turbo · Automatic · 0 km · Petrol · Accra Branch",
+      "specs": [
+        [
+          "Engine",
+          "1.5L Turbo"
+        ],
+        [
+          "Transmission",
+          "Automatic"
+        ],
+        [
+          "Mileage",
+          "0 km"
+        ],
+        [
+          "Fuel",
+          "Petrol"
+        ],
+        [
+          "Drivetrain",
+          "FWD"
+        ],
+        [
+          "Seats",
+          "5"
+        ]
+      ],
+      "hl": [
+        "Brand New",
+        "Panoramic Roof",
+        "Smart Key",
+        "Wireless Charge"
+      ],
+      "loc": {
+        "name": "Accra Branch",
+        "addr": "Tema Motorway, Accra · Open 8:00–18:00"
+      },
+      "price": {
+        "cost": 24200,
+        "floorA": 27000,
+        "floorB": 27800,
+        "quote": 30900
+      }
+    },
+    "cam": {
+      "name": "Toyota Camry 2020",
+      "cond": "USED",
+      "grad": "g4",
+      "brand": "Toyota",
+      "body": "Sedan",
+      "branch": "Kumasi Branch",
+      "sub": "2.5L · CVT · 64,000 km · Petrol · Kumasi Branch",
+      "specs": [
+        [
+          "Engine",
+          "2.5L"
+        ],
+        [
+          "Transmission",
+          "CVT"
+        ],
+        [
+          "Mileage",
+          "64,000 km"
+        ],
+        [
+          "Fuel",
+          "Petrol"
+        ],
+        [
+          "Drivetrain",
+          "FWD"
+        ],
+        [
+          "Seats",
+          "5"
+        ]
+      ],
+      "hl": [
+        "Reliable",
+        "Low Fuel",
+        "Backup Camera",
+        "Bluetooth"
+      ],
+      "loc": {
+        "name": "Kumasi Branch",
+        "addr": "Adum Ring Rd, Kumasi · Open 8:00–18:00"
+      },
+      "price": {
+        "cost": 15600,
+        "floorA": 18500,
+        "floorB": 19200,
+        "quote": 21900
+      }
+    },
+    "hil": {
+      "name": "Honda CR-V 2021",
+      "cond": "USED",
+      "grad": "g5",
+      "brand": "Honda",
+      "body": "SUV",
+      "branch": "Accra Branch",
+      "sub": "1.5L Turbo · CVT · 42,000 km · Petrol · Accra Branch",
+      "specs": [
+        [
+          "Engine",
+          "1.5L Turbo"
+        ],
+        [
+          "Transmission",
+          "CVT"
+        ],
+        [
+          "Mileage",
+          "42,000 km"
+        ],
+        [
+          "Fuel",
+          "Petrol"
+        ],
+        [
+          "Drivetrain",
+          "AWD"
+        ],
+        [
+          "Seats",
+          "5"
+        ]
+      ],
+      "hl": [
+        "AWD",
+        "Cargo Space",
+        "Honda Sensing",
+        "Sunroof"
+      ],
+      "loc": {
+        "name": "Accra Branch",
+        "addr": "Tema Motorway, Accra · Open 8:00–18:00"
+      },
+      "price": {
+        "cost": 20100,
+        "floorA": 23500,
+        "floorB": 24400,
+        "quote": 27500
+      }
+    },
+    "hilux": {
+      "name": "Toyota Hilux 2022",
+      "cond": "USED",
+      "grad": "g6",
+      "brand": "Toyota",
+      "body": "Pickup",
+      "branch": "Tema Branch",
+      "sub": "2.8L Diesel · Manual · 38,000 km · Diesel · Tema Branch",
+      "specs": [
+        [
+          "Engine",
+          "2.8L Diesel"
+        ],
+        [
+          "Transmission",
+          "Manual"
+        ],
+        [
+          "Mileage",
+          "38,000 km"
+        ],
+        [
+          "Fuel",
+          "Diesel"
+        ],
+        [
+          "Drivetrain",
+          "4WD"
+        ],
+        [
+          "Seats",
+          "5"
+        ]
+      ],
+      "hl": [
+        "Workhorse",
+        "4WD",
+        "Tow Pack",
+        "Heavy Duty"
+      ],
+      "loc": {
+        "name": "Tema Branch",
+        "addr": "Community 25, Tema · Open 8:00–18:00"
+      },
+      "price": {
+        "cost": 26800,
+        "floorA": 31000,
+        "floorB": 32200,
+        "quote": 35900
+      }
+    },
+    "rav4": {
+      "name": "Toyota RAV4 2022",
+      "cond": "NEW",
+      "grad": "g7",
+      "brand": "Toyota",
+      "body": "SUV",
+      "branch": "Accra Branch",
+      "sub": "2.0L · CVT · 0 km · Petrol · Accra Branch",
+      "specs": [
+        [
+          "Engine",
+          "2.0L"
+        ],
+        [
+          "Transmission",
+          "CVT"
+        ],
+        [
+          "Mileage",
+          "0 km"
+        ],
+        [
+          "Fuel",
+          "Petrol"
+        ],
+        [
+          "Drivetrain",
+          "AWD"
+        ],
+        [
+          "Seats",
+          "5"
+        ]
+      ],
+      "hl": [
+        "Brand New",
+        "Toyota Safety",
+        "Smart Entry",
+        "Reverse Cam"
+      ],
+      "loc": {
+        "name": "Accra Branch",
+        "addr": "Tema Motorway, Accra · Open 8:00–18:00"
+      },
+      "price": {
+        "cost": 22400,
+        "floorA": 25200,
+        "floorB": 26000,
+        "quote": 28900
+      }
+    },
+    "navara": {
+      "name": "Nissan Navara 2020",
+      "cond": "USED",
+      "grad": "g8",
+      "brand": "Nissan",
+      "body": "Pickup",
+      "branch": "Tema Branch",
+      "sub": "2.3L Diesel · Manual · 47,000 km · Diesel · Tema Branch",
+      "specs": [
+        [
+          "Engine",
+          "2.3L Diesel"
+        ],
+        [
+          "Transmission",
+          "Manual"
+        ],
+        [
+          "Mileage",
+          "47,000 km"
+        ],
+        [
+          "Fuel",
+          "Diesel"
+        ],
+        [
+          "Drivetrain",
+          "4WD"
+        ],
+        [
+          "Seats",
+          "5"
+        ]
+      ],
+      "hl": [
+        "Dual Cab",
+        "4WD",
+        "Bed Liner",
+        "Tow Bar"
+      ],
+      "loc": {
+        "name": "Tema Branch",
+        "addr": "Community 25, Tema · Open 8:00–18:00"
+      },
+      "price": {
+        "cost": 18900,
+        "floorA": 22000,
+        "floorB": 22800,
+        "quote": 25500
+      }
+    },
+    "elantra": {
+      "name": "Hyundai Elantra 2021",
+      "cond": "USED",
+      "grad": "g9",
+      "brand": "Hyundai",
+      "body": "Sedan",
+      "branch": "Accra Branch",
+      "sub": "2.0L · CVT · 29,000 km · Petrol · Accra Branch",
+      "specs": [
+        [
+          "Engine",
+          "2.0L"
+        ],
+        [
+          "Transmission",
+          "CVT"
+        ],
+        [
+          "Mileage",
+          "29,000 km"
+        ],
+        [
+          "Fuel",
+          "Petrol"
+        ],
+        [
+          "Drivetrain",
+          "FWD"
+        ],
+        [
+          "Seats",
+          "5"
+        ]
+      ],
+      "hl": [
+        "Fuel Efficient",
+        "Apple CarPlay",
+        "Lane Keep",
+        "Warranty Left"
+      ],
+      "loc": {
+        "name": "Accra Branch",
+        "addr": "Tema Motorway, Accra · Open 8:00–18:00"
+      },
+      "price": {
+        "cost": 15200,
+        "floorA": 17800,
+        "floorB": 18400,
+        "quote": 20900
+      }
+    }
+  },
+  "listedAt": {
+    "lc": "2026-04-18",
+    "tuc": "2026-07-02",
+    "son": "2026-07-20",
+    "cam": "2026-03-09",
+    "hil": "2026-06-25",
+    "hilux": "2026-02-11",
+    "rav4": "2026-07-28",
+    "navara": "2026-05-30",
+    "elantra": "2026-07-15"
+  },
+  "colors": {
+    "lc": "Black",
+    "tuc": "White",
+    "son": "Red",
+    "cam": "Silver",
+    "hil": "Gray",
+    "hilux": "White",
+    "rav4": "Blue",
+    "navara": "Black",
+    "elantra": "Silver"
+  },
+  "showrooms": [
+    {
+      "name": "Accra Branch",
+      "addr": "Tema Motorway, Accra",
+      "hours": "Mon–Sat 8:00–18:00",
+      "phone": "+233 30 700 1234",
+      "dist": "City center · 4.2 km",
+      "grad": "g1"
+    },
+    {
+      "name": "Tema Branch",
+      "addr": "Community 25, Tema",
+      "hours": "Mon–Sat 8:00–18:00",
+      "phone": "+233 30 330 5678",
+      "dist": "Harbor area · 12 km",
+      "grad": "g2"
+    },
+    {
+      "name": "Kumasi Branch",
+      "addr": "Adum Ring Rd, Kumasi",
+      "hours": "Mon–Sat 8:00–18:00",
+      "phone": "+233 32 202 9012",
+      "dist": "Ashanti · 250 km",
+      "grad": "g4"
+    }
+  ],
+  "employees": {
+    "kwame": {
+      "name": "Kwame A.",
+      "av": "K",
+      "tier": "salesA",
+      "role": "Senior Sales · Accra Branch",
+      "roleZh": "高级销售 · 阿克拉店",
+      "wa": "233200000001",
+      "phone": "+233 20 000 0001",
+      "branch": "Accra Branch"
+    },
+    "ama": {
+      "name": "Ama K.",
+      "av": "A",
+      "tier": "salesB",
+      "role": "Sales · Tema Branch",
+      "roleZh": "销售 · 特马店",
+      "wa": "233200000002",
+      "phone": "+233 20 000 0002",
+      "branch": "Tema Branch"
+    },
+    "kwasi": {
+      "name": "Kwasi O.",
+      "av": "K",
+      "tier": "salesB",
+      "role": "Sales · Kumasi Branch",
+      "roleZh": "销售 · 库马西店",
+      "wa": "233200000003",
+      "phone": "+233 20 000 0003",
+      "branch": "Kumasi Branch"
+    },
+    "boss": {
+      "name": "Owner (You)",
+      "av": "B",
+      "tier": "boss",
+      "role": "Boss / Owner",
+      "roleZh": "老板 / 业主",
+      "wa": "233200000099",
+      "phone": "+233 20 000 0099",
+      "branch": "All Branches"
+    },
+    "partnerA": {
+      "name": "Partner A",
+      "av": "A",
+      "tier": "partnerA",
+      "role": "Co-owner",
+      "roleZh": "合伙人A",
+      "wa": "233200000098",
+      "phone": "+233 20 000 0098",
+      "branch": "All Branches"
+    },
+    "partnerB": {
+      "name": "Partner B",
+      "av": "P",
+      "tier": "partnerB",
+      "role": "Co-owner",
+      "roleZh": "合伙人B",
+      "wa": "233200000097",
+      "phone": "+233 20 000 0097",
+      "branch": "All Branches"
+    }
+  },
+  "pins": {
+    "boss": "8888",
+    "partnerA": "1111",
+    "partnerB": "2222",
+    "kwame": "1001",
+    "ama": "1002",
+    "kwasi": "1003"
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "_comment": "Copy this file to alipay.config.json and fill in your real values. alipay.config.json is gitignored and NEVER committed. Leave 'simulate': true (or delete this file) to develop/test the billing flow without a real merchant account.",
+  "appId": "YOUR_ALIPAY_APP_ID",
+  "appPrivateKey": "-----BEGIN PRIVATE KEY-----\n...your app private key (PKCS8)...\n-----END PRIVATE KEY-----",
+  "alipayPublicKey": "-----BEGIN PUBLIC KEY-----\n...Alipay's public key (from open platform)...\n-----END PUBLIC KEY-----",
+  "gateway": "https://openapi.alipay.com/gateway.do",
+  "notifyUrl": "https://YOUR_DOMAIN/api/alipay/notify",
+  "returnUrl": "https://YOUR_DOMAIN/",
+  "simulate": false
+}

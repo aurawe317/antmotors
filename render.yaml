@@ -1,0 +1,26 @@
+# Render Blueprint —— 在 Render 控制台 "New → Blueprint" 指向此仓库即可
+# 免费实例会休眠，付费实例（Starter $7/月起）适合生产。
+
+services:
+  - type: web
+    name: antmotors
+    runtime: docker
+    plan: starter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DB
+        value: /data/antmotors.db
+      - key: PORT
+        value: 10000
+        # Render 自动注入 PORT；这里仅作占位
+      - key: PERMANENT_CODES
+        # 永久会员公司邀请码（逗号分隔）。从你的 server/config.json.copy
+        sync: false
+    disk:
+      name: antmotors-data
+      mountPath: /data
+      sizeGB: 1

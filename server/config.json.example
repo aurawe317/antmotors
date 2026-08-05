@@ -1,0 +1,17 @@
+{
+  "permanentCompanyCodes": [
+    "ANT-XXXXXX"
+  ],
+
+  "_selfServeResetCode": "When no SMTP is configured the password-reset code is printed in the server console AND returned in the API response so you can recover your own account. Set this to false once SMTP works.",
+  "selfServeResetCode": true,
+
+  "_smtp": "Optional. With SMTP configured, reset codes are e-mailed instead. Port 465 = implicit TLS (recommended). For QQ/163 use the 'authorization code', not your login password.",
+  "smtp": {
+    "host": "smtp.qq.com",
+    "port": 465,
+    "user": "you@qq.com",
+    "pass": "your-authorization-code",
+    "from": "Ant Motors <you@qq.com>"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "antmotors-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "description": "Ant Motors multi-device sync server (zero dependencies)",
+  "main": "server.js",
+  "engines": { "node": ">=22.5" },
+  "scripts": {
+    "start": "node server.js"
+  }
+}
