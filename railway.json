@@ -1,7 +1,3 @@
-# Railway 配置
-# Railway 会自动识别 Dockerfile 并构建；这里仅声明 Volume 挂载提醒。
-# 真正创建 Volume 需要在 Railway 控制台手动操作一次（见 DEPLOY.md）。
-
 {
   "$schema": "https://railway.app/railway.schema.json",
   "build": {
