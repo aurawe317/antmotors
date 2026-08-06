@@ -131,6 +131,12 @@
   .card .body h4{font-size:13px; font-weight:700; line-height:1.25;}
   .card .body .meta{font-size:11px; color:var(--text-dim); margin-top:3px;}
   .card .body .pr{font-size:13px; font-weight:800; color:var(--gold); margin-top:6px;}
+  .car-cover{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0;}
+  .card.sold,.more-card.sold{opacity:.6;}
+  .card .cond.sold,.more-card .ph .cond.sold,.cond-badge.sold{background:rgba(255,90,90,.22); color:#FF8A8A;}
+  .row-action{display:block; width:100%; text-align:left; padding:13px 14px; margin-top:8px; border-radius:12px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:14px; font-weight:600; cursor:pointer; transition:filter .15s;}
+  .row-action:hover{filter:brightness(1.12);}
+  .row-action.danger{color:#FF8A8A; border-color:rgba(255,90,90,.4);}
 
   .hscroll{display:flex; gap:12px; overflow-x:auto; padding:6px 16px 4px; scrollbar-width:none;}
   .hscroll::-webkit-scrollbar{display:none;}
@@ -666,6 +672,7 @@
             <button class="icon-btn fav-star" id="detailFav" onclick="toggleFav(null)" title="Save">♡</button>
             <button class="icon-btn" onclick="shareCar()" title="Share link">↗</button>
             <button class="icon-btn" id="themeBtn2" onclick="toggleTheme()"><span id="themeIcon2"></span></button>
+            <button class="icon-btn" id="carActionsBtn" onclick="openCarActions()" title="Car actions" style="display:none;">⋯</button>
           </div>
         </div>
       </div>
@@ -1253,6 +1260,7 @@ const I18N = {
       favSavedToast:"Saved! Tap ♡ in top bar to view",favRemoved:"Removed from saved",msgPlaceholder:"I'd like to see the car and discuss the deal.",
       photoUp:"Photo uploaded for",noPermPhoto:"Your role cannot upload photos.",dirTo:"Directions to",
       moreCars:"More cars",
+      markSold:"Mark as sold",markAvail:"Mark as available",deleteCar:"Delete this car",delConfirm:"Delete this car? This cannot be undone and syncs to all devices.",markedSold:"Marked as sold",markedAvail:"Marked as available",carDeleted:"Car deleted",sold:"SOLD",
       pvTitle:"🎛 Preview Role · Share Link",pvHint:"Switch the viewer role and the assigned sales — the same car updates its price and contact. Boss, Partner A & Partner B see cost + full edit; Manager & Sales A can upload photos on the detail page; the share link carries the sales ref so customers reach the right person.",
       pvWho:"Who is viewing?",pvSales:"Assigned sales (share link)",pvCopy:"Copy",
       pvR_customer:"Customer",pvR_customer_sub:"Sees the selling quote",
@@ -1300,6 +1308,7 @@ const I18N = {
       favSavedToast:"已收藏！点击顶部 ♡ 查看",favRemoved:"已取消收藏",msgPlaceholder:"我想看车并谈谈价格。",
       photoUp:"已上传照片：",noPermPhoto:"您的角色不能上传照片。",dirTo:"导航至",
       moreCars:"更多车辆",
+      markSold:"标记为已售",markAvail:"标记为在售",deleteCar:"删除此车辆",delConfirm:"确定删除这辆车吗？此操作不可撤销，并将同步到所有设备。",markedSold:"已标记为已售",markedAvail:"已标记为在售",carDeleted:"车辆已删除",sold:"已售",
       pvTitle:"🎛 预览身份 · 分享链接",pvHint:"切换查看角色与指派销售——同一辆车会按角色显示不同价格与联系方式。老板、合伙人A、合伙人B 可见成本与全部编辑权限；店长与销售A 可在详情页上传照片；分享链接携带销售 ref，客户由此联系到对应销售。",
       pvWho:"谁在查看？",pvSales:"指派销售（分享链接）",pvCopy:"复制",
       pvR_customer:"客户",pvR_customer_sub:"看到对外售价",
@@ -1794,10 +1803,13 @@ function renderHome(){
   });
   document.getElementById('carHeroSvg').innerHTML=carSVG('g1');
 }
+function carCover(k){ const p=CAR_PHOTOS[k]; return (p&&p.length)?p[0]:null; }
 function carCard(k){
-  const c=CARS[k]; const d=document.createElement('div'); d.className="card"; d.onclick=()=>openDetail(k);
+  const c=CARS[k]; const d=document.createElement('div'); d.className="card"+(c.sold?" sold":""); d.onclick=()=>openDetail(k);
   const saved=SAVED_CARS.has(k);
-  d.innerHTML=`<div class="ph ${c.grad}">${carSVG(c.grad)}<span class="cond ${c.cond==='NEW'?'new':'used'}">${condLabel(c)}</span>
+  const cover=carCover(k);
+  const ribbon=c.sold?'<span class="cond sold">SOLD</span>':`<span class="cond ${c.cond==='NEW'?'new':'used'}">${condLabel(c)}</span>`;
+  d.innerHTML=`<div class="ph ${c.grad}">${cover?`<img class="car-cover" src="${cover}" alt="" />`:carSVG(c.grad)}${ribbon}
       <div class="fav-toggle ${saved?'on':''}" onclick="event.stopPropagation();toggleFav(null,'${k}')">${saved?'♥':'♡'}</div></div>
     <div class="body"><h4>${carName(c)}</h4><div class="meta">${carSub(c).split('·').slice(0,2).join('·')}</div><div class="pr">${rolePrice(c.price)}</div></div>${stockBadge(k)}`;
   return d;
@@ -1833,7 +1845,7 @@ function renderDetail(){
   const c=CARS[curCar];
   buildGallery(c);
   document.getElementById('dTitle').textContent=carName(c);
-  const badge=document.getElementById('dBadge'); badge.textContent=condLabel(c); badge.className="cond-badge "+(c.cond==='NEW'?'new':'used');
+  const badge=document.getElementById('dBadge'); if(c.sold){ badge.textContent=T('sold','SOLD'); badge.className="cond-badge sold"; } else { badge.textContent=condLabel(c); badge.className="cond-badge "+(c.cond==='NEW'?'new':'used'); }
   document.getElementById('dSub').textContent=carSub(c);
   document.getElementById('dLocName').textContent=bName(c.loc.name);
   document.getElementById('dLocAddr').textContent=c.loc.addr+' · '+c.loc.hours;
@@ -1846,7 +1858,7 @@ function renderDetail(){
   if(mc){
     const others=Object.keys(CARS).filter(k=>k!==curCar);
     mc.innerHTML=`<h4 style="font-size:13px;font-weight:800;margin:22px 0 10px;">${T('moreCars','More cars')}</h4><div class="more-grid">`+
-      others.map(k=>{ const o=CARS[k]; return `<div class="more-card" onclick="openDetail('${k}')"><div class="ph ${o.grad}">${carSVG(o.grad)}<span class="cond ${o.cond==='NEW'?'new':'used'}">${condLabel(o)}</span></div><div class="more-name">${carName(o)}</div><div class="more-price">${rolePrice(o.price)}</div></div>`; }).join('')+
+      others.map(k=>{ const o=CARS[k]; const oc=carCover(k); const orb=o.sold?'<span class="cond sold">SOLD</span>':`<span class="cond ${o.cond==='NEW'?'new':'used'}">${condLabel(o)}</span>`; return `<div class="more-card${o.sold?' sold':''}" onclick="openDetail('${k}')"><div class="ph ${o.grad}">${oc?`<img class="car-cover" src="${oc}" alt="" />`:carSVG(o.grad)}${orb}</div><div class="more-name">${carName(o)}</div><div class="more-price">${rolePrice(o.price)}</div></div>`; }).join('')+
       `</div>`;
   }
   const ds=document.getElementById('dStock'); if(ds) ds.innerHTML=stockBadge(curCar);
@@ -1979,6 +1991,8 @@ function updateRoleUI(){
   if(adminCard) adminCard.style.display = canEditPrices() ? 'block' : 'none';
   const permCard=document.getElementById('permCard');
   if(permCard) permCard.style.display = ['boss','partnerA','partnerB','manager'].includes(curRole) ? 'block' : 'none';
+  const carActs=document.getElementById('carActionsBtn');
+  if(carActs) carActs.style.display = canEditCar() ? 'flex' : 'none';
   const costRow=document.getElementById('costRow');
   if(costRow) costRow.style.display = isTopRole() ? 'flex' : 'none';
   renderDetailThumbs();
@@ -1988,10 +2002,13 @@ function updateRoleUI(){
 
 let CAR_PHOTOS={};
 let CAR_VIDEOS={};
+let CAR_DELETED=jload('am_car_deleted',{})||{};
 let SHOWROOM_PHOTOS={};
 
 function saveCarVideos(){ jsave('am_car_videos',CAR_VIDEOS); }
 function loadCarVideos(){ const o=jload('am_car_videos',null); if(o) Object.assign(CAR_VIDEOS,o); }
+function saveCarPhotos(){ jsave('am_car_photos',CAR_PHOTOS); }
+function loadCarPhotos(){ const o=jload('am_car_photos',null); if(o) Object.assign(CAR_PHOTOS,o); }
 
 function handleCarPhoto(e){
   const file=e.target.files[0]; if(!file) return;
@@ -2000,6 +2017,7 @@ function handleCarPhoto(e){
   reader.onload=ev=>{
     if(!CAR_PHOTOS[curCar]) CAR_PHOTOS[curCar]=[];
     CAR_PHOTOS[curCar].push(ev.target.result);
+    saveCarPhotos();
     renderDetailThumbs();
     toast(T('photoUp','Photo uploaded for')+' <b>'+CARS[curCar].name+'</b>');
   };
@@ -2032,6 +2050,7 @@ function removeCarPhoto(idx){
   if(!CAR_PHOTOS[curCar]) return;
   CAR_PHOTOS[curCar].splice(idx,1);
   if(CAR_PHOTOS[curCar].length===0) delete CAR_PHOTOS[curCar];
+  saveCarPhotos();
   renderDetailThumbs();
 }
 
@@ -2121,7 +2140,38 @@ function updateDemoState(){
 function openPreview(){ document.getElementById('sheetMask').classList.add('show'); document.getElementById('previewSheet').classList.add('show'); syncSheet(); syncPreviewAccess(); }
 function closePreview(){ closeSheets(); }
 function closeSettings(){ document.getElementById('sheetMask').classList.remove('show'); document.getElementById('settingsSheet').classList.remove('show'); }
-function closeSheets(){ closeSettings(); document.getElementById('sheetMask').classList.remove('show'); document.getElementById('previewSheet').classList.remove('show'); const ps=document.getElementById('pricingSheet'); if(ps) ps.classList.remove('show'); const ms=document.getElementById('membershipSheet'); if(ms) ms.classList.remove('show'); }
+function closeSheets(){ closeSettings(); document.getElementById('sheetMask').classList.remove('show'); document.getElementById('previewSheet').classList.remove('show'); const ps=document.getElementById('pricingSheet'); if(ps) ps.classList.remove('show'); const ms=document.getElementById('membershipSheet'); if(ms) ms.classList.remove('show'); const ca=document.getElementById('carActionsSheet'); if(ca) ca.classList.remove('show'); }
+function openCarActions(){
+  const c=CARS[curCar]; if(!c) return;
+  if(!canEditCar()){ toast(T('noPermPhoto','Your role cannot perform this action.')); return; }
+  document.getElementById('caTitle').textContent=carName(c);
+  const sold=!!c.sold;
+  document.getElementById('caBody').innerHTML=
+    `<button class="row-action" onclick="closeSheets();toggleSold()">${sold?T('markAvail','Mark as available'):T('markSold','Mark as sold')}</button>`+
+    `<button class="row-action danger" onclick="confirmDeleteCar()">${T('deleteCar','Delete this car')}</button>`;
+  document.getElementById('sheetMask').classList.add('show');
+  document.getElementById('carActionsSheet').classList.add('show');
+}
+function toggleSold(){
+  const c=CARS[curCar]; if(!c) return;
+  c.sold=!c.sold; saveCars(); markCarDirty(curCar);
+  toast(c.sold?T('markedSold','Marked as sold'):T('markedAvail','Marked as available'));
+  renderDetail(); renderHome(); renderStock();
+}
+function confirmDeleteCar(){
+  if(!confirm(T('delConfirm','Delete this car? This cannot be undone and syncs to all devices.'))) return;
+  deleteCar(curCar);
+}
+function deleteCar(k){
+  if(!CARS[k]) return;
+  CAR_DELETED[k]=Date.now();
+  delete CARS[k]; delete LISTED_AT[k]; delete CAR_PHOTOS[k]; delete CAR_VIDEOS[k];
+  SYNC.cars[k]=CAR_DELETED[k]; jsave('am_dirty_cars',SYNC.cars);
+  jsave('am_car_deleted',CAR_DELETED);
+  saveCars(); saveListed(); saveEmps();
+  toast(T('carDeleted','Car deleted'));
+  renderHome(); renderStock(); go('scr-stock');
+}
 
 /* ---- pricing model sheet ---- */
 function openPricingInfo(){
@@ -2542,7 +2592,7 @@ async function apiPublic(p,o){
 async function bootstrap(){
   let loaded=false, error=null;
   // 1) local cache first (instant UI)
-  loadCars(); loadListed(); loadEmps(); loadShowrooms(); loadCarVideos(); loadMembership();
+  loadCars(); loadListed(); loadEmps(); loadShowrooms(); loadCarVideos(); loadCarPhotos(); loadMembership();
 
   // 0) auto-detect the backend when served from the same origin (e.g. opened from your own server).
   // This lets anyone register / sign in without typing the server address. If no API answers (e.g. a
@@ -3057,7 +3107,9 @@ async function syncNow(silent){
   try{
     /* 1 — push everything queued locally */
     const payload={cars:[],employees:[]};
-    for(const id in SYNC.cars){ if(!CARS[id]) continue;
+    for(const id in SYNC.cars){
+      if(CAR_DELETED[id]){ payload.cars.push({id:id,updatedAt:CAR_DELETED[id],deleted:true}); continue; }
+      if(!CARS[id]) continue;
       payload.cars.push({id:id,updatedAt:SYNC.cars[id],listedAt:LISTED_AT[id]||null,data:CARS[id],photos:CAR_PHOTOS[id]||undefined,videos:CAR_VIDEOS[id]||undefined}); }
     for(const id in SYNC.emps){ const e=ALL_EMP[id]; if(!e) continue;
       payload.employees.push({id:id,updatedAt:SYNC.emps[id],data:e}); }
@@ -3066,6 +3118,7 @@ async function syncNow(silent){
       const pr=await api('/api/push',{method:'POST',body:payload});
       rejected=pr.rejected||[];
       SYNC.cars={}; SYNC.emps={}; jsave('am_dirty_cars',{}); jsave('am_dirty_emps',{});
+      CAR_DELETED={}; jsave('am_car_deleted',CAR_DELETED);
     }
     /* 2 — pull everything changed since our cursor */
     const p=await api('/api/pull?photos=1&since='+SYNC.since);
@@ -3335,11 +3388,12 @@ function submitNewCar(){
   const specsArr=specs?specs.split(',').map(s=>[s.trim(),s.trim()]):[['Mileage','—']];
   const hlArr=highlights?highlights.split(',').map(s=>s.trim()).filter(Boolean):[];
   CARS[key]={name:nameEn,sub:subEn,nameZh:nameZh,subZh:subZh,
-    cond:cond,body:body,color:color,brand:brand,branch:showroom.name,grad:'g3',loc:showroom,
+    cond:cond,body:body,color:color,brand:brand,branch:showroom.name,grad:'g3',loc:showroom,sold:false,
     specs:specsArr,hl:hlArr,
     price:{cost:cost||floorA-5000,floorA:floorA||quote-5000,floorB:floorB||floorA+1500,quote:quote}};
   if(ADMIN_PHOTOS.length>0) CAR_PHOTOS[key]=ADMIN_PHOTOS.slice();
   if(ADMIN_VIDEOS.length>0) CAR_VIDEOS[key]=ADMIN_VIDEOS.slice();
+  saveCarPhotos();
   LISTED_AT[key]=new Date().toISOString().slice(0,10);
   saveCars(); recomputeFacets(); markCarDirty(key);
   toast('Car saved: <b>'+nameEn+'</b> · 中文: <b>'+nameZh+'</b>');
@@ -3484,5 +3538,11 @@ bootstrap().then(()=>{
 <script>
 if('serviceWorker' in navigator){ window.addEventListener('load',function(){ navigator.serviceWorker.register('sw.js').catch(function(){}); }); }
 </script>
+<div class="sheet" id="carActionsSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" id="caTitle">Car actions</div>
+  <div id="caBody"></div>
+  <button class="share-copy" style="width:100%;margin-top:14px;" onclick="closeSheets()">Close</button>
+</div>
 </body>
 </html>
