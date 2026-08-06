@@ -305,6 +305,19 @@
   .sheet.show{transform:translateX(-50%) translateY(0);}
   .sheet-handle{width:38px; height:4px; border-radius:2px; background:var(--border-strong); margin:0 auto 12px;}
   .sheet-title{font-size:15px; font-weight:800;}
+  /* sticky settings header: always-visible top-left back button + in-panel language switch */
+  .sheet-head{position:sticky; top:-14px; margin:-14px -18px 12px; padding:14px 18px 10px; background:var(--surface); border-bottom:1px solid var(--border); border-radius:22px 22px 0 0; display:flex; align-items:center; gap:10px; z-index:3;}
+  .sheet-back{flex:0 0 auto; width:34px; height:34px; border-radius:50%; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:22px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:transform .12s, background .15s;}
+  .sheet-back:hover{background:var(--surface-3, var(--surface-2));}
+  .sheet-back:active{transform:scale(.9);}
+  .sheet-head-title{flex:1; min-width:0; font-size:15px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .sheet-lang{flex:0 0 auto; display:flex; gap:4px; background:var(--surface-2); border:1px solid var(--border); border-radius:999px; padding:3px;}
+  .sheet-lang .seg{font-size:11px; padding:4px 11px; border-radius:999px; cursor:pointer; color:var(--text-dim); font-weight:700; transition:.15s;}
+  .sheet-lang .seg.on{background:var(--gold); color:#0F0E0E;}
+  /* smooth inner section appearance */
+  #settingsSheet #syncLoginBox, #settingsSheet #forgotBox, #settingsSheet #regBox{animation:fade .28s ease both;}
+  /* keep sheet GPU-smooth */
+  .sheet{will-change:transform;}
   .sheet-hint{font-size:11px; color:var(--text-dim); margin:8px 0 4px; line-height:1.6;}
   .share-box{display:flex; gap:8px; margin-top:16px; align-items:center; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:10px 12px;}
   .share-url{font-size:11px; color:var(--gold); flex:1; word-break:break-all; font-family:ui-monospace,monospace;}
@@ -857,11 +870,17 @@
 
 <!-- SETTINGS SHEET -->
 <div class="sheet" id="settingsSheet">
-  <div class="sheet-handle"></div>
-  <div class="sheet-title">⚙ <span data-i18n="settingsTitle">Settings</span></div>
+  <div class="sheet-head">
+    <button class="sheet-back" type="button" onclick="closeSettings()" aria-label="Back">‹</button>
+    <div class="sheet-head-title">⚙ <span data-i18n="settingsTitle">Settings</span></div>
+    <div class="sheet-lang">
+      <span class="seg" id="segEn2" onclick="setLang('en')">EN</span><span class="seg" id="segZh2" onclick="setLang('zh')">中</span>
+    </div>
+  </div>
   <div class="grp" style="background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:12px;padding:12px 14px;margin-bottom:12px;">
-    <div style="font-weight:700;color:var(--gold);font-size:12px;margin-bottom:6px;" data-i18n="syncServerHint">Server address (required for login/sync)</div>
-    <div class="form-row" style="margin:0;"><input type="text" id="setApi" placeholder="https://sync.antmotors.com" style="font-size:13px;" /></div>
+    <div style="font-weight:700;color:var(--gold);font-size:12px;margin-bottom:6px;" data-i18n="syncServerHint">Backend address (needed for login &amp; sync)</div>
+    <div class="form-row" style="margin:0;"><input type="text" id="setApi" placeholder="http://192.168.9.101:8899" data-ph="ph_setApi" style="font-size:13px;" /></div>
+    <div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.4;" data-i18n="syncServerHint2">This is your account &amp; data-sync server. For this local demo, paste:</div>
   </div>
   <div class="grp">
     <div id="syncStatus" class="sync-status">—</div>
@@ -885,7 +904,7 @@
       <div class="form-row"><label data-i18n="fgAccount">Account / e-mail</label><input type="text" id="fgAcct" placeholder="boss / you@mail.com" autocomplete="username" /></div>
       <div class="form-row"><label data-i18n="fgCode">Verification code</label>
         <div class="code-row">
-          <input type="text" id="fgCode" placeholder="6 digits" inputmode="numeric" maxlength="6" autocomplete="one-time-code" />
+          <input type="text" id="fgCode" placeholder="6 digits" data-ph="ph_fgCode" inputmode="numeric" maxlength="6" autocomplete="one-time-code" />
           <button type="button" class="code-btn" id="fgSendBtn" onclick="sendResetCode()" data-i18n="fgSend">Get code</button>
         </div>
       </div>
@@ -906,7 +925,7 @@
         <div class="seg-tab" id="regModeJoin" onclick="setRegMode('join')" data-i18n="regModeJoin">Join a company</div>
       </div>
       <div id="regCreateFields">
-        <div class="form-row"><label data-i18n="regCoName">Company name</label><input type="text" id="regCoName" placeholder="Ant Motors Ghana" autocomplete="off" /></div>
+        <div class="form-row"><label data-i18n="regCoName">Company name</label><input type="text" id="regCoName" placeholder="Ant Motors Ghana" data-ph="ph_regCoName" autocomplete="off" /></div>
         <div class="form-row"><label data-i18n="regCoLogo">Company logo</label>
           <input type="file" id="regCoLogo" accept="image/*" onchange="previewCoLogo()" style="padding:6px;" />
           <img id="regCoLogoPrev" style="display:none;max-height:46px;max-width:120px;margin-top:6px;border-radius:8px;background:var(--surface-2);" />
@@ -915,8 +934,8 @@
       <div id="regJoinFields" style="display:none;">
         <div class="form-row"><label data-i18n="regCode">Invitation code</label><input type="text" id="regCode" placeholder="ANT-XXXXXX" autocomplete="off" style="text-transform:uppercase;" /></div>
       </div>
-      <div class="form-row"><label data-i18n="regId">Account ID</label><input type="text" id="regId" placeholder="e.g. ama" autocomplete="off" /></div>
-      <div class="form-row"><label data-i18n="regName">Your name</label><input type="text" id="regName" placeholder="Ama K." autocomplete="off" /></div>
+      <div class="form-row"><label data-i18n="regId">Account ID</label><input type="text" id="regId" placeholder="e.g. ama" data-ph="ph_regId" autocomplete="off" /></div>
+      <div class="form-row"><label data-i18n="regName">Your name</label><input type="text" id="regName" placeholder="Ama K." data-ph="ph_regName" autocomplete="off" /></div>
       <div class="form-row"><label data-i18n="regWa">WhatsApp</label><input type="text" id="regWa" placeholder="23320..." autocomplete="off" /></div>
       <div class="form-row"><label data-i18n="regPhone">Phone</label><input type="text" id="regPhone" placeholder="+233..." autocomplete="off" /></div>
       <div class="form-row"><label data-i18n="regEmail">E-mail (for password recovery)</label><input type="email" id="regEmail" placeholder="you@mail.com" autocomplete="email" /></div>
@@ -1014,7 +1033,6 @@
     <button class="submit" style="margin-top:8px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="document.getElementById('importFile').click()" data-i18n="importData">Import backup</button>
     <input type="file" id="importFile" accept="application/json" style="display:none;" onchange="importData(event)" />
   </div>
-  <button class="share-copy" onclick="closeSheets()" data-i18n="close">Close</button>
 </div>
 
 <!-- PRICING MODEL BOTTOM SHEET -->
@@ -1194,7 +1212,7 @@ I18N.zh.backupTitle="数据备份（员工）"; I18N.zh.backupHint="将全部车
 I18N.zh.installTitle="获取 App（员工）"; I18N.zh.installHint="员工从 App Store / Google Play 安装 Ant Motors 原生 App，或通过企业内部 TestFlight / MDM 分发。客户只需打开分享链接，无需安装。";
 /* --- cloud sync --- */
 I18N.en.syncTitle="Cloud sync (all devices share one inventory)"; I18N.en.syncServer="Server address"; I18N.en.syncEmpId="Staff ID"; I18N.en.syncPin="PIN";
-I18N.en.syncSignIn="Sign in & sync"; I18N.en.syncNowBtn="Sync now"; I18N.en.syncSignOut="Sign out"; I18N.en.syncServerHint="Server address (required for login/sync)";
+I18N.en.syncSignIn="Sign in & sync"; I18N.en.syncNowBtn="Sync now"; I18N.en.syncSignOut="Sign out"; I18N.en.syncServerHint="Backend address (needed for login & sync)"; I18N.en.syncServerHint2="This is the backend that stores your account and keeps cars/prices in sync across every device. Leave it blank to use the app offline on THIS device only. For the local demo, paste:"; I18N.en.ph_setApi="http://192.168.9.101:8899"; I18N.en.ph_fgCode="6 digits"; I18N.en.ph_regCoName="Ant Motors Ghana"; I18N.en.ph_regId="e.g. ama"; I18N.en.ph_regName="Ama K.";
 I18N.en.syncHint="Leave the server empty to work offline on this device only. When connected, cars and prices added by anyone appear on every signed-in device.";
 I18N.en.syncOffline="Offline mode — this device only"; I18N.en.syncNeedLogin="Sign in to sync"; I18N.en.syncSyncing="Syncing…"; I18N.en.syncSigningIn="Signing in…";
 I18N.en.syncPending="change(s) waiting to upload"; I18N.en.syncedAt="Synced"; I18N.en.syncDone="Sync complete"; I18N.en.syncItems="item(s)";
@@ -1203,7 +1221,7 @@ I18N.en.syncSignedIn="Signed in as"; I18N.en.syncSignedOut="Signed out";
 I18N.en.syncRejPrice="price can only be set by owner/partners"; I18N.en.syncRejTier="only owner/partners can change roles";
 I18N.en.syncRejAcct="you can only edit your own account"; I18N.en.syncRejEmp="unknown staff account";
 I18N.zh.syncTitle="云同步（所有设备共用一份库存）"; I18N.zh.syncServer="服务器地址"; I18N.zh.syncEmpId="员工账号"; I18N.zh.syncPin="密码 PIN";
-I18N.zh.syncSignIn="登录并同步"; I18N.zh.syncNowBtn="立即同步"; I18N.zh.syncSignOut="退出登录"; I18N.zh.syncServerHint="服务器地址（登录/同步必需）";
+I18N.zh.syncSignIn="登录并同步"; I18N.zh.syncNowBtn="立即同步"; I18N.zh.syncSignOut="退出登录"; I18N.zh.syncServerHint="后台地址（登录与同步需要）"; I18N.zh.syncServerHint2="这是保存你账号、并在各设备间同步车辆与价格数据的后台服务器。留空则只在本机离线使用。本地演示请填："; I18N.zh.ph_setApi="http://192.168.9.101:8899"; I18N.zh.ph_fgCode="6 位数字"; I18N.zh.ph_regCoName="例如 安特汽车"; I18N.zh.ph_regId="例如 ama"; I18N.zh.ph_regName="例如 张伟";
 I18N.zh.syncHint="留空服务器地址则仅本机离线使用。连接后，任何人新增的车辆和价格都会出现在所有已登录设备上。";
 I18N.zh.syncOffline="离线模式——仅本机数据"; I18N.zh.syncNeedLogin="请登录后同步"; I18N.zh.syncSyncing="同步中…"; I18N.zh.syncSigningIn="登录中…";
 I18N.zh.syncPending="条修改待上传"; I18N.zh.syncedAt="已同步"; I18N.zh.syncDone="同步完成"; I18N.zh.syncItems="条数据";
@@ -1256,6 +1274,8 @@ I18N.zh.regEmail="邮箱（用于找回密码）"; I18N.zh.regPw="密码"; I18N.
 function applyI18n(){
   const d=I18N[curLang];
   document.querySelectorAll('[data-i18n]').forEach(el=>{ if(d[el.dataset.i18n]) el.textContent=d[el.dataset.i18n]; });
+  // input placeholders are language-bound too (applyI18n only handled .search before)
+  document.querySelectorAll('[data-ph]').forEach(el=>{ const t=d[el.dataset.ph]; if(t!==undefined) el.placeholder=t; });
   const phMap={en:"Search brand, model, year…",zh:"搜索品牌、型号、年份…"};
   document.querySelectorAll('.search input').forEach(i=>{ if(!i.value) i.placeholder=phMap[curLang]; });
   const bk=document.getElementById('bkMsg'); if(bk) bk.placeholder=T('msgPlaceholder','I\'d like to see the car and discuss the deal.');
@@ -1307,10 +1327,16 @@ function syncLangUI(){
   const en=document.getElementById('segEn'), zh=document.getElementById('segZh');
   if(en) en.classList.toggle('on',curLang==="en");
   if(zh) zh.classList.toggle('on',curLang==="zh");
+  const en2=document.getElementById('segEn2'), zh2=document.getElementById('segZh2');
+  if(en2) en2.classList.toggle('on',curLang==="en");
+  if(zh2) zh2.classList.toggle('on',curLang==="zh");
   document.documentElement.lang = curLang==="zh"?"zh":"en";
 }
-function toggleLang(){
-  curLang=curLang==="en"?"zh":"en";
+function toggleLang(){ setLang(curLang==="en"?"zh":"en"); }
+function setLang(l){
+  if(l!=="en"&&l!=="zh") return;
+  if(curLang===l) return;
+  curLang=l;
   try{ localStorage.setItem('am_lang',curLang); }catch(e){}
   syncLangUI();
   applyI18n();
@@ -1834,7 +1860,8 @@ function updateDemoState(){
 /* ---- preview bottom sheet ---- */
 function openPreview(){ document.getElementById('sheetMask').classList.add('show'); document.getElementById('previewSheet').classList.add('show'); syncSheet(); syncPreviewAccess(); }
 function closePreview(){ closeSheets(); }
-function closeSheets(){ document.getElementById('sheetMask').classList.remove('show'); document.getElementById('previewSheet').classList.remove('show'); const ps=document.getElementById('pricingSheet'); if(ps) ps.classList.remove('show'); const ms=document.getElementById('membershipSheet'); if(ms) ms.classList.remove('show'); }
+function closeSettings(){ document.getElementById('sheetMask').classList.remove('show'); document.getElementById('settingsSheet').classList.remove('show'); }
+function closeSheets(){ closeSettings(); document.getElementById('sheetMask').classList.remove('show'); document.getElementById('previewSheet').classList.remove('show'); const ps=document.getElementById('pricingSheet'); if(ps) ps.classList.remove('show'); const ms=document.getElementById('membershipSheet'); if(ms) ms.classList.remove('show'); }
 
 /* ---- pricing model sheet ---- */
 function openPricingInfo(){
