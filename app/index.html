@@ -338,6 +338,33 @@
   .seg3 .seg{padding:6px 12px; border-radius:999px; font-size:12px; font-weight:700; color:var(--text-dim); cursor:pointer; transition:.15s; white-space:nowrap;}
   .seg3 .seg.on{background:var(--gold); color:#0F0E0E;}
   .pill-select{flex:1; min-width:0; background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:9px; padding:9px 10px; font-size:13px; outline:none;}
+  /* ---------- ME / personal tab ---------- */
+  #scr-me{padding-bottom:96px;}
+  .me-head{position:relative; padding:20px 16px 18px; background:linear-gradient(165deg,var(--gold-soft),transparent 78%); border-bottom:1px solid var(--border); display:flex; align-items:center; gap:13px;}
+  .me-ava{flex:0 0 auto; width:56px; height:56px; border-radius:50%; background:var(--gold); color:#0F0E0E; font-size:23px; font-weight:800; display:flex; align-items:center; justify-content:center; overflow:hidden;}
+  .me-ava img{width:100%; height:100%; object-fit:cover;}
+  .me-id{flex:1; min-width:0; padding-right:46px;}
+  .me-name{font-size:18px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .me-sub{font-size:12px; color:var(--text-dim); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .me-badge{display:inline-block; margin-top:6px; padding:2px 9px; border-radius:999px; font-size:10.5px; font-weight:800; background:var(--gold); color:#0F0E0E;}
+  .me-actions{position:absolute; top:16px; right:14px; display:flex; gap:8px; align-items:center;}
+  .me-gear{width:36px; height:36px; border-radius:50%; border:1px solid var(--border); background:var(--surface); color:var(--text); font-size:17px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:transform .15s;}
+  .me-gear:active{transform:scale(.88) rotate(40deg);}
+  #scr-me .grp{margin:12px 16px 0; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 15px;}
+  #scr-me .lbl{font-size:11px; font-weight:800; color:var(--text-dim); letter-spacing:.6px; text-transform:uppercase; margin-bottom:10px;}
+  #scr-me .form-row{display:flex; flex-direction:column; gap:4px; margin:8px 0;}
+  #scr-me .form-row label{font-size:11px; color:var(--text-dim);}
+  #scr-me input:not([type=checkbox]), #scr-me textarea, #scr-me select{background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:9px 10px; font-size:13px; font-family:inherit; outline:none;}
+  #scr-me input:focus, #scr-me select:focus, #scr-me textarea:focus{border-color:var(--gold);}
+  #scr-me .seg-tabs{margin:12px 0 0;}
+  #scr-me .sheet-hint{margin:8px 0 4px;}
+  .me-links{margin:12px 16px 0; background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden;}
+  .me-link{display:flex; align-items:center; gap:11px; width:100%; padding:14px 15px; border:none; border-bottom:1px solid var(--border); background:none; color:var(--text); font-size:14px; font-weight:600; font-family:inherit; text-align:left; cursor:pointer;}
+  .me-link:last-child{border-bottom:none;}
+  .me-link:active{background:var(--surface-2);}
+  .me-link .ic{flex:0 0 auto; width:30px; height:30px; border-radius:9px; background:var(--gold-soft); display:flex; align-items:center; justify-content:center; font-size:15px;}
+  .me-link .ar{margin-left:auto; color:var(--text-dim); font-size:17px;}
+  .me-ver{text-align:center; font-size:11px; color:var(--text-dim); margin:20px 0 4px;}
   .notif-item{display:flex; gap:10px; padding:10px 0; border-bottom:1px solid var(--border);}
   .notif-item:last-child{border-bottom:none;}
   .notif-item .ni-ic{flex:0 0 auto; width:30px; height:30px; border-radius:50%; background:var(--gold-soft); color:var(--gold); display:flex; align-items:center; justify-content:center; font-size:15px;}
@@ -514,7 +541,7 @@
         <div><b>ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span></div>
       </div>
       <div class="appbar-actions">
-        <button class="pill-btn" id="settingsBtn" onclick="openSettings()" style="background:var(--gold);color:#111;font-weight:800;border:none;font-size:12px;">⚙ 登录 / 注册</button>
+        <button class="pill-btn" id="settingsBtn" onclick="authCta()" style="background:var(--gold);color:#111;font-weight:800;border:none;font-size:12px;">👤 登录 / 注册</button>
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
           <span class="seg on" id="segEn">EN</span><span class="seg" id="segZh">中</span>
         </div>
@@ -541,7 +568,7 @@
       <div id="welcomeBar" style="display:none;margin:0 16px 14px;padding:14px 16px;border-radius:12px;border:1px solid var(--gold-line);background:var(--gold-soft);">
         <div id="welcomeTitle" style="font-weight:800;color:var(--gold);font-size:14px;" data-i18n="welcomeTitle">👋 Welcome to ANT MOTORS</div>
         <div id="welcomeDesc" style="font-size:12px;margin-top:4px;line-height:1.5;" data-i18n="welcomeDesc">New here? Create your company account to start adding cars, managing your team and viewing membership info. Tap the settings button above or the button below.</div>
-        <button class="submit" id="welcomeBtn" style="margin-top:10px;background:var(--gold);color:#111;font-weight:700;border:none;" onclick="openSettings()" data-i18n="welcomeBtn">Login / Register</button>
+        <button class="submit" id="welcomeBtn" style="margin-top:10px;background:var(--gold);color:#111;font-weight:700;border:none;" onclick="go('scr-me')" data-i18n="welcomeBtn">Login / Register</button>
       </div>
       <div class="hero">
         <div class="photo"><span id="carHeroSvg"></span></div>
@@ -814,123 +841,19 @@
       <div class="admin-note" id="adminNote"></div>
     </section>
 
-    <div class="tabbar">
-      <button class="tab on" onclick="go('scr-home')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 10.5L12 4l8 6.5V20a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1v-9.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span data-i18n="navHome">Home</span></button>
-      <button class="tab" onclick="go('scr-stock')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3.2 15.5v-2.7c0-.4.1-.7.3-1L5.8 8c.3-.6.9-.9 1.6-.9h9.2c.7 0 1.3.3 1.6.9l2.3 3.8c.2.3.3.6.3 1v2.7" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M3.2 15.5h17.6v2.6a.6.6 0 01-.6.6h-2.3a.6.6 0 01-.6-.6v-1H6.7v1a.6.6 0 01-.6.6H3.8a.6.6 0 01-.6-.6v-2.6z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span data-i18n="navStock">Stock</span></button>
-      <button class="tab" onclick="go('scr-showrooms')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4.2 9.8V20a1 1 0 001 1h13.6a1 1 0 001-1V9.8" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M2.6 6.4L4 3h16l1.4 3.4a2.7 2.7 0 01-5.1 1.5 2.7 2.7 0 01-5.1 0 2.7 2.7 0 01-5.1 0 2.7 2.7 0 01-3.5-1.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span data-i18n="navShops">Shops</span></button>
-    </div>
-    <button class="fab-add" id="addFab" onclick="go('scr-admin')" title="Add Car">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
-    </button>
-  </div>
-
-  <!-- DEMO CONTROL DRAWER (desktop) -->
-  <div class="demo">
-    <h3>🎛 Demo Controls</h3>
-    <p class="hint">Switch roles to see price tiers change. Boss, Partner A &amp; Partner B share full access (cost + edit). Manager &amp; Sales A can upload car photos — try it on the detail page. Boss/Partners &amp; Manager can upload showroom photos on the Shops page.</p>
-    <div class="grp">
-      <div class="lbl">Who is viewing?</div>
-      <button class="opt on" onclick="setRole('customer',this)">Customer<small>Sees the selling quote</small></button>
-      <button class="opt" onclick="setRole('manager',this)">Manager · Branch<small>Sees all floors, edits cars &amp; photos</small></button>
-      <button class="opt" onclick="setRole('salesA',this)">Sales A · Senior<small>Sees floor price A, uploads photos</small></button>
-      <button class="opt" onclick="setRole('salesB',this)">Sales B · Junior<small>Sees floor price B, share links only</small></button>
-      <button class="opt" onclick="setRole('boss',this)">Boss / Owner<small>Sees cost + all tiers, full edit</small></button>
-      <button class="opt" onclick="setRole('partnerA',this)">Partner A<small>Co-owner · same as Boss</small></button>
-      <button class="opt" onclick="setRole('partnerB',this)">Partner B<small>Co-owner · same as Boss</small></button>
-    </div>
-    <div class="divider"></div>
-    <div class="grp">
-      <div class="lbl">Assigned sales (the share link)</div>
-      <button class="opt on" onclick="setSales('kwame',this)">Kwame A. · Accra<small>wa.me/233200000001</small></button>
-      <button class="opt" onclick="setSales('ama',this)">Ama K. · Tema<small>wa.me/233200000002</small></button>
-      <button class="opt" onclick="setSales('kwasi',this)">Kwasi O. · Kumasi<small>wa.me/233200000003</small></button>
-    </div>
-    <div class="divider"></div>
-    <p class="hint" id="demoState"></p>
-  </div>
-</div>
-
-<!-- PREVIEW BOTTOM SHEET (works on phone too) -->
-<div class="sheet-mask" id="sheetMask" onclick="closeSheets()"></div>
-<div class="sheet" id="previewSheet">
-  <div class="sheet-handle"></div>
-  <div class="sheet-title" data-i18n="pvTitle">👤 My Account</div>
-  <p class="sheet-hint" data-i18n="pvHint">Your shared links are bound to your account — customers who open them can only reach you. Edit your WhatsApp below.</p>
-  <div id="pvTopOnly">
-    <div class="grp grp-login"><div class="lbl" data-i18n="pvLogin">Login as (admin only)</div>
-      <button class="opt" data-login="boss" onclick="loginAs('boss',this)"><span data-i18n="pvL_boss">Boss / Owner</span></button>
-      <button class="opt" data-login="partnerA" onclick="loginAs('partnerA',this)"><span data-i18n="pvL_partnerA">Partner A</span></button>
-      <button class="opt" data-login="partnerB" onclick="loginAs('partnerB',this)"><span data-i18n="pvL_partnerB">Partner B</span></button>
-      <button class="opt" data-login="kwame" onclick="loginAs('kwame',this)"><span data-i18n="pvS_kwame">Kwame A. · Accra</span></button>
-      <button class="opt" data-login="ama" onclick="loginAs('ama',this)"><span data-i18n="pvS_ama">Ama K. · Tema</span></button>
-      <button class="opt" data-login="kwasi" onclick="loginAs('kwasi',this)"><span data-i18n="pvS_kwasi">Kwasi O. · Kumasi</span></button>
-    </div>
-    <div class="grp" data-grp="role"><div class="lbl" data-i18n="pvWho">Who is viewing?</div>
-      <button class="opt" data-role="customer" onclick="setRole('customer',this)"><span data-i18n="pvR_customer">Customer</span><small data-i18n="pvR_customer_sub">Sees the selling quote</small></button>
-      <button class="opt" data-role="manager" onclick="setRole('manager',this)"><span data-i18n="pvR_manager">Manager · Branch</span><small data-i18n="pvR_manager_sub">Sees all floors, edits cars &amp; photos</small></button>
-      <button class="opt" data-role="salesA" onclick="setRole('salesA',this)"><span data-i18n="pvR_salesA">Sales A · Senior</span><small data-i18n="pvR_salesA_sub">Sees floor price A, uploads photos</small></button>
-      <button class="opt" data-role="salesB" onclick="setRole('salesB',this)"><span data-i18n="pvR_salesB">Sales B · Junior</span><small data-i18n="pvR_salesB_sub">Sees floor price B, share only</small></button>
-      <button class="opt" data-role="boss" onclick="setRole('boss',this)"><span data-i18n="pvR_boss">Boss / Owner</span><small data-i18n="pvR_boss_sub">Sees cost + all tiers, full edit</small></button>
-      <button class="opt" data-role="partnerA" onclick="setRole('partnerA',this)"><span data-i18n="pvR_partnerA">Partner A</span><small data-i18n="pvR_partnerA_sub">Co-owner · same as Boss</small></button>
-      <button class="opt" data-role="partnerB" onclick="setRole('partnerB',this)"><span data-i18n="pvR_partnerB">Partner B</span><small data-i18n="pvR_partnerB_sub">Co-owner · same as Boss</small></button>
-    </div>
-    <div class="grp" data-grp="sales"><div class="lbl" data-i18n="pvSales">Assigned sales (share link)</div>
-      <button class="opt" data-sales="kwame" onclick="setSales('kwame',this)"><span data-i18n="pvS_kwame">Kwame A. · Accra</span><small>wa.me/233200000001</small></button>
-      <button class="opt" data-sales="ama" onclick="setSales('ama',this)"><span data-i18n="pvS_ama">Ama K. · Tema</span><small>wa.me/233200000002</small></button>
-      <button class="opt" data-sales="kwasi" onclick="setSales('kwasi',this)"><span data-i18n="pvS_kwasi">Kwasi O. · Kumasi</span><small>wa.me/233200000003</small></button>
-    </div>
-  </div>
-  <div id="pvLocked" style="display:none;">
-    <div class="locked-card" id="pvIdentity"></div>
-    <button class="share-copy" style="width:100%;margin-top:10px;" onclick="openSettings()" data-i18n="pvEditContact">Edit my WhatsApp &amp; phone</button>
-    <p class="sheet-hint" data-i18n="pvLockNote">Your share link is bound to this account — customers can only reach you. Role switching is assigned by admin.</p>
-  </div>
-  <p class="hint" id="pvStatus" style="margin:10px 2px 0;font-size:11px;color:var(--gold);"></p>
-  <div class="share-box">
-    <span class="share-url" id="shareUrl">https://antmotors.com/?c=lc&amp;ref=kwame</span>
-    <button class="share-copy" onclick="copyShare()" data-i18n="pvCopy">Copy</button>
-  </div>
-</div>
-
-<!-- SETTINGS SHEET -->
-<div class="sheet" id="settingsSheet">
-  <div class="sheet-head">
-    <button class="sheet-back" type="button" onclick="closeSettings()" aria-label="Back">‹</button>
-    <div class="sheet-head-title">⚙ <span data-i18n="settingsTitle">Settings</span></div>
-    <div class="sheet-lang">
-      <span class="seg" id="segEn2" onclick="setLang('en')">EN</span><span class="seg" id="segZh2" onclick="setLang('zh')">中</span>
-    </div>
-  </div>
-  <div class="grp" style="background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--text-dim);display:flex;align-items:center;gap:8px;">
-    <span style="color:var(--gold);font-weight:800;">●</span>
-    <span data-i18n="syncConnected">Connected to the shared ANT MOTORS backend — no setup needed. Your company's data stays private.</span>
-  </div>
-  <div class="grp">
-    <div class="lbl" data-i18n="appearance">Appearance</div>
-    <div class="ui-row">
-      <div><div class="lab" data-i18n="themeLbl">Theme</div><div class="sub" data-i18n="themeSub">Follows your phone's system setting by default</div></div>
-      <div class="seg3" id="themeSeg">
-        <span class="seg" id="thLight" onclick="setThemeMode('light')" data-i18n="thLight">Light</span>
-        <span class="seg" id="thDark" onclick="setThemeMode('dark')" data-i18n="thDark">Dark</span>
-        <span class="seg" id="thSys" onclick="setThemeMode('system')" data-i18n="thSystem">System</span>
+    <!-- PERSONAL / ME TAB -->
+    <section class="screen" id="scr-me">
+      <div class="me-head">
+        <div class="me-ava" id="meAva">A</div>
+        <div class="me-id">
+          <div class="me-name" id="meName">Guest</div>
+          <div class="me-sub" id="meSub">Sign in or create a company account</div>
+          <span class="me-badge" id="meBadge" style="display:none;"></span>
+        </div>
+        <div class="me-actions">
+          <button class="me-gear" id="meGear" onclick="openSettings()" aria-label="Settings" title="Settings">&#9881;</button>
+        </div>
       </div>
-    </div>
-  </div>
-  <div class="grp" id="prefGroup">
-    <div class="lbl" data-i18n="prefs">Preferences</div>
-    <div class="ui-row" id="defSalesRow" style="display:none;">
-      <div><div class="lab" data-i18n="defSalesLbl">Default salesperson</div><div class="sub" data-i18n="defSalesSub">Who the home "shopping with" defaults to</div></div>
-      <select class="pill-select" id="defSalesSel" onchange="setDefSales(this.value)"></select>
-    </div>
-    <div class="ui-row">
-      <div><div class="lab" data-i18n="curLbl">Display currency</div><div class="sub" data-i18n="curSub">Prices show in this currency (set your own rate)</div></div>
-      <select class="pill-select" id="curSel" onchange="setCurrency(this.value)"></select>
-    </div>
-    <div class="ui-row" id="curRateRow">
-      <div><div class="lab" data-i18n="curRateLbl">Exchange rate</div><div class="sub" id="curRateSub">1 GHS = your currency</div></div>
-      <input type="number" id="curRate" class="pill-select" style="flex:0 0 110px;" onchange="setCurRate(this.value)" step="0.0001" />
-    </div>
-  </div>
   <div class="grp">
     <div id="syncStatus" class="sync-status">—</div>
     <div class="lbl" id="authLbl" style="font-weight:700;font-size:14px;margin-bottom:8px;" data-i18n="syncTitle">Account</div>
@@ -1002,60 +925,6 @@
     <button class="submit" id="syncOutBtn" style="margin-top:8px;display:none;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="syncLogout()" data-i18n="syncSignOut">Sign out</button>
     <p class="sheet-hint" data-i18n="syncHint">Leave the server empty to work offline on this device only. When connected, cars and prices added by anyone appear on every signed-in device.</p>
   </div>
-  <div class="grp" id="settingsExtra" style="display:none;">
-    <div class="lbl" data-i18n="myContact">My contact (customer reaches you)</div>
-    <div class="form-row"><label data-i18n="fWhatsApp">WhatsApp number</label><input type="text" id="setWa" placeholder="233200000001" /></div>
-    <div class="form-row"><label data-i18n="fPhone">Phone</label><input type="text" id="setPhone" placeholder="+233 20 000 0001" /></div>
-    <button class="submit" onclick="saveMyContact()" data-i18n="saveContact">Save</button>
-  </div>
-  <div class="grp" id="settingsExtra2" style="display:none;">
-    <div class="lbl" data-i18n="installTitle">Install the app (employees)</div>
-    <p class="sheet-hint" data-i18n="installHint">iOS: open in Safari → Share → Add to Home Screen. Android: open in Chrome → ⋮ → Install app. Customers just open the shared link — no install needed.</p>
-  </div>
-  <details class="adv-details" id="advServerDetails">
-    <summary data-i18n="advServerTitle">⚙ Advanced: backend address</summary>
-    <div style="margin-top:8px;">
-      <div class="form-row" style="margin:0;"><input type="text" id="setApi" placeholder="http://192.168.9.101:8899" data-ph="ph_setApi" style="font-size:13px;" /></div>
-      <div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.5;" data-i18n="syncServerHint2">This is your account &amp; data-sync server. Leave as-is to use the shared ANT MOTORS backend — every company connects here by default. Change it ONLY if your company runs its own server.</div>
-    </div>
-  </details>
-  <div class="grp" id="staffGroup" style="display:none;">
-    <div class="lbl" data-i18n="staffMgmt">Staff &amp; roles (admin)</div>
-    <div id="staffList"></div>
-    <div id="codeCard" style="margin-top:14px;border:1px solid var(--border);border-radius:12px;padding:12px;">
-      <div class="lbl" data-i18n="codeTitle">Company invitation code</div>
-      <p class="sheet-hint" data-i18n="codeHint">Share this with partners &amp; staff. They enter or scan it to join your company and get access.</p>
-      <div style="display:flex;gap:12px;align-items:center;">
-        <div id="codeQR" style="width:96px;height:96px;background:var(--surface-2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-dim);">QR</div>
-        <div style="flex:1;">
-          <div id="codeValue" style="font-weight:700;letter-spacing:1px;font-size:18px;color:var(--gold);">—</div>
-          <button class="share-copy" style="margin-top:6px;" onclick="copyCode()" data-i18n="codeCopy">Copy code</button>
-          <button class="share-copy" style="margin-top:6px;margin-left:6px;" onclick="regenCode()" data-i18n="codeRegen">Regenerate</button>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div class="grp" id="joinGroup" style="display:none;">
-    <div class="lbl" data-i18n="joinTitle">Join your company</div>
-    <p class="sheet-hint" data-i18n="joinHint">Enter the invitation code from your boss, or scan the QR they share. Pick your role, then you get full access.</p>
-    <div class="form-row"><label data-i18n="joinCode">Invitation code</label>
-      <div style="display:flex;gap:8px;">
-        <input type="text" id="bindCode" placeholder="ANT-XXXXXX" autocomplete="off" style="flex:1;" />
-        <button class="share-copy" onclick="startScan()" data-i18n="joinScan">Scan</button>
-      </div>
-    </div>
-    <video id="scanVideo" playsinline style="width:100%;border-radius:10px;display:none;margin:8px 0;"></video>
-    <div class="form-row"><label data-i18n="joinRole">Your role</label>
-      <select id="bindTier">
-        <option value="partnerA" data-i18n="jrPartner">Partner (co-owner)</option>
-        <option value="manager" data-i18n="jrManager">Manager</option>
-        <option value="salesA" data-i18n="jrSalesA">Senior Sales</option>
-        <option value="salesB" data-i18n="jrSalesB">Sales</option>
-      </select>
-    </div>
-    <div class="form-row"><label data-i18n="joinBranch">Branch</label><input type="text" id="bindBranch" list="afBranchList" placeholder="Select or type" autocomplete="off" /></div>
-    <button class="submit" onclick="bindCompany()" data-i18n="joinBind">Bind &amp; activate</button>
-  </div>
   <div class="grp" id="companyGroup" style="display:none;">
     <div class="lbl" data-i18n="coTitle">Company</div>
     <div style="display:flex;gap:12px;align-items:center;margin:6px 0 10px;">
@@ -1084,6 +953,185 @@
     <div id="memInfo" class="sheet-hint"></div>
     <button class="submit" id="memBtn" onclick="showMembership()" data-i18n="memManage">Manage membership</button>
   </div>
+  <div class="grp" id="settingsExtra" style="display:none;">
+    <div class="lbl" data-i18n="myContact">My contact (customer reaches you)</div>
+    <div class="form-row"><label data-i18n="fWhatsApp">WhatsApp number</label><input type="text" id="setWa" placeholder="233200000001" /></div>
+    <div class="form-row"><label data-i18n="fPhone">Phone</label><input type="text" id="setPhone" placeholder="+233 20 000 0001" /></div>
+    <button class="submit" onclick="saveMyContact()" data-i18n="saveContact">Save</button>
+  </div>
+  <div class="grp" id="joinGroup" style="display:none;">
+    <div class="lbl" data-i18n="joinTitle">Join your company</div>
+    <p class="sheet-hint" data-i18n="joinHint">Enter the invitation code from your boss, or scan the QR they share. Pick your role, then you get full access.</p>
+    <div class="form-row"><label data-i18n="joinCode">Invitation code</label>
+      <div style="display:flex;gap:8px;">
+        <input type="text" id="bindCode" placeholder="ANT-XXXXXX" autocomplete="off" style="flex:1;" />
+        <button class="share-copy" onclick="startScan()" data-i18n="joinScan">Scan</button>
+      </div>
+    </div>
+    <video id="scanVideo" playsinline style="width:100%;border-radius:10px;display:none;margin:8px 0;"></video>
+    <div class="form-row"><label data-i18n="joinRole">Your role</label>
+      <select id="bindTier">
+        <option value="partnerA" data-i18n="jrPartner">Partner (co-owner)</option>
+        <option value="manager" data-i18n="jrManager">Manager</option>
+        <option value="salesA" data-i18n="jrSalesA">Senior Sales</option>
+        <option value="salesB" data-i18n="jrSalesB">Sales</option>
+      </select>
+    </div>
+    <div class="form-row"><label data-i18n="joinBranch">Branch</label><input type="text" id="bindBranch" list="afBranchList" placeholder="Select or type" autocomplete="off" /></div>
+    <button class="submit" onclick="bindCompany()" data-i18n="joinBind">Bind &amp; activate</button>
+  </div>
+  <div class="grp" id="staffGroup" style="display:none;">
+    <div class="lbl" data-i18n="staffMgmt">Staff &amp; roles (admin)</div>
+    <div id="staffList"></div>
+    <div id="codeCard" style="margin-top:14px;border:1px solid var(--border);border-radius:12px;padding:12px;">
+      <div class="lbl" data-i18n="codeTitle">Company invitation code</div>
+      <p class="sheet-hint" data-i18n="codeHint">Share this with partners &amp; staff. They enter or scan it to join your company and get access.</p>
+      <div style="display:flex;gap:12px;align-items:center;">
+        <div id="codeQR" style="width:96px;height:96px;background:var(--surface-2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-dim);">QR</div>
+        <div style="flex:1;">
+          <div id="codeValue" style="font-weight:700;letter-spacing:1px;font-size:18px;color:var(--gold);">—</div>
+          <button class="share-copy" style="margin-top:6px;" onclick="copyCode()" data-i18n="codeCopy">Copy code</button>
+          <button class="share-copy" style="margin-top:6px;margin-left:6px;" onclick="regenCode()" data-i18n="codeRegen">Regenerate</button>
+        </div>
+      </div>
+    </div>
+  </div>
+      <div class="me-links" id="meLinks">
+        <button class="me-link" onclick="go('scr-favorites')"><span class="ic">&#10084;</span><span data-i18n="mlFav">My favorites</span><span class="ar">&rsaquo;</span></button>
+        <button class="me-link" id="mlWorkBtn" onclick="go('scr-workbench')"><span class="ic">&#128188;</span><span data-i18n="mlWork">Workbench</span><span class="ar">&rsaquo;</span></button>
+        <button class="me-link" id="mlAdminBtn" onclick="go('scr-admin')"><span class="ic">&#128663;</span><span data-i18n="mlAdmin">Car admin</span><span class="ar">&rsaquo;</span></button>
+        <button class="me-link" id="mlPermBtn" onclick="go('scr-perm')"><span class="ic">&#128274;</span><span data-i18n="mlPerm">Roles &amp; permissions</span><span class="ar">&rsaquo;</span></button>
+        <button class="me-link" onclick="openPricingInfo()"><span class="ic">&#128176;</span><span data-i18n="mlPrice">How pricing works</span><span class="ar">&rsaquo;</span></button>
+        <button class="me-link" onclick="openSettings()"><span class="ic">&#9881;</span><span data-i18n="mlSettings">App settings</span><span class="ar">&rsaquo;</span></button>
+      </div>
+      <div class="me-ver" id="meVer">ANT MOTORS &middot; v1.0.0</div>
+    </section>
+
+    <div class="tabbar">
+      <button class="tab on" onclick="go('scr-home')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 10.5L12 4l8 6.5V20a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1v-9.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span data-i18n="navHome">Home</span></button>
+      <button class="tab" onclick="go('scr-stock')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3.2 15.5v-2.7c0-.4.1-.7.3-1L5.8 8c.3-.6.9-.9 1.6-.9h9.2c.7 0 1.3.3 1.6.9l2.3 3.8c.2.3.3.6.3 1v2.7" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M3.2 15.5h17.6v2.6a.6.6 0 01-.6.6h-2.3a.6.6 0 01-.6-.6v-1H6.7v1a.6.6 0 01-.6.6H3.8a.6.6 0 01-.6-.6v-2.6z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span data-i18n="navStock">Stock</span></button>
+      <button class="tab" onclick="go('scr-showrooms')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4.2 9.8V20a1 1 0 001 1h13.6a1 1 0 001-1V9.8" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M2.6 6.4L4 3h16l1.4 3.4a2.7 2.7 0 01-5.1 1.5 2.7 2.7 0 01-5.1 0 2.7 2.7 0 01-5.1 0 2.7 2.7 0 01-3.5-1.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span data-i18n="navShops">Shops</span></button>
+      <button class="tab" onclick="go('scr-me')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8.2" r="3.7" stroke="currentColor" stroke-width="1.6"/><path d="M4.6 20.2c.7-3.7 3.7-5.8 7.4-5.8s6.7 2.1 7.4 5.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span data-i18n="navMe">Me</span></button>
+    </div>
+    <button class="fab-add" id="addFab" onclick="go('scr-admin')" title="Add Car">
+      <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+    </button>
+  </div>
+
+  <!-- DEMO CONTROL DRAWER (desktop) -->
+  <div class="demo">
+    <h3>🎛 Demo Controls</h3>
+    <p class="hint">Switch roles to see price tiers change. Boss, Partner A &amp; Partner B share full access (cost + edit). Manager &amp; Sales A can upload car photos — try it on the detail page. Boss/Partners &amp; Manager can upload showroom photos on the Shops page.</p>
+    <div class="grp">
+      <div class="lbl">Who is viewing?</div>
+      <button class="opt on" onclick="setRole('customer',this)">Customer<small>Sees the selling quote</small></button>
+      <button class="opt" onclick="setRole('manager',this)">Manager · Branch<small>Sees all floors, edits cars &amp; photos</small></button>
+      <button class="opt" onclick="setRole('salesA',this)">Sales A · Senior<small>Sees floor price A, uploads photos</small></button>
+      <button class="opt" onclick="setRole('salesB',this)">Sales B · Junior<small>Sees floor price B, share links only</small></button>
+      <button class="opt" onclick="setRole('boss',this)">Boss / Owner<small>Sees cost + all tiers, full edit</small></button>
+      <button class="opt" onclick="setRole('partnerA',this)">Partner A<small>Co-owner · same as Boss</small></button>
+      <button class="opt" onclick="setRole('partnerB',this)">Partner B<small>Co-owner · same as Boss</small></button>
+    </div>
+    <div class="divider"></div>
+    <div class="grp">
+      <div class="lbl">Assigned sales (the share link)</div>
+      <button class="opt on" onclick="setSales('kwame',this)">Kwame A. · Accra<small>wa.me/233200000001</small></button>
+      <button class="opt" onclick="setSales('ama',this)">Ama K. · Tema<small>wa.me/233200000002</small></button>
+      <button class="opt" onclick="setSales('kwasi',this)">Kwasi O. · Kumasi<small>wa.me/233200000003</small></button>
+    </div>
+    <div class="divider"></div>
+    <p class="hint" id="demoState"></p>
+  </div>
+</div>
+
+<!-- PREVIEW BOTTOM SHEET (works on phone too) -->
+<div class="sheet-mask" id="sheetMask" onclick="closeSheets()"></div>
+<div class="sheet" id="previewSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-title" data-i18n="pvTitle">👤 My Account</div>
+  <p class="sheet-hint" data-i18n="pvHint">Your shared links are bound to your account — customers who open them can only reach you. Edit your WhatsApp below.</p>
+  <div id="pvTopOnly">
+    <div class="grp grp-login"><div class="lbl" data-i18n="pvLogin">Login as (admin only)</div>
+      <button class="opt" data-login="boss" onclick="loginAs('boss',this)"><span data-i18n="pvL_boss">Boss / Owner</span></button>
+      <button class="opt" data-login="partnerA" onclick="loginAs('partnerA',this)"><span data-i18n="pvL_partnerA">Partner A</span></button>
+      <button class="opt" data-login="partnerB" onclick="loginAs('partnerB',this)"><span data-i18n="pvL_partnerB">Partner B</span></button>
+      <button class="opt" data-login="kwame" onclick="loginAs('kwame',this)"><span data-i18n="pvS_kwame">Kwame A. · Accra</span></button>
+      <button class="opt" data-login="ama" onclick="loginAs('ama',this)"><span data-i18n="pvS_ama">Ama K. · Tema</span></button>
+      <button class="opt" data-login="kwasi" onclick="loginAs('kwasi',this)"><span data-i18n="pvS_kwasi">Kwasi O. · Kumasi</span></button>
+    </div>
+    <div class="grp" data-grp="role"><div class="lbl" data-i18n="pvWho">Who is viewing?</div>
+      <button class="opt" data-role="customer" onclick="setRole('customer',this)"><span data-i18n="pvR_customer">Customer</span><small data-i18n="pvR_customer_sub">Sees the selling quote</small></button>
+      <button class="opt" data-role="manager" onclick="setRole('manager',this)"><span data-i18n="pvR_manager">Manager · Branch</span><small data-i18n="pvR_manager_sub">Sees all floors, edits cars &amp; photos</small></button>
+      <button class="opt" data-role="salesA" onclick="setRole('salesA',this)"><span data-i18n="pvR_salesA">Sales A · Senior</span><small data-i18n="pvR_salesA_sub">Sees floor price A, uploads photos</small></button>
+      <button class="opt" data-role="salesB" onclick="setRole('salesB',this)"><span data-i18n="pvR_salesB">Sales B · Junior</span><small data-i18n="pvR_salesB_sub">Sees floor price B, share only</small></button>
+      <button class="opt" data-role="boss" onclick="setRole('boss',this)"><span data-i18n="pvR_boss">Boss / Owner</span><small data-i18n="pvR_boss_sub">Sees cost + all tiers, full edit</small></button>
+      <button class="opt" data-role="partnerA" onclick="setRole('partnerA',this)"><span data-i18n="pvR_partnerA">Partner A</span><small data-i18n="pvR_partnerA_sub">Co-owner · same as Boss</small></button>
+      <button class="opt" data-role="partnerB" onclick="setRole('partnerB',this)"><span data-i18n="pvR_partnerB">Partner B</span><small data-i18n="pvR_partnerB_sub">Co-owner · same as Boss</small></button>
+    </div>
+    <div class="grp" data-grp="sales"><div class="lbl" data-i18n="pvSales">Assigned sales (share link)</div>
+      <button class="opt" data-sales="kwame" onclick="setSales('kwame',this)"><span data-i18n="pvS_kwame">Kwame A. · Accra</span><small>wa.me/233200000001</small></button>
+      <button class="opt" data-sales="ama" onclick="setSales('ama',this)"><span data-i18n="pvS_ama">Ama K. · Tema</span><small>wa.me/233200000002</small></button>
+      <button class="opt" data-sales="kwasi" onclick="setSales('kwasi',this)"><span data-i18n="pvS_kwasi">Kwasi O. · Kumasi</span><small>wa.me/233200000003</small></button>
+    </div>
+  </div>
+  <div id="pvLocked" style="display:none;">
+    <div class="locked-card" id="pvIdentity"></div>
+    <button class="share-copy" style="width:100%;margin-top:10px;" onclick="closeSheets();go('scr-me')" data-i18n="pvEditContact">Edit my WhatsApp &amp; phone</button>
+    <p class="sheet-hint" data-i18n="pvLockNote">Your share link is bound to this account — customers can only reach you. Role switching is assigned by admin.</p>
+  </div>
+  <p class="hint" id="pvStatus" style="margin:10px 2px 0;font-size:11px;color:var(--gold);"></p>
+  <div class="share-box">
+    <span class="share-url" id="shareUrl">https://antmotors.com/?c=lc&amp;ref=kwame</span>
+    <button class="share-copy" onclick="copyShare()" data-i18n="pvCopy">Copy</button>
+  </div>
+</div>
+
+<!-- SETTINGS SHEET -->
+<div class="sheet" id="settingsSheet">
+  <div class="sheet-head">
+    <button class="sheet-back" type="button" onclick="closeSettings()" aria-label="Back">‹</button>
+    <div class="sheet-head-title">⚙ <span data-i18n="settingsTitle">Settings</span></div>
+    <div class="sheet-lang">
+      <span class="seg" id="segEn2" onclick="setLang('en')">EN</span><span class="seg" id="segZh2" onclick="setLang('zh')">中</span>
+    </div>
+  </div>
+  <div class="grp">
+    <div class="lbl" data-i18n="appearance">Appearance</div>
+    <div class="ui-row">
+      <div><div class="lab" data-i18n="themeLbl">Theme</div><div class="sub" data-i18n="themeSub">Follows your phone's system setting by default</div></div>
+      <div class="seg3" id="themeSeg">
+        <span class="seg" id="thLight" onclick="setThemeMode('light')" data-i18n="thLight">Light</span>
+        <span class="seg" id="thDark" onclick="setThemeMode('dark')" data-i18n="thDark">Dark</span>
+        <span class="seg" id="thSys" onclick="setThemeMode('system')" data-i18n="thSystem">System</span>
+      </div>
+    </div>
+  </div>
+  <div class="grp" id="prefGroup">
+    <div class="lbl" data-i18n="prefs">Preferences</div>
+    <div class="ui-row" id="defSalesRow" style="display:none;">
+      <div><div class="lab" data-i18n="defSalesLbl">Default salesperson</div><div class="sub" data-i18n="defSalesSub">Who the home "shopping with" defaults to</div></div>
+      <select class="pill-select" id="defSalesSel" onchange="setDefSales(this.value)"></select>
+    </div>
+    <div class="ui-row">
+      <div><div class="lab" data-i18n="curLbl">Display currency</div><div class="sub" data-i18n="curSub">Currency symbol shown on every price (no conversion)</div></div>
+      <select class="pill-select" id="curSel" onchange="setCurrency(this.value)"></select>
+    </div>
+  </div>
+  <div class="grp" id="settingsExtra2" style="display:none;">
+    <div class="lbl" data-i18n="installTitle">Install the app (employees)</div>
+    <p class="sheet-hint" data-i18n="installHint">iOS: open in Safari → Share → Add to Home Screen. Android: open in Chrome → ⋮ → Install app. Customers just open the shared link — no install needed.</p>
+  </div>
+  <div class="grp" style="background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--text-dim);display:flex;align-items:center;gap:8px;">
+    <span style="color:var(--gold);font-weight:800;">●</span>
+    <span data-i18n="syncConnected">Connected to the shared ANT MOTORS backend — no setup needed. Your company's data stays private.</span>
+  </div>
+  <details class="adv-details" id="advServerDetails">
+    <summary data-i18n="advServerTitle">⚙ Advanced: backend address</summary>
+    <div style="margin-top:8px;">
+      <div class="form-row" style="margin:0;"><input type="text" id="setApi" placeholder="http://192.168.9.101:8899" data-ph="ph_setApi" style="font-size:13px;" /></div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.5;" data-i18n="syncServerHint2">This is your account &amp; data-sync server. Leave as-is to use the shared ANT MOTORS backend — every company connects here by default. Change it ONLY if your company runs its own server.</div>
+    </div>
+  </details>
   <div class="grp">
     <div class="lbl" data-i18n="backupTitle">Data backup (employees)</div>
     <p class="sheet-hint" data-i18n="backupHint">Export all cars, favorites and staff to a file. Re-import after reinstall to avoid any data loss.</p>
@@ -1283,13 +1331,13 @@ I18N.zh.advanced="高级筛选"; I18N.zh.mileage="公里数 (km)"; I18N.zh.price
 /* settings: appearance / preferences / notifications / privacy / currency (en + zh) */
 I18N.en.appearance="Appearance"; I18N.en.themeLbl="Theme"; I18N.en.themeSub="Follows your phone's system setting by default"; I18N.en.thLight="Light"; I18N.en.thDark="Dark"; I18N.en.thSystem="System";
 I18N.en.prefs="Preferences"; I18N.en.defSalesLbl="Default salesperson"; I18N.en.defSalesSub="Who the home 'shopping with' defaults to"; I18N.en.defSalesSet="Default salesperson set";
-I18N.en.curLbl="Display currency"; I18N.en.curSub="Prices show in this currency (set your own rate)"; I18N.en.curRateLbl="Exchange rate";
+I18N.en.curLbl="Display currency"; I18N.en.curSub="Currency symbol shown on every price (no conversion)";
 I18N.en.notifTitle="Notifications"; I18N.en.notifToggle="Allow notifications"; I18N.en.notifSub="Get alerted on sync, new arrivals & bookings"; I18N.en.notifClear="Clear notifications"; I18N.en.notifEmpty="No notifications yet"; I18N.en.notifOn="Notifications on"; I18N.en.notifOnSub="You'll be alerted on sync & bookings"; I18N.en.notifOff="Notifications off"; I18N.en.notifCleared="Notifications cleared";
 I18N.en.privacyTitle="Privacy & cache"; I18N.en.deviceId="Device"; I18N.en.lastSync="Last sync"; I18N.en.appVer="App version"; I18N.en.never="never"; I18N.en.clearCache="Clear local offline data"; I18N.en.clearCacheConfirm="Clear all local offline data? You can re-sync after signing in."; I18N.en.cacheCleared="Local data cleared"; I18N.en.forceLogout="Sign out / revoke session"; I18N.en.forceLogoutConfirm="Sign out and clear this session? Server tokens expire automatically.";
 I18N.en.synced="Synced"; I18N.en.signedIn="Signed in"; I18N.en.newCar="New car added"; I18N.en.bookingNotif="New booking"; I18N.en.coBioLbl="About";
 I18N.zh.appearance="外观"; I18N.zh.themeLbl="主题"; I18N.zh.themeSub="默认跟随手机系统设置"; I18N.zh.thLight="浅色"; I18N.zh.thDark="深色"; I18N.zh.thSystem="跟随系统";
 I18N.zh.prefs="偏好"; I18N.zh.defSalesLbl="默认销售员"; I18N.zh.defSalesSub="首页“正在浏览”默认指向谁"; I18N.zh.defSalesSet="已设置默认销售员";
-I18N.zh.curLbl="显示货币"; I18N.zh.curSub="价格以此货币显示（可自设汇率）"; I18N.zh.curRateLbl="汇率";
+I18N.zh.curLbl="显示货币"; I18N.zh.curSub="所有价格显示的货币符号（不做汇率换算）";
 I18N.zh.notifTitle="通知"; I18N.zh.notifToggle="允许通知"; I18N.zh.notifSub="同步、新到店、预约时提醒"; I18N.zh.notifClear="清除通知"; I18N.zh.notifEmpty="暂无通知"; I18N.zh.notifOn="通知已开启"; I18N.zh.notifOnSub="同步与预约时将收到提醒"; I18N.zh.notifOff="通知已关闭"; I18N.zh.notifCleared="通知已清除";
 I18N.zh.privacyTitle="隐私与缓存"; I18N.zh.deviceId="设备"; I18N.zh.lastSync="上次同步"; I18N.zh.appVer="应用版本"; I18N.zh.never="从未"; I18N.zh.clearCache="清除本机离线数据"; I18N.zh.clearCacheConfirm="清除本机全部离线数据？登录后可重新同步。"; I18N.zh.cacheCleared="本机数据已清除"; I18N.zh.forceLogout="退出登录 / 注销会话"; I18N.zh.forceLogoutConfirm="退出并清除本机会话？服务器令牌会自动过期。";
 I18N.zh.synced="已同步"; I18N.zh.signedIn="已登录"; I18N.zh.newCar="新增车辆"; I18N.zh.bookingNotif="新预约"; I18N.zh.coBioLbl="公司简介";
@@ -1333,8 +1381,12 @@ I18N.zh.editModeHint="编辑模式：可修改规格、亮点与门店。"; I18N
 /* --- keys referenced via data-i18n / T() that were missing --- */
 I18N.en.bookDone="Booking Confirmed!"; I18N.en.backHome="Back to Home"; I18N.en.waOpening="Opening WhatsApp → ";
 I18N.zh.bookDone="预约成功！"; I18N.zh.backHome="返回首页"; I18N.zh.waOpening="正在打开 WhatsApp → ";
-I18N.en.welcomeTitle="👋 Welcome to ANT MOTORS"; I18N.en.welcomeDesc="New here? Create your company account to start adding cars, managing your team and viewing membership. Tap ⚙ Settings above or the button below."; I18N.en.welcomeBtn="Login / Register"; I18N.en.loginRegBtn="⚙ Login / Register"; I18N.en.settingsBtn="⚙ Settings";
-I18N.zh.welcomeTitle="👋 欢迎使用 ANT MOTORS"; I18N.zh.welcomeDesc="首次使用？创建公司账号即可添加车辆、管理团队与查看会员。点击上方⚙或下方按钮。"; I18N.zh.welcomeBtn="登录 / 注册"; I18N.zh.loginRegBtn="⚙ 登录 / 注册"; I18N.zh.settingsBtn="⚙ 设置";
+I18N.en.navMe="Me"; I18N.en.meGuest="Guest"; I18N.en.meGuestSub="Sign in or create a company account"; I18N.en.meSignedIn="Signed in";
+I18N.en.mlFav="My favorites"; I18N.en.mlWork="Workbench"; I18N.en.mlAdmin="Car admin"; I18N.en.mlPerm="Roles & permissions"; I18N.en.mlPrice="How pricing works"; I18N.en.mlSettings="App settings";
+I18N.zh.navMe="我的"; I18N.zh.meGuest="访客"; I18N.zh.meGuestSub="登录或创建公司账号"; I18N.zh.meSignedIn="已登录";
+I18N.zh.mlFav="我的收藏"; I18N.zh.mlWork="工作台"; I18N.zh.mlAdmin="车辆后台"; I18N.zh.mlPerm="角色权限"; I18N.zh.mlPrice="定价说明"; I18N.zh.mlSettings="应用设置";
+I18N.en.welcomeTitle="👋 Welcome to ANT MOTORS"; I18N.en.welcomeDesc="New here? Create your company account to start adding cars, managing your team and viewing membership. Open the “Me” tab at the bottom right, or tap the button below."; I18N.en.welcomeBtn="Login / Register"; I18N.en.loginRegBtn="👤 Login / Register"; I18N.en.settingsBtn="⚙ Settings";
+I18N.zh.welcomeTitle="👋 欢迎使用 ANT MOTORS"; I18N.zh.welcomeDesc="首次使用？创建公司账号即可添加车辆、管理团队与查看会员。请打开右下角“我的”页，或点击下方按钮。"; I18N.zh.welcomeBtn="登录 / 注册"; I18N.zh.loginRegBtn="👤 登录 / 注册"; I18N.zh.settingsBtn="⚙ 设置";
 /* --- B plan: real password / account security --- */
 I18N.en.syncEmpId="Account / e-mail"; I18N.en.syncPw="Password"; I18N.en.rememberMe="Remember me"; I18N.en.forgotPw="Forgot password?";
 I18N.en.syncNeedCreds="Enter your account and password"; I18N.en.syncBadCreds="Wrong account or password";
@@ -1433,22 +1485,57 @@ if(__mqDark){ try{ __mqDark.addEventListener('change', ()=>{ if(amTheme==='syste
 
 /* ---------- currency: app self-set display currency ---------- */
 const CURRENCIES = {
-  GHS:{symbol:'₵', label:'GHS · 加纳赛地', rate:1},
-  CNY:{symbol:'¥', label:'CNY · 人民币', rate:0.46},
-  USD:{symbol:'$', label:'USD · 美元', rate:0.064}
+  GHS:{symbol:'\u20B5',  en:'Ghanaian Cedi',        zh:'\u52A0\u7EB3\u585E\u5730'},
+  CNY:{symbol:'\u00A5',  en:'Chinese Yuan',         zh:'\u4EBA\u6C11\u5E01'},
+  USD:{symbol:'$',        en:'US Dollar',            zh:'\u7F8E\u5143'},
+  EUR:{symbol:'\u20AC',  en:'Euro',                 zh:'\u6B27\u5143'},
+  GBP:{symbol:'\u00A3',  en:'British Pound',        zh:'\u82F1\u9551'},
+  NGN:{symbol:'\u20A6',  en:'Nigerian Naira',       zh:'\u5C3C\u65E5\u5229\u4E9A\u5948\u62C9'},
+  XOF:{symbol:'CFA',      en:'West African CFA',     zh:'\u897F\u975E\u6CD5\u90CE'},
+  XAF:{symbol:'FCFA',     en:'Central African CFA',  zh:'\u4E2D\u975E\u6CD5\u90CE'},
+  ZAR:{symbol:'R',        en:'South African Rand',   zh:'\u5357\u975E\u5170\u7279'},
+  KES:{symbol:'KSh',      en:'Kenyan Shilling',      zh:'\u80AF\u5C3C\u4E9A\u5148\u4EE4'},
+  TZS:{symbol:'TSh',      en:'Tanzanian Shilling',   zh:'\u5766\u6851\u5C3C\u4E9A\u5148\u4EE4'},
+  UGX:{symbol:'USh',      en:'Ugandan Shilling',     zh:'\u4E4C\u5E72\u8FBE\u5148\u4EE4'},
+  LRD:{symbol:'L$',       en:'Liberian Dollar',      zh:'\u5229\u6BD4\u91CC\u4E9A\u5143'},
+  EGP:{symbol:'E\u00A3', en:'Egyptian Pound',       zh:'\u57C3\u53CA\u9551'},
+  MAD:{symbol:'DH',       en:'Moroccan Dirham',      zh:'\u6469\u6D1B\u54E5\u8FEA\u62C9\u59C6'},
+  ETB:{symbol:'Br',       en:'Ethiopian Birr',       zh:'\u57C3\u585E\u4FC4\u6BD4\u4E9A\u6BD4\u5C14'},
+  AED:{symbol:'AED',      en:'UAE Dirham',           zh:'\u963F\u8054\u914B\u8FEA\u62C9\u59C6'},
+  SAR:{symbol:'SR',       en:'Saudi Riyal',          zh:'\u6C99\u7279\u91CC\u4E9A\u5C14'},
+  JPY:{symbol:'JP\u00A5',en:'Japanese Yen',         zh:'\u65E5\u5143'},
+  KRW:{symbol:'\u20A9',  en:'Korean Won',           zh:'\u97E9\u5143'},
+  HKD:{symbol:'HK$',      en:'Hong Kong Dollar',     zh:'\u6E2F\u5E01'},
+  SGD:{symbol:'S$',       en:'Singapore Dollar',     zh:'\u65B0\u52A0\u5761\u5143'},
+  MYR:{symbol:'RM',       en:'Malaysian Ringgit',    zh:'\u9A6C\u6765\u897F\u4E9A\u6797\u5409\u7279'},
+  THB:{symbol:'\u0E3F',  en:'Thai Baht',            zh:'\u6CF0\u94E2'},
+  INR:{symbol:'\u20B9',  en:'Indian Rupee',         zh:'\u5370\u5EA6\u5362\u6BD4'},
+  AUD:{symbol:'A$',       en:'Australian Dollar',    zh:'\u6FB3\u5143'},
+  CAD:{symbol:'C$',       en:'Canadian Dollar',      zh:'\u52A0\u5143'},
+  BRL:{symbol:'R$',       en:'Brazilian Real',       zh:'\u5DF4\u897F\u96F7\u4E9A\u5C14'},
+  RUB:{symbol:'\u20BD',  en:'Russian Ruble',        zh:'\u4FC4\u7F57\u65AF\u5362\u5E03'},
+  TRY:{symbol:'\u20BA',  en:'Turkish Lira',         zh:'\u571F\u8033\u5176\u91CC\u62C9'}
 };
 let curCode = (typeof localStorage!=='undefined' && localStorage.getItem('am_currency')) || 'GHS';
-let CUR = Object.assign({}, CURRENCIES[curCode] || CURRENCIES.GHS);
-{ const sr=(typeof localStorage!=='undefined')?parseFloat(localStorage.getItem('am_currate')):NaN; if(!isNaN(sr)&&sr>0) CUR.rate=sr; }
-function fmtMoney(v){ if(typeof v!=='number'||isNaN(v)) return '—'; const r=(typeof CUR.rate==='number')?CUR.rate:1; return CUR.symbol + fmt(Math.round(v*r*100)/100); }
+if(!CURRENCIES[curCode]) curCode='GHS';
+let CUR = CURRENCIES[curCode];
+/* display only: the number is never converted, only the symbol changes */
+function curSym(){ return CUR.symbol; }
+function fmtMoney(v){ if(typeof v!=='number'||isNaN(v)) return '\u2014'; const sy=CUR.symbol; return sy + (sy.length>1?'\u00A0':'') + fmt(v); }
+function curLabel(k){ const c=CURRENCIES[k]; const nm=(typeof curLang!=='undefined'&&curLang==='zh')?c.zh:c.en; return k+' \u00B7 '+nm+' ('+c.symbol+')'; }
 function fillCurrencyUI(){
-  const sel=document.getElementById('curSel'); if(sel){ sel.innerHTML=Object.keys(CURRENCIES).map(k=>`<option value="${k}" ${k===curCode?'selected':''}>${CURRENCIES[k].label}</option>`).join(''); }
-  const ri=document.getElementById('curRate'); if(ri) ri.value=CUR.rate;
-  const rs=document.getElementById('curRateSub'); if(rs) rs.textContent='1 GHS = '+CUR.rate+' '+(curCode==='GHS'?'GHS':curCode);
+  const sel=document.getElementById('curSel'); if(!sel) return;
+  sel.innerHTML=Object.keys(CURRENCIES).map(k=>`<option value="${k}" ${k===curCode?'selected':''}>${curLabel(k)}</option>`).join('');
+  sel.value=curCode;
 }
-function setCurrency(code){ if(!CURRENCIES[code]) return; curCode=code; CUR=Object.assign({},CURRENCIES[code]); try{localStorage.setItem('am_currency',code);}catch(e){} fillCurrencyUI(); refreshPrices(); }
-function setCurRate(v){ const n=parseFloat(v); if(isNaN(n)||n<=0) return; CUR.rate=n; try{localStorage.setItem('am_currate',String(n));}catch(e){} const rs=document.getElementById('curRateSub'); if(rs) rs.textContent='1 GHS = '+CUR.rate+' '+(curCode==='GHS'?'GHS':curCode); refreshPrices(); }
-function refreshPrices(){ renderRolePrices(); if(typeof renderWorkbench==='function') renderWorkbench(); const pt=document.getElementById('prTitleEl'); if(pt) pt.textContent='💰 '+T('prTitle','Pricing model')+' · '+CUR.symbol; }
+function setCurrency(code){ if(!CURRENCIES[code]) return; curCode=code; CUR=CURRENCIES[code]; try{localStorage.setItem('am_currency',code);}catch(e){} try{localStorage.removeItem('am_currate');}catch(e){} fillCurrencyUI(); refreshPrices(); }
+function refreshPrices(){
+  try{ renderRolePrices(); }catch(e){}
+  try{ if(typeof renderHome==='function') renderHome(); }catch(e){}
+  try{ if(typeof renderStock==='function') renderStock(); }catch(e){}
+  try{ if(typeof renderWorkbench==='function') renderWorkbench(); }catch(e){}
+  const pt=document.getElementById('prTitleEl'); if(pt) pt.textContent='\uD83D\uDCB0 '+T('prTitle','Pricing model')+' \u00B7 '+CUR.symbol;
+}
 
 /* ---------- default salesperson preference ---------- */
 function applyDefSales(){ const ds=(typeof localStorage!=='undefined')?localStorage.getItem('am_defSales'):null; if(ds && isTopEmployee() && ALL_EMP[ds]){ curSales=ds; } }
@@ -1517,12 +1604,12 @@ function setLang(l){
   syncLangUI();
   applyI18n();
   updateAuthCTA();   // run early: refresh auth button + welcome bar BEFORE the heavier re-renders below
-  renderNotifs(); showDevices(); refreshPrices(); // keep new settings UI in the chosen language
+  renderNotifs(); showDevices(); fillCurrencyUI(); fillDefSalesUI(); refreshPrices(); // keep new settings UI in the chosen language
   // Re-render every screen + open sheet so ALL dynamic (T()-driven) content
   // switches language immediately instead of staying in the previous language.
   renderHome(); renderStockFiltered(); renderShowroomList(); renderFav();
   renderWorkbench(); renderPerm(); updateRoleUI(); renderRolePrices();
-  renderSyncUI(); renderMembershipUI();
+  renderSyncUI(); renderMembershipUI(); try{ renderMe(); }catch(e){}
   updateDemoState(); syncSheet();
   // settings sheet internals: keep user inputs, just refresh language-bound bits
   if(document.getElementById('regToggle')) document.getElementById('regToggle').textContent=regShowCreate?T('regSwitchToLogin','Have an account? Sign in'):T('regHasAccount','✨ New here? Create an account');
@@ -1543,13 +1630,14 @@ function setLang(l){
 function go(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  const map=['scr-home','scr-stock','scr-showrooms','scr-workbench','scr-admin','scr-favorites'];
+  const map=['scr-home','scr-stock','scr-showrooms','scr-me'];
   document.querySelectorAll('.tabbar .tab').forEach((t,i)=>t.classList.toggle('on', map[i]===id));
   if(id==='scr-workbench') renderWorkbench();
   if(id==='scr-showrooms') renderShowroomList();
   if(id==='scr-stock') renderStock();
   if(id==='scr-perm') renderPerm();
   if(id==='scr-favorites') renderFav();
+  if(id==='scr-me') renderSyncUI();
   document.getElementById('phone').scrollTop=0;
 }
 
@@ -1987,7 +2075,7 @@ function renderDetailThumbs(){
     addV.onclick=()=>document.getElementById('carVideoInput').click();
     th.appendChild(addV);
   }
-  if(photos.length===0 && videos.length===0 && !canUploadCarPhotos()){
+  if(photos.length===0 && videos.length===0 && !canUploadCarPhotos() && CARS[curCar]){
     for(let i=0;i<4;i++){ const t=document.createElement('div'); t.className='thumb'+(i===0?' on':''); t.innerHTML=carSVG(CARS[curCar].grad); th.appendChild(t); }
   }
 }
@@ -2114,43 +2202,74 @@ function loginAs(id,btn){
   toast(T('loggedInAs','Logged in as')+' <b>'+empOf(curEmployee).name+'</b>');
 }
 function openSettings(){
-  const e=empOf(curEmployee);
-  document.getElementById('setWa').value=e.wa||'';
-  document.getElementById('setPhone').value=e.phone||'';
-  document.getElementById('setApi').value=SYNC.base||DEFAULT_API;
-  const idIn=document.getElementById('setEmpId'); if(idIn && !idIn.value) idIn.value=localStorage.getItem('am_me')||curEmployee||'';
-  renderSyncUI();
-  document.getElementById('staffGroup').style.display = isTopEmployee()?'block':'none';
-  if(isTopEmployee()){ renderStaff(); renderCompanyCode(); }
-  const jg=document.getElementById('joinGroup');
-  if(jg) jg.style.display = (SYNC.token && empOf(curEmployee).tier==='customer' && !isTopEmployee()) ? 'block' : 'none';
-  // company profile
-  const cg=document.getElementById('companyGroup');
-  if(cg){
-    const co=loadCompany();
-    if(SYNC.token && co){
-      cg.style.display='block';
-      document.getElementById('coNameTxt').textContent=co.name||'';
-      document.getElementById('coCodeTxt').textContent=co.code||'';
-      const bt=document.getElementById('coBioTxt'); if(bt) bt.textContent=co.bio||'';
-      const be=document.getElementById('coEditBio'); if(be) be.value=co.bio||'';
-      const limg=document.getElementById('coLogoImg'); if(limg) limg.src = co.logo || 'ant_logo_appbar.png';
-      const top=isTopEmployee();
-      document.getElementById('coEditBox').style.display='none';
-      document.getElementById('coEditBtn').style.display = top?'inline-block':'none';
-      document.getElementById('coCopyBtn').style.display = top?'inline-block':'none';
-      document.getElementById('coEditName').value=co.name||'';
-    } else { cg.style.display='none'; }
-  }
+  const ap=document.getElementById('setApi'); if(ap) ap.value=SYNC.base||DEFAULT_API;
   document.getElementById('sheetMask').classList.add('show');
   document.getElementById('settingsSheet').classList.add('show');
-  // populate new settings: theme / currency / default salesperson / notifications / devices
   applyTheme();
   fillCurrencyUI();
   fillDefSalesUI();
   renderNotifs();
   const nt=document.getElementById('notifToggle'); if(nt) nt.classList.toggle('on', localStorage.getItem('am_notify')==='1');
   showDevices();
+  const x2=document.getElementById('settingsExtra2'); if(x2) x2.style.display=SYNC.token?'':'none';
+}
+/* ---------- ME tab (profile + account + company) ---------- */
+function renderMe(){
+  const sec=document.getElementById('scr-me'); if(!sec) return;
+  const loggedIn=!!(typeof SYNC!=='undefined' && SYNC.token);
+  const e=(typeof empOf==='function'? (empOf(curEmployee)||{}) : {});
+  const co=(typeof loadCompany==='function')?loadCompany():null;
+  let nick = loggedIn ? (e.name || (typeof localStorage!=='undefined'&&localStorage.getItem('am_me')) || curEmployee || '') : '';
+  if(!nick) nick = loggedIn ? 'ANT' : T('meGuest','Guest');
+  const nm=document.getElementById('meName'); if(nm) nm.textContent=nick;
+  const sb=document.getElementById('meSub');
+  if(sb){
+    if(loggedIn){
+      const bits=[]; if(co&&co.name) bits.push(co.name); if(e.branch) bits.push(e.branch);
+      sb.textContent = bits.length?bits.join(' \u00B7 '):T('meSignedIn','Signed in');
+    } else sb.textContent = T('meGuestSub','Sign in or create a company account');
+  }
+  const av=document.getElementById('meAva');
+  if(av){
+    if(loggedIn && co && co.logo){ av.innerHTML='<img src="'+co.logo+'" alt="">'; }
+    else { av.textContent=(nick.trim().charAt(0)||'A').toUpperCase(); }
+  }
+  const bd=document.getElementById('meBadge');
+  if(bd){
+    if(loggedIn){ bd.style.display='inline-block'; bd.textContent=T('rl_'+(e.tier||'customer'), e.tier||'—'); }
+    else bd.style.display='none';
+  }
+  // account form prefill
+  const idIn=document.getElementById('setEmpId'); if(idIn && !idIn.value) idIn.value=(typeof localStorage!=='undefined'&&localStorage.getItem('am_me'))||curEmployee||'';
+  const wa=document.getElementById('setWa'); if(wa) wa.value=e.wa||'';
+  const ph=document.getElementById('setPhone'); if(ph) ph.value=e.phone||'';
+  // staff / join / company groups
+  const top=(typeof isTopEmployee==='function')?isTopEmployee():false;
+  const sg=document.getElementById('staffGroup');
+  if(sg){ sg.style.display= (loggedIn && top)?'block':'none'; if(loggedIn&&top){ try{renderStaff(); renderCompanyCode();}catch(err){} } }
+  const jg=document.getElementById('joinGroup');
+  if(jg) jg.style.display = (loggedIn && e.tier==='customer' && !top) ? 'block' : 'none';
+  const cg=document.getElementById('companyGroup');
+  if(cg){
+    if(loggedIn && co){
+      cg.style.display='block';
+      const a=document.getElementById('coNameTxt'); if(a) a.textContent=co.name||'';
+      const b=document.getElementById('coCodeTxt'); if(b) b.textContent=co.code||'';
+      const bt=document.getElementById('coBioTxt'); if(bt) bt.textContent=co.bio||'';
+      const be=document.getElementById('coEditBio'); if(be) be.value=co.bio||'';
+      const limg=document.getElementById('coLogoImg'); if(limg) limg.src = co.logo || 'ant_logo_appbar.png';
+      const eb=document.getElementById('coEditBox'); if(eb) eb.style.display='none';
+      const e1=document.getElementById('coEditBtn'); if(e1) e1.style.display= top?'inline-block':'none';
+      const e2=document.getElementById('coCopyBtn'); if(e2) e2.style.display= top?'inline-block':'none';
+      const en=document.getElementById('coEditName'); if(en) en.value=co.name||'';
+    } else cg.style.display='none';
+  }
+  // quick links gating
+  const staff = loggedIn && e.tier && e.tier!=='customer';
+  const w=document.getElementById('mlWorkBtn'); if(w) w.style.display=staff?'flex':'none';
+  const ad=document.getElementById('mlAdminBtn'); if(ad) ad.style.display=staff?'flex':'none';
+  const pm=document.getElementById('mlPermBtn'); if(pm) pm.style.display=(loggedIn&&top)?'flex':'none';
+  const vr=document.getElementById('meVer'); if(vr) vr.textContent='ANT MOTORS \u00B7 v'+(typeof APP_VER!=='undefined'?APP_VER:'1.0.0');
 }
 function saveMyContact(){
   const e=empOf(curEmployee);
@@ -2537,6 +2656,7 @@ function renderSyncUI(){
     if(tg) tg.style.display='none';
     regShowCreate=false;
   } else if(tg && !fgOpen){ tg.style.display=''; }
+  try{ renderMe(); }catch(err){}
   if(!el) return;
   const pend=Object.keys(SYNC.cars).length+Object.keys(SYNC.emps).length;
   let cls=SYNC.state, txt=SYNC.msg;
@@ -2546,7 +2666,10 @@ function renderSyncUI(){
   el.className='sync-status '+cls;
   el.innerHTML='<span class="dot"></span><span>'+txt+'</span>';
   updateAuthCTA();
+  try{ renderMe(); }catch(err){}
 }
+/* top-right CTA: signed out -> personal tab (login/register lives there); signed in -> settings */
+function authCta(){ if(typeof SYNC!=='undefined' && SYNC.token) openSettings(); else go('scr-me'); }
 /* show the "登录 / 注册" CTA only when signed out */
 function updateAuthCTA(){
   const loggedIn=!!SYNC.token;
