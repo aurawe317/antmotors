@@ -477,15 +477,12 @@
         <div><b>ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span></div>
       </div>
       <div class="appbar-actions">
-        <button class="pill-btn" id="loginBtn" onclick="openSettings()" style="display:none;background:var(--gold);color:#111;font-weight:800;border:none;">登录 / 注册</button>
+        <button class="pill-btn" id="settingsBtn" onclick="openSettings()" style="background:var(--gold);color:#111;font-weight:800;border:none;font-size:12px;">⚙ 登录 / 注册</button>
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
           <span class="seg on" id="segEn">EN</span><span class="seg" id="segZh">中</span>
         </div>
         <div class="icon-btn" onclick="go('scr-favorites')" title="Favorites">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 20s-7.5-4.6-7.5-9.6A4.4 4.4 0 0112 8.2a4.4 4.4 0 017.5 2.2c0 5-7.5 9.6-7.5 9.6z" stroke="var(--gold)" stroke-width="1.6" stroke-linejoin="round"/></svg>
-        </div>
-        <div class="icon-btn" id="installBtn" onclick="openSettings()" title="Install / Settings">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 15a3 3 0 100-6 3 3 0 000 6z" stroke="var(--gold)" stroke-width="1.6"/><path d="M19 12a7 7 0 00-.1-1.2l2-1.5-2-3.4-2.3 1a7 7 0 00-2-1.2L14.2 3h-4l-.4 2.7a7 7 0 00-2 1.2l-2.3-1-2 3.4 2 1.5A7 7 0 005 12c0 .4 0 .8.1 1.2l-2 1.5 2 3.4 2.3-1a7 7 0 002 1.2l.4 2.7h4l.4-2.7a7 7 0 002-1.2l2.3 1 2-3.4-2-1.5c.1-.4.1-.8.1-1.2z" stroke="var(--gold)" stroke-width="1.2"/></svg>
         </div>
         <div class="icon-btn" id="previewBtn" onclick="openPreview()" title="Preview as">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z" stroke="var(--gold)" stroke-width="1.6"/><circle cx="12" cy="12" r="2.6" stroke="var(--gold)" stroke-width="1.6"/></svg>
@@ -505,9 +502,9 @@
     <!-- HOME -->
     <section class="screen active" id="scr-home">
       <div id="welcomeBar" style="display:none;margin:0 0 14px;padding:14px 16px;border-radius:12px;border:1px solid var(--gold-line);background:var(--gold-soft);">
-        <div style="font-weight:800;color:var(--gold);font-size:14px;">👋 欢迎使用 ANT MOTORS</div>
-        <div style="font-size:12px;margin-top:4px;line-height:1.5;">首次使用？创建您的公司账号即可开始添加车辆、管理团队与查看会员。点击右上角「登录 / 注册」或下方按钮。</div>
-        <button class="submit" style="margin-top:10px;background:var(--gold);color:#111;font-weight:700;border:none;" onclick="openSettings()">登录 / 注册</button>
+        <div id="welcomeTitle" style="font-weight:800;color:var(--gold);font-size:14px;" data-i18n="welcomeTitle">👋 Welcome to ANT MOTORS</div>
+        <div id="welcomeDesc" style="font-size:12px;margin-top:4px;line-height:1.5;" data-i18n="welcomeDesc">New here? Create your company account to start adding cars, managing your team and viewing membership info. Tap the settings button above or the button below.</div>
+        <button class="submit" id="welcomeBtn" style="margin-top:10px;background:var(--gold);color:#111;font-weight:700;border:none;" onclick="openSettings()" data-i18n="welcomeBtn">Login / Register</button>
       </div>
       <div class="hero">
         <div class="photo"><span id="carHeroSvg"></span></div>
@@ -862,12 +859,15 @@
 <div class="sheet" id="settingsSheet">
   <div class="sheet-handle"></div>
   <div class="sheet-title">⚙ <span data-i18n="settingsTitle">Settings</span></div>
+  <div class="grp" style="background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:12px;padding:12px 14px;margin-bottom:12px;">
+    <div style="font-weight:700;color:var(--gold);font-size:12px;margin-bottom:6px;" data-i18n="syncServerHint">Server address (required for login/sync)</div>
+    <div class="form-row" style="margin:0;"><input type="text" id="setApi" placeholder="https://sync.antmotors.com" style="font-size:13px;" /></div>
+  </div>
   <div class="grp">
-    <div class="lbl" data-i18n="syncTitle">Cloud sync (all devices share one inventory)</div>
     <div id="syncStatus" class="sync-status">—</div>
+    <div class="lbl" id="authLbl" style="font-weight:700;font-size:14px;margin-bottom:8px;" data-i18n="syncTitle">Account</div>
     <button class="submit" id="regToggle" onclick="toggleReg()" data-i18n="regHasAccount" style="background:var(--gold);color:#111;font-weight:700;">✨ New here? Create an account</button>
-    <p class="sheet-hint" id="regHint" style="display:none;" data-i18n="regHint">Fill in the server address, then your details below to create your own account. If you already have one, tap “Have an account? Sign in”.</p>
-    <div class="form-row"><label data-i18n="syncServer">Server address</label><input type="text" id="setApi" placeholder="https://sync.antmotors.com" /></div>
+    <p class="sheet-hint" id="regHint" style="display:none;" data-i18n="regHint">Fill in the server address, then your details below to create your own account. If you already have one, tap "Have an account? Sign in".</p>
     <div id="syncLoginBox">
       <div class="form-row"><label data-i18n="syncEmpId">Account / e-mail</label><input type="text" id="setEmpId" placeholder="boss / you@mail.com" autocomplete="username" /></div>
       <div class="form-row"><label data-i18n="syncPw">Password</label>
@@ -934,13 +934,13 @@
     <button class="submit" id="syncOutBtn" style="margin-top:8px;display:none;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="syncLogout()" data-i18n="syncSignOut">Sign out</button>
     <p class="sheet-hint" data-i18n="syncHint">Leave the server empty to work offline on this device only. When connected, cars and prices added by anyone appear on every signed-in device.</p>
   </div>
-  <div class="grp">
+  <div class="grp" id="settingsExtra" style="display:none;">
     <div class="lbl" data-i18n="myContact">My contact (customer reaches you)</div>
     <div class="form-row"><label data-i18n="fWhatsApp">WhatsApp number</label><input type="text" id="setWa" placeholder="233200000001" /></div>
     <div class="form-row"><label data-i18n="fPhone">Phone</label><input type="text" id="setPhone" placeholder="+233 20 000 0001" /></div>
     <button class="submit" onclick="saveMyContact()" data-i18n="saveContact">Save</button>
   </div>
-  <div class="grp">
+  <div class="grp" id="settingsExtra2" style="display:none;">
     <div class="lbl" data-i18n="installTitle">Install the app (employees)</div>
     <p class="sheet-hint" data-i18n="installHint">iOS: open in Safari → Share → Add to Home Screen. Android: open in Chrome → ⋮ → Install app. Customers just open the shared link — no install needed.</p>
   </div>
@@ -1194,7 +1194,7 @@ I18N.zh.backupTitle="数据备份（员工）"; I18N.zh.backupHint="将全部车
 I18N.zh.installTitle="获取 App（员工）"; I18N.zh.installHint="员工从 App Store / Google Play 安装 Ant Motors 原生 App，或通过企业内部 TestFlight / MDM 分发。客户只需打开分享链接，无需安装。";
 /* --- cloud sync --- */
 I18N.en.syncTitle="Cloud sync (all devices share one inventory)"; I18N.en.syncServer="Server address"; I18N.en.syncEmpId="Staff ID"; I18N.en.syncPin="PIN";
-I18N.en.syncSignIn="Sign in & sync"; I18N.en.syncNowBtn="Sync now"; I18N.en.syncSignOut="Sign out";
+I18N.en.syncSignIn="Sign in & sync"; I18N.en.syncNowBtn="Sync now"; I18N.en.syncSignOut="Sign out"; I18N.en.syncServerHint="Server address (required for login/sync)";
 I18N.en.syncHint="Leave the server empty to work offline on this device only. When connected, cars and prices added by anyone appear on every signed-in device.";
 I18N.en.syncOffline="Offline mode — this device only"; I18N.en.syncNeedLogin="Sign in to sync"; I18N.en.syncSyncing="Syncing…"; I18N.en.syncSigningIn="Signing in…";
 I18N.en.syncPending="change(s) waiting to upload"; I18N.en.syncedAt="Synced"; I18N.en.syncDone="Sync complete"; I18N.en.syncItems="item(s)";
@@ -1203,7 +1203,7 @@ I18N.en.syncSignedIn="Signed in as"; I18N.en.syncSignedOut="Signed out";
 I18N.en.syncRejPrice="price can only be set by owner/partners"; I18N.en.syncRejTier="only owner/partners can change roles";
 I18N.en.syncRejAcct="you can only edit your own account"; I18N.en.syncRejEmp="unknown staff account";
 I18N.zh.syncTitle="云同步（所有设备共用一份库存）"; I18N.zh.syncServer="服务器地址"; I18N.zh.syncEmpId="员工账号"; I18N.zh.syncPin="密码 PIN";
-I18N.zh.syncSignIn="登录并同步"; I18N.zh.syncNowBtn="立即同步"; I18N.zh.syncSignOut="退出登录";
+I18N.zh.syncSignIn="登录并同步"; I18N.zh.syncNowBtn="立即同步"; I18N.zh.syncSignOut="退出登录"; I18N.zh.syncServerHint="服务器地址（登录/同步必需）";
 I18N.zh.syncHint="留空服务器地址则仅本机离线使用。连接后，任何人新增的车辆和价格都会出现在所有已登录设备上。";
 I18N.zh.syncOffline="离线模式——仅本机数据"; I18N.zh.syncNeedLogin="请登录后同步"; I18N.zh.syncSyncing="同步中…"; I18N.zh.syncSigningIn="登录中…";
 I18N.zh.syncPending="条修改待上传"; I18N.zh.syncedAt="已同步"; I18N.zh.syncDone="同步完成"; I18N.zh.syncItems="条数据";
@@ -1228,6 +1228,8 @@ I18N.zh.editModeHint="编辑模式：可修改规格、亮点与门店。"; I18N
 /* --- keys referenced via data-i18n / T() that were missing --- */
 I18N.en.bookDone="Booking Confirmed!"; I18N.en.backHome="Back to Home"; I18N.en.waOpening="Opening WhatsApp → ";
 I18N.zh.bookDone="预约成功！"; I18N.zh.backHome="返回首页"; I18N.zh.waOpening="正在打开 WhatsApp → ";
+I18N.en.welcomeTitle="👋 Welcome to ANT MOTORS"; I18N.en.welcomeDesc="New here? Create your company account to start adding cars, managing your team and viewing membership. Tap ⚙ Settings above or the button below."; I18N.en.welcomeBtn="Login / Register"; I18N.en.loginRegBtn="⚙ Login / Register"; I18N.en.settingsBtn="⚙ Settings";
+I18N.zh.welcomeTitle="👋 欢迎使用 ANT MOTORS"; I18N.zh.welcomeDesc="首次使用？创建公司账号即可添加车辆、管理团队与查看会员。点击上方⚙或下方按钮。"; I18N.zh.welcomeBtn="登录 / 注册"; I18N.zh.loginRegBtn="⚙ 登录 / 注册"; I18N.zh.settingsBtn="⚙ 设置";
 /* --- B plan: real password / account security --- */
 I18N.en.syncEmpId="Account / e-mail"; I18N.en.syncPw="Password"; I18N.en.rememberMe="Remember me"; I18N.en.forgotPw="Forgot password?";
 I18N.en.syncNeedCreds="Enter your account and password"; I18N.en.syncBadCreds="Wrong account or password";
@@ -1325,6 +1327,8 @@ function toggleLang(){
   const fgb=document.getElementById('fgSendBtn');
   if(fgb && !fgb.disabled) fgb.textContent=T('fgSend','Get code');
   if(document.getElementById('settingsSheet') && document.getElementById('settingsSheet').classList.contains('show')){ if(document.getElementById('staffList')) renderStaff(); }
+  // refresh auth CTA buttons & welcome banner
+  updateAuthCTA();
   // open overlays
   const det=document.getElementById('scr-detail'); if(det && det.classList.contains('active')) renderDetail();
   if(lastBooking && document.getElementById('bookingConfirm') && document.getElementById('bookingConfirm').style.display!=='none') renderBookingConfirm(lastBooking);
@@ -1687,8 +1691,6 @@ function updateRoleUI(){
   if(lbl && curRole==='salesA') lbl.textContent=T('upSalesA','Sales A: upload car photos (your cars)');
   const portal=document.getElementById('staffPortal');
   if(portal) portal.style.display = curRole!=='customer' ? 'block' : 'none';
-  const installBtn=document.getElementById('installBtn');
-  if(installBtn) installBtn.style.display = curRole==='customer' ? 'none' : 'flex';
   const pv=document.getElementById('previewBtn');
   if(pv) pv.style.display = curRole==='customer' ? 'none' : 'flex';
   const staffGroup=document.getElementById('staffGroup');
@@ -2291,6 +2293,10 @@ function renderSyncUI(){
   // never show the sign-in box while "forgot password" or "register" is open
   if(box) box.style.display=(SYNC.token||fgOpen||rgOpen)?'none':'block';
   if(out) out.style.display=SYNC.token?'block':'none';
+  // show/hide extra sections (contact, install) based on login
+  const xt=document.getElementById('settingsExtra'), xt2=document.getElementById('settingsExtra2');
+  if(xt) xt.style.display=SYNC.token?'':'none';
+  if(xt2) xt2.style.display=SYNC.token?'':'none';
   // once signed in, hide the register/forgot entry points
   if(SYNC.token){
     if(fg) fg.style.display='none';
@@ -2311,8 +2317,17 @@ function renderSyncUI(){
 /* show the "登录 / 注册" CTA only when signed out */
 function updateAuthCTA(){
   const loggedIn=!!SYNC.token;
-  const lb=document.getElementById('loginBtn'); if(lb) lb.style.display=loggedIn?'none':'inline-flex';
+  const sb=document.getElementById('settingsBtn');
+  if(sb){
+    sb.style.background=loggedIn?'var(--surface-2)':'var(--gold)';
+    sb.style.color=loggedIn?'var(--text)':'#111';
+    sb.textContent=loggedIn?T('settingsBtn','⚙ Settings'):T('loginRegBtn','⚙ Login / Register');
+  }
   const wb=document.getElementById('welcomeBar'); if(wb) wb.style.display=loggedIn?'none':'block';
+  // refresh welcome bar language
+  const wt=document.getElementById('welcomeTitle'); if(wt) wt.textContent=T('welcomeTitle','Welcome to ANT MOTORS');
+  const wd=document.getElementById('welcomeDesc'); if(wd) wd.textContent=T('welcomeDesc','New here? Create your company account to start adding cars, managing your team and viewing membership info. Tap the settings button above or the button below.');
+  const wbtn=document.getElementById('welcomeBtn'); if(wbtn) wbtn.textContent=T('welcomeBtn','Login / Register');
 }
 let syncTimer=null;
 function scheduleSync(){ renderSyncUI(); if(!SYNC.base||!SYNC.token) return; clearTimeout(syncTimer); syncTimer=setTimeout(()=>syncNow(true),1500); }
