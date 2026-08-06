@@ -68,7 +68,7 @@
   .screen.active{display:block; animation:fade .25s ease;}
   @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
 
-  .attr{margin:10px 16px 0; padding:9px 12px; border-radius:10px; background:var(--gold-soft); border:1px solid var(--gold-line); display:flex; align-items:center; gap:10px; font-size:12px;}
+  .attr{margin:10px 16px 0; padding:10px 14px; border-radius:12px; background:var(--gold-soft); border:1px solid var(--gold-line); display:flex; align-items:center; gap:10px; font-size:12px;}
   .attr .dot{width:8px; height:8px; border-radius:50%; background:var(--gold); flex:0 0 auto;}
   .attr b{color:var(--gold);}
   .attr .grow{flex:1; color:var(--text-dim);}
@@ -514,7 +514,7 @@
 
     <!-- HOME -->
     <section class="screen active" id="scr-home">
-      <div id="welcomeBar" style="display:none;margin:0 0 14px;padding:14px 16px;border-radius:12px;border:1px solid var(--gold-line);background:var(--gold-soft);">
+      <div id="welcomeBar" style="display:none;margin:0 16px 14px;padding:14px 16px;border-radius:12px;border:1px solid var(--gold-line);background:var(--gold-soft);">
         <div id="welcomeTitle" style="font-weight:800;color:var(--gold);font-size:14px;" data-i18n="welcomeTitle">👋 Welcome to ANT MOTORS</div>
         <div id="welcomeDesc" style="font-size:12px;margin-top:4px;line-height:1.5;" data-i18n="welcomeDesc">New here? Create your company account to start adding cars, managing your team and viewing membership info. Tap the settings button above or the button below.</div>
         <button class="submit" id="welcomeBtn" style="margin-top:10px;background:var(--gold);color:#111;font-weight:700;border:none;" onclick="openSettings()" data-i18n="welcomeBtn">Login / Register</button>
@@ -1829,13 +1829,19 @@ function handleShowroomPhoto(e,showroomName){
 }
 
 
+function renderAttrBanner(){
+  const s=empOf(curSales); if(!s) return;
+  const el=document.getElementById('attrText'); if(!el) return;
+  const b=(curLang==='zh'&&I18N.zh.branch&&I18N.zh.branch[s.branch])?I18N.zh.branch[s.branch]:s.branch;
+  el.innerHTML=T('shoppingWith',"You're shopping with")+' <b>'+s.name+'</b> · '+b;
+}
 function setSales(key,btn){
   if(!isTopEmployee()){ toast(T('noSwitchSales','Share link is bound to your account')); return; }
   curSales=key;
   document.querySelectorAll('#previewSheet [data-sales]').forEach(o=>o.classList.remove('on'));
   if(btn) btn.classList.add('on');
   const s=empOf(key);
-  document.getElementById('attrText').innerHTML=`${T('shoppingWith',"You're shopping with")} <b>${s.name}</b> · ${s.branch}`;
+  renderAttrBanner();
   document.getElementById('consultAv').textContent=s.av;
   document.getElementById('consultName').textContent=s.name;
   document.getElementById('consultRole').textContent=salesRoleLabel(s);
@@ -2355,6 +2361,7 @@ function updateAuthCTA(){
   const wt=document.getElementById('welcomeTitle'); if(wt) wt.textContent=T('welcomeTitle','Welcome to ANT MOTORS');
   const wd=document.getElementById('welcomeDesc'); if(wd) wd.textContent=T('welcomeDesc','New here? Create your company account to start adding cars, managing your team and viewing membership info. Tap the settings button above or the button below.');
   const wbtn=document.getElementById('welcomeBtn'); if(wbtn) wbtn.textContent=T('welcomeBtn','Login / Register');
+  renderAttrBanner();
 }
 let syncTimer=null;
 function scheduleSync(){ renderSyncUI(); if(!SYNC.base||!SYNC.token) return; clearTimeout(syncTimer); syncTimer=setTimeout(()=>syncNow(true),1500); }
@@ -3148,7 +3155,7 @@ function parseDeepLink(){
   }catch(e){}
 }
 parseDeepLink();
-renderThemeIcon(); syncLangUI(); applyI18n(); renderSyncUI();
+renderThemeIcon(); syncLangUI(); applyI18n(); renderSyncUI(); updateAuthCTA();
 bootstrap().then(()=>{
   renderRolePrices(); updateDemoState(); syncSheet(); updateRoleUI(); renderWorkbench();
   if(window.__deeplink && CARS[curCar]) openDetail(curCar);
