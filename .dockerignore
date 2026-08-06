@@ -2,6 +2,9 @@ node_modules
 .git
 .gitignore
 .workbuddy
+# 后端镜像不需要这些: native 是 iOS 工程(33M), prototype html 是独立的镜像副本
+native
+ant-motors-prototype.html
 *.md
 !README.md
 !DEPLOY.md

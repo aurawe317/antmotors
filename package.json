@@ -5,8 +5,8 @@
   "description": "ANT MOTORS PWA + multi-tenant sync server (serves frontend and API from one port)",
   "main": "server/server.js",
   "scripts": {
-    "start": "node server/server.js",
-    "dev": "node server/server.js",
+    "start": "node --experimental-sqlite server/server.js",
+    "dev": "node --experimental-sqlite server/server.js",
     "test": "node server/test-auth.js"
   },
   "engines": {

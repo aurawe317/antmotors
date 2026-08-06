@@ -10,11 +10,9 @@ WORKDIR /app
 # 仅复制清单以便利用缓存
 COPY package.json ./
 
-# 复制源码
+# 复制后端真正需要的源码（前端 app/ 由 server.js 静态托管；native/ 是 iOS 工程, 后端用不到, 不进镜像）
 COPY server ./server
 COPY app ./app
-COPY ant-motors-prototype.html ./
-COPY native ./native
 
 # Railway/Render 通过 PORT 环境变量暴露端口
 ENV NODE_ENV=production
