@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
-<meta name="theme-color" content="#0F0E0E" />
+<meta name="theme-color" id="themeColorMeta" content="#0F0E0E" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-status-bar-style" id="statusBarMeta" content="black-translucent" />
 <meta name="apple-mobile-web-app-title" content="Ant Motors" />
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="apple-touch-icon" href="icon-192.png" />
@@ -327,6 +327,7 @@
   .ui-row:last-child{border-bottom:none;}
   .ui-row .lab{font-size:13px; font-weight:600; color:var(--text);}
   .ui-row .sub{font-size:11px; color:var(--text-dim); margin-top:2px; line-height:1.4;}
+  .form-row .sub{font-size:11px; color:var(--text-dim); margin-top:4px; line-height:1.45;}
   .ui-toggle{position:relative; flex:0 0 auto; width:46px; height:26px; border-radius:999px; background:var(--surface-2); border:1px solid var(--border); cursor:pointer; transition:.2s; padding:0;}
   .ui-toggle::after{content:''; position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:var(--text-dim); transition:.2s;}
   .ui-toggle.on{background:var(--gold); border-color:var(--gold);}
@@ -893,8 +894,8 @@
       <div id="regJoinFields" style="display:none;">
         <div class="form-row"><label data-i18n="regCode">Invitation code</label><input type="text" id="regCode" placeholder="ANT-XXXXXX" autocomplete="off" style="text-transform:uppercase;" /></div>
       </div>
-      <div class="form-row"><label data-i18n="regId">Account ID</label><input type="text" id="regId" placeholder="e.g. ama" data-ph="ph_regId" autocomplete="off" /></div>
-      <div class="form-row"><label data-i18n="regName">Your name</label><input type="text" id="regName" placeholder="Ama K." data-ph="ph_regName" autocomplete="off" /></div>
+      <div class="form-row"><label data-i18n="regId">Account ID</label><input type="text" id="regId" placeholder="e.g. ama" data-ph="ph_regId" autocomplete="off" /><div class="sub" data-i18n="regIdSub">Login handle — short, unique, lowercase. Teammates use it to @-mention you and assign leads (e.g. ama, kwame).</div></div>
+      <div class="form-row"><label data-i18n="regName">Your name</label><input type="text" id="regName" placeholder="Ama K." data-ph="ph_regName" autocomplete="off" /><div class="sub" data-i18n="regNameSub">Display name shown to customers on quotes, chats and bookings (e.g. Ama K., Kwame Asante).</div></div>
       <div class="form-row"><label data-i18n="regWa">WhatsApp</label><input type="text" id="regWa" placeholder="23320..." autocomplete="off" /></div>
       <div class="form-row"><label data-i18n="regPhone">Phone</label><input type="text" id="regPhone" placeholder="+233..." autocomplete="off" /></div>
       <div class="form-row"><label data-i18n="regEmail">E-mail (for password recovery)</label><input type="email" id="regEmail" placeholder="you@mail.com" autocomplete="email" /></div>
@@ -1352,12 +1353,12 @@ I18N.zh.syncSignedIn="已登录："; I18N.zh.syncSignedOut="已退出登录";
 I18N.zh.syncRejPrice="价格只能由老板/合伙人设置"; I18N.zh.syncRejTier="只有老板/合伙人可以调整等级";
 I18N.zh.syncRejAcct="只能修改自己的账号"; I18N.zh.syncRejEmp="未知员工账号";
 /* --- self-registration & company binding --- */
-I18N.en.regHasAccount="✨ New here? Create an account"; I18N.en.regSwitchToLogin="Have an account? Sign in"; I18N.en.regId="Account ID"; I18N.en.regName="Your name"; I18N.en.regWa="WhatsApp"; I18N.en.regPhone="Phone"; I18N.en.regPin="PIN (4-8 digits)"; I18N.en.regCreate="Create account"; I18N.en.regCreating="Creating…"; I18N.en.regSuccess="Account created"; I18N.en.regExists="That account ID is taken"; I18N.en.regHint="Fill in the server address, then your details below to create your own account. If you already have one, tap “Have an account? Sign in”."; I18N.en.regModeCreate="Start a company"; I18N.en.regModeJoin="Join a company"; I18N.en.regCoName="Company name"; I18N.en.regCoLogo="Company logo"; I18N.en.regCode="Invitation code"; I18N.en.coTitle="Company"; I18N.en.coSave="Save company"; I18N.en.coEdit="Edit company"; I18N.en.reqField="required"; I18N.en.coSaved="Company saved";
+I18N.en.regHasAccount="✨ New here? Create an account"; I18N.en.regSwitchToLogin="Have an account? Sign in"; I18N.en.regId="Account ID"; I18N.en.regName="Your name";I18N.en.regIdSub="Login handle — short, unique, lowercase. Teammates use it to @-mention you and assign leads (e.g. ama, kwame)."; I18N.en.regNameSub="Display name shown to customers on quotes, chats and bookings (e.g. Ama K., Kwame Asante)."; I18N.en.regWa="WhatsApp"; I18N.en.regPhone="Phone"; I18N.en.regPin="PIN (4-8 digits)"; I18N.en.regCreate="Create account"; I18N.en.regCreating="Creating…"; I18N.en.regSuccess="Account created"; I18N.en.regExists="That account ID is taken"; I18N.en.regHint="Fill in the server address, then your details below to create your own account. If you already have one, tap “Have an account? Sign in”."; I18N.en.regModeCreate="Start a company"; I18N.en.regModeJoin="Join a company"; I18N.en.regCoName="Company name"; I18N.en.regCoLogo="Company logo"; I18N.en.regCode="Invitation code"; I18N.en.coTitle="Company"; I18N.en.coSave="Save company"; I18N.en.coEdit="Edit company"; I18N.en.reqField="required"; I18N.en.coSaved="Company saved";
 I18N.en.joinTitle="Join your company"; I18N.en.joinHint="Enter the invitation code from your boss, or scan the QR they share. Pick your role, then you get full access."; I18N.en.joinCode="Invitation code"; I18N.en.joinScan="Scan"; I18N.en.joinRole="Your role"; I18N.en.jrPartner="Partner (co-owner)"; I18N.en.jrManager="Manager"; I18N.en.jrSalesA="Senior Sales"; I18N.en.jrSalesB="Sales"; I18N.en.joinBranch="Branch"; I18N.en.joinBind="Bind & activate"; I18N.en.joinNeedCode="Enter or scan the invitation code"; I18N.en.joinSuccess="You are now part of the company"; I18N.en.joinBadCode="Invitation code does not match"; I18N.en.joinBadTier="Pick a role"; I18N.en.joinNotFound="Account not found";
 I18N.en.codeTitle="Company invitation code"; I18N.en.codeHint="Share this with partners & staff. They enter or scan it to join your company and get access."; I18N.en.codeCopy="Copy code"; I18N.en.codeRegen="Regenerate"; I18N.en.codeCopied="Code copied"; I18N.en.codeRegenConfirm="Regenerate the code? Old shares will stop working."; I18N.en.codeRegenOk="New code generated"; I18N.en.scanNoCam="Camera not available"; I18N.en.scanOk="Code scanned";
 I18N.en.memTitle="Membership"; I18N.en.memManage="Manage membership"; I18N.en.memActive="Active"; I18N.en.memExpired="Expired"; I18N.en.memTrial="Trial"; I18N.en.memUntil="Valid until"; I18N.en.memExpiredMsg="Your membership has expired. Renew to add or edit cars and keep staff synced."; I18N.en.memPick="Choose a plan"; I18N.en.memScan="Scan this with Alipay to pay"; I18N.en.memOpenAlipay="Open Alipay"; I18N.en.memSimPay="（测试）模拟支付成功"; I18N.en.memPaying="Creating order…"; I18N.en.memPaid="Payment received — membership activated"; I18N.en.memPayFailed="Payment failed, please retry"; I18N.en.memSimNote="DEV mode: Alipay is simulated — use the test button to activate.";
 I18N.en.memNeedServer="Connect to a server to subscribe"; I18N.en.memNeedLogin="Sign in as the company owner to subscribe"; I18N.en.memSubscribe="Subscribe"; I18N.en.memOwnerOnly="Owner only"; I18N.en.memActive="Active"; I18N.en.perMonth="/month"; I18N.en.perYear="/year"; I18N.en.memRenew="Renew now"; I18N.en.memCurrent="Current plan"; I18N.en.memLifetime="Lifetime"; I18N.en.memLifetimeMsg="You have lifetime membership — active forever, no subscription needed.";
-I18N.zh.regHasAccount="✨ 新用户？注册账号"; I18N.zh.regSwitchToLogin="已有账号？去登录"; I18N.zh.regId="账号 ID"; I18N.zh.regName="你的姓名"; I18N.zh.regWa="WhatsApp"; I18N.zh.regPhone="电话"; I18N.zh.regPin="密码 PIN（4-8 位）"; I18N.zh.regCreate="创建账号"; I18N.zh.regCreating="创建中…"; I18N.zh.regSuccess="账号已创建"; I18N.zh.regExists="该账号 ID 已被占用"; I18N.zh.regHint="先填写服务器地址，再在下方填写你的资料即可创建账号。如果已有账号，点“已有账号？去登录”。"; I18N.zh.regModeCreate="创建公司"; I18N.zh.regModeJoin="加入公司"; I18N.zh.regCoName="公司名称"; I18N.zh.regCoLogo="公司 Logo"; I18N.zh.regCode="邀请码"; I18N.zh.coTitle="公司"; I18N.zh.coSave="保存公司"; I18N.zh.coEdit="编辑公司"; I18N.zh.reqField="必填"; I18N.zh.coSaved="公司已保存";
+I18N.zh.regHasAccount="✨ 新用户？注册账号"; I18N.zh.regSwitchToLogin="已有账号？去登录"; I18N.zh.regId="账号 ID"; I18N.zh.regName="你的姓名";I18N.zh.regIdSub="登录账号 — 简短、唯一、小写。同事用它 @ 你、分配客户（如 ama、kwame）。"; I18N.zh.regNameSub="展示给客户的姓名，出现在报价单、聊天与预约里（如 Ama K.、Kwame Asante）。"; I18N.zh.regWa="WhatsApp"; I18N.zh.regPhone="电话"; I18N.zh.regPin="密码 PIN（4-8 位）"; I18N.zh.regCreate="创建账号"; I18N.zh.regCreating="创建中…"; I18N.zh.regSuccess="账号已创建"; I18N.zh.regExists="该账号 ID 已被占用"; I18N.zh.regHint="先填写服务器地址，再在下方填写你的资料即可创建账号。如果已有账号，点“已有账号？去登录”。"; I18N.zh.regModeCreate="创建公司"; I18N.zh.regModeJoin="加入公司"; I18N.zh.regCoName="公司名称"; I18N.zh.regCoLogo="公司 Logo"; I18N.zh.regCode="邀请码"; I18N.zh.coTitle="公司"; I18N.zh.coSave="保存公司"; I18N.zh.coEdit="编辑公司"; I18N.zh.reqField="必填"; I18N.zh.coSaved="公司已保存";
 I18N.zh.joinTitle="加入公司"; I18N.zh.joinHint="输入老板给你的邀请码，或扫描对方分享的二维码，选择你的角色即可获得权限。"; I18N.zh.joinCode="邀请码"; I18N.zh.joinScan="扫描"; I18N.zh.joinRole="你的角色"; I18N.zh.jrPartner="合伙人（共同所有者）"; I18N.zh.jrManager="经理"; I18N.zh.jrSalesA="高级销售"; I18N.zh.jrSalesB="销售"; I18N.zh.joinBranch="门店"; I18N.zh.joinBind="绑定并激活"; I18N.zh.joinNeedCode="请填写或扫描邀请码"; I18N.zh.joinSuccess="你已加入公司"; I18N.zh.joinBadCode="邀请码不匹配"; I18N.zh.joinBadTier="请选择角色"; I18N.zh.joinNotFound="未找到账号";
 I18N.zh.codeTitle="公司邀请码"; I18N.zh.codeHint="把这个码发给合伙人和员工，他们输入或扫码即可加入公司并获得权限。"; I18N.zh.codeCopy="复制邀请码"; I18N.zh.codeRegen="重新生成"; I18N.zh.codeCopied="邀请码已复制"; I18N.zh.codeRegenConfirm="重新生成邀请码？旧的分享将失效。"; I18N.zh.codeRegenOk="已生成新邀请码"; I18N.zh.scanNoCam="无法使用摄像头"; I18N.zh.scanOk="已扫描到邀请码";
 I18N.zh.memTitle="会员"; I18N.zh.memManage="管理会员"; I18N.zh.memActive="生效中"; I18N.zh.memExpired="已过期"; I18N.zh.memTrial="试用"; I18N.zh.memUntil="有效期至"; I18N.zh.memExpiredMsg="会员已过期，续费后可继续添加/编辑车辆并保持员工同步。"; I18N.zh.memPick="选择套餐"; I18N.zh.memScan="用支付宝扫描此码付款"; I18N.zh.memOpenAlipay="打开支付宝"; I18N.zh.memSimPay="（测试）模拟支付成功"; I18N.zh.memPaying="正在创建订单…"; I18N.zh.memPaid="已收到付款 — 会员已开通"; I18N.zh.memPayFailed="支付失败，请重试"; I18N.zh.memSimNote="开发模式：支付宝为模拟支付 — 点击测试按钮即可激活。";
@@ -1460,6 +1461,11 @@ function applyTheme(){
   if(sl) sl.classList.toggle('on', amTheme==='light');
   if(sd) sd.classList.toggle('on', amTheme==='dark');
   if(ss) ss.classList.toggle('on', amTheme==='system');
+  // Keep the SYSTEM status bar blended with the app top bar — same colour, not a fake bar.
+  const sbm=document.getElementById('statusBarMeta');
+  if(sbm) sbm.content = (curTheme==='dark') ? 'black' : 'default';
+  const tcm=document.getElementById('themeColorMeta');
+  if(tcm) tcm.content = (curTheme==='dark') ? '#0F0E0E' : '#F3EFE6';
 }
 function setThemeMode(m){ if(m!=='light'&&m!=='dark'&&m!=='system') return; amTheme=m; try{localStorage.setItem('am_theme',m);}catch(e){} applyTheme(); }
 function toggleTheme(){ const cur=effectiveTheme(); setThemeMode(cur==='dark'?'light':'dark'); } // top icon: explicit light<->dark, overrides system
