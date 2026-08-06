@@ -29,4 +29,6 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://127.0.0.1:3000/api/health || exit 1
 
-CMD ["node", "server/server.js"]
+# --experimental-sqlite is required on Node 22.13 (the base image) and harmless
+# on later 22.x; node:sqlite needs it before it was unflagged in newer releases.
+CMD ["node", "--experimental-sqlite", "server/server.js"]
