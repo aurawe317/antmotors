@@ -319,6 +319,10 @@
   /* keep sheet GPU-smooth */
   .sheet{will-change:transform;}
   .sheet-hint{font-size:11px; color:var(--text-dim); margin:8px 0 4px; line-height:1.6;}
+  .adv-details{margin:0 0 12px; border:1px solid var(--border); border-radius:12px; padding:10px 14px; background:var(--surface-2);}
+  .adv-details summary{cursor:pointer; font-weight:700; font-size:13px; color:var(--text); list-style:none; outline:none;}
+  .adv-details summary::-webkit-details-marker{display:none;}
+  .adv-details[open] summary{margin-bottom:2px;}
   .share-box{display:flex; gap:8px; margin-top:16px; align-items:center; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:10px 12px;}
   .share-url{font-size:11px; color:var(--gold); flex:1; word-break:break-all; font-family:ui-monospace,monospace;}
   .share-copy{background:var(--gold); color:#0F0E0E; border:none; border-radius:var(--r-btn); font-weight:800; font-size:12px; padding:8px 14px; cursor:pointer; flex:0 0 auto;}
@@ -877,10 +881,9 @@
       <span class="seg" id="segEn2" onclick="setLang('en')">EN</span><span class="seg" id="segZh2" onclick="setLang('zh')">中</span>
     </div>
   </div>
-  <div class="grp" style="background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:12px;padding:12px 14px;margin-bottom:12px;">
-    <div style="font-weight:700;color:var(--gold);font-size:12px;margin-bottom:6px;" data-i18n="syncServerHint">Backend address (needed for login &amp; sync)</div>
-    <div class="form-row" style="margin:0;"><input type="text" id="setApi" placeholder="http://192.168.9.101:8899" data-ph="ph_setApi" style="font-size:13px;" /></div>
-    <div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.4;" data-i18n="syncServerHint2">This is your account &amp; data-sync server. For this local demo, paste:</div>
+  <div class="grp" style="background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--text-dim);display:flex;align-items:center;gap:8px;">
+    <span style="color:var(--gold);font-weight:800;">●</span>
+    <span data-i18n="syncConnected">Connected to the shared ANT MOTORS backend — no setup needed. Your company's data stays private.</span>
   </div>
   <div class="grp">
     <div id="syncStatus" class="sync-status">—</div>
@@ -963,6 +966,13 @@
     <div class="lbl" data-i18n="installTitle">Install the app (employees)</div>
     <p class="sheet-hint" data-i18n="installHint">iOS: open in Safari → Share → Add to Home Screen. Android: open in Chrome → ⋮ → Install app. Customers just open the shared link — no install needed.</p>
   </div>
+  <details class="adv-details" id="advServerDetails">
+    <summary data-i18n="advServerTitle">⚙ Advanced: backend address</summary>
+    <div style="margin-top:8px;">
+      <div class="form-row" style="margin:0;"><input type="text" id="setApi" placeholder="http://192.168.9.101:8899" data-ph="ph_setApi" style="font-size:13px;" /></div>
+      <div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.5;" data-i18n="syncServerHint2">This is your account &amp; data-sync server. Leave as-is to use the shared ANT MOTORS backend — every company connects here by default. Change it ONLY if your company runs its own server.</div>
+    </div>
+  </details>
   <div class="grp" id="staffGroup" style="display:none;">
     <div class="lbl" data-i18n="staffMgmt">Staff &amp; roles (admin)</div>
     <div id="staffList"></div>
@@ -1212,8 +1222,8 @@ I18N.zh.backupTitle="数据备份（员工）"; I18N.zh.backupHint="将全部车
 I18N.zh.installTitle="获取 App（员工）"; I18N.zh.installHint="员工从 App Store / Google Play 安装 Ant Motors 原生 App，或通过企业内部 TestFlight / MDM 分发。客户只需打开分享链接，无需安装。";
 /* --- cloud sync --- */
 I18N.en.syncTitle="Cloud sync (all devices share one inventory)"; I18N.en.syncServer="Server address"; I18N.en.syncEmpId="Staff ID"; I18N.en.syncPin="PIN";
-I18N.en.syncSignIn="Sign in & sync"; I18N.en.syncNowBtn="Sync now"; I18N.en.syncSignOut="Sign out"; I18N.en.syncServerHint="Backend address (needed for login & sync)"; I18N.en.syncServerHint2="This is the backend that stores your account and keeps cars/prices in sync across every device. Leave it blank to use the app offline on THIS device only. For the local demo, paste:"; I18N.en.ph_setApi="http://192.168.9.101:8899"; I18N.en.ph_fgCode="6 digits"; I18N.en.ph_regCoName="Ant Motors Ghana"; I18N.en.ph_regId="e.g. ama"; I18N.en.ph_regName="Ama K.";
-I18N.en.syncHint="Leave the server empty to work offline on this device only. When connected, cars and prices added by anyone appear on every signed-in device.";
+I18N.en.syncSignIn="Sign in & sync"; I18N.en.syncNowBtn="Sync now"; I18N.en.syncSignOut="Sign out"; I18N.en.syncServerHint="Backend address (needed for login & sync)"; I18N.en.syncServerHint2="This is your account & data-sync server. Leave as-is to use the shared ANT MOTORS backend — every company connects here by default. Change it ONLY if your company runs its own server."; I18N.en.ph_setApi="http://192.168.9.101:8899"; I18N.en.ph_fgCode="6 digits"; I18N.en.ph_regCoName="Ant Motors Ghana"; I18N.en.ph_regId="e.g. ama"; I18N.en.ph_regName="Ama K."; I18N.en.syncConnected="Connected to the shared ANT MOTORS backend — no setup needed. Your company's data stays private."; I18N.en.advServerTitle="⚙ Advanced: backend address";
+I18N.en.syncHint="By default you connect to the shared ANT MOTORS backend (no setup). In Advanced you can point to your own server. When connected, cars and prices added by anyone in your company appear on every signed-in device.";
 I18N.en.syncOffline="Offline mode — this device only"; I18N.en.syncNeedLogin="Sign in to sync"; I18N.en.syncSyncing="Syncing…"; I18N.en.syncSigningIn="Signing in…";
 I18N.en.syncPending="change(s) waiting to upload"; I18N.en.syncedAt="Synced"; I18N.en.syncDone="Sync complete"; I18N.en.syncItems="item(s)";
 I18N.en.syncQueued="Offline — changes queued"; I18N.en.syncBadCreds="Wrong staff ID or PIN"; I18N.en.syncNeedServer="Enter the server address first";
@@ -1221,8 +1231,8 @@ I18N.en.syncSignedIn="Signed in as"; I18N.en.syncSignedOut="Signed out";
 I18N.en.syncRejPrice="price can only be set by owner/partners"; I18N.en.syncRejTier="only owner/partners can change roles";
 I18N.en.syncRejAcct="you can only edit your own account"; I18N.en.syncRejEmp="unknown staff account";
 I18N.zh.syncTitle="云同步（所有设备共用一份库存）"; I18N.zh.syncServer="服务器地址"; I18N.zh.syncEmpId="员工账号"; I18N.zh.syncPin="密码 PIN";
-I18N.zh.syncSignIn="登录并同步"; I18N.zh.syncNowBtn="立即同步"; I18N.zh.syncSignOut="退出登录"; I18N.zh.syncServerHint="后台地址（登录与同步需要）"; I18N.zh.syncServerHint2="这是保存你账号、并在各设备间同步车辆与价格数据的后台服务器。留空则只在本机离线使用。本地演示请填："; I18N.zh.ph_setApi="http://192.168.9.101:8899"; I18N.zh.ph_fgCode="6 位数字"; I18N.zh.ph_regCoName="例如 安特汽车"; I18N.zh.ph_regId="例如 ama"; I18N.zh.ph_regName="例如 张伟";
-I18N.zh.syncHint="留空服务器地址则仅本机离线使用。连接后，任何人新增的车辆和价格都会出现在所有已登录设备上。";
+I18N.zh.syncSignIn="登录并同步"; I18N.zh.syncNowBtn="立即同步"; I18N.zh.syncSignOut="退出登录"; I18N.zh.syncServerHint="后台地址（登录与同步需要）"; I18N.zh.syncServerHint2="这是保存你账号、并在各设备间同步车辆与价格数据的后台服务器。保持默认即使用 ANT MOTORS 共享后台——所有公司默认都连这里。仅当贵公司自建服务器时才需要修改。"; I18N.zh.ph_setApi="http://192.168.9.101:8899"; I18N.zh.ph_fgCode="6 位数字"; I18N.zh.ph_regCoName="例如 安特汽车"; I18N.zh.ph_regId="例如 ama"; I18N.zh.ph_regName="例如 张伟"; I18N.zh.syncConnected="已连接 ANT MOTORS 共享后台——无需配置，各公司数据相互独立、互不可见。"; I18N.zh.advServerTitle="⚙ 高级：后台地址";
+I18N.zh.syncHint="默认即连接 ANT MOTORS 共享后台，无需配置。在「高级」里可指向贵公司自建服务器。连接后，贵公司内任何人新增的车辆与价格都会同步到所有已登录设备。";
 I18N.zh.syncOffline="离线模式——仅本机数据"; I18N.zh.syncNeedLogin="请登录后同步"; I18N.zh.syncSyncing="同步中…"; I18N.zh.syncSigningIn="登录中…";
 I18N.zh.syncPending="条修改待上传"; I18N.zh.syncedAt="已同步"; I18N.zh.syncDone="同步完成"; I18N.zh.syncItems="条数据";
 I18N.zh.syncQueued="离线——修改已排队，联网后自动上传"; I18N.zh.syncBadCreds="员工账号或密码错误"; I18N.zh.syncNeedServer="请先填写服务器地址";
@@ -1944,7 +1954,7 @@ function openSettings(){
   const e=empOf(curEmployee);
   document.getElementById('setWa').value=e.wa||'';
   document.getElementById('setPhone').value=e.phone||'';
-  document.getElementById('setApi').value=SYNC.base||'';
+  document.getElementById('setApi').value=SYNC.base||DEFAULT_API;
   const idIn=document.getElementById('setEmpId'); if(idIn && !idIn.value) idIn.value=localStorage.getItem('am_me')||curEmployee||'';
   renderSyncUI();
   document.getElementById('staffGroup').style.display = isTopEmployee()?'block':'none';
@@ -2053,6 +2063,18 @@ const SYNC={
   cars:jload('am_dirty_cars',{}), emps:jload('am_dirty_emps',{}),
   busy:false, state:'local', msg:''
 };
+/* Shared backend for ALL companies. Every company uses this same address by
+   default; data is isolated server-side by company_id. A company that runs its
+   OWN server can override it in Settings ▸ Advanced. Change this ONE constant
+   when migrating to the VPS (plan A). */
+const DEFAULT_API='http://192.168.9.101:8899';
+function resolveApiBase(){
+  const inp=document.getElementById('setApi');
+  const v=(inp?inp.value:'').trim().replace(/\/+$/,'');
+  if(v) return v;
+  if(SYNC.base) return SYNC.base;
+  return DEFAULT_API;
+}
 /* membership state (filled after sign-in / register) */
 let MEMBERSHIP={ plan:'trial', active:true, periodEnd:0, planName:'试用', planNameEn:'Trial' };
 let MEMBERSHIP_SIMULATE=false;
@@ -2210,7 +2232,7 @@ async function api(p,o){
   o=o||{};
   const h={'Content-Type':'application/json'};
   if(SYNC.token) h['Authorization']='Bearer '+SYNC.token;
-  const r=await fetch(SYNC.base+p,{method:o.method||'GET',headers:h,body:o.body?JSON.stringify(o.body):undefined});
+  const r=await fetch(resolveApiBase()+p,{method:o.method||'GET',headers:h,body:o.body?JSON.stringify(o.body):undefined});
   if(r.ok) return r.json();
   let j=null; try{ j=await r.json(); }catch(e){}
   const code=(j&&j.error)||(r.status===401?'unauthorized':'HTTP '+r.status);
@@ -2442,12 +2464,13 @@ function pwErrText(err){
 }
 
 async function syncLogin(){
-  const base=(document.getElementById('setApi').value||'').trim().replace(/\/+$/,'');
+  const base=resolveApiBase();
   const id=(document.getElementById('setEmpId').value||'').trim();
   const pw=(document.getElementById('setPin').value||'');
   if(!base){ toast(T('syncNeedServer','Enter the server address first')); return; }
   if(!id||!pw){ toast(T('syncNeedCreds','Enter your account and password')); return; }
-  if(SYNC.base!==base){ SYNC.base=base; SYNC.since=0; localStorage.setItem('am_api',base); localStorage.setItem('am_since','0'); }
+  if(base!==DEFAULT_API){ SYNC.base=base; localStorage.setItem('am_api',base); } else { SYNC.base=''; try{localStorage.removeItem('am_api');}catch(e){} }
+  SYNC.since=0; localStorage.setItem('am_since','0');
   try{
     setSyncState('pending',T('syncSigningIn','Signing in…')); renderSyncUI();
     const r=await api('/api/login',{method:'POST',body:{account:id,password:pw}});
@@ -2494,9 +2517,9 @@ function closeForgot(){
 }
 let fgTimer=null;
 async function sendResetCode(){
-  const base=(document.getElementById('setApi').value||'').trim().replace(/\/+$/,'');
+  const base=resolveApiBase();
   if(!base){ toast(T('syncNeedServer','Enter the server address first')); return; }
-  if(SYNC.base!==base){ SYNC.base=base; localStorage.setItem('am_api',base); }
+  if(base!==DEFAULT_API){ SYNC.base=base; localStorage.setItem('am_api',base); } else { SYNC.base=''; try{localStorage.removeItem('am_api');}catch(e){} }
   const acct=(document.getElementById('fgAcct').value||'').trim();
   if(!acct){ toast(T('fgNeedAccount','Enter your account or e-mail first')); return; }
   const btn=document.getElementById('fgSendBtn');
@@ -2556,9 +2579,10 @@ function toggleReg(){
   t.textContent = showReg ? T('regSwitchToLogin','Have an account? Sign in') : T('regHasAccount','✨ New here? Create an account');
 }
 async function registerAccount(){
-  const base=(document.getElementById('setApi').value||'').trim().replace(/\/+$/,'');
+  const base=resolveApiBase();
   if(!base){ toast(T('syncNeedServer','Enter the server address first')); return; }
-  if(SYNC.base!==base){ SYNC.base=base; SYNC.since=0; localStorage.setItem('am_api',base); localStorage.setItem('am_since','0'); }
+  if(base!==DEFAULT_API){ SYNC.base=base; localStorage.setItem('am_api',base); } else { SYNC.base=''; try{localStorage.removeItem('am_api');}catch(e){} }
+  SYNC.since=0; localStorage.setItem('am_since','0');
   const id=(document.getElementById('regId').value||'').trim();
   const name=(document.getElementById('regName').value||'').trim();
   const wa=(document.getElementById('regWa').value||'').trim().replace(/[^0-9]/g,'');
