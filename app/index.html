@@ -274,9 +274,9 @@
   .perm-col.cust .rows .r b{color:var(--rf);}
 
   .tabbar{position:absolute; left:0; right:0; bottom:0; height:64px; background:var(--surface); border-top:1px solid var(--border); display:flex; padding:8px 6px 0;}
-  .tabbar .tab{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--text-dim); font-size:10px; font-weight:600; cursor:pointer; background:none; border:none;}
+  .tabbar .tab{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--text-dim); font-size:11px; font-weight:600; cursor:pointer; background:none; border:none;}
   .tabbar .tab.on{color:var(--gold);}
-  .tabbar .tab svg{display:block;}
+  .tabbar .tab svg{display:block; width:24px; height:24px;}
 
   /* persistent Add-Car floating button (owner/staff only) */
   .fab-add{position:absolute; right:16px; bottom:78px; width:56px; height:56px; border-radius:50%; background:linear-gradient(140deg,var(--gold),#b9842c); color:#0F0E0E; border:none; display:none; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 8px 22px rgba(0,0,0,.45); z-index:40;}
@@ -515,7 +515,7 @@
     .brand span{display:none;}
     .appbar,.attr{flex:0 0 auto;}
     .screen.active{flex:1 1 auto; min-height:0; display:block; overflow-y:auto; -webkit-overflow-scrolling:touch; position:relative; padding-bottom:12px;}
-    .tabbar{position:relative; flex:0 0 auto; min-height:58px; z-index:30; padding-bottom:max(8px, env(safe-area-inset-bottom, 0px));}
+    .tabbar{position:relative; flex:0 0 auto; min-height:64px; z-index:30; padding:6px 6px max(10px, env(safe-area-inset-bottom, 0px));}
     .sticky{position:static; margin-top:10px;}
   }
 </style>
@@ -2346,7 +2346,7 @@ const SYNC={
    default; data is isolated server-side by company_id. A company that runs its
    OWN server can override it in Settings ▸ Advanced. Change this ONE constant
    when migrating to the VPS (plan A). */
-const DEFAULT_API='http://192.168.9.101:8899';
+const DEFAULT_API='http://192.168.9.101:8787';
 function resolveApiBase(){
   const inp=document.getElementById('setApi');
   const v=(inp?inp.value:'').trim().replace(/\/+$/,'');
