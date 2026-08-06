@@ -59,6 +59,14 @@ const TRIAL_DAYS = 14;
 const FEE_CNY = { monthly: (PLANS.monthly.price / 100), yearly: (PLANS.yearly.price / 100) };
 
 /* ------------------------------------------------------------------ db */
+// Auto-create the DB's parent directory. On PaaS (Railway/Render/Fly) /data only
+// exists once a volume is mounted; without one the dir is missing and
+// DatabaseSync would throw on open, crashing the server. Creating it (recursive)
+// makes the app self-healing: it runs with an ephemeral DB until a real volume
+// is attached for persistence.
+try {
+  fs.mkdirSync(path.dirname(DB_PATH), { recursive: true });
+} catch (e) { /* dir may already exist or be read-only — non-fatal */ }
 const db = new DatabaseSync(DB_PATH);
 db.exec(`
 PRAGMA journal_mode = WAL;
