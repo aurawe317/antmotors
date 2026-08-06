@@ -159,6 +159,7 @@ function addCol(table, col, def) {
 /* billing columns on companies */
 ['trial_ends_at', 'plan_started_at', 'current_period_end', 'alipay_trade_no', 'subscription_id', 'last_paid_at'].forEach(c => addCol('companies', c, 'INTEGER'));
 addCol('companies', 'permanent', "INTEGER NOT NULL DEFAULT 0");
+addCol('companies', 'bio', 'TEXT');
 /* account-security columns (B-plan: real passwords, recovery, brute-force lockout) */
 addCol('employees', 'email', 'TEXT');
 addCol('employees', 'cred_kind', "TEXT NOT NULL DEFAULT 'pin'"); // 'pin' (legacy) | 'password'
@@ -274,7 +275,7 @@ function genCompanyCode() {
 }
 function companyById(id) { return q('SELECT * FROM companies WHERE id=?').get(id); }
 function publicCompany(row) {
-  return { id: row.id, name: row.name, logo: row.logo || null, code: row.code, plan: row.plan, status: row.status, permanent: !!row.permanent };
+  return { id: row.id, name: row.name, logo: row.logo || null, bio: row.bio || '', code: row.code, plan: row.plan, status: row.status, permanent: !!row.permanent };
 }
 /* computed membership state for a company row */
 function membershipView(row) {
@@ -786,7 +787,8 @@ const server = http.createServer(async (req, res) => {
         if (b.logo && typeof b.logo === 'string' && b.logo.startsWith('data:image') && b.logo.length < 2_000_000) co.logo = b.logo;
         else if (b.logo === null || b.logo === '') co.logo = null;
       }
-      q('UPDATE companies SET name=?, logo=? WHERE id=?').run(co.name, co.logo, emp.companyId);
+      if (b.bio !== undefined) co.bio = String(b.bio || '').slice(0, 500);
+      q('UPDATE companies SET name=?, logo=?, bio=? WHERE id=?').run(co.name, co.logo, co.bio, emp.companyId);
       audit(emp.id, 'company.update', emp.companyId, '', emp.companyId);
       return send(res, 200, { company: publicCompany(co) });
     }

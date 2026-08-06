@@ -325,6 +325,26 @@
   .adv-details[open] summary{margin-bottom:2px;}
   .share-box{display:flex; gap:8px; margin-top:16px; align-items:center; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:10px 12px;}
   .share-url{font-size:11px; color:var(--gold); flex:1; word-break:break-all; font-family:ui-monospace,monospace;}
+  /* reusable settings rows + toggle switch + segmented */
+  .ui-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 0; border-bottom:1px solid var(--border);}
+  .ui-row:last-child{border-bottom:none;}
+  .ui-row .lab{font-size:13px; font-weight:600; color:var(--text);}
+  .ui-row .sub{font-size:11px; color:var(--text-dim); margin-top:2px; line-height:1.4;}
+  .ui-toggle{position:relative; flex:0 0 auto; width:46px; height:26px; border-radius:999px; background:var(--surface-2); border:1px solid var(--border); cursor:pointer; transition:.2s; padding:0;}
+  .ui-toggle::after{content:''; position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:var(--text-dim); transition:.2s;}
+  .ui-toggle.on{background:var(--gold); border-color:var(--gold);}
+  .ui-toggle.on::after{left:22px; background:#0F0E0E;}
+  .seg3{display:flex; gap:4px; background:var(--surface-2); border:1px solid var(--border); border-radius:999px; padding:3px; flex:0 0 auto;}
+  .seg3 .seg{padding:6px 12px; border-radius:999px; font-size:12px; font-weight:700; color:var(--text-dim); cursor:pointer; transition:.15s; white-space:nowrap;}
+  .seg3 .seg.on{background:var(--gold); color:#0F0E0E;}
+  .pill-select{flex:1; min-width:0; background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:9px; padding:9px 10px; font-size:13px; outline:none;}
+  .notif-item{display:flex; gap:10px; padding:10px 0; border-bottom:1px solid var(--border);}
+  .notif-item:last-child{border-bottom:none;}
+  .notif-item .ni-ic{flex:0 0 auto; width:30px; height:30px; border-radius:50%; background:var(--gold-soft); color:var(--gold); display:flex; align-items:center; justify-content:center; font-size:15px;}
+  .notif-item .ni-b{flex:1; min-width:0;}
+  .notif-item .ni-t{font-size:13px; font-weight:600;}
+  .notif-item .ni-d{font-size:11px; color:var(--text-dim); margin-top:2px; line-height:1.4;}
+  .notif-empty{font-size:12px; color:var(--text-dim); text-align:center; padding:14px 0;}
   .share-copy{background:var(--gold); color:#0F0E0E; border:none; border-radius:var(--r-btn); font-weight:800; font-size:12px; padding:8px 14px; cursor:pointer; flex:0 0 auto;}
 
   .toast{position:fixed; left:50%; bottom:90px; transform:translateX(-50%) translateY(20px); background:var(--surface); border:1px solid var(--gold-line); color:var(--text); padding:12px 16px; border-radius:10px; font-size:12px; max-width:340px; opacity:0; transition:.25s ease; pointer-events:none; z-index:50; box-shadow:0 12px 30px rgba(0,0,0,.5); line-height:1.5;}
@@ -886,6 +906,32 @@
     <span data-i18n="syncConnected">Connected to the shared ANT MOTORS backend — no setup needed. Your company's data stays private.</span>
   </div>
   <div class="grp">
+    <div class="lbl" data-i18n="appearance">Appearance</div>
+    <div class="ui-row">
+      <div><div class="lab" data-i18n="themeLbl">Theme</div><div class="sub" data-i18n="themeSub">Follows your phone's system setting by default</div></div>
+      <div class="seg3" id="themeSeg">
+        <span class="seg" id="thLight" onclick="setThemeMode('light')" data-i18n="thLight">Light</span>
+        <span class="seg" id="thDark" onclick="setThemeMode('dark')" data-i18n="thDark">Dark</span>
+        <span class="seg" id="thSys" onclick="setThemeMode('system')" data-i18n="thSystem">System</span>
+      </div>
+    </div>
+  </div>
+  <div class="grp" id="prefGroup">
+    <div class="lbl" data-i18n="prefs">Preferences</div>
+    <div class="ui-row" id="defSalesRow" style="display:none;">
+      <div><div class="lab" data-i18n="defSalesLbl">Default salesperson</div><div class="sub" data-i18n="defSalesSub">Who the home "shopping with" defaults to</div></div>
+      <select class="pill-select" id="defSalesSel" onchange="setDefSales(this.value)"></select>
+    </div>
+    <div class="ui-row">
+      <div><div class="lab" data-i18n="curLbl">Display currency</div><div class="sub" data-i18n="curSub">Prices show in this currency (set your own rate)</div></div>
+      <select class="pill-select" id="curSel" onchange="setCurrency(this.value)"></select>
+    </div>
+    <div class="ui-row" id="curRateRow">
+      <div><div class="lab" data-i18n="curRateLbl">Exchange rate</div><div class="sub" id="curRateSub">1 GHS = your currency</div></div>
+      <input type="number" id="curRate" class="pill-select" style="flex:0 0 110px;" onchange="setCurRate(this.value)" step="0.0001" />
+    </div>
+  </div>
+  <div class="grp">
     <div id="syncStatus" class="sync-status">—</div>
     <div class="lbl" id="authLbl" style="font-weight:700;font-size:14px;margin-bottom:8px;" data-i18n="syncTitle">Account</div>
     <button class="submit" id="regToggle" onclick="toggleReg()" data-i18n="regHasAccount" style="background:var(--gold);color:#111;font-weight:700;">✨ New here? Create an account</button>
@@ -1017,10 +1063,12 @@
       <div style="flex:1;min-width:0;">
         <div id="coNameTxt" style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
         <div id="coCodeTxt" style="color:var(--gold);font-size:13px;letter-spacing:1px;"></div>
+        <div id="coBioTxt" style="font-size:11px;color:var(--text-dim);margin-top:3px;line-height:1.4;"></div>
       </div>
     </div>
     <div id="coEditBox" style="display:none;">
       <div class="form-row"><label data-i18n="regCoName">Company name</label><input type="text" id="coEditName" autocomplete="off" /></div>
+      <div class="form-row"><label data-i18n="coBioLbl">About</label><textarea id="coEditBio" rows="3" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none;resize:vertical;"></textarea></div>
       <div class="form-row"><label data-i18n="regCoLogo">Company logo</label>
         <input type="file" id="coEditLogo" accept="image/*" onchange="previewCoEditLogo()" style="padding:6px;" />
         <img id="coEditLogoPrev" style="display:none;max-height:46px;max-width:120px;margin-top:6px;border-radius:8px;background:var(--surface-2);" />
@@ -1043,13 +1091,28 @@
     <button class="submit" style="margin-top:8px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="document.getElementById('importFile').click()" data-i18n="importData">Import backup</button>
     <input type="file" id="importFile" accept="application/json" style="display:none;" onchange="importData(event)" />
   </div>
+  <div class="grp" id="notifGroup">
+    <div class="lbl" data-i18n="notifTitle">Notifications</div>
+    <div class="ui-row">
+      <div><div class="lab" data-i18n="notifToggle">Allow notifications</div><div class="sub" data-i18n="notifSub">Get alerted on sync, new arrivals &amp; bookings</div></div>
+      <button class="ui-toggle" id="notifToggle" onclick="toggleNotify()" aria-label="toggle notifications"></button>
+    </div>
+    <div id="notifList" style="margin-top:6px;"></div>
+    <button class="share-copy" style="margin-top:8px;" onclick="clearNotifs()" data-i18n="notifClear">Clear notifications</button>
+  </div>
+  <div class="grp">
+    <div class="lbl" data-i18n="privacyTitle">Privacy &amp; cache</div>
+    <div id="deviceInfo" class="sheet-hint"></div>
+    <button class="submit" style="margin-top:8px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="clearLocalData()" data-i18n="clearCache">Clear local offline data</button>
+    <button class="submit" style="margin-top:8px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="forceLogout()" data-i18n="forceLogout">Sign out / revoke session</button>
+  </div>
 </div>
 
 <!-- PRICING MODEL BOTTOM SHEET -->
 <div class="sheet" id="pricingSheet">
   <div class="sheet-handle"></div>
-  <div class="sheet-title" data-i18n="prTitle">💰 Pricing model · GHS (₵)</div>
-  <p class="sheet-hint" data-i18n="prHint">One car, up to three prices by role. Currency is fixed to the Ghana cedi — no switching. Owner + 2 Partners see cost; Sales see a graded floor; the customer sees the quote.</p>
+  <div class="sheet-title" id="prTitleEl" data-i18n="prTitle">💰 Pricing model</div>
+  <p class="sheet-hint" id="prHintEl" data-i18n="prHint">One car, up to three prices by role. Prices show in your chosen display currency. Owner + 2 Partners see cost; Sales see a graded floor; the customer sees the quote.</p>
   <div id="pricingBody"></div>
   <button class="share-copy" style="width:100%;margin-top:14px;" onclick="closeSheets()">Close</button>
 </div>
@@ -1129,7 +1192,7 @@ const I18N = {
       workbenchTitle:"Sales Workbench",wbLeads:"Customer Leads",wbLinks:"Share Links",wbNotifs:"Booking Alerts",wbMyCars:"My Cars",wbAdmin:"Admin Actions",addNewCar:"+ Add New Car",
       wbStatLeads:"Leads",wbStatClicks:"Link clicks",wbStatConv:"Conversion",
       adminTitle:"Add New Car",fBrand:"Brand",fModel:"Model",fYear:"Year",fCond:"Condition",fBody:"Body Type",fBranch:"Branch",
-      fSpecs:"Specs (comma-separated)",fHighlights:"Highlights (comma-separated)",priceTiers:"Price Tiers (GHS)",
+      fSpecs:"Specs (comma-separated)",fHighlights:"Highlights (comma-separated)",priceTiers:"Price Tiers",
       fCost:"Cost",fFloorA:"Floor A (Senior)",fFloorB:"Floor B (Junior)",fQuote:"Quote (Customer Price)",
       fPhotos:"Photos",fPhotosHint:"Tap to upload car photos",fVideos:"Videos",fVideosHint:"Tap to add a car video (max 25MB)",preview:"Preview",saveCar:"Save Car",zhAuto:"Chinese preview (auto)",zhName:"Name",zhSub:"Sub",zhSpec:"Specs",zhHl:"Highlights",
       favTitle:"Saved & Recent",favSaved:"Saved",favRecent:"Recently viewed",favEmptyHint:"Tap the heart on any car to save it here",
@@ -1142,9 +1205,9 @@ const I18N = {
       floorA_lbl:"floor A",hiddenCost:"Cost hidden",marginA:"Margin A",floorB_lbl:"Floor B",quoteLbl:"Quote",
       yourFloorA:"Your Floor Price · Tier A",yourFloorB:"Your Floor Price · Tier B",lowestTier:"Lowest sales tier — quote to customer:",juniorTier:"Junior tier — quote to customer:",
       custQuote:"Customer quote",yourMargin:"Your margin",fullMargin:" · Full Margin",costLbl:"cost",grossProfit:"Gross profit",onSale:"On sale",
-      infoBtn:"ℹ How pricing works (GHS)",
+      infoBtn:"ℹ How pricing works",
       priceTiersTitle:"Three price tiers",costDesc:"Landed cost paid by the business. Owner + 2 Partners only.",floorADesc:"Lowest price Senior Sales (A) may quote.",floorBDesc:"Lowest price Junior Sales (B) may quote.",quoteDesc:"Public selling price the customer sees.",
-      mgLine:"A sells at quote → ₵{a} over Floor A · B → ₵{b} over Floor B · owner margin over cost → ₵{c}.",mgFixed:"All prices in Ghana cedi (₵); no currency switching.",
+      mgLine:"A sells at quote → ₵{a} over Floor A · B → ₵{b} over Floor B · owner margin over cost → ₵{c}.",mgFixed:"All prices convert to your display currency automatically.",
       pAllVisible:"You see all four tiers (cost, floors, quote).",pCustOnly:"As a customer you only see the public quote.",pHiddenNote:"Cost and other floors are hidden for your role.",
       noLeads:"No leads yet",noBookings:"No new bookings",st_new:"new",st_contacted:"contacted",st_closed:"closed",clicksLbl:"clicks",leadsLbl:"leads",
       upBoss:"Boss: upload car photos (full access)",upPartnerA:"Partner A: upload car photos (full access)",upPartnerB:"Partner B: upload car photos (full access)",upManager:"Manager: upload car photos (this branch)",upSalesA:"Sales A: upload car photos (your cars)",
@@ -1164,7 +1227,7 @@ const I18N = {
       pvR_partnerA:"Partner A",pvR_partnerA_sub:"Co-owner · same as Boss",
       pvR_partnerB:"Partner B",pvR_partnerB_sub:"Co-owner · same as Boss",
       pvS_kwame:"Kwame A. · Accra",pvS_ama:"Ama K. · Tema",pvS_kwasi:"Kwasi O. · Kumasi",
-      prTitle:"💰 Pricing Model · GHS (₵)",prHint:"One car, up to three prices by role. Currency is fixed to the Ghana cedi — no switching. Owner + 2 Partners see cost; Sales see a graded floor; the customer sees the quote.",
+      prTitle:"💰 Pricing model",prHint:"One car, up to three prices by role. Prices show in your chosen display currency. Owner + 2 Partners see cost; Sales see a graded floor; the customer sees the quote.",
       priceSetByTop:"Only Boss/Owner & Partners can set price tiers.",loginAs:"Login as",pvLogin:"Login as (admin only)",pvL_boss:"Boss / Owner",pvL_partnerA:"Partner A",pvL_partnerB:"Partner B",boundLink:"Bound link · customers reach only you",noSwitchRole:"Roles are assigned by admin — you cannot switch",noSwitchSales:"Share link is bound to your account",viewingAs:"viewing as",loggedInAs:"Logged in as",sortDefault:"Default",sortPriceAsc:"Price ↑",sortPriceDesc:"Price ↓",sortNewest:"Listed newest",sortOldest:"Listed oldest",inStockDays:"In stock",days:"days",overstock:"overstock",settingsTitle:"Settings",myContact:"My contact (customer reaches you)",fWhatsApp:"WhatsApp number",fPhone:"Phone",saveContact:"Save",installTitle:"Install the app (employees)",installHint:"iOS: Safari → Share → Add to Home Screen. Android: Chrome → ⋮ → Install app. Customers just open the shared link — no install needed.",staffMgmt:"Staff & roles (admin)",addStaff:"+ Add staff",staffId:"Staff ID",staffName:"Name",staffRole:"Role",staffBranch:"Branch",staffWa:"WhatsApp",staffPhone:"Phone",staffPin:"PIN (4-8 digits)",staffCreate:"Create & invite",staffCreated:"Staff created",contactSaved:"Contact saved",tierAssigned:"Assigned ",pvEditContact:"Edit my WhatsApp & phone",pvLockNote:"Your share link is bound to this account — customers can only reach you. Role switching is assigned by admin.",close:"Close"},
   zh:{tagline:"加纳 · 中国车出口",st_new:"新",st_contacted:"已联系",st_closed:"已成交",stAdvance:"点击推进",stUpdated:"线索状态更新为",featured:"精选",viewDetails:"查看详情",ourShowrooms:"门店网点",seeAll:"全部",
       newArrivals:"新到车源",browseAll:"浏览全部",yourConsultant:"您的销售顾问",consultRole:"高级销售 · 阿克拉店",
@@ -1176,7 +1239,7 @@ const I18N = {
       workbenchTitle:"销售工作台",wbLeads:"客户线索",wbLinks:"分享链接",wbNotifs:"预约提醒",wbMyCars:"我的车源",wbAdmin:"管理操作",addNewCar:"+ 新增车辆",
       wbStatLeads:"线索数",wbStatClicks:"链接点击",wbStatConv:"转化率",
       adminTitle:"新增车辆",fBrand:"品牌",fModel:"型号",fYear:"年份",fCond:"车况",fBody:"车型",fBranch:"门店",
-      fSpecs:"规格（逗号分隔）",fHighlights:"亮点（逗号分隔）",priceTiers:"价格分级（GHS）",
+      fSpecs:"规格（逗号分隔）",fHighlights:"亮点（逗号分隔）",priceTiers:"价格分级",
       fCost:"成本",fFloorA:"底价A（高级）",fFloorB:"底价B（初级）",fQuote:"报价（客户价）",
       fPhotos:"照片",fPhotosHint:"点击上传车辆照片",fVideos:"视频",fVideosHint:"点击添加车辆视频（最大 25MB）",preview:"预览",saveCar:"保存车辆",zhAuto:"中文预览（自动生成）",zhName:"名称",zhSub:"副标",zhSpec:"配置",zhHl:"亮点",
       favTitle:"收藏与历史",favSaved:"已收藏",favRecent:"最近浏览",favEmptyHint:"点击任意车辆的爱心即可收藏",
@@ -1189,9 +1252,9 @@ const I18N = {
       floorA_lbl:"底价A",hiddenCost:"成本隐藏",marginA:"A 级毛利",floorB_lbl:"底价B",quoteLbl:"报价",
       yourFloorA:"您的底价 · A 级",yourFloorB:"您的底价 · B 级",lowestTier:"最低销售级 — 对客户报价：",juniorTier:"初级级 — 对客户报价：",
       custQuote:"客户报价",yourMargin:"您的毛利",fullMargin:" · 全部毛利",costLbl:"成本",grossProfit:"毛利",onSale:"在售",
-      infoBtn:"ℹ 价格机制（GHS）",
+      infoBtn:"ℹ 价格机制",
       priceTiersTitle:"三级价格",costDesc:"企业落地成本。仅老板与两位合伙人可见。",floorADesc:"高级销售（A）可报的最低价。",floorBDesc:"初级销售（B）可报的最低价。",quoteDesc:"客户看到的公开售价。",
-      mgLine:"A 按报价售出 → 较底价A 多 ₵{a} · B → 较底价B 多 ₵{b} · 较成本 毛利 ₵{c}。",mgFixed:"所有价格以加纳赛地（₵）计，不切换货币。",
+      mgLine:"A 按报价售出 → 较底价A 多 ₵{a} · B → 较底价B 多 ₵{b} · 较成本 毛利 ₵{c}。",mgFixed:"所有价格自动按你设置的显示货币换算。",
       pAllVisible:"您可看到全部四级（成本、底价、报价）。",pCustOnly:"作为客户您只能看到公开报价。",pHiddenNote:"成本及其他底价对您的角色隐藏。",
       noLeads:"暂无线索",noBookings:"暂无新预约",st_new:"新",st_contacted:"已联系",st_closed:"已成交",clicksLbl:"次点击",leadsLbl:"条线索",
       upBoss:"老板：可上传车辆照片（全部权限）",upPartnerA:"合伙人A：可上传车辆照片（全部权限）",upPartnerB:"合伙人B：可上传车辆照片（全部权限）",upManager:"店长：可上传车辆照片（本店）",upSalesA:"销售A：可上传车辆照片（您的车）",
@@ -1211,11 +1274,25 @@ const I18N = {
       pvR_partnerA:"合伙人A",pvR_partnerA_sub:"共同业主 · 同老板",
       pvR_partnerB:"合伙人B",pvR_partnerB_sub:"共同业主 · 同老板",
       pvS_kwame:"Kwame A. · 阿克拉",pvS_ama:"Ama K. · 特马",pvS_kwasi:"Kwasi O. · 库马西",
-      prTitle:"💰 价格机制 · GHS (₵)",prHint:"同一辆车，按角色最多三档价格。货币固定为加纳赛地，不切换。业主与两位合伙人看成本；销售看分级底价；客户看报价。",
+      prTitle:"💰 价格机制",prHint:"同一辆车，按角色最多三档价格。价格按你设置的显示货币展示。业主与两位合伙人看成本；销售看分级底价；客户看报价。",
       priceSetByTop:"客户报价及销售底价仅由老板/业主和合伙人设定。",loginAs:"登录为",pvLogin:"登录身份（仅管理员）",pvL_boss:"老板 / 业主",pvL_partnerA:"合伙人A",pvL_partnerB:"合伙人B",boundLink:"绑定链接 · 客户只能联系你",noSwitchRole:"角色由管理员统一分配，你不能切换",noSwitchSales:"分享链接已绑定你的账号",viewingAs:"当前查看",loggedInAs:"已登录为",sortDefault:"默认",sortPriceAsc:"价格升序",sortPriceDesc:"价格降序",sortNewest:"上架最新",sortOldest:"上架最早",inStockDays:"在库",days:"天",overstock:"积压预警",settingsTitle:"设置",myContact:"我的联系方式（客户联系你）",fWhatsApp:"WhatsApp 号码",fPhone:"电话",saveContact:"保存",installTitle:"安装 App（员工）",installHint:"iOS：Safari 打开 → 分享 → 添加到主屏幕。Android：Chrome 打开 → ⋮ → 安装应用。客户只需打开分享链接，无需安装。",staffMgmt:"员工与角色（管理员）",addStaff:"+ 新增员工",staffId:"员工账号",staffName:"姓名",staffRole:"角色",staffBranch:"门店",staffWa:"WhatsApp",staffPhone:"电话",staffPin:"密码 PIN（4-8 位）",staffCreate:"创建并邀请",staffCreated:"员工已创建",contactSaved:"联系方式已保存",tierAssigned:"已分配 ",pvEditContact:"编辑我的 WhatsApp 与电话",pvLockNote:"你的分享链接已绑定本账号——客户只能联系你。角色切换由管理员统一分配。",close:"关闭"},
 };
 I18N.en.advanced="Advanced"; I18N.en.mileage="Mileage (km)"; I18N.en.priceRangeLbl="Price range (₵)"; I18N.en.color="Color"; I18N.en.year="Year"; I18N.en.advBranch="Sales point"; I18N.en.advHint="Combine multiple filters — options auto-detected from your listed cars."; I18N.en.resetFilters="Reset"; I18N.en.applyFilters="Apply"; I18N.en.allBranches="All branches"; I18N.en.allBrands="All brands"; I18N.en.needServer="Please enter your server address in Settings to load inventory.";
 I18N.zh.advanced="高级筛选"; I18N.zh.mileage="公里数 (km)"; I18N.zh.priceRangeLbl="价格区间 (₵)"; I18N.zh.color="颜色"; I18N.zh.year="年份"; I18N.zh.advBranch="销售点"; I18N.zh.advHint="可同时叠加多个条件——筛选项根据在售车辆自动识别。"; I18N.zh.resetFilters="重置"; I18N.zh.applyFilters="应用"; I18N.zh.allBranches="全部门店"; I18N.zh.allBrands="全部品牌"; I18N.zh.needServer="请在设置中填写服务器地址以加载库存。";
+
+/* settings: appearance / preferences / notifications / privacy / currency (en + zh) */
+I18N.en.appearance="Appearance"; I18N.en.themeLbl="Theme"; I18N.en.themeSub="Follows your phone's system setting by default"; I18N.en.thLight="Light"; I18N.en.thDark="Dark"; I18N.en.thSystem="System";
+I18N.en.prefs="Preferences"; I18N.en.defSalesLbl="Default salesperson"; I18N.en.defSalesSub="Who the home 'shopping with' defaults to"; I18N.en.defSalesSet="Default salesperson set";
+I18N.en.curLbl="Display currency"; I18N.en.curSub="Prices show in this currency (set your own rate)"; I18N.en.curRateLbl="Exchange rate";
+I18N.en.notifTitle="Notifications"; I18N.en.notifToggle="Allow notifications"; I18N.en.notifSub="Get alerted on sync, new arrivals & bookings"; I18N.en.notifClear="Clear notifications"; I18N.en.notifEmpty="No notifications yet"; I18N.en.notifOn="Notifications on"; I18N.en.notifOnSub="You'll be alerted on sync & bookings"; I18N.en.notifOff="Notifications off"; I18N.en.notifCleared="Notifications cleared";
+I18N.en.privacyTitle="Privacy & cache"; I18N.en.deviceId="Device"; I18N.en.lastSync="Last sync"; I18N.en.appVer="App version"; I18N.en.never="never"; I18N.en.clearCache="Clear local offline data"; I18N.en.clearCacheConfirm="Clear all local offline data? You can re-sync after signing in."; I18N.en.cacheCleared="Local data cleared"; I18N.en.forceLogout="Sign out / revoke session"; I18N.en.forceLogoutConfirm="Sign out and clear this session? Server tokens expire automatically.";
+I18N.en.synced="Synced"; I18N.en.signedIn="Signed in"; I18N.en.newCar="New car added"; I18N.en.bookingNotif="New booking"; I18N.en.coBioLbl="About";
+I18N.zh.appearance="外观"; I18N.zh.themeLbl="主题"; I18N.zh.themeSub="默认跟随手机系统设置"; I18N.zh.thLight="浅色"; I18N.zh.thDark="深色"; I18N.zh.thSystem="跟随系统";
+I18N.zh.prefs="偏好"; I18N.zh.defSalesLbl="默认销售员"; I18N.zh.defSalesSub="首页“正在浏览”默认指向谁"; I18N.zh.defSalesSet="已设置默认销售员";
+I18N.zh.curLbl="显示货币"; I18N.zh.curSub="价格以此货币显示（可自设汇率）"; I18N.zh.curRateLbl="汇率";
+I18N.zh.notifTitle="通知"; I18N.zh.notifToggle="允许通知"; I18N.zh.notifSub="同步、新到店、预约时提醒"; I18N.zh.notifClear="清除通知"; I18N.zh.notifEmpty="暂无通知"; I18N.zh.notifOn="通知已开启"; I18N.zh.notifOnSub="同步与预约时将收到提醒"; I18N.zh.notifOff="通知已关闭"; I18N.zh.notifCleared="通知已清除";
+I18N.zh.privacyTitle="隐私与缓存"; I18N.zh.deviceId="设备"; I18N.zh.lastSync="上次同步"; I18N.zh.appVer="应用版本"; I18N.zh.never="从未"; I18N.zh.clearCache="清除本机离线数据"; I18N.zh.clearCacheConfirm="清除本机全部离线数据？登录后可重新同步。"; I18N.zh.cacheCleared="本机数据已清除"; I18N.zh.forceLogout="退出登录 / 注销会话"; I18N.zh.forceLogoutConfirm="退出并清除本机会话？服务器令牌会自动过期。";
+I18N.zh.synced="已同步"; I18N.zh.signedIn="已登录"; I18N.zh.newCar="新增车辆"; I18N.zh.bookingNotif="新预约"; I18N.zh.coBioLbl="公司简介";
 I18N.en.backupTitle="Data backup (employees)"; I18N.en.backupHint="Export all cars, favorites and staff to a file. Re-import after reinstall to avoid any data loss."; I18N.en.exportData="Export backup"; I18N.en.importData="Import backup";
 I18N.en.installTitle="Get the app (employees)"; I18N.en.installHint="Employees install the Ant Motors native app from the App Store / Google Play, or via internal TestFlight / MDM. Customers simply open the shared link — no install needed.";
 I18N.zh.backupTitle="数据备份（员工）"; I18N.zh.backupHint="将全部车辆、收藏与员工数据导出为文件。重装后重新导入，避免任何数据丢失。"; I18N.zh.exportData="导出备份"; I18N.zh.importData="导入备份";
@@ -1336,7 +1413,91 @@ function hlText(h){ return curLang==="zh" ? (ZH.hl[h]||h) : h; }
 const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z" stroke="#E8C268" stroke-width="1.6" stroke-linejoin="round"/></svg>';
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; document.getElementById('themeIcon').innerHTML=ic; document.getElementById('themeIcon2').innerHTML=ic; }
-function toggleTheme(){ curTheme=curTheme==="dark"?"light":"dark"; document.documentElement.dataset.theme=curTheme; renderThemeIcon(); }
+/* ---------- theme: 3-state (light / dark / system) ---------- */
+const APP_VER='1.0.0';
+let amTheme = (typeof localStorage!=='undefined' && localStorage.getItem('am_theme')) || 'system';
+const __mqDark = (typeof matchMedia!=='undefined') ? matchMedia('(prefers-color-scheme: dark)') : null;
+function effectiveTheme(){ return (amTheme==='system') ? ((__mqDark&&__mqDark.matches)?'dark':'light') : amTheme; }
+function applyTheme(){
+  curTheme = effectiveTheme();
+  document.documentElement.dataset.theme = curTheme;
+  renderThemeIcon();
+  const sl=document.getElementById('thLight'), sd=document.getElementById('thDark'), ss=document.getElementById('thSys');
+  if(sl) sl.classList.toggle('on', amTheme==='light');
+  if(sd) sd.classList.toggle('on', amTheme==='dark');
+  if(ss) ss.classList.toggle('on', amTheme==='system');
+}
+function setThemeMode(m){ if(m!=='light'&&m!=='dark'&&m!=='system') return; amTheme=m; try{localStorage.setItem('am_theme',m);}catch(e){} applyTheme(); }
+function toggleTheme(){ const cur=effectiveTheme(); setThemeMode(cur==='dark'?'light':'dark'); } // top icon: explicit light<->dark, overrides system
+if(__mqDark){ try{ __mqDark.addEventListener('change', ()=>{ if(amTheme==='system') applyTheme(); }); }catch(e){} }
+
+/* ---------- currency: app self-set display currency ---------- */
+const CURRENCIES = {
+  GHS:{symbol:'₵', label:'GHS · 加纳赛地', rate:1},
+  CNY:{symbol:'¥', label:'CNY · 人民币', rate:0.46},
+  USD:{symbol:'$', label:'USD · 美元', rate:0.064}
+};
+let curCode = (typeof localStorage!=='undefined' && localStorage.getItem('am_currency')) || 'GHS';
+let CUR = Object.assign({}, CURRENCIES[curCode] || CURRENCIES.GHS);
+{ const sr=(typeof localStorage!=='undefined')?parseFloat(localStorage.getItem('am_currate')):NaN; if(!isNaN(sr)&&sr>0) CUR.rate=sr; }
+function fmtMoney(v){ if(typeof v!=='number'||isNaN(v)) return '—'; const r=(typeof CUR.rate==='number')?CUR.rate:1; return CUR.symbol + fmt(Math.round(v*r*100)/100); }
+function fillCurrencyUI(){
+  const sel=document.getElementById('curSel'); if(sel){ sel.innerHTML=Object.keys(CURRENCIES).map(k=>`<option value="${k}" ${k===curCode?'selected':''}>${CURRENCIES[k].label}</option>`).join(''); }
+  const ri=document.getElementById('curRate'); if(ri) ri.value=CUR.rate;
+  const rs=document.getElementById('curRateSub'); if(rs) rs.textContent='1 GHS = '+CUR.rate+' '+(curCode==='GHS'?'GHS':curCode);
+}
+function setCurrency(code){ if(!CURRENCIES[code]) return; curCode=code; CUR=Object.assign({},CURRENCIES[code]); try{localStorage.setItem('am_currency',code);}catch(e){} fillCurrencyUI(); refreshPrices(); }
+function setCurRate(v){ const n=parseFloat(v); if(isNaN(n)||n<=0) return; CUR.rate=n; try{localStorage.setItem('am_currate',String(n));}catch(e){} const rs=document.getElementById('curRateSub'); if(rs) rs.textContent='1 GHS = '+CUR.rate+' '+(curCode==='GHS'?'GHS':curCode); refreshPrices(); }
+function refreshPrices(){ renderRolePrices(); if(typeof renderWorkbench==='function') renderWorkbench(); const pt=document.getElementById('prTitleEl'); if(pt) pt.textContent='💰 '+T('prTitle','Pricing model')+' · '+CUR.symbol; }
+
+/* ---------- default salesperson preference ---------- */
+function applyDefSales(){ const ds=(typeof localStorage!=='undefined')?localStorage.getItem('am_defSales'):null; if(ds && isTopEmployee() && ALL_EMP[ds]){ curSales=ds; } }
+function fillDefSalesUI(){
+  const row=document.getElementById('defSalesRow'), sel=document.getElementById('defSalesSel'); if(!row||!sel) return;
+  const show=isTopEmployee();
+  row.style.display = show?'flex':'none';
+  if(!show) return;
+  sel.innerHTML=Object.keys(ALL_EMP).map(k=>`<option value="${k}" ${k===curSales?'selected':''}>${ALL_EMP[k].name} · ${salesRoleLabel(ALL_EMP[k])}</option>`).join('');
+}
+function setDefSales(v){ try{localStorage.setItem('am_defSales',v);}catch(e){} curSales=v; renderAttrBanner(); renderRolePrices(); if(typeof renderWorkbench==='function') renderWorkbench(); toast(T('defSalesSet','Default salesperson set')+': '+empOf(v).name); }
+
+/* ---------- notifications (client-side; Web Push needs backend) ---------- */
+function pushNotif(title, body, icon){
+  try{ const list=JSON.parse(localStorage.getItem('am_notifs')||'[]'); list.unshift({t:title,d:body||'',ic:icon||'🔔',ts:Date.now()}); localStorage.setItem('am_notifs', JSON.stringify(list.slice(0,30))); }catch(e){}
+  renderNotifs();
+  if(localStorage.getItem('am_notify')==='1' && typeof Notification!=='undefined' && Notification.permission==='granted'){ try{ new Notification('ANT MOTORS · '+title,{body:body||''}); }catch(e){} }
+  toast('🔔 '+title+(body?('<br><span style="font-size:11px;">'+body+'</span>'):''));
+}
+function renderNotifs(){
+  const box=document.getElementById('notifList'); if(!box) return;
+  let list=[]; try{ list=JSON.parse(localStorage.getItem('am_notifs')||'[]'); }catch(e){}
+  if(!list.length){ box.innerHTML='<div class="notif-empty" data-i18n="notifEmpty">No notifications yet</div>'; return; }
+  box.innerHTML=list.map(n=>`<div class="notif-item"><div class="ni-ic">${n.ic||'🔔'}</div><div class="ni-b"><div class="ni-t">${n.t}</div><div class="ni-d">${n.d||''}</div></div></div>`).join('');
+}
+function toggleNotify(){
+  const on=localStorage.getItem('am_notify')==='1'; const nv=on?'0':'1';
+  try{ localStorage.setItem('am_notify',nv); }catch(e){}
+  const btn=document.getElementById('notifToggle'); if(btn) btn.classList.toggle('on', nv==='1');
+  if(nv==='1'){ if(typeof Notification!=='undefined' && Notification.permission==='default'){ try{Notification.requestPermission().catch(()=>{});}catch(e){} } pushNotif(T('notifOn','Notifications on'), T('notifOnSub','You’ll be alerted on sync & bookings'), '🔔'); }
+  else { toast(T('notifOff','Notifications off')); }
+}
+function clearNotifs(){ try{localStorage.removeItem('am_notifs');}catch(e){} renderNotifs(); toast(T('notifCleared','Notifications cleared')); }
+
+/* ---------- privacy & cache ---------- */
+function genDeviceId(){ let d=localStorage.getItem('am_device'); if(!d){ d='D'+Math.random().toString(36).slice(2,10).toUpperCase(); try{localStorage.setItem('am_device',d);}catch(e){} } return d; }
+function showDevices(){
+  const box=document.getElementById('deviceInfo'); if(!box) return;
+  const dId=genDeviceId();
+  const last=localStorage.getItem('am_last_sync')? new Date(parseInt(localStorage.getItem('am_last_sync'))).toLocaleString() : T('never','never');
+  box.innerHTML=`📱 ${T('deviceId','Device')}: <b>${dId}</b><br>🗓 ${T('lastSync','Last sync')}: ${last}<br>⏱ ${T('appVer','App version')}: ${APP_VER}`;
+}
+function clearLocalData(){
+  if(typeof confirm==='function' && !confirm(T('clearCacheConfirm','Clear all local offline data? You can re-sync after signing in.'))) return;
+  ['am_dirty_cars','am_dirty_emps','am_notifs'].forEach(k=>{ try{localStorage.removeItem(k);}catch(e){} });
+  try{ if('caches' in window) caches.keys().then(ks=>ks.forEach(k=>caches.delete(k))); }catch(e){}
+  toast(T('cacheCleared','Local data cleared'));
+}
+function forceLogout(){ if(typeof confirm==='function' && !confirm(T('forceLogoutConfirm','Sign out and clear this session? Server tokens expire automatically.'))) return; syncLogout(); }
 
 function syncLangUI(){
   const en=document.getElementById('segEn'), zh=document.getElementById('segZh');
@@ -1356,6 +1517,7 @@ function setLang(l){
   syncLangUI();
   applyI18n();
   updateAuthCTA();   // run early: refresh auth button + welcome bar BEFORE the heavier re-renders below
+  renderNotifs(); showDevices(); refreshPrices(); // keep new settings UI in the chosen language
   // Re-render every screen + open sheet so ALL dynamic (T()-driven) content
   // switches language immediately instead of staying in the previous language.
   renderHome(); renderStockFiltered(); renderShowroomList(); renderFav();
@@ -1578,10 +1740,10 @@ function renderStockFiltered(){
 
 function rolePrice(p){
   if(!p) return "—";
-  if(isTopRole() && typeof p.cost==='number') return T('lblCost','Cost')+" ₵"+fmt(p.cost);
-  if((curRole==="manager"||curRole==="salesA") && typeof p.floorA==='number') return T('lblFloorA','Floor A')+" ₵"+fmt(p.floorA);
-  if(curRole==="salesB" && typeof p.floorB==='number') return T('lblFloorB','Floor B')+" ₵"+fmt(p.floorB);
-  if(typeof p.quote==='number') return "₵"+fmt(p.quote);
+  if(isTopRole() && typeof p.cost==='number') return T('lblCost','Cost')+" "+fmtMoney(p.cost);
+  if((curRole==="manager"||curRole==="salesA") && typeof p.floorA==='number') return T('lblFloorA','Floor A')+" "+fmtMoney(p.floorA);
+  if(curRole==="salesB" && typeof p.floorB==='number') return T('lblFloorB','Floor B')+" "+fmtMoney(p.floorB);
+  if(typeof p.quote==='number') return fmtMoney(p.quote);
   return "—";
 }
 function fmt(n){ return n.toLocaleString('en-US'); }
@@ -1648,30 +1810,30 @@ function renderRolePrices(){
   const hero=CARS.lc || CARS[Object.keys(CARS)[0]];
   if(!hero || !hero.price) return;
   const hp=(curRole==='customer' || typeof hero.price.cost!=='number') ? hero.price.quote : hero.price.cost;
-  document.getElementById('heroPrice').textContent = "From ₵"+fmt(hp);
+  document.getElementById('heroPrice').textContent = "From "+fmtMoney(hp);
   const c=CARS[curCar]; if(!c) return;
   const pb=document.getElementById('priceBlock'); const sale=empOf(curSales); const contactName=sale.name;
   if(curRole==="customer"){
-    pb.innerHTML=`<div class="lab">${T('priceSelling','Selling Price')}</div><div class="big">₵${fmt(c.price.quote)}</div>
+    pb.innerHTML=`<div class="lab">${T('priceSelling','Selling Price')}</div><div class="big">${fmtMoney(c.price.quote)}</div>
       <div class="note">${T('noteExport','Export-ready · duties cleared at Tema port')}</div>
       <div class="compare"><div>${T('soldBy','Sold by')}<b>${contactName}</b></div><div>WhatsApp<b>${sale.wa}</b></div></div>`;
   } else if(curRole==="manager"){
-    pb.innerHTML=`<div class="lab">${T('mgrView','Manager View · All Floors')}</div><div class="big">₵${fmt(c.price.floorA)} <span style="font-size:13px;color:var(--text-dim);">${T('floorA_lbl','floor A')}</span></div>
-      <div class="note">${T('floorB_lbl','Floor B')} ₵${fmt(c.price.floorB)} · ${T('quoteLbl','Quote')} ₵${fmt(c.price.quote)} · ${T('hiddenCost','Cost hidden')}</div>
-      <div class="compare"><div>${T('quoteLbl','Quote')}<b>₵${fmt(c.price.quote)}</b></div><div>${T('marginA','Margin A')}<b>₵${fmt(c.price.quote-c.price.floorA)}</b></div></div>`;
+    pb.innerHTML=`<div class="lab">${T('mgrView','Manager View · All Floors')}</div><div class="big">${fmtMoney(c.price.floorA)} <span style="font-size:13px;color:var(--text-dim);">${T('floorA_lbl','floor A')}</span></div>
+      <div class="note">${T('floorB_lbl','Floor B')} ${fmtMoney(c.price.floorB)} · ${T('quoteLbl','Quote')} ${fmtMoney(c.price.quote)} · ${T('hiddenCost','Cost hidden')}</div>
+      <div class="compare"><div>${T('quoteLbl','Quote')}<b>${fmtMoney(c.price.quote)}</b></div><div>${T('marginA','Margin A')}<b>${fmtMoney(c.price.quote-c.price.floorA)}</b></div></div>`;
   } else if(curRole==="salesA"){
-    pb.innerHTML=`<div class="lab">${T('yourFloorA','Your Floor Price · Tier A')}</div><div class="big">₵${fmt(c.price.floorA)}</div>
-      <div class="note">${T('lowestTier','Lowest sales tier — quote to customer:')} ₵${fmt(c.price.quote)}</div>
-      <div class="compare"><div>${T('custQuote','Customer quote')}<b>₵${fmt(c.price.quote)}</b></div><div>${T('yourMargin','Your margin')}<b>₵${fmt(c.price.quote-c.price.floorA)}</b></div></div>`;
+    pb.innerHTML=`<div class="lab">${T('yourFloorA','Your Floor Price · Tier A')}</div><div class="big">${fmtMoney(c.price.floorA)}</div>
+      <div class="note">${T('lowestTier','Lowest sales tier — quote to customer:')} ${fmtMoney(c.price.quote)}</div>
+      <div class="compare"><div>${T('custQuote','Customer quote')}<b>${fmtMoney(c.price.quote)}</b></div><div>${T('yourMargin','Your margin')}<b>${fmtMoney(c.price.quote-c.price.floorA)}</b></div></div>`;
   } else if(curRole==="salesB"){
-    pb.innerHTML=`<div class="lab">${T('yourFloorB','Your Floor Price · Tier B')}</div><div class="big">₵${fmt(c.price.floorB)}</div>
-      <div class="note">${T('juniorTier','Junior tier — quote to customer:')} ₵${fmt(c.price.quote)}</div>
-      <div class="compare"><div>${T('custQuote','Customer quote')}<b>₵${fmt(c.price.quote)}</b></div><div>${T('yourMargin','Your margin')}<b>₵${fmt(c.price.quote-c.price.floorB)}</b></div></div>`;
+    pb.innerHTML=`<div class="lab">${T('yourFloorB','Your Floor Price · Tier B')}</div><div class="big">${fmtMoney(c.price.floorB)}</div>
+      <div class="note">${T('juniorTier','Junior tier — quote to customer:')} ${fmtMoney(c.price.quote)}</div>
+      <div class="compare"><div>${T('custQuote','Customer quote')}<b>${fmtMoney(c.price.quote)}</b></div><div>${T('yourMargin','Your margin')}<b>${fmtMoney(c.price.quote-c.price.floorB)}</b></div></div>`;
   } else {
     const roleLbl=isTopRole()?({boss:T('rl_boss','Boss View'),partnerA:T('rl_partnerA','Partner A View'),partnerB:T('rl_partnerB','Partner B View')}[curRole]):'Owner View';
-    pb.innerHTML=`<div class="lab">${roleLbl}${T('fullMargin',' · Full Margin')}</div><div class="big">₵${fmt(c.price.cost)} <span style="font-size:13px;color:var(--text-dim);">${T('costLbl','cost')}</span></div>
-      <div class="note">${T('quoteLbl','Quote')} ₵${fmt(c.price.quote)} · ${T('lblFloorA','Floor A')} ₵${fmt(c.price.floorA)} · ${T('lblFloorB','Floor B')} ₵${fmt(c.price.floorB)}</div>
-      <div class="compare"><div>${T('grossProfit','Gross profit')}<b>₵${fmt(c.price.quote-c.price.cost)}</b></div><div>${T('onSale','On sale')}<b>${contactName}</b></div></div>`;
+    pb.innerHTML=`<div class="lab">${roleLbl}${T('fullMargin',' · Full Margin')}</div><div class="big">${fmtMoney(c.price.cost)} <span style="font-size:13px;color:var(--text-dim);">${T('costLbl','cost')}</span></div>
+      <div class="note">${T('quoteLbl','Quote')} ${fmtMoney(c.price.quote)} · ${T('lblFloorA','Floor A')} ${fmtMoney(c.price.floorA)} · ${T('lblFloorB','Floor B')} ${fmtMoney(c.price.floorB)}</div>
+      <div class="compare"><div>${T('grossProfit','Gross profit')}<b>${fmtMoney(c.price.quote-c.price.cost)}</b></div><div>${T('onSale','On sale')}<b>${contactName}</b></div></div>`;
   }
   const infoBtn=document.createElement('button');
   infoBtn.textContent=T('infoBtn','ℹ How pricing works (GHS)');
@@ -1910,15 +2072,16 @@ function openPricingInfo(){
   }
   const rows=tiers.map(t=>`<div class="wb-link" style="border-bottom:1px solid var(--border);padding:11px 0;">
     <div style="flex:1;"><b>${t[1]}</b><br><span style="font-size:11px;color:var(--text-dim);">${t[2]}</span></div>
-    <div style="font-weight:800;color:var(--gold);">₵${fmt(t[3])}</div></div>`).join('');
+    <div style="font-weight:800;color:var(--gold);">${fmtMoney(t[3])}</div></div>`).join('');
   const hiddenNote = isTopRole() ? T('pAllVisible','You see all four tiers (cost, floors, quote).')
     : (curRole==='customer' ? T('pCustOnly','As a customer you only see the public quote.') : T('pHiddenNote','Cost and other floors are hidden for your role.'));
   const mg=T('mgLine','A sells at quote → ₵{a} over Floor A · B → ₵{b} over Floor B · owner margin over cost → ₵{c}.')
-    .replace('{a}',fmt(p.quote-p.floorA)).replace('{b}',fmt(p.quote-p.floorB)).replace('{c}',fmt(p.quote-p.cost));
+    .replace('{a}',fmt(p.quote-p.floorA)).replace('{b}',fmt(p.quote-p.floorB)).replace('{c}',fmt(p.quote-p.cost)).replace(/₵/g, CUR.symbol);
   document.getElementById('pricingBody').innerHTML=
     `<div class="price-tiers-h">${T('priceTiersTitle','Three price tiers')}</div>${rows}
-     <div style="font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.6;">${mg} ${T('mgFixed','All prices in Ghana cedi (₵); no currency switching.')}</div>
+     <div style="font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.6;">${mg} ${T('mgFixed','All prices convert to your display currency automatically.').replace(/₵/g, CUR.symbol)}</div>
      <div style="font-size:11px;color:var(--gold);margin-top:8px;line-height:1.6;">${hiddenNote}</div>`;
+  const pt=document.getElementById('prTitleEl'); if(pt) pt.textContent='💰 '+T('prTitle','Pricing model')+' · '+CUR.symbol;
   document.getElementById('sheetMask').classList.add('show');
   document.getElementById('pricingSheet').classList.add('show');
 }
@@ -1969,6 +2132,8 @@ function openSettings(){
       cg.style.display='block';
       document.getElementById('coNameTxt').textContent=co.name||'';
       document.getElementById('coCodeTxt').textContent=co.code||'';
+      const bt=document.getElementById('coBioTxt'); if(bt) bt.textContent=co.bio||'';
+      const be=document.getElementById('coEditBio'); if(be) be.value=co.bio||'';
       const limg=document.getElementById('coLogoImg'); if(limg) limg.src = co.logo || 'ant_logo_appbar.png';
       const top=isTopEmployee();
       document.getElementById('coEditBox').style.display='none';
@@ -1979,6 +2144,13 @@ function openSettings(){
   }
   document.getElementById('sheetMask').classList.add('show');
   document.getElementById('settingsSheet').classList.add('show');
+  // populate new settings: theme / currency / default salesperson / notifications / devices
+  applyTheme();
+  fillCurrencyUI();
+  fillDefSalesUI();
+  renderNotifs();
+  const nt=document.getElementById('notifToggle'); if(nt) nt.classList.toggle('on', localStorage.getItem('am_notify')==='1');
+  showDevices();
 }
 function saveMyContact(){
   const e=empOf(curEmployee);
@@ -2486,6 +2658,7 @@ async function syncLogin(){
     await syncNow(true); await refreshMembership();
     updateRoleUI(); renderHome(); renderStock();
     toast(T('syncSignedIn','Signed in as')+' <b>'+r.employee.name+'</b>');
+    pushNotif(T('signedIn','Signed in'), T('syncSignedIn','Signed in as')+' '+r.employee.name, '👋');
     updateAuthCTA();
     if(r.mustChangePassword) setTimeout(()=>toast('⚠️ '+T('pwUpgradeHint','Your account still uses an old PIN — set a real password via “Forgot password?”')),2600);
   }catch(e){
@@ -2680,7 +2853,7 @@ function toggleCoEdit(){
   const box=document.getElementById('coEditBox'); if(!box) return;
   const open=box.style.display!=='block';
   box.style.display=open?'block':'none';
-  const co=loadCompany(); if(co) document.getElementById('coEditName').value=co.name||'';
+  const co=loadCompany(); if(co){ document.getElementById('coEditName').value=co.name||''; const be=document.getElementById('coEditBio'); if(be) be.value=co.bio||''; }
   window.__coEditLogo=undefined;
   const prev=document.getElementById('coEditLogoPrev'); if(prev) prev.style.display='none';
 }
@@ -2692,11 +2865,13 @@ async function saveCompany(){
   const co=loadCompany(); if(!co) return;
   const name=(document.getElementById('coEditName').value||'').trim();
   if(!name){ toast(T('regCoName','Company name')+': '+T('reqField','required')); return; }
+  const bio=(document.getElementById('coEditBio').value||'').trim();
   try{
-    const r=await api('/api/company',{method:'PUT',body:{name, logo: (window.__coEditLogo!==undefined?window.__coEditLogo:co.logo)}});
+    const r=await api('/api/company',{method:'PUT',body:{name, bio, logo: (window.__coEditLogo!==undefined?window.__coEditLogo:co.logo)}});
     localStorage.setItem('am_company',JSON.stringify(r.company)); applyCompanyLogo();
     document.getElementById('coNameTxt').textContent=r.company.name;
     document.getElementById('coCodeTxt').textContent=r.company.code;
+    const bt=document.getElementById('coBioTxt'); if(bt) bt.textContent=r.company.bio||'';
     const limg=document.getElementById('coLogoImg'); if(limg) limg.src=r.company.logo||'ant_logo_appbar.png';
     toggleCoEdit();
     toast('✅ '+T('coSaved','Company saved'));
@@ -2807,7 +2982,8 @@ async function syncNow(silent){
       toast('⚠ '+bad.map(r=>r.id+': '+(why[r.reason]||r.reason)).join('<br>'));
     }
     setSyncState('ok',T('syncedAt','Synced')+' · '+new Date().toLocaleTimeString());
-    if(!silent) toast(T('syncDone','Sync complete')+' · '+n+' '+T('syncItems','item(s)'));
+    try{ localStorage.setItem('am_last_sync', String(Date.now())); }catch(e){}
+    if(!silent){ toast(T('syncDone','Sync complete')+' · '+n+' '+T('syncItems','item(s)')); pushNotif(T('synced','Synced'), n+' '+T('syncItems','item(s)')+' · '+new Date().toLocaleTimeString(), '🔄'); }
   }catch(e){
     setSyncState('err', (navigator.onLine===false)?T('syncQueued','Offline — changes queued'):e.message);
     if(!silent) toast('⚠ '+SYNC.msg);
@@ -3131,6 +3307,7 @@ function submitBooking(){
   lastBooking={name:name,phone:phone,date:date,time:time,branch:branch,car:curCar,sales:curSales};
   renderBookingConfirm(lastBooking);
   BOOKING_NOTIFS.unshift({sales:curSales,name:name,phone:phone,car:curCar,date:date,time:time,branch:branch,status:'new'});
+  pushNotif(T('bookingNotif','New booking'), name+' · '+c.model+' · '+s.name, '📅');
   toast(T('bookSent','🔔 Booking sent to {n} · they\'ll WhatsApp you at {p}').replace('{n}',s.name).replace('{p}',phone));
 }
 
@@ -3185,7 +3362,8 @@ function parseDeepLink(){
   }catch(e){}
 }
 parseDeepLink();
-renderThemeIcon(); syncLangUI(); applyI18n(); renderSyncUI(); updateAuthCTA();
+applyTheme(); syncLangUI(); applyI18n(); renderSyncUI(); updateAuthCTA();
+applyDefSales(); renderNotifs(); genDeviceId();
 bootstrap().then(()=>{
   renderRolePrices(); updateDemoState(); syncSheet(); updateRoleUI(); renderWorkbench();
   if(window.__deeplink && CARS[curCar]) openDetail(curCar);
