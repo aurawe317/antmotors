@@ -1280,6 +1280,11 @@ function applyI18n(){
   document.querySelectorAll('.search input').forEach(i=>{ if(!i.value) i.placeholder=phMap[curLang]; });
   const bk=document.getElementById('bkMsg'); if(bk) bk.placeholder=T('msgPlaceholder','I\'d like to see the car and discuss the deal.');
   document.documentElement.lang = curLang==="zh"?"zh":"en";
+  // Keep the top-right auth button in sync with language on EVERY i18n pass
+  // (init + every language switch). Done here so it never depends on the
+  // heavier re-render chain in setLang, which can abort before updateAuthCTA().
+  const sb=document.getElementById('settingsBtn');
+  if(sb){ const li=!!(typeof SYNC!=='undefined'&&SYNC.token); sb.textContent=li?T('settingsBtn','⚙ Settings'):T('loginRegBtn','⚙ Login / Register'); }
 }
 function T(k, fb){ const v=I18N[curLang] && I18N[curLang][k]; return v!==undefined ? v : (fb!==undefined?fb:k); }
 function salesRoleLabel(s){ return curLang==="zh" ? s.roleZh : s.role; }
@@ -1340,6 +1345,7 @@ function setLang(l){
   try{ localStorage.setItem('am_lang',curLang); }catch(e){}
   syncLangUI();
   applyI18n();
+  updateAuthCTA();   // run early: refresh auth button + welcome bar BEFORE the heavier re-renders below
   // Re-render every screen + open sheet so ALL dynamic (T()-driven) content
   // switches language immediately instead of staying in the previous language.
   renderHome(); renderStockFiltered(); renderShowroomList(); renderFav();

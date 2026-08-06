@@ -1,4 +1,4 @@
-const CACHE = 'antmotors-v28';
+const CACHE = 'antmotors-v29';
 const STATIC = ['./', './index.html', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon.svg'];
 
 self.addEventListener('install', e => {
