@@ -950,9 +950,15 @@
   </div>
   <div class="grp" id="settingsExtra" style="display:none;">
     <div class="lbl" data-i18n="myContact">My contact (customer reaches you)</div>
-    <div class="form-row"><label data-i18n="fWhatsApp">WhatsApp number</label><input type="text" id="setWa" placeholder="233200000001" /></div>
-    <div class="form-row"><label data-i18n="fPhone">Phone</label><input type="text" id="setPhone" placeholder="+233 20 000 0001" /></div>
-    <button class="submit" onclick="saveMyContact()" data-i18n="saveContact">Save</button>
+    <div id="contactForm">
+      <div class="form-row"><label data-i18n="fWhatsApp">WhatsApp number</label><input type="text" id="setWa" placeholder="233200000001" /></div>
+      <div class="form-row"><label data-i18n="fPhone">Phone</label><input type="text" id="setPhone" placeholder="+233 20 000 0001" /></div>
+      <button class="submit" onclick="saveMyContact()" data-i18n="saveContact">Save</button>
+    </div>
+    <div id="contactSummary" style="display:none;align-items:center;gap:10px;">
+      <div id="contactText" style="flex:1;font-size:13px;color:var(--text-dim);min-width:0;word-break:break-word;"></div>
+      <button class="share-copy" onclick="editMyContact()" data-i18n="edit">Edit</button>
+    </div>
   </div>
   <div class="grp" id="joinGroup" style="display:none;">
     <div class="lbl" data-i18n="joinTitle">Join your company</div>
@@ -1277,7 +1283,7 @@ const I18N = {
       pvR_partnerB:"Partner B",pvR_partnerB_sub:"Co-owner · same as Boss",
       pvS_kwame:"Kwame A. · Accra",pvS_ama:"Ama K. · Tema",pvS_kwasi:"Kwasi O. · Kumasi",
       prTitle:"💰 Pricing model",prHint:"One car, up to three prices by role. Prices show in your chosen display currency. Owner + 2 Partners see cost; Sales see a graded floor; the customer sees the quote.",
-      priceSetByTop:"Only Boss/Owner & Partners can set price tiers.",loginAs:"Login as",pvLogin:"Login as (admin only)",pvL_boss:"Boss / Owner",pvL_partnerA:"Partner A",pvL_partnerB:"Partner B",boundLink:"Bound link · customers reach only you",noSwitchRole:"Roles are assigned by admin — you cannot switch",noSwitchSales:"Share link is bound to your account",viewingAs:"viewing as",loggedInAs:"Logged in as",sortDefault:"Default",sortPriceAsc:"Price ↑",sortPriceDesc:"Price ↓",sortNewest:"Listed newest",sortOldest:"Listed oldest",inStockDays:"In stock",days:"days",overstock:"overstock",settingsTitle:"Settings",myContact:"My contact (customer reaches you)",fWhatsApp:"WhatsApp number",fPhone:"Phone",saveContact:"Save",installTitle:"Install the app (employees)",installHint:"iOS: Safari → Share → Add to Home Screen. Android: Chrome → ⋮ → Install app. Customers just open the shared link — no install needed.",staffMgmt:"Staff & roles (admin)",addStaff:"+ Add staff",staffId:"Staff ID",staffName:"Name",staffRole:"Role",staffBranch:"Branch",staffWa:"WhatsApp",staffPhone:"Phone",staffPin:"PIN (4-8 digits)",staffCreate:"Create & invite",staffCreated:"Staff created",contactSaved:"Contact saved",tierAssigned:"Assigned ",pvEditContact:"Edit my WhatsApp & phone",pvLockNote:"Your share link is bound to this account — customers can only reach you. Role switching is assigned by admin.",close:"Close"},
+      priceSetByTop:"Only Boss/Owner & Partners can set price tiers.",loginAs:"Login as",pvLogin:"Login as (admin only)",pvL_boss:"Boss / Owner",pvL_partnerA:"Partner A",pvL_partnerB:"Partner B",boundLink:"Bound link · customers reach only you",noSwitchRole:"Roles are assigned by admin — you cannot switch",noSwitchSales:"Share link is bound to your account",viewingAs:"viewing as",loggedInAs:"Logged in as",sortDefault:"Default",sortPriceAsc:"Price ↑",sortPriceDesc:"Price ↓",sortNewest:"Listed newest",sortOldest:"Listed oldest",inStockDays:"In stock",days:"days",overstock:"overstock",settingsTitle:"Settings",myContact:"My contact (customer reaches you)",fWhatsApp:"WhatsApp number",fPhone:"Phone",saveContact:"Save",installTitle:"Install the app (employees)",installHint:"iOS: Safari → Share → Add to Home Screen. Android: Chrome → ⋮ → Install app. Customers just open the shared link — no install needed.",staffMgmt:"Staff & roles (admin)",addStaff:"+ Add staff",staffId:"Staff ID",staffName:"Name",staffRole:"Role",staffBranch:"Branch",staffWa:"WhatsApp",staffPhone:"Phone",staffPin:"PIN (4-8 digits)",staffCreate:"Create & invite",staffCreated:"Staff created",contactSaved:"Contact saved",tierAssigned:"Assigned ",pvEditContact:"Edit my WhatsApp & phone",pvLockNote:"Your share link is bound to this account — customers can only reach you. Role switching is assigned by admin.",close:"Close",edit:"Edit",noContact:"No contact set"},
   zh:{tagline:"加纳 · 中国车出口",st_new:"新",st_contacted:"已联系",st_closed:"已成交",stAdvance:"点击推进",stUpdated:"线索状态更新为",featured:"精选",viewDetails:"查看详情",ourShowrooms:"门店网点",seeAll:"全部",
       newArrivals:"新到车源",browseAll:"浏览全部",yourConsultant:"您的销售顾问",consultRole:"高级销售 · 阿克拉店",
       inventory:"在售库存",all:"全部",new:"新车",used:"二手车",highlights:"配置亮点",bookViewing:"预约看车",back:"返回",
@@ -1325,7 +1331,7 @@ const I18N = {
       pvR_partnerB:"合伙人B",pvR_partnerB_sub:"共同业主 · 同老板",
       pvS_kwame:"Kwame A. · 阿克拉",pvS_ama:"Ama K. · 特马",pvS_kwasi:"Kwasi O. · 库马西",
       prTitle:"💰 价格机制",prHint:"同一辆车，按角色最多三档价格。价格按你设置的显示货币展示。业主与两位合伙人看成本；销售看分级底价；客户看报价。",
-      priceSetByTop:"客户报价及销售底价仅由老板/业主和合伙人设定。",loginAs:"登录为",pvLogin:"登录身份（仅管理员）",pvL_boss:"老板 / 业主",pvL_partnerA:"合伙人A",pvL_partnerB:"合伙人B",boundLink:"绑定链接 · 客户只能联系你",noSwitchRole:"角色由管理员统一分配，你不能切换",noSwitchSales:"分享链接已绑定你的账号",viewingAs:"当前查看",loggedInAs:"已登录为",sortDefault:"默认",sortPriceAsc:"价格升序",sortPriceDesc:"价格降序",sortNewest:"上架最新",sortOldest:"上架最早",inStockDays:"在库",days:"天",overstock:"积压预警",settingsTitle:"设置",myContact:"我的联系方式（客户联系你）",fWhatsApp:"WhatsApp 号码",fPhone:"电话",saveContact:"保存",installTitle:"安装 App（员工）",installHint:"iOS：Safari 打开 → 分享 → 添加到主屏幕。Android：Chrome 打开 → ⋮ → 安装应用。客户只需打开分享链接，无需安装。",staffMgmt:"员工与角色（管理员）",addStaff:"+ 新增员工",staffId:"员工账号",staffName:"姓名",staffRole:"角色",staffBranch:"门店",staffWa:"WhatsApp",staffPhone:"电话",staffPin:"密码 PIN（4-8 位）",staffCreate:"创建并邀请",staffCreated:"员工已创建",contactSaved:"联系方式已保存",tierAssigned:"已分配 ",pvEditContact:"编辑我的 WhatsApp 与电话",pvLockNote:"你的分享链接已绑定本账号——客户只能联系你。角色切换由管理员统一分配。",close:"关闭"},
+      priceSetByTop:"客户报价及销售底价仅由老板/业主和合伙人设定。",loginAs:"登录为",pvLogin:"登录身份（仅管理员）",pvL_boss:"老板 / 业主",pvL_partnerA:"合伙人A",pvL_partnerB:"合伙人B",boundLink:"绑定链接 · 客户只能联系你",noSwitchRole:"角色由管理员统一分配，你不能切换",noSwitchSales:"分享链接已绑定你的账号",viewingAs:"当前查看",loggedInAs:"已登录为",sortDefault:"默认",sortPriceAsc:"价格升序",sortPriceDesc:"价格降序",sortNewest:"上架最新",sortOldest:"上架最早",inStockDays:"在库",days:"天",overstock:"积压预警",settingsTitle:"设置",myContact:"我的联系方式（客户联系你）",fWhatsApp:"WhatsApp 号码",fPhone:"电话",saveContact:"保存",installTitle:"安装 App（员工）",installHint:"iOS：Safari 打开 → 分享 → 添加到主屏幕。Android：Chrome 打开 → ⋮ → 安装应用。客户只需打开分享链接，无需安装。",staffMgmt:"员工与角色（管理员）",addStaff:"+ 新增员工",staffId:"员工账号",staffName:"姓名",staffRole:"角色",staffBranch:"门店",staffWa:"WhatsApp",staffPhone:"电话",staffPin:"密码 PIN（4-8 位）",staffCreate:"创建并邀请",staffCreated:"员工已创建",contactSaved:"联系方式已保存",tierAssigned:"已分配 ",pvEditContact:"编辑我的 WhatsApp 与电话",pvLockNote:"你的分享链接已绑定本账号——客户只能联系你。角色切换由管理员统一分配。",close:"关闭",edit:"编辑",noContact:"尚未设置联系方式"},
 };
 I18N.en.advanced="Advanced"; I18N.en.mileage="Mileage (km)"; I18N.en.priceRangeLbl="Price range (₵)"; I18N.en.color="Color"; I18N.en.year="Year"; I18N.en.advBranch="Sales point"; I18N.en.advHint="Combine multiple filters — options auto-detected from your listed cars."; I18N.en.resetFilters="Reset"; I18N.en.applyFilters="Apply"; I18N.en.allBranches="All branches"; I18N.en.allBrands="All brands"; I18N.en.needServer="Please enter your server address in Settings to load inventory.";
 I18N.zh.advanced="高级筛选"; I18N.zh.mileage="公里数 (km)"; I18N.zh.priceRangeLbl="价格区间 (₵)"; I18N.zh.color="颜色"; I18N.zh.year="年份"; I18N.zh.advBranch="销售点"; I18N.zh.advHint="可同时叠加多个条件——筛选项根据在售车辆自动识别。"; I18N.zh.resetFilters="重置"; I18N.zh.applyFilters="应用"; I18N.zh.allBranches="全部门店"; I18N.zh.allBrands="全部品牌"; I18N.zh.needServer="请在设置中填写服务器地址以加载库存。";
@@ -2288,12 +2294,19 @@ function renderMe(){
   const idIn=document.getElementById('setEmpId'); if(idIn && !idIn.value) idIn.value=(typeof localStorage!=='undefined'&&localStorage.getItem('am_me'))||curEmployee||'';
   const wa=document.getElementById('setWa'); if(wa) wa.value=e.wa||'';
   const ph=document.getElementById('setPhone'); if(ph) ph.value=e.phone||'';
+  // show the saved contact as a compact summary; expand the form only when editing
+  if(loggedIn){
+    if(e.wa||e.phone){ showContactSummary(); }
+    else { const f=document.getElementById('contactForm'), s=document.getElementById('contactSummary'); if(f) f.style.display='block'; if(s) s.style.display='none'; }
+  }
   // staff / join / company groups
   const top=(typeof isTopEmployee==='function')?isTopEmployee():false;
   const sg=document.getElementById('staffGroup');
   if(sg){ sg.style.display= (loggedIn && top)?'block':'none'; if(loggedIn&&top){ try{renderStaff(); renderCompanyCode();}catch(err){} } }
   const jg=document.getElementById('joinGroup');
-  if(jg) jg.style.display = (loggedIn && e.tier==='customer' && !top) ? 'block' : 'none';
+  // "Join your company" is only for guests who received an invite code. A signed-in
+  // user already belongs to a company, so it must never appear for them.
+  if(jg) jg.style.display = (loggedIn) ? 'none' : 'block';
   const cg=document.getElementById('companyGroup');
   if(cg){
     if(loggedIn && co){
@@ -2338,6 +2351,19 @@ function saveMyContact(){
   e.phone=document.getElementById('setPhone').value.trim();
   markEmpDirty(curEmployee);
   toast(T('contactSaved','Contact saved'));
+  showContactSummary();
+}
+function showContactSummary(){
+  const e=empOf(curEmployee);
+  const f=document.getElementById('contactForm'), s=document.getElementById('contactSummary'), t=document.getElementById('contactText');
+  if(!f||!s||!t) return;
+  const parts=[]; if(e.wa) parts.push(T('fWhatsApp','WhatsApp')+': '+e.wa); if(e.phone) parts.push(T('fPhone','Phone')+': '+e.phone);
+  t.textContent = parts.length ? parts.join('  ·  ') : T('noContact','No contact set');
+  f.style.display='none'; s.style.display='flex';
+}
+function editMyContact(){
+  const f=document.getElementById('contactForm'), s=document.getElementById('contactSummary');
+  if(f) f.style.display='block'; if(s) s.style.display='none';
 }
 function renderStaff(){
   const box=document.getElementById('staffList'); if(!box) return;
@@ -2616,6 +2642,9 @@ async function bootstrap(){
   let loaded=false, error=null;
   // 1) local cache first (instant UI)
   loadCars(); loadListed(); loadEmps(); loadShowrooms(); loadCarVideos(); loadCarPhotos(); loadMembership();
+  // restore which account is signed in (so a page reload keeps the boss/owner view
+  // instead of resetting to the "boss" placeholder and dropping to a customer view)
+  try{ const me=localStorage.getItem('am_me'); if(me) curEmployee=me; }catch(e){}
 
   // 0) auto-detect the backend when served from the same origin (e.g. opened from your own server).
   // This lets anyone register / sign in without typing the server address. If no API answers (e.g. a
@@ -2682,16 +2711,27 @@ async function bootstrap(){
     curSales=shareRef;
     window.__deeplink=true;
     updateRoleUI();
-  }
-  // own app (no share link): keep the signed-in account view, or restore the remembered staff/owner role on this device
-  else if(loaded && !SYNC.token){
+  } else {
+    // own app: a signed-in user sees their REAL tier (boss / partner / manager / sales).
+    // The owner's device-level "view as" choice is restored when present; otherwise we
+    // fall back to the signed-in tier. This fixes the bug where a boss reloaded as a
+    // customer — hiding Add Car, delete/mark-sold, and wrongly showing "Join your company".
     let savedRole=null, ownerOptIn=false;
     try{ savedRole=localStorage.getItem('am_role'); ownerOptIn=localStorage.getItem('am_owner')==='1'; }catch(e){}
     const VALID=['customer','manager','salesA','salesB','boss','partnerA','partnerB'];
-    if(ownerOptIn && savedRole && VALID.includes(savedRole)){
-      curRole=savedRole; // restore the remembered owner/staff view so Add Car stays visible
-    } else {
-      curRole='customer';
+    if(SYNC.token && curEmployee){
+      const realTier=empOf(curEmployee).tier;
+      if(ownerOptIn && savedRole && VALID.includes(savedRole) && savedRole!==realTier){
+        curRole=savedRole;            // owner previewing as a sub-role on this device
+      } else {
+        curRole=realTier;             // FIX: boss no longer reloads as customer
+      }
+    } else if(loaded && !SYNC.token){
+      if(ownerOptIn && savedRole && VALID.includes(savedRole)){
+        curRole=savedRole;
+      } else {
+        curRole='customer';
+      }
     }
     updateRoleUI();
   }
