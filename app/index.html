@@ -1289,7 +1289,9 @@ function carMileage(c){ const s=(c.specs||[]).find(x=>x[0]==="Mileage"); if(!s) 
 function stockBadge(k){ if(curRole==='customer') return ''; const d=daysInStock(k); if(d===null) return ''; const over=d>90; return ' <span class="stock-days'+(over?' over':'')+'">'+T('inStockDays','In stock')+' '+d+' '+T('days','days')+(over?(' · '+T('overstock','overstock')):'')+'</span>'; }
 const SHOWROOMS = [];
 const SALES = {};
-const OWNERS = {};
+const OWNERS = {
+  boss:{name:'Boss', av:'B', tier:'boss', role:'Boss / Owner', roleZh:'老板 / 业主', wa:'', phone:'', branch:'Accra Branch'}
+};
 function empOf(id){
   const e=SALES[id] || OWNERS[id];
   if(e) return e;
