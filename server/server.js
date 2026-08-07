@@ -539,7 +539,7 @@ function serveStatic(req, res, urlPath) {
     const ext = path.extname(file).toLowerCase();
     res.writeHead(200, {
       'Content-Type': MIME[ext] || 'application/octet-stream',
-      'Cache-Control': ext === '.html' ? 'no-cache' : 'public, max-age=3600'
+      'Cache-Control': ext === '.html' ? 'no-store, must-revalidate' : 'public, max-age=3600'
     });
     res.end(buf);
   });
