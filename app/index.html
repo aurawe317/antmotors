@@ -70,6 +70,9 @@
   .attr b{color:var(--gold);}
   .attr .grow{flex:1; color:var(--text-dim);}
   .attr .wa-mini{display:flex; align-items:center; gap:5px; color:var(--wa); font-weight:700;}
+  .sub-bar{position:fixed;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:6px;padding:6px 12px;background:var(--surface);border-bottom:1px solid var(--border);}
+  .sub-back{width:32px;height:32px;border-radius:50%;border:none;background:transparent;color:var(--gold);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+  .sub-title{font-size:13px;font-weight:700;color:var(--text);}
   .co-shopping{font-size:11px;color:var(--text-dim);margin-top:4px;line-height:1.4;}
   .co-shopping b{color:var(--gold);font-weight:700;}
   .sh-set-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
@@ -598,7 +601,12 @@
     <div class="attr" id="attrBanner" style="display:none;">
       <span class="dot"></span>
       <div class="grow" id="attrText"></div>
-      <div class="wa-mini" onclick="waTap('general')">↗ WhatsApp</div>
+    </div>
+
+    <!-- sub-page fixed back bar (workbench / admin / favorites / perm / settings) -->
+    <div class="sub-bar" id="subPageBar" style="display:none;">
+      <button class="sub-back" onclick="goBackHome()">‹</button>
+      <span class="sub-title" id="subPageTitle">Back</span>
     </div>
 
     <!-- HOME -->
@@ -975,10 +983,10 @@
       </div>
       <button class="submit" onclick="registerAccount()" data-i18n="regCreate">Create account</button>
     </div>
-    <div class="sync-actions" style="display:flex;gap:6px;margin-top:8px;">
+    <div class="sync-actions" style="display:flex;gap:6px;margin-top:8px;align-items:center;">
       <button class="share-copy" style="flex:1;" onclick="syncNow(false)" data-i18n="syncNowBtn">Sync now</button>
+      <span style="cursor:pointer;color:var(--gold);font-size:16px;font-weight:700;" onclick="toast(T('syncHint','Connected to shared ANT MOTORS backend. Cars added by anyone in your company sync to every signed-in device.'))" title="About sync">&#8505;</span>
     </div>
-    <p class="sheet-hint" data-i18n="syncHint">Leave the server empty to work offline on this device only. When connected, cars and prices added by anyone appear on every signed-in device.</p>
   </div>
   <div class="grp" id="companyGroup" style="display:none;">
     <div class="lbl" data-i18n="coTitle">Company</div>
@@ -1761,6 +1769,11 @@ function go(id){
   document.getElementById(id).classList.add('active');
   const map=['scr-home','scr-stock','scr-showrooms','scr-me'];
   document.querySelectorAll('.tabbar .tab').forEach((t,i)=>t.classList.toggle('on', map[i]===id));
+  /* Sub-pages: hide global bars, show fixed back bar */
+  const isSub=['scr-workbench','scr-admin','scr-favorites','scr-perm'].includes(id);
+  const ab=document.getElementById('attrBanner'), tb=document.querySelector('.tabbar'), sb=document.getElementById('subPageBar');
+  if(isSub){ if(ab) ab.style.display='none'; if(tb) tb.style.display='none'; if(sb){ sb.style.display=''; const st=document.getElementById('subPageTitle'); if(st){ const m={workbenchTitle:'scr-workbench',adminTitle:'scr-admin',favTitle:'scr-favorites',permTitleShort:'scr-perm'}; const k=Object.keys(m).find(k=>m[k]===id); st.textContent=T(k||'back','Back'); } } }
+  else { if(tb) tb.style.display=''; if(sb) sb.style.display='none'; updateAttrBanner(); }
   if(id==='scr-workbench') renderWorkbench();
   if(id==='scr-showrooms') renderShowroomList();
   if(id==='scr-stock') renderStock();
@@ -1769,6 +1782,7 @@ function go(id){
   if(id==='scr-me') renderSyncUI();
   document.getElementById('phone').scrollTop=0;
 }
+function goBackHome(){ go('scr-home'); }
 
 /* ---- generic chip filter (home quick chips) ---- */
 document.addEventListener('click',e=>{
@@ -2306,7 +2320,7 @@ function updateDemoState(){
 /* ---- preview bottom sheet ---- */
 function openPreview(){ document.getElementById('sheetMask').classList.add('show'); document.getElementById('previewSheet').classList.add('show'); syncSheet(); syncPreviewAccess(); }
 function closePreview(){ closeSheets(); }
-function closeSettings(){ document.getElementById('sheetMask').classList.remove('show'); document.getElementById('settingsSheet').classList.remove('show'); }
+function closeSettings(){ document.getElementById('sheetMask').classList.remove('show'); document.getElementById('settingsSheet').classList.remove('show'); const sb=document.getElementById('subPageBar'); if(sb) sb.style.display='none'; updateAttrBanner(); }
 function closeSheets(){ closeSettings(); document.getElementById('sheetMask').classList.remove('show'); document.getElementById('previewSheet').classList.remove('show'); const ps=document.getElementById('pricingSheet'); if(ps) ps.classList.remove('show'); const ms=document.getElementById('membershipSheet'); if(ms) ms.classList.remove('show'); const ca=document.getElementById('carActionsSheet'); if(ca) ca.classList.remove('show'); }
 function openCarActions(){
   const c=CARS[curCar]; if(!c) return;
@@ -2412,6 +2426,8 @@ function openSettings(){
   const ap=document.getElementById('setApi'); if(ap) ap.value=SYNC.base||DEFAULT_API;
   document.getElementById('sheetMask').classList.add('show');
   document.getElementById('settingsSheet').classList.add('show');
+  /* Show sub-bar for settings too */
+  const sb=document.getElementById('subPageBar'); if(sb){ sb.style.display=''; const st=document.getElementById('subPageTitle'); if(st) st.textContent=T('settingsTitle','Settings'); }
   applyTheme();
   fillCurrencyUI();
   fillDefSalesUI();
