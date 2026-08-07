@@ -1013,10 +1013,7 @@
     </div>
     <button class="share-copy" id="coEditBtn" onclick="toggleCoEdit()" data-i18n="coEdit">Edit company</button>
     <button class="share-copy" id="coCopyBtn" onclick="copyCoCode()" data-i18n="codeCopy" style="margin-left:6px;">Copy code</button>
-  </div>
-  <div class="grp" id="membershipGroup" style="display:none;">
-    <div class="lbl"><span data-i18n="memTitle">Membership</span></div>
-    <div class="mem-card" id="memCard">
+    <div class="mem-card" id="memCard" style="margin-top:12px;">
       <div class="mem-card-top">
         <div class="mem-plan" id="memPlan">—</div>
         <span class="mem-pill" id="memBadge" style="display:none;"></span>
@@ -2488,7 +2485,7 @@ function renderMe(){
   const cg=document.getElementById('companyGroup');
   if(cg){
     if(loggedIn && co){
-      cg.style.display='block';
+      cg.style.display = isTopRole() ? 'block' : 'none';
       const a=document.getElementById('coNameTxt'); if(a) a.textContent=co.name||'';
       const b=document.getElementById('coCodeTxt'); if(b) b.textContent=co.code||'';
       const bt=document.getElementById('coBioTxt'); if(bt) bt.textContent=co.bio||'';
@@ -2653,11 +2650,11 @@ async function refreshMembership(){
 }
 /* paint the Settings membership card + the global expiry banner */
 function renderMembershipUI(){
-  const grp=document.getElementById('membershipGroup');
+  const grp=document.getElementById('companyGroup');
   const banner=document.getElementById('memBanner');
   const badge=document.getElementById('memBadge');
   const info=document.getElementById('memInfo');
-  if(grp) grp.style.display = isTopEmployee() ? 'block' : 'none';
+  if(grp && SYNC.token && co) grp.style.display = isTopRole() ? 'block' : 'none';
   const m=MEMBERSHIP;
   if(banner){
     if(m && m.expired){
