@@ -497,8 +497,10 @@
   .wb-link button{font-size:10px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;}
 
   .admin-form{padding:0 2px;}
-  .af-paste{width:100%;min-height:62px;resize:vertical;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;font-family:inherit;outline:none;margin-bottom:12px;line-height:1.5;}
-  .af-paste:focus{border-color:var(--gold);}
+  .af-paste{width:100%;min-height:62px;resize:vertical;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:16px 12px;color:var(--text);font-size:13px;font-family:inherit;outline:none;margin-bottom:12px;line-height:1.5;text-align:center;}
+  .af-paste::placeholder{text-align:center;color:var(--text-dim);opacity:.7;font-size:12px;}
+  .af-paste:focus{text-align:left;border-color:var(--gold);}
+  .af-paste:focus::placeholder{text-align:left;}
   .af-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;}
   #scr-admin .form-row{margin-bottom:11px;}
   #scr-admin .form-row input,#scr-admin .form-row select{padding:9px 10px;font-size:13px;}
