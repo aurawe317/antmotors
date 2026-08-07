@@ -641,15 +641,6 @@
       <div class="sec-head" id="featHead" style="display:none;"><h2 data-i18n="featuredCars">Featured</h2><a onclick="go('scr-stock')" data-i18n="browseAll">Browse all</a></div>
       <div class="hscroll feat-track" id="homeFeatured" style="display:none;"></div>
 
-      <div class="chips" id="homeChips">
-        <div class="chip on" data-f="reset" data-nav="scr-stock" data-i18n="all">All</div>
-        <div class="chip" data-f="cond" data-v="NEW" data-nav="scr-stock" data-i18n="new">New</div>
-        <div class="chip" data-f="cond" data-v="USED" data-nav="scr-stock" data-i18n="used">Used</div>
-        <div class="chip" data-f="body" data-v="SUV" data-nav="scr-stock">SUV</div>
-        <div class="chip" data-f="body" data-v="Sedan" data-nav="scr-stock">Sedan</div>
-        <div class="chip" data-f="body" data-v="Pickup" data-nav="scr-stock">Pickup</div>
-      </div>
-
       <div class="trust">
         <div class="t">🛡 <div><b data-i18n="trust1">Duty cleared</b></div></div>
         <div class="t">🔧 <div><b data-i18n="trust2">12-mo warranty</b></div></div>
@@ -924,7 +915,7 @@
       </div>
   <div class="grp">
     <div id="syncStatus" class="sync-status">—</div>
-    <div class="lbl" id="authLbl" style="font-weight:700;font-size:14px;margin-bottom:2px;"><span data-i18n="syncTitle">Account</span> <span class="info-dot" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">i</span><div class="info-expand" data-i18n="syncHint">By default you connect to the shared ANT MOTORS backend (no setup). In Advanced you can point to your own server.</div></div>
+    <div class="lbl" id="authLbl"><span data-i18n="syncTitle">Account</span> <span class="info-dot" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">i</span><div class="info-expand" data-i18n="syncHint">By default you connect to the shared ANT MOTORS backend (no setup). In Advanced you can point to your own server.</div></div>
     <button class="submit" id="regToggle" onclick="toggleReg()" data-i18n="regHasAccount" style="background:var(--gold);color:#111;font-weight:700;">New here? Create an account</button>
     <p class="sheet-hint" id="regHint" style="display:none;" data-i18n="regHint">Fill in the server address, then your details below to create your own account. If you already have one, tap "Have an account? Sign in".</p>
     <div id="syncLoginBox">
@@ -1246,7 +1237,6 @@
     <div class="lbl" data-i18n="privacyTitle">Privacy &amp; cache</div>
     <div id="deviceInfo" class="sheet-hint"></div>
     <button class="submit" style="margin-top:8px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="clearLocalData()" data-i18n="clearCache">Clear local offline data</button>
-    <button class="submit" style="margin-top:8px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="forceLogout()" data-i18n="forceLogout">Sign out / revoke session</button>
   </div>
   <div class="grp" id="signOutGroup" style="display:none;text-align:center;">
     <button class="share-copy" style="border-color:var(--danger);color:var(--danger);padding:10px;width:100%;" onclick="syncLogout()" data-i18n="syncSignOut">Sign out</button>
@@ -1747,6 +1737,7 @@ function setLang(l){
   // switches language immediately instead of staying in the previous language.
   renderHome(); renderStockFiltered(); renderShowroomList(); renderFav();
   renderWorkbench(); renderPerm(); updateRoleUI(); renderRolePrices();
+  updateAttrBanner(); // force refresh shopping-with line after language switch
   renderSyncUI(); renderMembershipUI(); try{ renderMe(); }catch(e){}
   updateDemoState(); syncSheet();
   // settings sheet internals: keep user inputs, just refresh language-bound bits
