@@ -65,7 +65,7 @@
   .screen.active{display:block; animation:fade .25s ease;}
   @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
 
-  .attr{margin:6px 16px 0; padding:2px 4px; display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text-dim); background:none; border:none;}
+  .attr{margin:2px 16px 0; padding:1px 4px; display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text-dim); background:none; border:none;}
   .attr .dot{display:none;}
   .attr b{color:var(--gold);}
   .attr .grow{flex:1; color:var(--text-dim);}
@@ -498,6 +498,10 @@
   .af-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;}
   #scr-admin .form-row{margin-bottom:11px;}
   #scr-admin .form-row input,#scr-admin .form-row select{padding:9px 10px;font-size:13px;}
+  .af-price-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
+  .af-price-field{display:flex;flex-direction:column;gap:2px;}
+  .af-price-field label{font-size:10px;font-weight:600;color:var(--text-dim);}
+  .af-price-field input{padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:13px;outline:none;width:100%;box-sizing:border-box;}
   .zhp-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;}
   .zhp-edit{display:flex;flex-direction:column;gap:3px;}
   .zhp-edit label{font-size:10px;font-weight:700;color:var(--text-dim);letter-spacing:.4px;}
@@ -838,10 +842,12 @@
         </div>
         <h4 class="price-tiers-h" data-i18n="priceTiers">Price Tiers (GHS)</h4>
         <p class="price-auth-note" data-i18n="priceSetByTop">Only Boss/Owner &amp; Partners can set price tiers.</p>
-        <div class="form-row" id="costRow"><label data-i18n="fCost">Cost <span class="role-tag boss">Boss only</span></label><input type="number" id="afCost" placeholder="28000"></div>
-        <div class="form-row"><label data-i18n="fFloorA">Floor A (Senior)</label><input type="number" id="afFloorA" placeholder="33000"></div>
-        <div class="form-row"><label data-i18n="fFloorB">Floor B (Junior)</label><input type="number" id="afFloorB" placeholder="34500"></div>
-        <div class="form-row"><label data-i18n="fQuote">Quote (Customer Price)</label><input type="number" id="afQuote" placeholder="38500"></div>
+        <div class="af-price-grid">
+          <div class="af-price-field" id="costRow"><label data-i18n="fCost">Cost <span class="role-tag boss">Boss</span></label><input type="number" id="afCost" placeholder="28000"></div>
+          <div class="af-price-field"><label data-i18n="fFloorA">Floor A</label><input type="number" id="afFloorA" placeholder="33000"></div>
+          <div class="af-price-field"><label data-i18n="fFloorB">Floor B</label><input type="number" id="afFloorB" placeholder="34500"></div>
+          <div class="af-price-field"><label data-i18n="fQuote">Quote</label><input type="number" id="afQuote" placeholder="38500"></div>
+        </div>
         <div class="form-row"><label data-i18n="fPhotos">Photos</label>
           <div class="photo-upload-area" onclick="document.getElementById('afPhotoInput').click()">
             <span data-i18n="fPhotosHint">Tap to upload car photos</span>
@@ -971,7 +977,6 @@
     </div>
     <div class="sync-actions" style="display:flex;gap:6px;margin-top:8px;">
       <button class="share-copy" style="flex:1;" onclick="syncNow(false)" data-i18n="syncNowBtn">Sync now</button>
-      <button class="share-copy" id="syncOutBtn" style="flex:1;display:none;border-color:var(--danger);color:var(--danger);" onclick="syncLogout()" data-i18n="syncSignOut">Sign out</button>
     </div>
     <p class="sheet-hint" data-i18n="syncHint">Leave the server empty to work offline on this device only. When connected, cars and prices added by anyone appear on every signed-in device.</p>
   </div>
@@ -1007,7 +1012,7 @@
       </div>
       <div class="mem-meta" id="memInfo"></div>
     </div>
-    <button class="submit" id="memBtn" onclick="showMembership()" data-i18n="memManage">Manage membership</button>
+    <button class="share-copy" id="memBtn" onclick="showMembership()" data-i18n="memManage" style="margin-top:8px;">Manage membership</button>
   </div>
   <div class="grp" id="settingsExtra" style="display:none;">
     <div class="lbl" data-i18n="myContact">My contact (customer reaches you)</div>
@@ -1233,6 +1238,9 @@
     <div id="deviceInfo" class="sheet-hint"></div>
     <button class="submit" style="margin-top:8px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="clearLocalData()" data-i18n="clearCache">Clear local offline data</button>
     <button class="submit" style="margin-top:8px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="forceLogout()" data-i18n="forceLogout">Sign out / revoke session</button>
+  </div>
+  <div class="grp" id="signOutGroup" style="display:none;text-align:center;">
+    <button class="share-copy" style="border-color:var(--danger);color:var(--danger);padding:10px;width:100%;" onclick="syncLogout()" data-i18n="syncSignOut">Sign out</button>
   </div>
 </div>
 
@@ -2903,10 +2911,9 @@ async function bootstrap(){
 function setSyncState(s,m){ SYNC.state=s; SYNC.msg=m||''; }
 function renderSyncUI(){
   const el=document.getElementById('syncStatus');
-  const box=document.getElementById('syncLoginBox'), out=document.getElementById('syncOutBtn');
+  const box=document.getElementById('syncLoginBox'), out=document.getElementById('signOutGroup');
   const fg=document.getElementById('forgotBox'), rg=document.getElementById('regBox'), tg=document.getElementById('regToggle');
   const fgOpen=fg&&fg.style.display!=='none', rgOpen=rg&&rg.style.display!=='none';
-  // never show the sign-in box while "forgot password" or "register" is open
   if(box) box.style.display=(SYNC.token||fgOpen||rgOpen)?'none':'block';
   if(out) out.style.display=SYNC.token?'block':'none';
   // show/hide extra sections (contact, install) based on login
@@ -2926,7 +2933,7 @@ function renderSyncUI(){
   let cls=SYNC.state, txt=SYNC.msg;
   if(!SYNC.base){ cls='local'; txt=T('syncOffline','Offline mode — this device only'); }
   else if(!SYNC.token){ cls='err'; txt=T('syncNeedLogin','Sign in to sync'); }
-  else if(pend && SYNC.state!=='pending'){ cls='pending'; txt=pend+' '+T('syncPending','change(s) waiting to upload'); }
+  else if(pend && SYNC.state!=='ok' && SYNC.state!=='pending'){ cls='pending'; txt=pend+' '+T('syncPending','change(s) waiting to upload'); }
   el.className='sync-status '+cls;
   el.innerHTML='<span class="dot"></span><span>'+txt+'</span>';
   updateAuthCTA();
@@ -3335,6 +3342,7 @@ async function syncNow(silent){
       rejected=pr.rejected||[];
       SYNC.cars={}; SYNC.emps={}; jsave('am_dirty_cars',{}); jsave('am_dirty_emps',{});
       CAR_DELETED={}; jsave('am_car_deleted',CAR_DELETED);
+      localStorage.removeItem('am_dirty_cars'); localStorage.removeItem('am_dirty_emps');
     }
     /* 2 — pull everything changed since our cursor */
     const p=await api('/api/pull?photos=1&since='+SYNC.since);
