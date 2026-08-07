@@ -1771,11 +1771,16 @@ function go(id){
   const isSub=['scr-workbench','scr-admin','scr-favorites','scr-perm','scr-detail'].includes(id);
   const ab=document.getElementById('attrBanner'), tb=document.querySelector('.tabbar'), sb=document.getElementById('subPageBar');
   if(isSub){ if(ab) ab.style.display='none'; if(tb) tb.style.display='none'; if(sb){ sb.style.display=''; const st=document.getElementById('subPageTitle'); if(st){ const titleMap={workbenchTitle:'scr-workbench',adminTitle:'scr-admin',favTitle:'scr-favorites',permTitleShort:'scr-perm'}; const k=Object.keys(titleMap).find(k=>titleMap[k]===id); if(k) st.textContent=T(k,'Back'); else if(id==='scr-detail'){ st.textContent=CARS[curCar]?carName(CARS[curCar]):T('back','Back'); } else st.textContent=T('back','Back'); } }
-    /* Hide inline sec-head title — fixed bar already shows it */
-    const active=document.getElementById(id); if(active){ const h=active.querySelector('.sec-head'); if(h) h.style.display='none'; } }
+    const active=document.getElementById(id); if(active){ active.style.paddingTop='44px';
+      /* Hide inline page-title row: sec-head, admin-head, and detail-top are all covered by the fixed bar */
+      ['sec-head','admin-head'].forEach(cls=>{ const h=active.querySelector('.'+cls); if(h) h.style.display='none'; });
+      /* Detail page: shift the floating top bar down to clear the fixed sub-bar */
+      if(id==='scr-detail'){ const dt=active.querySelector('.detail-top'); if(dt) dt.style.top='44px'; } } }
   else { if(tb) tb.style.display=''; if(sb) sb.style.display='none'; updateAttrBanner();
-    /* Restore sec-head on main screens */
-    document.querySelectorAll('.screen .sec-head').forEach(h=>h.style.display=''); }
+    /* Restore main-screen padding + headers */
+    document.querySelectorAll('.screen').forEach(s=>{ s.style.paddingTop=''; });
+    document.querySelectorAll('.screen .sec-head, .screen .admin-head').forEach(h=>h.style.display='');
+    document.querySelectorAll('.screen .detail-top').forEach(h=>h.style.top=''); }
   if(id==='scr-workbench') renderWorkbench();
   if(id==='scr-showrooms') renderShowroomList();
   if(id==='scr-stock') renderStock();
