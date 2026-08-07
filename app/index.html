@@ -72,6 +72,7 @@
   .attr .wa-mini{display:flex; align-items:center; gap:5px; color:var(--wa); font-weight:700;}
   .sub-bar{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;padding:env(safe-area-inset-top,0px) 12px 0;height:calc(44px + env(safe-area-inset-top,0px));background:var(--surface);border-bottom:1px solid var(--border);}
   .sub-back{width:36px;height:36px;border-radius:50%;border:none;background:transparent;color:var(--gold);font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex:0 0 auto;}
+  .info-dot{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--border);color:var(--text-dim);font-size:11px;font-weight:700;cursor:pointer;vertical-align:middle;margin-left:4px;position:relative;top:-1px;}
   .sub-spacer{width:36px;flex:0 0 auto;}
   .sub-title{flex:1;text-align:center;font-size:15px;font-weight:800;color:var(--text);}
   .co-shopping{font-size:11px;color:var(--text-dim);margin-top:4px;line-height:1.4;}
@@ -922,7 +923,7 @@
       </div>
   <div class="grp">
     <div id="syncStatus" class="sync-status">—</div>
-    <div class="lbl" id="authLbl" style="font-weight:700;font-size:14px;margin-bottom:8px;" data-i18n="syncTitle">Account</div>
+    <div class="lbl" id="authLbl" style="font-weight:700;font-size:14px;margin-bottom:8px;"><span data-i18n="syncTitle">Account</span> <span class="info-dot" onclick="toast(T('syncHint','Connected to shared ANT MOTORS backend. Cars added by anyone in your company sync to every signed-in device.'))">i</span></div>
     <button class="submit" id="regToggle" onclick="toggleReg()" data-i18n="regHasAccount" style="background:var(--gold);color:#111;font-weight:700;">New here? Create an account</button>
     <p class="sheet-hint" id="regHint" style="display:none;" data-i18n="regHint">Fill in the server address, then your details below to create your own account. If you already have one, tap "Have an account? Sign in".</p>
     <div id="syncLoginBox">
@@ -983,9 +984,8 @@
       </div>
       <button class="submit" onclick="registerAccount()" data-i18n="regCreate">Create account</button>
     </div>
-    <div class="sync-actions" style="display:flex;gap:6px;margin-top:8px;align-items:center;">
+    <div class="sync-actions" style="display:flex;gap:6px;margin-top:8px;">
       <button class="share-copy" style="flex:1;" onclick="syncNow(false)" data-i18n="syncNowBtn">Sync now</button>
-      <span style="cursor:pointer;color:var(--gold);font-size:16px;font-weight:700;" onclick="toast(T('syncHint','Connected to shared ANT MOTORS backend. Cars added by anyone in your company sync to every signed-in device.'))" title="About sync">&#8505;</span>
     </div>
   </div>
   <div class="grp" id="companyGroup" style="display:none;">
