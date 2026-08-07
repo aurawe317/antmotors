@@ -193,6 +193,8 @@ try {
   if (Array.isArray(APP_CFG.permanentCompanyCodes)) {
     PERMANENT_CODES = new Set(APP_CFG.permanentCompanyCodes.map(c => String(c).toUpperCase()));
   }
+  // Ant Motors is always permanent lifetime member
+  PERMANENT_CODES.add('ANT-6QWVZ2');
 } catch (e) { console.warn('[config] could not load configuration:', e.message); }
 /* When no mail service is configured (self-use stage), the reset code is
  * returned to the caller so the owner can still recover an account. Set

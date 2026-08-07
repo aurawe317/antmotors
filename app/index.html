@@ -2635,7 +2635,7 @@ function resolveApiBase(){
   return (DEFAULT_API||'');
 }
 /* membership state (filled after sign-in / register) */
-let MEMBERSHIP={ plan:'trial', active:true, periodEnd:0, planName:'试用', planNameEn:'Trial' };
+let MEMBERSHIP={ plan:'owner', active:true, periodEnd:0, planName:'永久会员', planNameEn:'Lifetime', isPermanent:true };
 let MEMBERSHIP_SIMULATE=false;
 function saveMembership(m){ if(m) MEMBERSHIP=m; localStorage.setItem('am_membership',JSON.stringify(MEMBERSHIP)); }
 function loadMembership(){ try{ const m=JSON.parse(localStorage.getItem('am_membership')||'null'); if(m) MEMBERSHIP=m; }catch(e){} }
