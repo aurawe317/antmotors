@@ -72,6 +72,8 @@
   .attr .wa-mini{display:flex; align-items:center; gap:5px; color:var(--wa); font-weight:700;}
   .co-shopping{font-size:11px;color:var(--text-dim);margin-top:4px;line-height:1.4;}
   .co-shopping b{color:var(--gold);font-weight:700;}
+  .sh-set-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
+  .sh-set-row span:first-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
   .hero{margin:14px 16px 0; border-radius:14px; overflow:hidden; position:relative; height:206px; background:linear-gradient(160deg,#2a2723,#0f0e0e 70%); border:1px solid var(--border);}
   .hero .photo{position:absolute; inset:0; background:radial-gradient(120px 90px at 70% 60%, rgba(232,194,104,0.22), transparent 70%), linear-gradient(120deg,#3a352e,#15130f); display:flex; align-items:flex-end; justify-content:center;}
@@ -589,9 +591,9 @@
       </div>
     </div>
 
-    <div class="attr" id="attrBanner">
+    <div class="attr" id="attrBanner" style="display:none;">
       <span class="dot"></span>
-      <div class="grow" id="attrText">You're shopping with <b>Kwame A.</b> · Accra Branch</div>
+      <div class="grow" id="attrText"></div>
       <div class="wa-mini" onclick="waTap('general')">↗ WhatsApp</div>
     </div>
 
@@ -776,17 +778,6 @@
     <section class="screen" id="scr-showrooms">
       <div class="sec-head"><h2 data-i18n="showroomsTitle">Showrooms</h2></div>
       <div class="sh-list" id="shList"></div>
-      <div class="grp" id="shAddGroup" style="display:none;margin:8px 16px;">
-        <button class="submit" onclick="toggleShForm()" data-i18n="addShowroom">+ Add sales point</button>
-        <div id="shForm" style="display:none;margin-top:10px;">
-          <div class="form-row"><label data-i18n="shName">Name</label><input type="text" id="shName" placeholder="e.g. Accra Branch"></div>
-          <div class="form-row"><label data-i18n="shAddr">Address</label><input type="text" id="shAddr" placeholder="123 Spintex Rd"></div>
-          <div class="form-row"><label data-i18n="shPhone">Phone</label><input type="text" id="shPhone" placeholder="+233 20 000 0001"></div>
-          <div class="form-row"><label data-i18n="shHours">Hours</label><input type="text" id="shHours" placeholder="Mon-Sat 9am-6pm"></div>
-          <div class="form-row"><label data-i18n="shDist">Distance</label><input type="text" id="shDist" placeholder="3.5 km from CBD"></div>
-          <button class="submit" onclick="addShowroom()" data-i18n="shSave">Save</button>
-        </div>
-      </div>
     </section>
 
     <!-- WORKBENCH -->
@@ -978,8 +969,10 @@
       </div>
       <button class="submit" onclick="registerAccount()" data-i18n="regCreate">Create account</button>
     </div>
-    <button class="submit" style="margin-top:8px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="syncNow(false)" data-i18n="syncNowBtn">Sync now</button>
-    <button class="submit" id="syncOutBtn" style="margin-top:8px;display:none;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="syncLogout()" data-i18n="syncSignOut">Sign out</button>
+    <div class="sync-actions" style="display:flex;gap:6px;margin-top:8px;">
+      <button class="share-copy" style="flex:1;" onclick="syncNow(false)" data-i18n="syncNowBtn">Sync now</button>
+      <button class="share-copy" id="syncOutBtn" style="flex:1;display:none;border-color:var(--danger);color:var(--danger);" onclick="syncLogout()" data-i18n="syncSignOut">Sign out</button>
+    </div>
     <p class="sheet-hint" data-i18n="syncHint">Leave the server empty to work offline on this device only. When connected, cars and prices added by anyone appear on every signed-in device.</p>
   </div>
   <div class="grp" id="companyGroup" style="display:none;">
@@ -1199,6 +1192,19 @@
     <span style="color:var(--gold);font-weight:800;">●</span>
     <span data-i18n="syncConnected">Connected to the shared ANT MOTORS backend — no setup needed. Your company's data stays private.</span>
   </div>
+  <div class="grp" id="shSettingsGroup" style="display:none;">
+    <div class="lbl" data-i18n="shSettingsTitle">Sales points / Showrooms</div>
+    <div id="shSettingsList"></div>
+    <button class="submit" onclick="toggleShForm()" data-i18n="addShowroom" style="margin-top:8px;">+ Add sales point</button>
+    <div id="shForm" style="display:none;margin-top:10px;">
+      <div class="form-row"><label data-i18n="shName">Name</label><input type="text" id="shName" placeholder="e.g. Accra Branch"></div>
+      <div class="form-row"><label data-i18n="shAddr">Address</label><input type="text" id="shAddr" placeholder="123 Spintex Rd"></div>
+      <div class="form-row"><label data-i18n="shPhone">Phone</label><input type="text" id="shPhone" placeholder="+233 20 000 0001"></div>
+      <div class="form-row"><label data-i18n="shHours">Hours</label><input type="text" id="shHours" placeholder="Mon-Sat 9am-6pm"></div>
+      <div class="form-row"><label data-i18n="shDist">Distance</label><input type="text" id="shDist" placeholder="3.5 km from CBD"></div>
+      <button class="submit" onclick="addShowroom()" data-i18n="shSave">Save</button>
+    </div>
+  </div>
   <details class="adv-details" id="advServerDetails">
     <summary data-i18n="advServerTitle">Advanced: backend address</summary>
     <div style="margin-top:8px;">
@@ -1351,7 +1357,7 @@ const I18N = {
       pvR_partnerB:"Partner B",pvR_partnerB_sub:"Co-owner · same as Boss",
       pvS_kwame:"Kwame A. · Accra",pvS_ama:"Ama K. · Tema",pvS_kwasi:"Kwasi O. · Kumasi",
       prTitle:"💰 Pricing model",prHint:"One car, up to three prices by role. Prices show in your chosen display currency. Owner + 2 Partners see cost; Sales see a graded floor; the customer sees the quote.",
-      priceSetByTop:"Only Boss/Owner & Partners can set price tiers.",loginAs:"Login as",pvLogin:"Login as (admin only)",pvL_boss:"Boss / Owner",pvL_partnerA:"Partner A",pvL_partnerB:"Partner B",boundLink:"Bound link · customers reach only you",noSwitchRole:"Roles are assigned by admin — you cannot switch",noSwitchSales:"Share link is bound to your account",viewingAs:"viewing as",loggedInAs:"Logged in as",sortDefault:"Default",sortPriceAsc:"Price ↑",sortPriceDesc:"Price ↓",sortNewest:"Listed newest",sortOldest:"Listed oldest",inStockDays:"In stock",days:"days",overstock:"overstock",settingsTitle:"Settings",myContact:"My contact (customer reaches you)",fWhatsApp:"WhatsApp number",fPhone:"Phone",saveContact:"Save",installTitle:"Install the app (employees)",installHint:"iOS: Safari → Share → Add to Home Screen. Android: Chrome → ⋮ → Install app. Customers just open the shared link — no install needed.",staffMgmt:"Staff & roles (admin)",addStaff:"+ Add staff",staffId:"Staff ID",staffName:"Name",staffRole:"Role",staffBranch:"Branch",staffWa:"WhatsApp",staffPhone:"Phone",staffPin:"PIN (4-8 digits)",staffCreate:"Create & invite",staffCreated:"Staff created",contactSaved:"Contact saved",tierAssigned:"Assigned ",pvEditContact:"Edit my WhatsApp & phone",pvLockNote:"Your share link is bound to this account — customers can only reach you. Role switching is assigned by admin.",close:"Close",edit:"Edit",noContact:"No contact set",shoppingAs:"Shopping with",cap_cost:"See cost price",cap_floors:"See all floor prices",cap_ownfloor:"See own floor price",cap_quote:"See selling quote",cap_editcar:"Edit car info (specs, highlights)",cap_editprice:"Edit prices (cost, floor, quote)",cap_photocar:"Upload car photos",cap_photoshowroom:"Upload showroom photos",cap_addcar:"Add / remove cars",cap_managestaff:"Manage sales staff",cap_sharelinks:"Generate share links",cap_leads:"View customer leads",permNote:"<b>Boss + Partner A + Partner B</b> share identical top-level access — cost, pricing, full edit. &nbsp; <b>*</b> Manager: limited to own branch. &nbsp; <b>**</b> Sales A: limited to cars they manage.",memNone:"No plan",memActive:"Active",ph_paste:"Smart paste: drop a full vehicle description and fields fill automatically. e.g. Toyota Camry 2021, SUV, Black, Accra, 2.5L Auto, 45,000 km, Sunroof Leather seats",bilingualPrev:"Bilingual preview (editable)",featuredCars:"Featured",browseAll:"Browse all",markFeat:"Set as Featured",unmarkFeat:"Remove from Featured",markedFeat:"Marked as featured",unmarkedFeat:"Removed from featured",noPermBranch:"This car belongs to another branch.",addShowroom:"+ Add sales point",shName:"Name",shAddr:"Address",shPhone:"Phone",shHours:"Hours",shDist:"Distance",shSave:"Save",del:"Delete",showroomsTitle:"Showrooms",shDelConfirm:"Delete showroom",unassigned:"Unassigned"},
+      priceSetByTop:"Only Boss/Owner & Partners can set price tiers.",loginAs:"Login as",pvLogin:"Login as (admin only)",pvL_boss:"Boss / Owner",pvL_partnerA:"Partner A",pvL_partnerB:"Partner B",boundLink:"Bound link · customers reach only you",noSwitchRole:"Roles are assigned by admin — you cannot switch",noSwitchSales:"Share link is bound to your account",viewingAs:"viewing as",loggedInAs:"Logged in as",sortDefault:"Default",sortPriceAsc:"Price ↑",sortPriceDesc:"Price ↓",sortNewest:"Listed newest",sortOldest:"Listed oldest",inStockDays:"In stock",days:"days",overstock:"overstock",settingsTitle:"Settings",myContact:"My contact (customer reaches you)",fWhatsApp:"WhatsApp number",fPhone:"Phone",saveContact:"Save",installTitle:"Install the app (employees)",installHint:"iOS: Safari → Share → Add to Home Screen. Android: Chrome → ⋮ → Install app. Customers just open the shared link — no install needed.",staffMgmt:"Staff & roles (admin)",addStaff:"+ Add staff",staffId:"Staff ID",staffName:"Name",staffRole:"Role",staffBranch:"Branch",staffWa:"WhatsApp",staffPhone:"Phone",staffPin:"PIN (4-8 digits)",staffCreate:"Create & invite",staffCreated:"Staff created",contactSaved:"Contact saved",tierAssigned:"Assigned ",pvEditContact:"Edit my WhatsApp & phone",pvLockNote:"Your share link is bound to this account — customers can only reach you. Role switching is assigned by admin.",close:"Close",edit:"Edit",noContact:"No contact set",shoppingAs:"Shopping with",cap_cost:"See cost price",cap_floors:"See all floor prices",cap_ownfloor:"See own floor price",cap_quote:"See selling quote",cap_editcar:"Edit car info (specs, highlights)",cap_editprice:"Edit prices (cost, floor, quote)",cap_photocar:"Upload car photos",cap_photoshowroom:"Upload showroom photos",cap_addcar:"Add / remove cars",cap_managestaff:"Manage sales staff",cap_sharelinks:"Generate share links",cap_leads:"View customer leads",permNote:"<b>Boss + Partner A + Partner B</b> share identical top-level access — cost, pricing, full edit. &nbsp; <b>*</b> Manager: limited to own branch. &nbsp; <b>**</b> Sales A: limited to cars they manage.",memNone:"No plan",memActive:"Active",ph_paste:"Smart paste: drop a full vehicle description and fields fill automatically. e.g. Toyota Camry 2021, SUV, Black, Accra, 2.5L Auto, 45,000 km, Sunroof Leather seats",bilingualPrev:"Bilingual preview (editable)",featuredCars:"Featured",browseAll:"Browse all",markFeat:"Set as Featured",unmarkFeat:"Remove from Featured",markedFeat:"Marked as featured",unmarkedFeat:"Removed from featured",noPermBranch:"This car belongs to another branch.",addShowroom:"+ Add sales point",shName:"Name",shAddr:"Address",shPhone:"Phone",shHours:"Hours",shDist:"Distance",shSave:"Save",del:"Delete",showroomsTitle:"Showrooms",shDelConfirm:"Delete showroom",unassigned:"Unassigned",shSettingsTitle:"Sales points / Showrooms",wbStatLeads:"Leads",wbStatClicks:"Link clicks",wbStatConv:"Conversion",noLeads:"No leads yet",noBookings:"No new bookings",clicksLbl:"clicks",leadsLbl:"leads"},
   zh:{tagline:"加纳 · 中国车出口",st_new:"新",st_contacted:"已联系",st_closed:"已成交",stAdvance:"点击推进",stUpdated:"线索状态更新为",featured:"精选",viewDetails:"查看详情",ourShowrooms:"门店网点",seeAll:"全部",
       newArrivals:"新到车源",browseAll:"浏览全部",yourConsultant:"您的销售顾问",consultRole:"高级销售 · 阿克拉店",
       inventory:"在售库存",all:"全部",new:"新车",used:"二手车",highlights:"配置亮点",bookViewing:"预约看车",back:"返回",
@@ -1399,7 +1405,7 @@ const I18N = {
       pvR_partnerB:"合伙人B",pvR_partnerB_sub:"共同业主 · 同老板",
       pvS_kwame:"Kwame A. · 阿克拉",pvS_ama:"Ama K. · 特马",pvS_kwasi:"Kwasi O. · 库马西",
       prTitle:"💰 价格机制",prHint:"同一辆车，按角色最多三档价格。价格按你设置的显示货币展示。业主与两位合伙人看成本；销售看分级底价；客户看报价。",
-      priceSetByTop:"客户报价及销售底价仅由老板/业主和合伙人设定。",loginAs:"登录为",pvLogin:"登录身份（仅管理员）",pvL_boss:"老板 / 业主",pvL_partnerA:"合伙人A",pvL_partnerB:"合伙人B",boundLink:"绑定链接 · 客户只能联系你",noSwitchRole:"角色由管理员统一分配，你不能切换",noSwitchSales:"分享链接已绑定你的账号",viewingAs:"当前查看",loggedInAs:"已登录为",sortDefault:"默认",sortPriceAsc:"价格升序",sortPriceDesc:"价格降序",sortNewest:"上架最新",sortOldest:"上架最早",inStockDays:"在库",days:"天",overstock:"积压预警",settingsTitle:"设置",myContact:"我的联系方式（客户联系你）",fWhatsApp:"WhatsApp 号码",fPhone:"电话",saveContact:"保存",installTitle:"安装 App（员工）",installHint:"iOS：Safari 打开 → 分享 → 添加到主屏幕。Android：Chrome 打开 → ⋮ → 安装应用。客户只需打开分享链接，无需安装。",staffMgmt:"员工与角色（管理员）",addStaff:"+ 新增员工",staffId:"员工账号",staffName:"姓名",staffRole:"角色",staffBranch:"门店",staffWa:"WhatsApp",staffPhone:"电话",staffPin:"密码 PIN（4-8 位）",staffCreate:"创建并邀请",staffCreated:"员工已创建",contactSaved:"联系方式已保存",tierAssigned:"已分配 ",pvEditContact:"编辑我的 WhatsApp 与电话",pvLockNote:"你的分享链接已绑定本账号——客户只能联系你。角色切换由管理员统一分配。",close:"关闭",edit:"编辑",noContact:"尚未设置联系方式",shoppingAs:"正在以",cap_cost:"查看成本价",cap_floors:"查看所有底价",cap_ownfloor:"查看本人底价",cap_quote:"查看销售报价",cap_editcar:"编辑车辆信息（配置、亮点）",cap_editprice:"编辑价格（成本/底价/报价）",cap_photocar:"上传车辆照片",cap_photoshowroom:"上传门店照片",cap_addcar:"上架/下架车辆",cap_managestaff:"管理销售人员",cap_sharelinks:"生成分享链接",cap_leads:"查看客户线索",permNote:"<b>老板 + 合伙人A + 合伙人B</b> 拥有相同的最高权限——成本、定价、全面编辑。&nbsp; <b>*</b> 经理：仅限本门店。&nbsp; <b>**</b> 销售A：仅限其负责的车辆。",memNone:"尚无会员",memActive:"生效中",ph_paste:"智能粘贴：把整段车辆信息贴进来，系统自动识别并填入下方。例如：Toyota Camry 2021, SUV, Black, Accra, 2.5L Auto, 45,000 km, Sunroof Leather seats",bilingualPrev:"双语预览（可手动修改）",featuredCars:"精选车辆",browseAll:"浏览全部",markFeat:"设为精选",unmarkFeat:"取消精选",markedFeat:"已设为精选",unmarkedFeat:"已取消精选",noPermBranch:"该车辆属于其他门店",addShowroom:"+ 添加销售点",shName:"名称",shAddr:"地址",shPhone:"电话",shHours:"营业时间",shDist:"距离",shSave:"保存",del:"删除",showroomsTitle:"门店网点",shDelConfirm:"删除门店",unassigned:"未分配"},
+      priceSetByTop:"客户报价及销售底价仅由老板/业主和合伙人设定。",loginAs:"登录为",pvLogin:"登录身份（仅管理员）",pvL_boss:"老板 / 业主",pvL_partnerA:"合伙人A",pvL_partnerB:"合伙人B",boundLink:"绑定链接 · 客户只能联系你",noSwitchRole:"角色由管理员统一分配，你不能切换",noSwitchSales:"分享链接已绑定你的账号",viewingAs:"当前查看",loggedInAs:"已登录为",sortDefault:"默认",sortPriceAsc:"价格升序",sortPriceDesc:"价格降序",sortNewest:"上架最新",sortOldest:"上架最早",inStockDays:"在库",days:"天",overstock:"积压预警",settingsTitle:"设置",myContact:"我的联系方式（客户联系你）",fWhatsApp:"WhatsApp 号码",fPhone:"电话",saveContact:"保存",installTitle:"安装 App（员工）",installHint:"iOS：Safari 打开 → 分享 → 添加到主屏幕。Android：Chrome 打开 → ⋮ → 安装应用。客户只需打开分享链接，无需安装。",staffMgmt:"员工与角色（管理员）",addStaff:"+ 新增员工",staffId:"员工账号",staffName:"姓名",staffRole:"角色",staffBranch:"门店",staffWa:"WhatsApp",staffPhone:"电话",staffPin:"密码 PIN（4-8 位）",staffCreate:"创建并邀请",staffCreated:"员工已创建",contactSaved:"联系方式已保存",tierAssigned:"已分配 ",pvEditContact:"编辑我的 WhatsApp 与电话",pvLockNote:"你的分享链接已绑定本账号——客户只能联系你。角色切换由管理员统一分配。",close:"关闭",edit:"编辑",noContact:"尚未设置联系方式",shoppingAs:"正在以",cap_cost:"查看成本价",cap_floors:"查看所有底价",cap_ownfloor:"查看本人底价",cap_quote:"查看销售报价",cap_editcar:"编辑车辆信息（配置、亮点）",cap_editprice:"编辑价格（成本/底价/报价）",cap_photocar:"上传车辆照片",cap_photoshowroom:"上传门店照片",cap_addcar:"上架/下架车辆",cap_managestaff:"管理销售人员",cap_sharelinks:"生成分享链接",cap_leads:"查看客户线索",permNote:"<b>老板 + 合伙人A + 合伙人B</b> 拥有相同的最高权限——成本、定价、全面编辑。&nbsp; <b>*</b> 经理：仅限本门店。&nbsp; <b>**</b> 销售A：仅限其负责的车辆。",memNone:"尚无会员",memActive:"生效中",ph_paste:"智能粘贴：把整段车辆信息贴进来，系统自动识别并填入下方。例如：Toyota Camry 2021, SUV, Black, Accra, 2.5L Auto, 45,000 km, Sunroof Leather seats",bilingualPrev:"双语预览（可手动修改）",featuredCars:"精选车辆",browseAll:"浏览全部",markFeat:"设为精选",unmarkFeat:"取消精选",markedFeat:"已设为精选",unmarkedFeat:"已取消精选",noPermBranch:"该车辆属于其他门店",addShowroom:"+ 添加销售点",shName:"名称",shAddr:"地址",shPhone:"电话",shHours:"营业时间",shDist:"距离",shSave:"保存",del:"删除",showroomsTitle:"门店网点",shDelConfirm:"删除门店",unassigned:"未分配",shSettingsTitle:"销售点/门店管理",wbStatLeads:"线索",wbStatClicks:"链接点击",wbStatConv:"转化率",noLeads:"暂无线索",noBookings:"暂无新预约",clicksLbl:"次",leadsLbl:"条"},
 };
 I18N.en.advanced="Advanced"; I18N.en.mileage="Mileage (km)"; I18N.en.priceRangeLbl="Price range (₵)"; I18N.en.color="Color"; I18N.en.year="Year"; I18N.en.advBranch="Sales point"; I18N.en.advHint="Combine multiple filters — options auto-detected from your listed cars."; I18N.en.resetFilters="Reset"; I18N.en.applyFilters="Apply"; I18N.en.allBranches="All branches"; I18N.en.allBrands="All brands"; I18N.en.needServer="Please enter your server address in Settings to load inventory.";
 I18N.zh.advanced="高级筛选"; I18N.zh.mileage="公里数 (km)"; I18N.zh.priceRangeLbl="价格区间 (₵)"; I18N.zh.color="颜色"; I18N.zh.year="年份"; I18N.zh.advBranch="销售点"; I18N.zh.advHint="可同时叠加多个条件——筛选项根据在售车辆自动识别。"; I18N.zh.resetFilters="重置"; I18N.zh.applyFilters="应用"; I18N.zh.allBranches="全部门店"; I18N.zh.allBrands="全部品牌"; I18N.zh.needServer="请在设置中填写服务器地址以加载库存。";
@@ -1512,6 +1518,20 @@ const ZH = {
 };
 const REV={};
 for(const cat in ZH){ for(const k in ZH[cat]){ if(!REV[ZH[cat][k]]) REV[ZH[cat][k]]=k; } }
+/* Learning dictionary: user manually corrects a Chinese→English pair, app remembers it.
+   Persisted to localStorage so it survives reloads. */
+const LEARNED = (()=>{ try{ const v=JSON.parse(localStorage.getItem('am_learned')||'{}'); return v&&typeof v==='object'?v:{}; }catch(e){ return {}; } })();
+function saveLearned(){ try{ localStorage.setItem('am_learned',JSON.stringify(LEARNED)); }catch(e){} }
+/* Record one Chinese→English mapping if it is novel and the Chinese side contains CJK. */
+function learn(zh, en){
+  if(!zh||!en||zh===en) return;
+  if(!/[一-鿿]/.test(zh)) return;
+  const z=zh.trim(), e=en.trim();
+  if(REV[z]||LEARNED[z]) return;
+  LEARNED[z]=e; saveLearned();
+}
+/* Reverse-translate with learning: learned pairs take priority over built-in. */
+function revT(t){ return LEARNED[t]||REV[t]||t; }
 function zBrand(s){ return ZH.brand[s]||s; }
 function zModel(s){ return ZH.model[s]||s; }
 /* Normalize Chinese number/unit wording to the English form used in fields. */
@@ -1524,18 +1544,17 @@ function cnUnit(s){ return s
 /* Chinese brand+model → English. Handles "丰田 凯美瑞" (spaced) and "丰田凯美瑞" (连写). */
 function zhBrandModel(zh){
   const z=zh.trim();
-  for(const en in ZH.brand){ const cn=ZH.brand[en]; if(z.startsWith(cn)){ const rest=z.slice(cn.length).trim(); const me=REV[rest]||rest; return (en+' '+me).trim(); } }
-  if(REV[z]) return REV[z];
-  // try removing a recognized Chinese model suffix
-  for(const en in ZH.model){ const cn=ZH.model[en]; if(z.endsWith(cn)){ const rest=z.slice(0,z.length-cn.length).trim(); const be=REV[rest]||rest; return (be+' '+en).trim(); } }
+  for(const en in ZH.brand){ const cn=ZH.brand[en]; if(z.startsWith(cn)){ const rest=z.slice(cn.length).trim(); const me=revT(rest); return (en+' '+me).trim(); } }
+  if(revT(z)!==z) return revT(z);
+  for(const en in ZH.model){ const cn=ZH.model[en]; if(z.endsWith(cn)){ const rest=z.slice(0,z.length-cn.length).trim(); const be=revT(rest); return (be+' '+en).trim(); } }
   return z;
 }
 /* Reverse-translate a Chinese string to English. type: 'brandModel' | 'spec' | 'hl' */
 function cnToEn(src,type){
   if(!src) return '';
   const s=cnUnit(src);
-  if(type==='brandModel'){ const whole=REV[s.trim()]; if(whole) return whole; return zhBrandModel(s); }
-  const terms=s.split(/[,，、\s]+/).filter(Boolean).map(t=>REV[t]||t);
+  if(type==='brandModel'){ const whole=revT(s.trim()); if(whole!==s.trim()) return whole; return zhBrandModel(s); }
+  const terms=s.split(/[,，、\s]+/).filter(Boolean).map(t=>revT(t));
   return terms.join(', ');
 }
 function bName(n){ return ZH.branch[n]||n; }
@@ -2093,6 +2112,15 @@ function canUploadCarPhotos(){ return ['boss','partnerA','partnerB','manager','s
 function canUploadShowroomPhotos(){ return ['boss','partnerA','partnerB','manager'].includes(curRole); }
 function canEditCar(){ return ['boss','partnerA','partnerB','manager','salesA'].includes(curRole); }
 function canEditPrices(){ return isTopRole(); }
+/* Update the global "shopping with" banner to match the signed-in account. */
+function updateAttrBanner(){
+  const b=document.getElementById('attrBanner'), t=document.getElementById('attrText'); if(!b||!t) return;
+  const loggedIn=!!SYNC.token;
+  if(!loggedIn){ b.style.display='none'; return; }
+  b.style.display='';
+  const e=empOf(curEmployee); const ename=e.name||curEmployee||'';
+  t.innerHTML=T('shoppingAs','Shopping with')+' <b>'+ename+'</b>';
+}
 /* Branch-scoped checks: non-top roles can only operate on cars/showrooms in their assigned branch,
    unless their branch is empty (unassigned), in which case they have no branch access. */
 function myBranch(){ const e=empOf(curEmployee); return (e&&e.branch)||''; }
@@ -2100,6 +2128,7 @@ function canEditThisCar(k){ if(isTopRole()) return true; const b=myBranch(); if(
 function canEditThisShowroom(name){ if(isTopRole()) return true; const b=myBranch(); if(!b) return false; return name===b; }
 
 function updateRoleUI(){
+  updateAttrBanner();
   const up=document.getElementById('uploadBanner');
   const carOk = curCar ? canEditThisCar(curCar) : true;
   if(up) up.style.display = (canUploadCarPhotos() && carOk) ? 'flex' : 'none';
@@ -2379,6 +2408,7 @@ function openSettings(){
   fillCurrencyUI();
   fillDefSalesUI();
   renderNotifs();
+  renderShSettings();
   const nt=document.getElementById('notifToggle'); if(nt) nt.classList.toggle('on', localStorage.getItem('am_notify')==='1');
   showDevices();
   const x2=document.getElementById('settingsExtra2'); if(x2) x2.style.display=SYNC.token?'':'none';
@@ -2434,7 +2464,7 @@ function renderMe(){
       const b=document.getElementById('coCodeTxt'); if(b) b.textContent=co.code||'';
       const bt=document.getElementById('coBioTxt'); if(bt) bt.textContent=co.bio||'';
       const cs=document.getElementById('coShopping');
-      if(cs){ const s=empOf(curSales); const sb=(curLang==='zh'&&I18N.zh.branch&&I18N.zh.branch[s.branch])?I18N.zh.branch[s.branch]:s.branch; cs.innerHTML=T('shoppingAs','Shopping with')+' <b>'+s.name+'</b> · '+sb; }
+      if(cs){ const e=empOf(curEmployee); const eb=(curLang==='zh'&&I18N.zh.branch&&I18N.zh.branch[e.branch])?I18N.zh.branch[e.branch]:e.branch; cs.innerHTML=T('shoppingAs','Shopping with')+' <b>'+e.name+'</b>'+(eb?' · '+eb:''); }
       const be=document.getElementById('coEditBio'); if(be) be.value=co.bio||'';
       const limg=document.getElementById('coLogoImg'); if(limg) limg.src = co.logo || 'ant_logo_appbar.png';
       const eb=document.getElementById('coEditBox'); if(eb) eb.style.display='none';
@@ -3438,18 +3468,17 @@ let BOOKING_NOTIFS=[
 ];
 
 function renderWorkbench(){
-  const s=empOf(curSales);
   const isStaff=curRole!=='customer';
   const ws=document.getElementById('wbStats');
   if(!ws) return;
-  const myLeads=MOCK_LEADS.filter(l=>l.sales===curSales);
-  const myLinks=MOCK_LINKS.filter(l=>l.sales===curSales);
+  const myLeads = isTopEmployee() ? MOCK_LEADS : MOCK_LEADS.filter(l=>l.sales===curEmployee);
+  const myLinks = isTopEmployee() ? MOCK_LINKS : MOCK_LINKS.filter(l=>l.sales===curEmployee);
   const totalClicks=myLinks.reduce((a,b)=>a+b.clicks,0);
   const totalLeads=myLinks.reduce((a,b)=>a+b.leads,0);
   const conv=totalClicks>0?Math.round(totalLeads/totalClicks*100):0;
-  ws.innerHTML=`<div class="wb-stat"><div class="num">${myLeads.length}</div><div class="lbl" data-i18n="wbStatLeads">Leads</div></div>
-    <div class="wb-stat"><div class="num">${totalClicks}</div><div class="lbl" data-i18n="wbStatClicks">Link clicks</div></div>
-    <div class="wb-stat"><div class="num">${conv}%</div><div class="lbl" data-i18n="wbStatConv">Conversion</div></div>`;
+  ws.innerHTML=`<div class="wb-stat"><div class="num">${myLeads.length}</div><div class="lbl">${T('wbStatLeads','Leads')}</div></div>
+    <div class="wb-stat"><div class="num">${totalClicks}</div><div class="lbl">${T('wbStatClicks','Link clicks')}</div></div>
+    <div class="wb-stat"><div class="num">${conv}%</div><div class="lbl">${T('wbStatConv','Conversion')}</div></div>`;
   const ll=document.getElementById('wbLeads');
   ll.innerHTML='';
   if(myLeads.length===0){ ll.innerHTML='<div style="font-size:12px;color:var(--text-dim);padding:12px 0;">'+T('noLeads','No leads yet')+'</div>'; }
@@ -3473,14 +3502,14 @@ function renderWorkbench(){
   const nb=document.getElementById('wbNotifs');
   if(nb){
     nb.innerHTML='';
-    const myNotifs = isTopRole() ? BOOKING_NOTIFS : BOOKING_NOTIFS.filter(n=>n.sales===curSales);
+    const myNotifs = isTopRole() ? BOOKING_NOTIFS : BOOKING_NOTIFS.filter(n=>n.sales===curEmployee);
     if(myNotifs.length===0){ nb.innerHTML='<div style="font-size:12px;color:var(--text-dim);padding:12px 0;">'+T('noBookings','No new bookings')+'</div>'; }
     else myNotifs.forEach(n=>{
       const car=CARS[n.car]; if(!car) return;
       const d=document.createElement('div'); d.className='wb-lead';
       const phoneClean=n.phone.replace(/[^0-9]/g,'');
-      const waUrl = phoneClean ? ("https://wa.me/"+phoneClean+"?text="+encodeURIComponent("Hi "+n.name+", this is "+empOf(curSales).name+" from Ant Motors about your viewing of the "+carName(car)+".")) : "";
-      d.innerHTML=`<div class="av">🔔</div><div class="info"><b>${n.name}</b><span>${carName(car)} · ${n.date} ${n.time} · ${bName(n.branch)}</span></div>`+
+      const waUrl = phoneClean ? ("https://wa.me/"+phoneClean+"?text="+encodeURIComponent("Hi "+n.name+", this is "+empOf(curEmployee).name+" from Ant Motors about your viewing of the "+carName(car)+".")) : "";
+      d.innerHTML=`<div class="av">📅</div><div class="info"><b>${n.name}</b><span>${carName(car)} · ${n.date} ${n.time} · ${bName(n.branch)}</span></div>`+
         (waUrl?`<button class="wa-btn" onclick="openWA('${waUrl}')">WhatsApp</button>`:`<span style="font-size:10px;color:var(--text-dim);">no phone</span>`);
       nb.appendChild(d);
     });
@@ -3586,6 +3615,10 @@ function submitNewCar(){
   LISTED_AT[key]=new Date().toISOString().slice(0,10);
   saveCars(); recomputeFacets(); markCarDirty(key);
   toast('Car saved: <b>'+nameEn.trim()+'</b> · 中文: <b>'+nameZh.trim()+'</b>');
+  // Learn any novel Chinese→English pairs from manually-edited previews
+  if(pv('pvNameZh')&&pv('pvNameZh').dataset.touched){ const auto=zBrand(brand)+' '+zModel(model)+' '+(year||''); if(auto.trim()!==nameZh.trim()) learn(auto.trim(),nameEn.trim()); }
+  if(pv('pvSpecZh')&&pv('pvSpecZh').dataset.touched){ specs.split(/[,，]/).forEach((s,i)=>{ const zh=specsArr[i]?revT(specsArr[i][0]):''; if(zh&&s.trim()!==specsArr[i][0]) learn(zh,s.trim()); }); }
+  if(pv('pvHlZh')&&pv('pvHlZh').dataset.touched){ highlights.split(/[,，]/).forEach((s,i)=>{ const en=hlArr[i]||s; if(s.trim()!==en) learn(s.trim(),en.trim()); }); }
   document.querySelectorAll('#scr-admin input[type=text],#scr-admin input[type=number]').forEach(i=>i.value='');
   document.querySelectorAll('#scr-admin textarea').forEach(i=>i.value='');
   ['pvNameEn','pvNameZh','pvSubEn','pvSubZh','pvSpecEn','pvSpecZh','pvHlEn','pvHlZh'].forEach(id=>{ const el=pv(id); if(el) delete el.dataset.touched; });
@@ -3685,12 +3718,12 @@ function parsePaste(){
     const w=words[i];
     if(/[一-鿿]/.test(w)){
       if(!brand){ const en=zhBrandModel(w); const sp=en.split(' '); if(sp.length>1){ brand=sp[0]; modelTokens.push(...sp.slice(1)); } else { brand=en; } continue; }
-      const r=REV[w]||w; (isHlTok(r)?highlights:specs).push(r); continue;
+      const r=revT(w); (isHlTok(r)?highlights:specs).push(r); continue;
     }
     if(isSpecTok(w)){ specs.push(w); continue; }
     if(isHlTok(w)){ highlights.push(w); continue; }
-    if(!brand){ brand=REV[w]||w; continue; }
-    modelTokens.push(REV[w]||w);
+    if(!brand){ brand=revT(w); continue; }
+    modelTokens.push(revT(w));
   }
   if(brand) document.getElementById('afBrand').value=brand;
   if(modelTokens.length) document.getElementById('afModel').value=modelTokens.join(' ');
@@ -3787,11 +3820,9 @@ function renderShowroomList(){
       </div>
       <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">${s.phone}</div>
       <div style="font-size:11px;color:var(--gold);font-weight:600;margin-top:4px;">${s.dist}</div>
-      <div class="row"><button onclick="toast('${T('dirTo','Directions to')} ${s.name}')">${T('directions','Directions')}</button><button class="wa" onclick="waTap('general')">↗ WhatsApp</button>${isTopRole()?`<button class="del" onclick="deleteShowroom('${s.name.replace(/\'/g,"\\'")}')">${T('del','Delete')}</button>`:''}</div></div>`;
+      <div class="row"><button onclick="toast('${T('dirTo','Directions to')} ${s.name}')">${T('directions','Directions')}</button><button class="wa" onclick="waTap('general')">↗ WhatsApp</button></div></div>`;
     sl.appendChild(item);
   });
-  const ag=document.getElementById('shAddGroup');
-  if(ag) ag.style.display = isTopRole() ? 'block' : 'none';
 }
 
 function renderFilterBranch(){
@@ -3800,6 +3831,14 @@ function renderFilterBranch(){
   SHOWROOMS.forEach(s=>{ const d=document.createElement('div'); d.className="chip"; d.textContent=s.name.split(' ')[0]; d.dataset.f="branch"; d.dataset.v=s.name; fb.appendChild(d); });
 }
 function toggleShForm(){ const f=document.getElementById('shForm'); if(f) f.style.display = (f.style.display==='none'?'block':'none'); }
+function renderShSettings(){
+  const sg=document.getElementById('shSettingsGroup'); if(!sg) return;
+  sg.style.display = isTopRole() ? 'block' : 'none';
+  if(!isTopRole()) return;
+  const sl=document.getElementById('shSettingsList'); if(!sl) return;
+  sl.innerHTML=SHOWROOMS.map(s=>`<div class="sh-set-row"><span>${bName(s.name)}</span><span style="font-size:11px;color:var(--text-dim);">${s.addr||''} · ${carCountAt(s.name)} cars</span><button class="share-copy" style="background:var(--surface-2);border:1px solid var(--border);color:var(--danger);" onclick="deleteShowroom('${s.name.replace(/\'/g,"\\'")}')">${T('del','Delete')}</button></div>`).join('');
+}
+function carCountAt(name){ return Object.values(CARS).filter(c=>c.loc&&c.loc.name===name).length; }
 function addShowroom(){
   const n=(document.getElementById('shName').value||'').trim();
   if(!n){ toast('Name required'); return; }
@@ -3808,7 +3847,7 @@ function addShowroom(){
   saveShowrooms();
   document.querySelectorAll('#shForm input').forEach(i=>i.value='');
   document.getElementById('shForm').style.display='none';
-  renderShowroomList(); renderFilterBranch(); renderHome(); initAdminBranch();
+  renderShowroomList(); renderFilterBranch(); renderHome(); initAdminBranch(); renderShSettings();
   toast('Showroom added: <b>'+n+'</b>');
 }
 function deleteShowroom(name){
@@ -3818,7 +3857,7 @@ function deleteShowroom(name){
   if(idx>=0) SHOWROOMS.splice(idx,1);
   delete SHOWROOM_PHOTOS[name];
   saveShowrooms(); jsave('am_showroom_photos',SHOWROOM_PHOTOS);
-  renderShowroomList(); renderFilterBranch(); renderHome(); initAdminBranch();
+  renderShowroomList(); renderFilterBranch(); renderHome(); initAdminBranch(); renderShSettings();
   toast('Showroom deleted: '+name);
 }
 
