@@ -2179,7 +2179,7 @@ function updateRoleUI(){
   const permCard=document.getElementById('permCard');
   if(permCard) permCard.style.display = ['boss','partnerA','partnerB','manager'].includes(curRole) ? 'block' : 'none';
   const carActs=document.getElementById('carActionsBtn');
-  if(carActs) carActs.style.display = canEditCar() ? 'flex' : 'none';
+  if(carActs) carActs.style.display = 'flex'; // v65: always show
   const mlAdd=document.getElementById('mlAddBtn');
   if(mlAdd) mlAdd.style.display = canEditCar() ? 'flex' : 'none';
   const costRow=document.getElementById('costRow');
@@ -2493,7 +2493,7 @@ function renderMe(){
   const cg=document.getElementById('companyGroup');
   if(cg){
     if(loggedIn && co){
-      cg.style.display = isTopRole() ? 'block' : 'none';
+      cg.style.display = 'block'; // v65: always show for logged-in
       const a=document.getElementById('coNameTxt'); if(a) a.textContent=co.name||'';
       const b=document.getElementById('coCodeTxt'); if(b) b.textContent=co.code||'';
       const bt=document.getElementById('coBioTxt'); if(bt) bt.textContent=co.bio||'';
@@ -2662,7 +2662,7 @@ function renderMembershipUI(){
   const banner=document.getElementById('memBanner');
   const badge=document.getElementById('memBadge');
   const info=document.getElementById('memInfo');
-  if(grp && SYNC.token && co) grp.style.display = isTopRole() ? 'block' : 'none';
+  if(grp && SYNC.token && co) grp.style.display = 'block'; // v65: always show
   const m=MEMBERSHIP;
   if(banner){
     if(m && m.expired){
