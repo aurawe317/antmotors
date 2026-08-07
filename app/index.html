@@ -77,7 +77,7 @@
   .phone.subpage-mode .screen.active{padding-top:calc(44px + env(safe-area-inset-top,0px));}
   .phone.subpage-mode .screen.active .sec-head,
   .phone.subpage-mode .screen.active .admin-head{display:none;}
-  .phone.subpage-mode .screen.active .detail-top{top:44px;}
+  .phone.subpage-mode .screen.active .detail-top{top:44px; justify-content:flex-end;}
   .phone .sub-bar{display:none;}
   .phone.subpage-mode .sub-bar{display:flex;}
 
@@ -617,6 +617,7 @@
     <div class="attr" id="attrBanner" style="display:none;">
       <span class="dot"></span>
       <div class="grow" id="attrText"></div>
+      <div class="wa-mini" onclick="waTap('general')">↗ WhatsApp</div>
     </div>
 
     <!-- sub-page fixed back bar (workbench / admin / favorites / perm / settings) -->
