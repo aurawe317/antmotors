@@ -70,7 +70,18 @@
   .attr b{color:var(--gold);}
   .attr .grow{flex:1; color:var(--text-dim);}
   .attr .wa-mini{display:flex; align-items:center; gap:5px; color:var(--wa); font-weight:700;}
-  .sub-bar{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;padding:env(safe-area-inset-top,0px) 12px 0;height:calc(44px + env(safe-area-inset-top,0px));background:var(--surface);border-bottom:1px solid var(--border);}
+  /* Sub-page mode: hide chrome bars, show fixed back bar */
+  .phone.subpage-mode .appbar,
+  .phone.subpage-mode .attr,
+  .phone.subpage-mode .tabbar{display:none;}
+  .phone.subpage-mode .screen.active{padding-top:calc(44px + env(safe-area-inset-top,0px));}
+  .phone.subpage-mode .screen.active .sec-head,
+  .phone.subpage-mode .screen.active .admin-head{display:none;}
+  .phone.subpage-mode .screen.active .detail-top{top:44px;}
+  .phone .sub-bar{display:none;}
+  .phone.subpage-mode .sub-bar{display:flex;}
+
+  .sub-bar{position:fixed;top:0;left:0;right:0;z-index:50;display:none;align-items:center;padding:env(safe-area-inset-top,0px) 12px 0;height:calc(44px + env(safe-area-inset-top,0px));background:var(--surface);border-bottom:1px solid var(--border);}
   .sub-back{width:36px;height:36px;border-radius:50%;border:none;background:transparent;color:var(--gold);font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex:0 0 auto;}
   .info-dot{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--border);color:var(--text-dim);font-size:12px;font-style:italic;font-family:Georgia,"Times New Roman",serif;cursor:pointer;vertical-align:middle;margin-left:5px;position:relative;top:-1px;}
   .info-expand{font-size:11px;color:var(--text-dim);margin-top:4px;line-height:1.5;display:none;font-weight:400;}
@@ -1761,20 +1772,11 @@ function go(id){
   document.getElementById(id).classList.add('active');
   const map=['scr-home','scr-stock','scr-showrooms','scr-me'];
   document.querySelectorAll('.tabbar .tab').forEach((t,i)=>t.classList.toggle('on', map[i]===id));
-  /* Sub-pages: hide global bars, show fixed back bar */
+  /* Sub-pages: toggle CSS class on .phone for instant visual switch */
   const isSub=['scr-workbench','scr-admin','scr-favorites','scr-perm','scr-detail'].includes(id);
-  const ab=document.getElementById('attrBanner'), tb=document.querySelector('.tabbar'), sb=document.getElementById('subPageBar'), ap=document.querySelector('.appbar');
-  if(isSub){ if(ab) ab.style.display='none'; if(tb) tb.style.display='none'; if(ap) ap.style.display='none'; if(sb){ sb.style.display=''; const st=document.getElementById('subPageTitle'); if(st){ const titleMap={workbenchTitle:'scr-workbench',adminTitle:'scr-admin',favTitle:'scr-favorites',permTitleShort:'scr-perm'}; const k=Object.keys(titleMap).find(k=>titleMap[k]===id); if(k) st.textContent=T(k,'Back'); else if(id==='scr-detail'){ st.textContent=CARS[curCar]?carName(CARS[curCar]):T('back','Back'); } else st.textContent=T('back','Back'); } }
-    const active=document.getElementById(id); if(active){ active.style.paddingTop='calc(44px + env(safe-area-inset-top,0px))';
-      /* Hide inline page-title row: sec-head, admin-head, and detail-top are all covered by the fixed bar */
-      ['sec-head','admin-head'].forEach(cls=>{ const h=active.querySelector('.'+cls); if(h) h.style.display='none'; });
-      /* Detail page: shift the floating top bar down to clear the fixed sub-bar */
-      if(id==='scr-detail'){ const dt=active.querySelector('.detail-top'); if(dt) dt.style.top='44px'; } } }
-  else { if(tb) tb.style.display=''; if(sb) sb.style.display='none'; if(ap) ap.style.display=''; updateAttrBanner();
-    /* Restore main-screen padding + headers */
-    document.querySelectorAll('.screen').forEach(s=>{ s.style.paddingTop=''; });
-    document.querySelectorAll('.screen .sec-head, .screen .admin-head').forEach(h=>h.style.display='');
-    document.querySelectorAll('.screen .detail-top').forEach(h=>h.style.top=''); }
+  const ph=document.getElementById('phone'); if(ph) ph.classList.toggle('subpage-mode', isSub);
+  if(isSub){ const sb=document.getElementById('subPageBar'); if(sb){ const st=document.getElementById('subPageTitle'); if(st){ const titleMap={workbenchTitle:'scr-workbench',adminTitle:'scr-admin',favTitle:'scr-favorites',permTitleShort:'scr-perm'}; const k=Object.keys(titleMap).find(k=>titleMap[k]===id); if(k) st.textContent=T(k,'Back'); else if(id==='scr-detail'){ st.textContent=CARS[curCar]?carName(CARS[curCar]):T('back','Back'); } else st.textContent=T('back','Back'); } } }
+  else { updateAttrBanner(); }
   if(id==='scr-workbench') renderWorkbench();
   if(id==='scr-showrooms') renderShowroomList();
   if(id==='scr-stock') renderStock();
@@ -2321,7 +2323,7 @@ function updateDemoState(){
 /* ---- preview bottom sheet ---- */
 function openPreview(){ document.getElementById('sheetMask').classList.add('show'); document.getElementById('previewSheet').classList.add('show'); syncSheet(); syncPreviewAccess(); }
 function closePreview(){ closeSheets(); }
-function closeSettings(){ document.getElementById('sheetMask').classList.remove('show'); document.getElementById('settingsSheet').classList.remove('show'); const sb=document.getElementById('subPageBar'); if(sb) sb.style.display='none'; updateAttrBanner(); }
+function closeSettings(){ document.getElementById('sheetMask').classList.remove('show'); document.getElementById('settingsSheet').classList.remove('show'); const ph=document.getElementById('phone'); if(ph) ph.classList.remove('subpage-mode'); updateAttrBanner(); }
 function closeSheets(){ closeSettings(); document.getElementById('sheetMask').classList.remove('show'); document.getElementById('previewSheet').classList.remove('show'); const ps=document.getElementById('pricingSheet'); if(ps) ps.classList.remove('show'); const ms=document.getElementById('membershipSheet'); if(ms) ms.classList.remove('show'); const ca=document.getElementById('carActionsSheet'); if(ca) ca.classList.remove('show'); }
 function openCarActions(){
   const c=CARS[curCar]; if(!c) return;
@@ -2427,8 +2429,9 @@ function openSettings(){
   const ap=document.getElementById('setApi'); if(ap) ap.value=SYNC.base||DEFAULT_API;
   document.getElementById('sheetMask').classList.add('show');
   document.getElementById('settingsSheet').classList.add('show');
-  /* Show sub-bar for settings too */
-  const sb=document.getElementById('subPageBar'); if(sb){ sb.style.display=''; const st=document.getElementById('subPageTitle'); if(st) st.textContent=T('settingsTitle','Settings'); }
+  /* Show sub-bar for settings */
+  const ph=document.getElementById('phone'); if(ph) ph.classList.add('subpage-mode');
+  const st=document.getElementById('subPageTitle'); if(st) st.textContent=T('settingsTitle','Settings');
   applyTheme();
   fillCurrencyUI();
   fillDefSalesUI();
