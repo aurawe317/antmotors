@@ -65,11 +65,13 @@
   .screen.active{display:block; animation:fade .25s ease;}
   @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
 
-  .attr{margin:10px 16px 0; padding:10px 14px; border-radius:12px; background:var(--gold-soft); border:1px solid var(--gold-line); display:flex; align-items:center; gap:10px; font-size:12px;}
-  .attr .dot{width:8px; height:8px; border-radius:50%; background:var(--gold); flex:0 0 auto;}
+  .attr{margin:6px 16px 0; padding:2px 4px; display:flex; align-items:center; gap:8px; font-size:11px; color:var(--text-dim); background:none; border:none;}
+  .attr .dot{display:none;}
   .attr b{color:var(--gold);}
   .attr .grow{flex:1; color:var(--text-dim);}
   .attr .wa-mini{display:flex; align-items:center; gap:5px; color:var(--wa); font-weight:700;}
+  .co-shopping{font-size:11px;color:var(--text-dim);margin-top:4px;line-height:1.4;}
+  .co-shopping b{color:var(--gold);font-weight:700;}
 
   .hero{margin:14px 16px 0; border-radius:14px; overflow:hidden; position:relative; height:206px; background:linear-gradient(160deg,#2a2723,#0f0e0e 70%); border:1px solid var(--border);}
   .hero .photo{position:absolute; inset:0; background:radial-gradient(120px 90px at 70% 60%, rgba(232,194,104,0.22), transparent 70%), linear-gradient(120deg,#3a352e,#15130f); display:flex; align-items:flex-end; justify-content:center;}
@@ -286,6 +288,7 @@
 
   /* persistent Add-Car floating button (owner/staff only) */
   .fab-add{position:absolute; right:16px; bottom:78px; width:56px; height:56px; border-radius:50%; background:linear-gradient(140deg,var(--gold),#b9842c); color:#0F0E0E; border:none; display:none; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 8px 22px rgba(0,0,0,.45); z-index:40;}
+  #scr-admin.active ~ .fab-add{display:none !important;}
   .fab-add.show{display:flex;}
   .fab-add svg{display:block;}
   .fab-add:active{transform:scale(.94);}
@@ -356,6 +359,13 @@
   .me-gear:active{transform:scale(.88) rotate(40deg);}
   #scr-me .grp{margin:12px 16px 0; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 15px;}
   #scr-me .lbl{font-size:11px; font-weight:800; color:var(--text-dim); letter-spacing:.6px; text-transform:uppercase; margin-bottom:10px;}
+  .collapsible{padding:0 15px;}
+  .collapsible > summary{list-style:none; cursor:pointer; outline:none; display:flex; align-items:center; justify-content:space-between; margin:0 -15px; padding:14px 15px; border-bottom:1px solid var(--border);}
+  .collapsible > summary::-webkit-details-marker{display:none;}
+  .collapsible > summary::after{content:"›"; color:var(--gold); font-size:18px; transform:rotate(90deg); transition:transform .2s; font-weight:700;}
+  .collapsible[open] > summary::after{transform:rotate(-90deg);}
+  .collapsible > summary ~ *{margin-top:12px;}
+  .collapsible > summary ~ #staffList{margin-top:12px;}
   #scr-me .form-row{display:flex; flex-direction:column; gap:4px; margin:8px 0;}
   #scr-me .form-row label{font-size:11px; color:var(--text-dim);}
   #scr-me input:not([type=checkbox]), #scr-me textarea, #scr-me select{background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:9px 10px; font-size:13px; font-family:inherit; outline:none;}
@@ -391,6 +401,12 @@
   /* membership badge + expiry banner */
   .mem-banner{display:flex; align-items:center; justify-content:center; gap:8px; background:linear-gradient(90deg,#5a3a00,#7a5200); color:#ffd87a; font-size:12px; font-weight:700; padding:7px 12px; border-radius:10px; margin:0 0 8px; cursor:pointer; border:1px solid #b8841f;}
   .mem-banner::before{content:"⚠";}
+  .mem-card{background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:10px;}
+  .mem-card-top{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .mem-plan{font-size:15px; font-weight:800; color:var(--text);}
+  .mem-pill{display:inline-block; padding:3px 11px; border-radius:999px; font-size:11px; font-weight:800;}
+  .mem-meta{font-size:12px; color:var(--text-dim); line-height:1.5; margin-top:6px;}
+  #memStatus{background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; font-size:12px; line-height:1.5;}
   .plan-card{display:flex; align-items:center; justify-content:space-between; gap:12px; background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin:8px 0;}
   .plan-card.sel{border-color:var(--gold); box-shadow:0 0 0 1px var(--gold);}
   .plan-name{font-weight:800; font-size:14px;}
@@ -417,8 +433,6 @@
   .sh-photo-ph{height:130px;display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
   .sh-photo-ph img{width:100%;height:100%;object-fit:cover;}
   .sh-photo-ph .add-photo{position:absolute;bottom:8px;right:8px;background:var(--scrim);color:var(--gold);border:1px solid var(--gold-line);border-radius:var(--r-pill);font-size:10px;font-weight:700;padding:5px 10px;cursor:pointer;display:flex;align-items:center;gap:4px;}
-  .edit-fab{position:absolute;top:12px;right:60px;background:var(--gold);color:#0F0E0E;border:none;border-radius:var(--r-pill);font-weight:700;font-size:11px;padding:6px 12px;cursor:pointer;display:none;align-items:center;gap:5px;z-index:5;}
-  .edit-fab.show{display:flex;}
   .fav-star{font-size:18px;color:var(--gold);}
   .fav-star.on{color:var(--gold);}
   .fav-toggle{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.4);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:3;}
@@ -470,6 +484,16 @@
   .wb-link button{font-size:10px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;}
 
   .admin-form{padding:0 2px;}
+  .af-paste{width:100%;min-height:62px;resize:vertical;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;color:var(--text);font-size:13px;font-family:inherit;outline:none;margin-bottom:12px;line-height:1.5;}
+  .af-paste:focus{border-color:var(--gold);}
+  .af-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;}
+  #scr-admin .form-row{margin-bottom:11px;}
+  #scr-admin .form-row input,#scr-admin .form-row select{padding:9px 10px;font-size:13px;}
+  .zhp-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;}
+  .zhp-edit{display:flex;flex-direction:column;gap:3px;}
+  .zhp-edit label{font-size:10px;font-weight:700;color:var(--text-dim);letter-spacing:.4px;}
+  .zhp-edit input{background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:12px;outline:none;width:100%;}
+  .zhp-edit input:focus{border-color:var(--gold);}
   .form-row{display:flex;flex-direction:column;gap:4px;margin-bottom:14px;}
   .form-row label{font-size:12px;font-weight:600;color:var(--text-dim);display:flex;align-items:center;gap:6px;}
   .form-row input,.form-row select{padding:10px 12px;border-radius:8px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:13px;outline:none;}
@@ -675,11 +699,10 @@
         <div class="detail-top">
           <button class="icon-btn" onclick="go('scr-stock')">←</button>
           <div style="display:flex; gap:8px;">
-            <button class="edit-fab" id="editFab" onclick="toast(T('editModeHint','Edit mode: specs, highlights, branch can be modified.'))">✎ Edit</button>
             <button class="icon-btn fav-star" id="detailFav" onclick="toggleFav(null)" title="Save">♡</button>
             <button class="icon-btn" onclick="shareCar()" title="Share link">↗</button>
             <button class="icon-btn" id="themeBtn2" onclick="toggleTheme()"><span id="themeIcon2"></span></button>
-            <button class="icon-btn" id="carActionsBtn" onclick="openCarActions()" title="Car actions" style="display:none;">⋯</button>
+            <button class="icon-btn" id="carActionsBtn" onclick="openCarActions()" title="Edit / actions" style="display:none;">⋯</button>
           </div>
         </div>
       </div>
@@ -773,16 +796,34 @@
         <button class="icon-btn" onclick="go('scr-workbench')">←</button>
       </div>
       <div class="admin-form">
-        <div class="form-row"><label data-i18n="fBrand">Brand</label><input type="text" id="afBrand" placeholder="Toyota" oninput="liveZh()"></div>
-        <div class="form-row"><label data-i18n="fModel">Model</label><input type="text" id="afModel" placeholder="Camry" oninput="liveZh()"></div>
-        <div class="form-row"><label data-i18n="fYear">Year</label><input type="number" id="afYear" placeholder="2023" oninput="liveZh()"></div>
-        <div class="form-row"><label data-i18n="fCond">Condition</label><select id="afCond" onchange="liveZh()"><option>NEW</option><option>USED</option></select></div>
-        <div class="form-row"><label data-i18n="fBody">Body Type</label><select id="afBody" onchange="liveZh()"><option>SUV</option><option>Sedan</option><option>Pickup</option><option>Hatchback</option></select></div>
-        <div class="form-row"><label data-i18n="color">Color</label><select id="afColor" onchange="liveZh()"><option>Black</option><option>White</option><option>Silver</option><option>Gray</option><option>Red</option><option>Blue</option><option>Brown</option><option>Other</option></select></div>
+        <textarea id="afPaste" class="af-paste" data-ph="ph_paste" placeholder="Smart paste: drop a full vehicle description and fields fill automatically. e.g. Toyota Camry 2021, SUV, Black, Accra, 2.5L Auto, 45,000 km, Sunroof Leather seats" oninput="parsePaste()"></textarea>
+
+        <div class="af-grid">
+          <div class="form-row"><label data-i18n="fBrand">Brand</label><input type="text" id="afBrand" placeholder="Toyota" oninput="liveZh()"></div>
+          <div class="form-row"><label data-i18n="fModel">Model</label><input type="text" id="afModel" placeholder="Camry" oninput="liveZh()"></div>
+          <div class="form-row"><label data-i18n="fYear">Year</label><input type="number" id="afYear" placeholder="2023" oninput="liveZh()"></div>
+          <div class="form-row"><label data-i18n="fCond">Condition</label><select id="afCond" onchange="liveZh()"><option>NEW</option><option>USED</option></select></div>
+          <div class="form-row"><label data-i18n="fBody">Body Type</label><select id="afBody" onchange="liveZh()"><option>SUV</option><option>Sedan</option><option>Pickup</option><option>Hatchback</option></select></div>
+          <div class="form-row"><label data-i18n="color">Color</label><select id="afColor" onchange="liveZh()"><option>Black</option><option>White</option><option>Silver</option><option>Gray</option><option>Red</option><option>Blue</option><option>Brown</option><option>Other</option></select></div>
+        </div>
+
         <div class="form-row"><label data-i18n="fBranch">Branch</label><input type="text" id="afBranch" list="afBranchList" autocomplete="off" placeholder="Select or type a new location" style="width:100%;"><datalist id="afBranchList"></datalist></div>
         <div class="form-row"><label data-i18n="fSpecs">Specs (comma-separated)</label><input type="text" id="afSpecs" placeholder="2.5L, Auto, Diesel, 45,000 km" oninput="liveZh()"></div>
         <div class="form-row"><label data-i18n="fHighlights">Highlights (comma-separated)</label><input type="text" id="afHighlights" placeholder="Sunroof, Leather seats, Reverse camera" oninput="liveZh()"></div>
-        <div class="zh-preview" id="afZhPreview" style="display:none;"></div>
+
+        <div class="zh-preview" id="afZhPreview" style="display:none;">
+          <div class="zhp-h"><span data-i18n="bilingualPrev">Bilingual preview (editable)</span></div>
+          <div class="zhp-grid">
+            <div class="zhp-edit"><label>EN</label><input id="pvNameEn" placeholder="Name (EN)" oninput="this.dataset.touched=1"></div>
+            <div class="zhp-edit"><label>中文</label><input id="pvNameZh" placeholder="名称（中文）" oninput="this.dataset.touched=1;revExtract('pvNameZh','pvNameEn','brandModel')"></div>
+            <div class="zhp-edit"><label>EN</label><input id="pvSubEn" placeholder="Subtitle (EN)" oninput="this.dataset.touched=1"></div>
+            <div class="zhp-edit"><label>中文</label><input id="pvSubZh" placeholder="副标（中文）" oninput="this.dataset.touched=1"></div>
+            <div class="zhp-edit"><label>EN</label><input id="pvSpecEn" placeholder="Specs (EN)" oninput="this.dataset.touched=1"></div>
+            <div class="zhp-edit"><label>中文</label><input id="pvSpecZh" placeholder="配置（中文）" oninput="this.dataset.touched=1;revExtract('pvSpecZh','pvSpecEn','spec')"></div>
+            <div class="zhp-edit"><label>EN</label><input id="pvHlEn" placeholder="Highlights (EN)" oninput="this.dataset.touched=1"></div>
+            <div class="zhp-edit"><label>中文</label><input id="pvHlZh" placeholder="亮点（中文）" oninput="this.dataset.touched=1;revExtract('pvHlZh','pvHlEn','hl')"></div>
+          </div>
+        </div>
         <h4 class="price-tiers-h" data-i18n="priceTiers">Price Tiers (GHS)</h4>
         <p class="price-auth-note" data-i18n="priceSetByTop">Only Boss/Owner &amp; Partners can set price tiers.</p>
         <div class="form-row" id="costRow"><label data-i18n="fCost">Cost <span class="role-tag boss">Boss only</span></label><input type="number" id="afCost" placeholder="28000"></div>
@@ -928,6 +969,7 @@
         <div id="coNameTxt" style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
         <div id="coCodeTxt" style="color:var(--gold);font-size:13px;letter-spacing:1px;"></div>
         <div id="coBioTxt" style="font-size:11px;color:var(--text-dim);margin-top:3px;line-height:1.4;"></div>
+        <div id="coShopping" class="co-shopping"></div>
       </div>
     </div>
     <div id="coEditBox" style="display:none;">
@@ -944,8 +986,13 @@
   </div>
   <div class="grp" id="membershipGroup" style="display:none;">
     <div class="lbl"><span data-i18n="memTitle">Membership</span></div>
-    <div id="memBadge" style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;margin:2px 0 8px;"></div>
-    <div id="memInfo" class="sheet-hint"></div>
+    <div class="mem-card" id="memCard">
+      <div class="mem-card-top">
+        <div class="mem-plan" id="memPlan">—</div>
+        <span class="mem-pill" id="memBadge" style="display:none;"></span>
+      </div>
+      <div class="mem-meta" id="memInfo"></div>
+    </div>
     <button class="submit" id="memBtn" onclick="showMembership()" data-i18n="memManage">Manage membership</button>
   </div>
   <div class="grp" id="settingsExtra" style="display:none;">
@@ -981,8 +1028,8 @@
     <div class="form-row"><label data-i18n="joinBranch">Branch</label><input type="text" id="bindBranch" list="afBranchList" placeholder="Select or type" autocomplete="off" /></div>
     <button class="submit" onclick="bindCompany()" data-i18n="joinBind">Bind &amp; activate</button>
   </div>
-  <div class="grp" id="staffGroup" style="display:none;">
-    <div class="lbl" data-i18n="staffMgmt">Staff &amp; roles (admin)</div>
+  <details class="grp collapsible" id="staffGroup" style="display:none;">
+    <summary class="lbl" data-i18n="staffMgmt">Staff &amp; roles (admin)</summary>
     <div id="staffList"></div>
     <div id="codeCard" style="margin-top:14px;border:1px solid var(--border);border-radius:12px;padding:12px;">
       <div class="lbl" data-i18n="codeTitle">Company invitation code</div>
@@ -996,7 +1043,7 @@
         </div>
       </div>
     </div>
-  </div>
+  </details>
       <div class="grp" id="soldGroup" style="display:none;">
         <div class="lbl" data-i18n="soldTitle">Sold vehicles</div>
         <div id="soldList" class="link-list"></div>
@@ -1283,7 +1330,7 @@ const I18N = {
       pvR_partnerB:"Partner B",pvR_partnerB_sub:"Co-owner · same as Boss",
       pvS_kwame:"Kwame A. · Accra",pvS_ama:"Ama K. · Tema",pvS_kwasi:"Kwasi O. · Kumasi",
       prTitle:"💰 Pricing model",prHint:"One car, up to three prices by role. Prices show in your chosen display currency. Owner + 2 Partners see cost; Sales see a graded floor; the customer sees the quote.",
-      priceSetByTop:"Only Boss/Owner & Partners can set price tiers.",loginAs:"Login as",pvLogin:"Login as (admin only)",pvL_boss:"Boss / Owner",pvL_partnerA:"Partner A",pvL_partnerB:"Partner B",boundLink:"Bound link · customers reach only you",noSwitchRole:"Roles are assigned by admin — you cannot switch",noSwitchSales:"Share link is bound to your account",viewingAs:"viewing as",loggedInAs:"Logged in as",sortDefault:"Default",sortPriceAsc:"Price ↑",sortPriceDesc:"Price ↓",sortNewest:"Listed newest",sortOldest:"Listed oldest",inStockDays:"In stock",days:"days",overstock:"overstock",settingsTitle:"Settings",myContact:"My contact (customer reaches you)",fWhatsApp:"WhatsApp number",fPhone:"Phone",saveContact:"Save",installTitle:"Install the app (employees)",installHint:"iOS: Safari → Share → Add to Home Screen. Android: Chrome → ⋮ → Install app. Customers just open the shared link — no install needed.",staffMgmt:"Staff & roles (admin)",addStaff:"+ Add staff",staffId:"Staff ID",staffName:"Name",staffRole:"Role",staffBranch:"Branch",staffWa:"WhatsApp",staffPhone:"Phone",staffPin:"PIN (4-8 digits)",staffCreate:"Create & invite",staffCreated:"Staff created",contactSaved:"Contact saved",tierAssigned:"Assigned ",pvEditContact:"Edit my WhatsApp & phone",pvLockNote:"Your share link is bound to this account — customers can only reach you. Role switching is assigned by admin.",close:"Close",edit:"Edit",noContact:"No contact set"},
+      priceSetByTop:"Only Boss/Owner & Partners can set price tiers.",loginAs:"Login as",pvLogin:"Login as (admin only)",pvL_boss:"Boss / Owner",pvL_partnerA:"Partner A",pvL_partnerB:"Partner B",boundLink:"Bound link · customers reach only you",noSwitchRole:"Roles are assigned by admin — you cannot switch",noSwitchSales:"Share link is bound to your account",viewingAs:"viewing as",loggedInAs:"Logged in as",sortDefault:"Default",sortPriceAsc:"Price ↑",sortPriceDesc:"Price ↓",sortNewest:"Listed newest",sortOldest:"Listed oldest",inStockDays:"In stock",days:"days",overstock:"overstock",settingsTitle:"Settings",myContact:"My contact (customer reaches you)",fWhatsApp:"WhatsApp number",fPhone:"Phone",saveContact:"Save",installTitle:"Install the app (employees)",installHint:"iOS: Safari → Share → Add to Home Screen. Android: Chrome → ⋮ → Install app. Customers just open the shared link — no install needed.",staffMgmt:"Staff & roles (admin)",addStaff:"+ Add staff",staffId:"Staff ID",staffName:"Name",staffRole:"Role",staffBranch:"Branch",staffWa:"WhatsApp",staffPhone:"Phone",staffPin:"PIN (4-8 digits)",staffCreate:"Create & invite",staffCreated:"Staff created",contactSaved:"Contact saved",tierAssigned:"Assigned ",pvEditContact:"Edit my WhatsApp & phone",pvLockNote:"Your share link is bound to this account — customers can only reach you. Role switching is assigned by admin.",close:"Close",edit:"Edit",noContact:"No contact set",shoppingAs:"Shopping with",cap_cost:"See cost price",cap_floors:"See all floor prices",cap_ownfloor:"See own floor price",cap_quote:"See selling quote",cap_editcar:"Edit car info (specs, highlights)",cap_editprice:"Edit prices (cost, floor, quote)",cap_photocar:"Upload car photos",cap_photoshowroom:"Upload showroom photos",cap_addcar:"Add / remove cars",cap_managestaff:"Manage sales staff",cap_sharelinks:"Generate share links",cap_leads:"View customer leads",permNote:"<b>Boss + Partner A + Partner B</b> share identical top-level access — cost, pricing, full edit. &nbsp; <b>*</b> Manager: limited to own branch. &nbsp; <b>**</b> Sales A: limited to cars they manage.",memNone:"No plan",memActive:"Active",ph_paste:"Smart paste: drop a full vehicle description and fields fill automatically. e.g. Toyota Camry 2021, SUV, Black, Accra, 2.5L Auto, 45,000 km, Sunroof Leather seats",bilingualPrev:"Bilingual preview (editable)"},
   zh:{tagline:"加纳 · 中国车出口",st_new:"新",st_contacted:"已联系",st_closed:"已成交",stAdvance:"点击推进",stUpdated:"线索状态更新为",featured:"精选",viewDetails:"查看详情",ourShowrooms:"门店网点",seeAll:"全部",
       newArrivals:"新到车源",browseAll:"浏览全部",yourConsultant:"您的销售顾问",consultRole:"高级销售 · 阿克拉店",
       inventory:"在售库存",all:"全部",new:"新车",used:"二手车",highlights:"配置亮点",bookViewing:"预约看车",back:"返回",
@@ -1331,7 +1378,7 @@ const I18N = {
       pvR_partnerB:"合伙人B",pvR_partnerB_sub:"共同业主 · 同老板",
       pvS_kwame:"Kwame A. · 阿克拉",pvS_ama:"Ama K. · 特马",pvS_kwasi:"Kwasi O. · 库马西",
       prTitle:"💰 价格机制",prHint:"同一辆车，按角色最多三档价格。价格按你设置的显示货币展示。业主与两位合伙人看成本；销售看分级底价；客户看报价。",
-      priceSetByTop:"客户报价及销售底价仅由老板/业主和合伙人设定。",loginAs:"登录为",pvLogin:"登录身份（仅管理员）",pvL_boss:"老板 / 业主",pvL_partnerA:"合伙人A",pvL_partnerB:"合伙人B",boundLink:"绑定链接 · 客户只能联系你",noSwitchRole:"角色由管理员统一分配，你不能切换",noSwitchSales:"分享链接已绑定你的账号",viewingAs:"当前查看",loggedInAs:"已登录为",sortDefault:"默认",sortPriceAsc:"价格升序",sortPriceDesc:"价格降序",sortNewest:"上架最新",sortOldest:"上架最早",inStockDays:"在库",days:"天",overstock:"积压预警",settingsTitle:"设置",myContact:"我的联系方式（客户联系你）",fWhatsApp:"WhatsApp 号码",fPhone:"电话",saveContact:"保存",installTitle:"安装 App（员工）",installHint:"iOS：Safari 打开 → 分享 → 添加到主屏幕。Android：Chrome 打开 → ⋮ → 安装应用。客户只需打开分享链接，无需安装。",staffMgmt:"员工与角色（管理员）",addStaff:"+ 新增员工",staffId:"员工账号",staffName:"姓名",staffRole:"角色",staffBranch:"门店",staffWa:"WhatsApp",staffPhone:"电话",staffPin:"密码 PIN（4-8 位）",staffCreate:"创建并邀请",staffCreated:"员工已创建",contactSaved:"联系方式已保存",tierAssigned:"已分配 ",pvEditContact:"编辑我的 WhatsApp 与电话",pvLockNote:"你的分享链接已绑定本账号——客户只能联系你。角色切换由管理员统一分配。",close:"关闭",edit:"编辑",noContact:"尚未设置联系方式"},
+      priceSetByTop:"客户报价及销售底价仅由老板/业主和合伙人设定。",loginAs:"登录为",pvLogin:"登录身份（仅管理员）",pvL_boss:"老板 / 业主",pvL_partnerA:"合伙人A",pvL_partnerB:"合伙人B",boundLink:"绑定链接 · 客户只能联系你",noSwitchRole:"角色由管理员统一分配，你不能切换",noSwitchSales:"分享链接已绑定你的账号",viewingAs:"当前查看",loggedInAs:"已登录为",sortDefault:"默认",sortPriceAsc:"价格升序",sortPriceDesc:"价格降序",sortNewest:"上架最新",sortOldest:"上架最早",inStockDays:"在库",days:"天",overstock:"积压预警",settingsTitle:"设置",myContact:"我的联系方式（客户联系你）",fWhatsApp:"WhatsApp 号码",fPhone:"电话",saveContact:"保存",installTitle:"安装 App（员工）",installHint:"iOS：Safari 打开 → 分享 → 添加到主屏幕。Android：Chrome 打开 → ⋮ → 安装应用。客户只需打开分享链接，无需安装。",staffMgmt:"员工与角色（管理员）",addStaff:"+ 新增员工",staffId:"员工账号",staffName:"姓名",staffRole:"角色",staffBranch:"门店",staffWa:"WhatsApp",staffPhone:"电话",staffPin:"密码 PIN（4-8 位）",staffCreate:"创建并邀请",staffCreated:"员工已创建",contactSaved:"联系方式已保存",tierAssigned:"已分配 ",pvEditContact:"编辑我的 WhatsApp 与电话",pvLockNote:"你的分享链接已绑定本账号——客户只能联系你。角色切换由管理员统一分配。",close:"关闭",edit:"编辑",noContact:"尚未设置联系方式",shoppingAs:"正在以",cap_cost:"查看成本价",cap_floors:"查看所有底价",cap_ownfloor:"查看本人底价",cap_quote:"查看销售报价",cap_editcar:"编辑车辆信息（配置、亮点）",cap_editprice:"编辑价格（成本/底价/报价）",cap_photocar:"上传车辆照片",cap_photoshowroom:"上传门店照片",cap_addcar:"上架/下架车辆",cap_managestaff:"管理销售人员",cap_sharelinks:"生成分享链接",cap_leads:"查看客户线索",permNote:"<b>老板 + 合伙人A + 合伙人B</b> 拥有相同的最高权限——成本、定价、全面编辑。&nbsp; <b>*</b> 经理：仅限本门店。&nbsp; <b>**</b> 销售A：仅限其负责的车辆。",memNone:"尚无会员",memActive:"生效中",ph_paste:"智能粘贴：把整段车辆信息贴进来，系统自动识别并填入下方。例如：Toyota Camry 2021, SUV, Black, Accra, 2.5L Auto, 45,000 km, Sunroof Leather seats",bilingualPrev:"双语预览（可手动修改）"},
 };
 I18N.en.advanced="Advanced"; I18N.en.mileage="Mileage (km)"; I18N.en.priceRangeLbl="Price range (₵)"; I18N.en.color="Color"; I18N.en.year="Year"; I18N.en.advBranch="Sales point"; I18N.en.advHint="Combine multiple filters — options auto-detected from your listed cars."; I18N.en.resetFilters="Reset"; I18N.en.applyFilters="Apply"; I18N.en.allBranches="All branches"; I18N.en.allBrands="All brands"; I18N.en.needServer="Please enter your server address in Settings to load inventory.";
 I18N.zh.advanced="高级筛选"; I18N.zh.mileage="公里数 (km)"; I18N.zh.priceRangeLbl="价格区间 (₵)"; I18N.zh.color="颜色"; I18N.zh.year="年份"; I18N.zh.advBranch="销售点"; I18N.zh.advHint="可同时叠加多个条件——筛选项根据在售车辆自动识别。"; I18N.zh.resetFilters="重置"; I18N.zh.applyFilters="应用"; I18N.zh.allBranches="全部门店"; I18N.zh.allBrands="全部品牌"; I18N.zh.needServer="请在设置中填写服务器地址以加载库存。";
@@ -1442,6 +1489,8 @@ const ZH = {
   specVal:{"Automatic":"自动","Manual":"手动","CVT":"无级变速","DCT":"双离合","Petrol":"汽油","Diesel":"柴油","FWD":"前驱","RWD":"后驱","AWD":"四驱","4WD":"四驱","Hybrid":"混动","Electric":"纯电","Turbo":"涡轮"},
   hl:{"Leather Seats":"真皮座椅","Sunroof":"天窗","360 Camera":"360°全景影像","Adaptive Cruise":"自适应巡航","3rd Row":"第三排座椅","Apple CarPlay":"苹果CarPlay","Blind Spot":"盲点监测","Heated Seats":"座椅加热","Lane Assist":"车道保持辅助","Brand New":"全新车","Panoramic Roof":"全景天窗","Smart Key":"智能钥匙","Wireless Charge":"无线充电","Reliable":"皮实耐用","Low Fuel":"省油","Backup Camera":"倒车影像","Bluetooth":"蓝牙","AWD":"四驱","Cargo Space":"大储物空间","Honda Sensing":"本田SENSING","Workhorse":"耐造实用","Tow Pack":"拖拽套件","Heavy Duty":"重载版","Toyota Safety":"丰田TSS安全","Smart Entry":"智能进入","Reverse Cam":"倒车影像","Dual Cab":"双排座舱","Bed Liner":"货箱防护垫","Tow Bar":"拖车钩","Fuel Efficient":"省油经济","Lane Keep":"车道保持","Warranty Left":"质保期内","Keyless":"无钥匙进入","Reverse Camera":"倒车影像"}
 };
+const REV={};
+for(const cat in ZH){ for(const k in ZH[cat]){ if(!REV[ZH[cat][k]]) REV[ZH[cat][k]]=k; } }
 function zBrand(s){ return ZH.brand[s]||s; }
 function zModel(s){ return ZH.model[s]||s; }
 function bName(n){ return ZH.branch[n]||n; }
@@ -1945,25 +1994,25 @@ function renderRolePrices(){
 
 function renderPerm(){
   const rows=[
-    ["See cost price","yes","yes","yes","no","no","no","no"],
-    ["See all floor prices","yes","yes","yes","yes*","no","no","no"],
-    ["See own floor price","yes","yes","yes","yes","A","B","no"],
-    ["See selling quote","yes","yes","yes","yes","yes","yes","yes"],
-    ["Edit car info (specs, highlights)","yes","yes","yes","yes*","yes**","no","no"],
-    ["Edit prices (cost, floor, quote)","yes","yes","yes","no","no","no","no"],
-    ["Upload car photos","yes","yes","yes","yes*","yes**","no","no"],
-    ["Upload showroom photos","yes","yes","yes","yes*","no","no","no"],
-    ["Add / remove cars","yes","yes","yes","yes*","no","no","no"],
-    ["Manage sales staff","yes","yes","yes","no","no","no","no"],
-    ["Generate share links","yes","yes","yes","yes","yes","yes","no"],
-    ["View customer leads","yes","yes","yes","yes*","yes**","yes**","no"]
+    ["cap_cost","yes","yes","yes","no","no","no","no"],
+    ["cap_floors","yes","yes","yes","yes*","no","no","no"],
+    ["cap_ownfloor","yes","yes","yes","yes","A","B","no"],
+    ["cap_quote","yes","yes","yes","yes","yes","yes","yes"],
+    ["cap_editcar","yes","yes","yes","yes*","yes**","no","no"],
+    ["cap_editprice","yes","yes","yes","no","no","no","no"],
+    ["cap_photocar","yes","yes","yes","yes*","yes**","no","no"],
+    ["cap_photoshowroom","yes","yes","yes","yes*","no","no","no"],
+    ["cap_addcar","yes","yes","yes","yes*","no","no","no"],
+    ["cap_managestaff","yes","yes","yes","no","no","no","no"],
+    ["cap_sharelinks","yes","yes","yes","yes","yes","yes","no"],
+    ["cap_leads","yes","yes","yes","yes*","yes**","yes**","no"]
   ];
   const tb=document.getElementById('permTableBody');
   if(!tb) return;
   tb.innerHTML="";
   rows.forEach(r=>{
     const tr=document.createElement('tr');
-    tr.innerHTML=`<td>${r[0]}</td>`+r.slice(1).map(v=>{
+    tr.innerHTML=`<td>${T(r[0],r[0])}</td>`+r.slice(1).map(v=>{
       if(v==='yes') return '<td class="yes">✓</td>';
       if(v==='no') return '<td class="no">—</td>';
       if(v.startsWith('*')) return `<td class="partial">${v}</td>`;
@@ -1972,7 +2021,7 @@ function renderPerm(){
     tb.appendChild(tr);
   });
   const note=document.getElementById('adminNote');
-  if(note) note.innerHTML=`<b>Boss + Partner A + Partner B</b> share identical top-level access — cost, pricing, full edit. &nbsp; <b>*</b> Manager: limited to own branch. &nbsp; <b>**</b> Sales A: limited to cars they manage.`;
+  if(note) note.innerHTML=T('permNote','<b>Boss + Partner A + Partner B</b> share identical top-level access — cost, pricing, full edit. &nbsp; <b>*</b> Manager: limited to own branch. &nbsp; <b>**</b> Sales A: limited to cars they manage.');
 }
 
 function isTopRole(){ return ['boss','partnerA','partnerB'].includes(curRole); }
@@ -1983,9 +2032,7 @@ function canEditPrices(){ return isTopRole(); }
 
 function updateRoleUI(){
   const up=document.getElementById('uploadBanner');
-  const fab=document.getElementById('editFab');
   if(up) up.style.display = canUploadCarPhotos() ? 'flex' : 'none';
-  if(fab) fab.classList.toggle('show', canEditCar());
   const addFab=document.getElementById('addFab');
   if(addFab) addFab.classList.toggle('show', canEditCar());
   const lbl=document.getElementById('uploadLabel');
@@ -2314,6 +2361,8 @@ function renderMe(){
       const a=document.getElementById('coNameTxt'); if(a) a.textContent=co.name||'';
       const b=document.getElementById('coCodeTxt'); if(b) b.textContent=co.code||'';
       const bt=document.getElementById('coBioTxt'); if(bt) bt.textContent=co.bio||'';
+      const cs=document.getElementById('coShopping');
+      if(cs){ const s=empOf(curSales); const sb=(curLang==='zh'&&I18N.zh.branch&&I18N.zh.branch[s.branch])?I18N.zh.branch[s.branch]:s.branch; cs.innerHTML=T('shoppingAs','Shopping with')+' <b>'+s.name+'</b> · '+sb; }
       const be=document.getElementById('coEditBio'); if(be) be.value=co.bio||'';
       const limg=document.getElementById('coLogoImg'); if(limg) limg.src = co.logo || 'ant_logo_appbar.png';
       const eb=document.getElementById('coEditBox'); if(eb) eb.style.display='none';
@@ -2486,18 +2535,21 @@ function renderMembershipUI(){
     } else banner.style.display='none';
   }
   if(badge && info){
-    if(!m){ badge.style.display='none'; info.textContent=''; }
+    const planEl=document.getElementById('memPlan');
+    if(!m){ if(planEl) planEl.textContent=T('memNone','No plan'); badge.style.display='none'; info.textContent=''; }
     else if(m.isPermanent){
-      badge.textContent=T('memLifetime','Lifetime'); badge.style.display='inline-block';
+      if(planEl) planEl.textContent=T('memLifetime','Lifetime');
+      badge.textContent=T('memActive','Active'); badge.style.display='inline-block';
       badge.style.background='#10331d'; badge.style.color='#8af0b0';
       info.textContent=T('memLifetimeMsg','您已拥有永久会员，永久有效，无需订阅。');
     }
     else{
       const expired=m.expired;
       const label = expired ? T('memExpired','Expired') : (m.plan==='trial' ? T('memTrial','Trial') : (m.planName||'Active'));
-      badge.textContent=label; badge.style.display='inline-block';
-      badge.style.background= expired ? '#3a1414' : (m.plan==='trial' ? '#3a2f00' : '#10331d');
-      badge.style.color= expired ? '#ff9a9a' : (m.plan==='trial' ? '#ffe08a' : '#8af0b0');
+      if(planEl) planEl.textContent=label;
+      badge.textContent= expired?T('memExpired','Expired'):T('memActive','Active'); badge.style.display='inline-block';
+      badge.style.background= expired ? '#3a1414' : '#10331d';
+      badge.style.color= expired ? '#ff9a9a' : '#8af0b0';
       if(expired) info.textContent=T('memExpiredMsg','Your membership has expired. Renew to add or edit cars and keep staff synced.');
       else if(m.periodEnd) info.textContent=(curLang==='zh'?T('memUntil','Valid until '):'Valid until ')+new Date(m.periodEnd).toLocaleDateString();
       else info.textContent='';
@@ -3442,14 +3494,17 @@ function submitNewCar(){
     saveShowrooms();
   }
   if(!showroom) showroom=SHOWROOMS[0]||{name:branch||'Main Branch',grad:'g3'};
-  const nameEn=brand+' '+model+' '+year;
-  const subEn=[year,cond,body+' · '+showroom.name.split(' ')[0]].join(' · ');
-  const nameZh=zBrand(brand)+' '+zModel(model)+' '+year;
-  const subZh=[year,ZH.cond[cond]||cond,ZH.body[body]||body+' · '+bName(showroom.name)].join(' · ');
+  const pv=(id)=>document.getElementById(id);
+  const nameEn=(pv('pvNameEn')&&pv('pvNameEn').value.trim())||(brand+' '+model+' '+year);
+  const nameZh=(pv('pvNameZh')&&pv('pvNameZh').value.trim())||(zBrand(brand)+' '+zModel(model)+' '+(year||'')).trim();
+  const subEn=(pv('pvSubEn')&&pv('pvSubEn').value.trim())||[year,cond,body+' · '+showroom.name.split(' ')[0]].join(' · ');
+  const subZh=(pv('pvSubZh')&&pv('pvSubZh').value.trim())||[year,ZH.cond[cond]||cond,ZH.body[body]||body+' · '+bName(showroom.name)].join(' · ');
+  const specsSrc=(pv('pvSpecEn')&&pv('pvSpecEn').value.trim())||specs;
+  const hlSrc=(pv('pvHlEn')&&pv('pvHlEn').value.trim())||highlights;
   const key=brand.toLowerCase().replace(/\s/g,'')+model.toLowerCase().replace(/\s/g,'');
-  const specsArr=specs?specs.split(',').map(s=>[s.trim(),s.trim()]):[['Mileage','—']];
-  const hlArr=highlights?highlights.split(',').map(s=>s.trim()).filter(Boolean):[];
-  CARS[key]={name:nameEn,sub:subEn,nameZh:nameZh,subZh:subZh,
+  const specsArr=specsSrc?specsSrc.split(/[,，]/).map(s=>[s.trim(),s.trim()]):[['Mileage','—']];
+  const hlArr=hlSrc?hlSrc.split(/[,，]/).map(s=>s.trim()).filter(Boolean):[];
+  CARS[key]={name:nameEn.trim(),sub:subEn.trim(),nameZh:nameZh.trim(),subZh:subZh.trim(),
     cond:cond,body:body,color:color,brand:brand,branch:showroom.name,grad:'g3',loc:showroom,sold:false,
     specs:specsArr,hl:hlArr,
     price:{cost:cost||floorA-5000,floorA:floorA||quote-5000,floorB:floorB||floorA+1500,quote:quote}};
@@ -3458,8 +3513,10 @@ function submitNewCar(){
   saveCarPhotos();
   LISTED_AT[key]=new Date().toISOString().slice(0,10);
   saveCars(); recomputeFacets(); markCarDirty(key);
-  toast('Car saved: <b>'+nameEn+'</b> · 中文: <b>'+nameZh+'</b>');
+  toast('Car saved: <b>'+nameEn.trim()+'</b> · 中文: <b>'+nameZh.trim()+'</b>');
   document.querySelectorAll('#scr-admin input[type=text],#scr-admin input[type=number]').forEach(i=>i.value='');
+  document.querySelectorAll('#scr-admin textarea').forEach(i=>i.value='');
+  ['pvNameEn','pvNameZh','pvSubEn','pvSubZh','pvSpecEn','pvSpecZh','pvHlEn','pvHlZh'].forEach(id=>{ const el=pv(id); if(el) delete el.dataset.touched; });
   document.getElementById('afZhPreview').style.display='none';
   ADMIN_PHOTOS=[]; renderAfThumbs(); ADMIN_VIDEOS=[]; renderAfVideoThumbs();
   renderHome(); renderStock();
@@ -3477,14 +3534,78 @@ function liveZh(){
   if(!brand&&!model&&!specs&&!highlights){ box.style.display='none'; return; }
   const zn=zBrand(brand)+' '+zModel(model)+(year?' '+year:'');
   const zs=[year,ZH.cond[cond]||cond,ZH.body[body]||body].filter(Boolean).join(' · ');
-  const zspec=specs?specs.split(',').map(s=>{ const t=s.trim(); return ZH.specVal[t]?ZH.specVal[t]:t.replace(/(\d[\d,]*)\s*km/g,'$1 公里').replace(/(\d[\d.]*)\s*L\b/g,'$1 升'); }).join('，'):'';
-  const zh=highlights?highlights.split(',').map(s=>{ const t=s.trim(); return ZH.hl[t]||t; }).join('，'):'';
+  const zspec=specs?specs.split(/[,，]/).map(s=>{ const t=s.trim(); return ZH.specVal[t]?ZH.specVal[t]:t.replace(/(\d[\d,]*)\s*km/g,'$1 公里').replace(/(\d[\d.]*)\s*L\b/g,'$1 升'); }).join('，'):'';
+  const zh=highlights?highlights.split(/[,，]/).map(s=>{ const t=s.trim(); return ZH.hl[t]||t; }).join('，'):'';
   box.style.display='block';
-  box.innerHTML='<div class="zhp-h">'+T('zhAuto','中文预览（自动生成）')+'</div>'+
-    '<div class="zhp-row"><span>'+T('zhName','名称')+'</span><b>'+zn+'</b></div>'+
-    (zs?'<div class="zhp-row"><span>'+T('zhSub','副标')+'</span><b>'+zs+'</b></div>':'')+
-    (zspec?'<div class="zhp-row"><span>'+T('zhSpec','配置')+'</span><b>'+zspec+'</b></div>':'')+
-    (zh?'<div class="zhp-row"><span>'+T('zhHl','亮点')+'</span><b>'+zh+'</b></div>':'');
+  const pe=document.getElementById('pvNameEn'); if(pe) pe.value=(brand+' '+model+' '+year).trim();
+  const pz=document.getElementById('pvNameZh'); if(pz && !pz.dataset.touched) pz.value=zn;
+  const se=document.getElementById('pvSubEn'); if(se) se.value=[year,cond,body].filter(Boolean).join(' · ');
+  const sz=document.getElementById('pvSubZh'); if(sz && !sz.dataset.touched) sz.value=zs;
+  const spe=document.getElementById('pvSpecEn'); if(spe) spe.value=specs;
+  const spz=document.getElementById('pvSpecZh'); if(spz && !spz.dataset.touched) spz.value=zspec;
+  const hle=document.getElementById('pvHlEn'); if(hle) hle.value=highlights;
+  const hlz=document.getElementById('pvHlZh'); if(hlz && !hlz.dataset.touched) hlz.value=zh;
+}
+/* When the user types the Chinese side, auto-extract the English side by reverse dictionary */
+function revExtract(srcId, tgtId, type){
+  const s=document.getElementById(srcId), t=document.getElementById(tgtId); if(!s||!t) return;
+  const v=s.value.trim(); if(!v) return;
+  if(type==='brandModel'){
+    const toks=v.split(/\s+/);
+    const brand=REV[toks[0]]||toks[0];
+    const model=toks.slice(1).map(w=>REV[w]||w).join(' ');
+    t.value=(brand+' '+model).trim();
+  } else if(type==='spec'){
+    t.value=v.split(/[,，]/).map(x=>{ const tk=x.trim(); return REV[tk]||tk; }).join(', ');
+  } else if(type==='hl'){
+    t.value=v.split(/[,，]/).map(x=>{ const tk=x.trim(); return REV[tk]||tk; }).join(', ');
+  }
+}
+/* Smart paste: parse a free-text vehicle description into the structured fields */
+function parsePaste(){
+  const ta=document.getElementById('afPaste'); if(!ta) return;
+  const raw=ta.value.trim(); if(!raw) return;
+  const yr=raw.match(/\b(19|20)\d{2}\b/); const year=yr?yr[0]:'';
+  const bodies=['SUV','Sedan','Pickup','Hatchback','Van'];
+  const bodyZh={'SUV':'SUV','轿车':'Sedan','皮卡':'Pickup','两厢车':'Hatchback','商务车':'Van'};
+  let body=''; for(const b of bodies){ if(new RegExp('\\b'+b+'\\b','i').test(raw)){ body=b; break; } }
+  if(!body){ for(const z in bodyZh){ if(raw.includes(z)){ body=bodyZh[z]; break; } } }
+  let cond=''; if(/\bNEW\b/i.test(raw)||raw.includes('全新')) cond='NEW'; else if(/\bUSED\b/i.test(raw)||raw.includes('二手')) cond='USED';
+  const colors=['Black','White','Silver','Gray','Red','Blue','Brown','Other'];
+  const colorZh={'黑色':'Black','白色':'White','银色':'Silver','灰色':'Gray','红色':'Red','蓝色':'Blue','棕色':'Brown'};
+  let color=''; for(const c of colors){ if(new RegExp('\\b'+c+'\\b','i').test(raw)){ color=c; break; } }
+  if(!color){ for(const z in colorZh){ if(raw.includes(z)){ color=colorZh[z]; break; } } }
+  let branch=''; for(const b of Object.keys(ZH.branch)){ if(raw.includes(b)){ branch=b; break; } }
+  let work=raw;
+  if(year) work=work.replace(year,' ');
+  if(body) work=work.replace(new RegExp('\\b'+body+'\\b','gi'),' ');
+  if(cond) work=work.replace(new RegExp('\\b'+cond+'\\b','gi'),' ');
+  if(color) work=work.replace(new RegExp('\\b'+color+'\\b','gi'),' ');
+  if(branch) work=work.replace(branch,' ');
+  const units=['km','l','cc','mph','kw','mm','cm','hp','g','kg'];
+  const specKw=['Auto','Manual','Diesel','Petrol','AWD','4WD','FWD','RWD','Turbo','Hybrid','Electric','CVT','DCT','Engine','Transmission','Mileage','Fuel','Seats','Power'];
+  const hlEn=['Sunroof','Leather','Camera','Cruise','Seats','Key','Charge','Bluetooth','Warranty','Heated','Safety','Sensor','Assist','Entry'];
+  const isSpecTok=w=>{ const lw=w.toLowerCase(); return /\d/.test(w) || units.includes(lw) || specKw.some(k=>lw.includes(k.toLowerCase())) || Object.keys(ZH.specVal).some(k=>lw.includes(k.toLowerCase())); };
+  const isHlTok=w=>{ const lw=w.toLowerCase(); return ZH.hl[w] || Object.values(ZH.hl).some(v=>v.toLowerCase()===lw) || hlEn.some(k=>lw.includes(k.toLowerCase())); };
+  const words=work.split(/[\n,，\s]+/).filter(Boolean);
+  let brand='', modelTokens=[], specs=[], highlights=[];
+  for(let i=0;i<words.length;i++){
+    const w=words[i];
+    if(i===0){ brand=REV[w]||w; continue; }
+    if(isSpecTok(w)){ specs.push(w); continue; }
+    if(isHlTok(w)){ highlights.push(w); continue; }
+    modelTokens.push(REV[w]||w);
+  }
+  if(brand) document.getElementById('afBrand').value=brand;
+  if(modelTokens.length) document.getElementById('afModel').value=modelTokens.join(' ');
+  if(year) document.getElementById('afYear').value=year;
+  if(cond) document.getElementById('afCond').value=cond;
+  if(body) document.getElementById('afBody').value=body;
+  if(color) document.getElementById('afColor').value=color;
+  if(branch) document.getElementById('afBranch').value=branch;
+  if(specs.length) document.getElementById('afSpecs').value=specs.join(', ');
+  if(highlights.length) document.getElementById('afHighlights').value=highlights.join(', ');
+  liveZh();
 }
 function initAdminBranch(){
   const inp=document.getElementById('afBranch'); if(!inp) return;
