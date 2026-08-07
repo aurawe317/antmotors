@@ -621,7 +621,7 @@
     </div>
 
     <!-- sub-page fixed back bar (workbench / admin / favorites / perm / settings) -->
-    <div class="sub-bar" id="subPageBar" style="display:none;">
+    <div class="sub-bar" id="subPageBar">
       <button class="sub-back" onclick="goBackHome()">‹</button>
       <span class="sub-title" id="subPageTitle">Back</span>
       <span class="sub-spacer"></span>
@@ -1775,6 +1775,7 @@ function go(id){
   const ph=document.getElementById('phone'); if(ph) ph.classList.toggle('subpage-mode', isSub);
   if(isSub){ const sb=document.getElementById('subPageBar'); if(sb){ const st=document.getElementById('subPageTitle'); if(st){ const titleMap={workbenchTitle:'scr-workbench',adminTitle:'scr-admin',favTitle:'scr-favorites',permTitleShort:'scr-perm'}; const k=Object.keys(titleMap).find(k=>titleMap[k]===id); if(k) st.textContent=T(k,'Back'); else if(id==='scr-detail'){ st.textContent=CARS[curCar]?carName(CARS[curCar]):T('back','Back'); } else st.textContent=T('back','Back'); } } }
   else { updateAttrBanner(); }
+  /* Always refresh attr banner after ANY nav — prevents stale shopping-with name */
   if(id==='scr-workbench') renderWorkbench();
   if(id==='scr-showrooms') renderShowroomList();
   if(id==='scr-stock') renderStock();
@@ -2141,7 +2142,8 @@ function updateAttrBanner(){
   const loggedIn=!!SYNC.token;
   if(!loggedIn){ b.style.display='none'; return; }
   b.style.display='';
-  const e=empOf(curEmployee); const ename=e.name||curEmployee||'';
+  let meId=curEmployee; try{ const m=JSON.parse(localStorage.getItem('am_me')||'null'); if(m&&m.id) meId=m.id; }catch(e){}
+  const e=empOf(meId); const ename=e.name||meId||'';
   t.innerHTML=T('shoppingAs','Shopping with')+' <b>'+ename+'</b>';
 }
 /* Branch-scoped checks: non-top roles can only operate on cars/showrooms in their assigned branch,
