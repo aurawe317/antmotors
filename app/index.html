@@ -1747,7 +1747,7 @@ function setLang(l){
   renderHome(); renderStockFiltered(); renderShowroomList(); renderFav();
   renderWorkbench(); renderPerm(); updateRoleUI(); renderRolePrices();
   updateAttrBanner(); // force refresh shopping-with line after language switch
-  renderSyncUI(); renderMembershipUI(); try{ renderMe(); }catch(e){}
+  renderSyncUI(); try{ renderMe(); }catch(e){} renderMembershipUI();
   updateDemoState(); syncSheet();
   // settings sheet internals: keep user inputs, just refresh language-bound bits
   if(document.getElementById('regToggle')) document.getElementById('regToggle').textContent=regShowCreate?T('regSwitchToLogin','Have an account? Sign in'):T('regHasAccount','New here? Create an account');
@@ -1776,6 +1776,9 @@ function go(id){
   if(isSub){ const sb=document.getElementById('subPageBar'); if(sb){ const st=document.getElementById('subPageTitle'); if(st){ const titleMap={workbenchTitle:'scr-workbench',adminTitle:'scr-admin',favTitle:'scr-favorites',permTitleShort:'scr-perm'}; const k=Object.keys(titleMap).find(k=>titleMap[k]===id); if(k) st.textContent=T(k,'Back'); else if(id==='scr-detail'){ st.textContent=CARS[curCar]?carName(CARS[curCar]):T('back','Back'); } else st.textContent=T('back','Back'); } } }
   else { updateAttrBanner(); }
   /* Always refresh attr banner after ANY nav — prevents stale shopping-with name */
+  updateAttrBanner();
+  /* Refresh role-dependent UI after screen switch (car actions btn, etc.) */
+  updateRoleUI();
   if(id==='scr-workbench') renderWorkbench();
   if(id==='scr-showrooms') renderShowroomList();
   if(id==='scr-stock') renderStock();
@@ -3373,7 +3376,7 @@ async function syncNow(silent){
       else{
         CARS[c.id]=c.data;
         if(c.listedAt) LISTED_AT[c.id]=c.listedAt;
-        if(c.photos && c.photos.length) CAR_PHOTOS[c.id]=c.photos;
+        if(c.photos && c.photos.length && (!CAR_PHOTOS[c.id] || CAR_PHOTOS[c.id].length===0)) CAR_PHOTOS[c.id]=c.photos;
         if(c.videos && c.videos.length) CAR_VIDEOS[c.id]=c.videos;
       }
       n++;
