@@ -368,6 +368,13 @@
   .me-link:active{background:var(--surface-2);}
   .me-link .ic{flex:0 0 auto; width:30px; height:30px; border-radius:9px; background:var(--gold-soft); display:flex; align-items:center; justify-content:center; font-size:15px;}
   .me-link .ar{margin-left:auto; color:var(--text-dim); font-size:17px;}
+  .link-list{margin-top:8px;}
+  .sold-item .sold-thumb{flex:0 0 auto; width:34px; height:26px; border-radius:6px; object-fit:cover; background:var(--surface-2);}
+  .sold-item .sold-dot{flex:0 0 auto; width:10px; height:10px; border-radius:50%; background:var(--gold); margin:0 12px;}
+  .sold-item .sold-name{flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; text-align:left;}
+  .sold-item .sold-tag{flex:0 0 auto; font-size:10px; font-weight:800; padding:2px 7px; border-radius:999px; letter-spacing:.5px;}
+  .sold-item .sold-tag.new{background:rgba(46,204,113,.16); color:#2ecc71;}
+  .sold-item .sold-tag.used{background:rgba(120,120,120,.18); color:var(--text-dim);}
   .me-ver{text-align:center; font-size:11px; color:var(--text-dim); margin:20px 0 4px;}
   .notif-item{display:flex; gap:10px; padding:10px 0; border-bottom:1px solid var(--border);}
   .notif-item:last-child{border-bottom:none;}
@@ -612,18 +619,18 @@
         <div class="sec-head"><h2 data-i18n="staffPortal">Staff Portal</h2></div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
           <div class="portal-card" onclick="go('scr-workbench')" style="padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;">
-            <div style="font-size:24px;margin-bottom:6px;">📊</div>
+            <div style="margin-bottom:6px;color:var(--gold);"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l3-4 3 3 4-6"/></svg></div>
             <div style="font-size:13px;font-weight:700;" data-i18n="workbench">Workbench</div>
             <div style="font-size:11px;color:var(--text-dim);" data-i18n="workbenchSub">Leads · links · stats</div>
           </div>
           <div class="portal-card" id="adminCard" onclick="go('scr-admin')" style="padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;">
-            <div style="font-size:24px;margin-bottom:6px;">🚗</div>
+            <div style="margin-bottom:6px;color:var(--gold);"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13l2-5h14l2 5v4H3z"/><circle cx="7.5" cy="17" r="1.4"/><circle cx="16.5" cy="17" r="1.4"/></svg></div>
             <div style="font-size:13px;font-weight:700;" data-i18n="addCar">Add Car</div>
             <div style="font-size:11px;color:var(--text-dim);" data-i18n="addCarSub">New listing entry</div>
           </div>
         </div>
         <div class="portal-card" id="permCard" onclick="go('scr-perm')" style="margin-top:10px;padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;display:none;">
-          <div style="font-size:24px;margin-bottom:6px;">🔐</div>
+          <div style="margin-bottom:6px;color:var(--gold);"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg></div>
           <div style="font-size:13px;font-weight:700;" data-i18n="permTitleShort">Role &amp; permission matrix</div>
           <div style="font-size:11px;color:var(--text-dim);" data-i18n="permSub">7 tiers · who sees what</div>
         </div>
@@ -845,14 +852,11 @@
           <div class="me-sub" id="meSub">Sign in or create a company account</div>
           <span class="me-badge" id="meBadge" style="display:none;"></span>
         </div>
-        <div class="me-actions">
-          <button class="me-gear" id="meGear" onclick="openSettings()" aria-label="Settings" title="Settings">&#9881;</button>
-        </div>
       </div>
   <div class="grp">
     <div id="syncStatus" class="sync-status">—</div>
     <div class="lbl" id="authLbl" style="font-weight:700;font-size:14px;margin-bottom:8px;" data-i18n="syncTitle">Account</div>
-    <button class="submit" id="regToggle" onclick="toggleReg()" data-i18n="regHasAccount" style="background:var(--gold);color:#111;font-weight:700;">✨ New here? Create an account</button>
+    <button class="submit" id="regToggle" onclick="toggleReg()" data-i18n="regHasAccount" style="background:var(--gold);color:#111;font-weight:700;">New here? Create an account</button>
     <p class="sheet-hint" id="regHint" style="display:none;" data-i18n="regHint">Fill in the server address, then your details below to create your own account. If you already have one, tap "Have an account? Sign in".</p>
     <div id="syncLoginBox">
       <div class="form-row"><label data-i18n="syncEmpId">Account / e-mail</label><input type="text" id="setEmpId" placeholder="boss / you@mail.com" autocomplete="username" /></div>
@@ -889,7 +893,6 @@
     <div id="regBox" style="display:none;">
       <div class="seg-tabs" style="margin:10px 0;">
         <div class="seg-tab on" id="regModeCreate" onclick="setRegMode('create')" data-i18n="regModeCreate">Start a company</div>
-        <div class="seg-tab" id="regModeJoin" onclick="setRegMode('join')" data-i18n="regModeJoin">Join a company</div>
       </div>
       <div id="regCreateFields">
         <div class="form-row"><label data-i18n="regCoName">Company name</label><input type="text" id="regCoName" placeholder="Ant Motors Ghana" data-ph="ph_regCoName" autocomplete="off" /></div>
@@ -897,9 +900,6 @@
           <input type="file" id="regCoLogo" accept="image/*" onchange="previewCoLogo()" style="padding:6px;" />
           <img id="regCoLogoPrev" style="display:none;max-height:46px;max-width:120px;margin-top:6px;border-radius:8px;background:var(--surface-2);" />
         </div>
-      </div>
-      <div id="regJoinFields" style="display:none;">
-        <div class="form-row"><label data-i18n="regCode">Invitation code</label><input type="text" id="regCode" placeholder="ANT-XXXXXX" autocomplete="off" style="text-transform:uppercase;" /></div>
       </div>
       <div class="form-row"><label data-i18n="regId">Account ID</label><input type="text" id="regId" placeholder="e.g. ama" data-ph="ph_regId" autocomplete="off" /><div class="sub" data-i18n="regIdSub">Login handle — short, unique, lowercase. Teammates use it to @-mention you and assign leads (e.g. ama, kwame).</div></div>
       <div class="form-row"><label data-i18n="regName">Your name</label><input type="text" id="regName" placeholder="Ama K." data-ph="ph_regName" autocomplete="off" /><div class="sub" data-i18n="regNameSub">Display name shown to customers on quotes, chats and bookings (e.g. Ama K., Kwame Asante).</div></div>
@@ -943,7 +943,7 @@
     <button class="share-copy" id="coCopyBtn" onclick="copyCoCode()" data-i18n="codeCopy" style="margin-left:6px;">Copy code</button>
   </div>
   <div class="grp" id="membershipGroup" style="display:none;">
-    <div class="lbl">💎 <span data-i18n="memTitle">Membership</span></div>
+    <div class="lbl"><span data-i18n="memTitle">Membership</span></div>
     <div id="memBadge" style="display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;margin:2px 0 8px;"></div>
     <div id="memInfo" class="sheet-hint"></div>
     <button class="submit" id="memBtn" onclick="showMembership()" data-i18n="memManage">Manage membership</button>
@@ -991,13 +991,18 @@
       </div>
     </div>
   </div>
+      <div class="grp" id="soldGroup" style="display:none;">
+        <div class="lbl" data-i18n="soldTitle">Sold vehicles</div>
+        <div id="soldList" class="link-list"></div>
+      </div>
       <div class="me-links" id="meLinks">
-        <button class="me-link" onclick="go('scr-favorites')"><span class="ic">&#10084;</span><span data-i18n="mlFav">My favorites</span><span class="ar">&rsaquo;</span></button>
-        <button class="me-link" id="mlWorkBtn" onclick="go('scr-workbench')"><span class="ic">&#128188;</span><span data-i18n="mlWork">Workbench</span><span class="ar">&rsaquo;</span></button>
-        <button class="me-link" id="mlAdminBtn" onclick="go('scr-admin')"><span class="ic">&#128663;</span><span data-i18n="mlAdmin">Car admin</span><span class="ar">&rsaquo;</span></button>
-        <button class="me-link" id="mlPermBtn" onclick="go('scr-perm')"><span class="ic">&#128274;</span><span data-i18n="mlPerm">Roles &amp; permissions</span><span class="ar">&rsaquo;</span></button>
-        <button class="me-link" onclick="openPricingInfo()"><span class="ic">&#128176;</span><span data-i18n="mlPrice">How pricing works</span><span class="ar">&rsaquo;</span></button>
-        <button class="me-link" onclick="openSettings()"><span class="ic">&#9881;</span><span data-i18n="mlSettings">App settings</span><span class="ar">&rsaquo;</span></button>
+        <button class="me-link" onclick="go('scr-favorites')"><span data-i18n="mlFav">My favorites</span><span class="ar">&rsaquo;</span></button>
+        <button class="me-link" id="mlAddBtn" onclick="go('scr-admin')" style="display:none;"><span data-i18n="mlAdd">Add vehicle</span><span class="ar">&rsaquo;</span></button>
+        <button class="me-link" id="mlWorkBtn" onclick="go('scr-workbench')"><span data-i18n="mlWork">Workbench</span><span class="ar">&rsaquo;</span></button>
+        <button class="me-link" id="mlAdminBtn" onclick="go('scr-admin')"><span data-i18n="mlAdmin">Car admin</span><span class="ar">&rsaquo;</span></button>
+        <button class="me-link" id="mlPermBtn" onclick="go('scr-perm')"><span data-i18n="mlPerm">Roles &amp; permissions</span><span class="ar">&rsaquo;</span></button>
+        <button class="me-link" onclick="openPricingInfo()"><span data-i18n="mlPrice">How pricing works</span><span class="ar">&rsaquo;</span></button>
+        <button class="me-link" onclick="openSettings()"><span data-i18n="mlSettings">App settings</span><span class="ar">&rsaquo;</span></button>
       </div>
       <div class="me-ver" id="meVer">ANT MOTORS &middot; v1.0.0</div>
     </section>
@@ -1085,7 +1090,7 @@
 <div class="sheet" id="settingsSheet">
   <div class="sheet-head">
     <button class="sheet-back" type="button" onclick="closeSettings()" aria-label="Back">‹</button>
-    <div class="sheet-head-title">⚙ <span data-i18n="settingsTitle">Settings</span></div>
+    <div class="sheet-head-title"><span data-i18n="settingsTitle">Settings</span></div>
     <div class="sheet-lang">
       <span class="seg" id="segEn2" onclick="setLang('en')">EN</span><span class="seg" id="segZh2" onclick="setLang('zh')">中</span>
     </div>
@@ -1121,7 +1126,7 @@
     <span data-i18n="syncConnected">Connected to the shared ANT MOTORS backend — no setup needed. Your company's data stays private.</span>
   </div>
   <details class="adv-details" id="advServerDetails">
-    <summary data-i18n="advServerTitle">⚙ Advanced: backend address</summary>
+    <summary data-i18n="advServerTitle">Advanced: backend address</summary>
     <div style="margin-top:8px;">
       <div class="form-row" style="margin:0;"><input type="text" id="setApi" placeholder="https://your-server.up.railway.app" data-ph="ph_setApi" style="font-size:13px;" /></div>
       <div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.5;" data-i18n="syncServerHint2">This is your account &amp; data-sync server. Leave as-is to use the shared ANT MOTORS backend — every company connects here by default. Change it ONLY if your company runs its own server.</div>
@@ -1163,7 +1168,7 @@
 <!-- MEMBERSHIP SHEET -->
 <div class="sheet" id="membershipSheet">
   <div class="sheet-handle"></div>
-  <div class="sheet-title">💎 <span data-i18n="memTitle">Membership</span></div>
+  <div class="sheet-title"><span data-i18n="memTitle">Membership</span></div>
   <div id="memStatus" class="sheet-hint"></div>
   <div id="planList"></div>
   <div id="payBox" style="display:none;text-align:center;margin-top:14px;">
@@ -1344,7 +1349,7 @@ I18N.zh.backupTitle="数据备份（员工）"; I18N.zh.backupHint="将全部车
 I18N.zh.installTitle="获取 App（员工）"; I18N.zh.installHint="员工从 App Store / Google Play 安装 Ant Motors 原生 App，或通过企业内部 TestFlight / MDM 分发。客户只需打开分享链接，无需安装。";
 /* --- cloud sync --- */
 I18N.en.syncTitle="Cloud sync (all devices share one inventory)"; I18N.en.syncServer="Server address"; I18N.en.syncEmpId="Staff ID"; I18N.en.syncPin="PIN";
-I18N.en.syncSignIn="Sign in & sync"; I18N.en.syncNowBtn="Sync now"; I18N.en.syncSignOut="Sign out"; I18N.en.syncServerHint="Backend address (needed for login & sync)"; I18N.en.syncServerHint2="This is your account & data-sync server. Leave as-is to use the shared ANT MOTORS backend — every company connects here by default. Change it ONLY if your company runs its own server."; I18N.en.ph_setApi="https://your-server.up.railway.app"; I18N.en.ph_fgCode="6 digits"; I18N.en.ph_regCoName="Ant Motors Ghana"; I18N.en.ph_regId="e.g. ama"; I18N.en.ph_regName="Ama K."; I18N.en.syncConnected="Connected to the shared ANT MOTORS backend — no setup needed. Your company's data stays private."; I18N.en.advServerTitle="⚙ Advanced: backend address";
+I18N.en.syncSignIn="Sign in & sync"; I18N.en.syncNowBtn="Sync now"; I18N.en.syncSignOut="Sign out"; I18N.en.syncServerHint="Backend address (needed for login & sync)"; I18N.en.syncServerHint2="This is your account & data-sync server. Leave as-is to use the shared ANT MOTORS backend — every company connects here by default. Change it ONLY if your company runs its own server."; I18N.en.ph_setApi="https://your-server.up.railway.app"; I18N.en.ph_fgCode="6 digits"; I18N.en.ph_regCoName="Ant Motors Ghana"; I18N.en.ph_regId="e.g. ama"; I18N.en.ph_regName="Ama K."; I18N.en.syncConnected="Connected to the shared ANT MOTORS backend — no setup needed. Your company's data stays private."; I18N.en.advServerTitle="Advanced: backend address";
 I18N.en.syncHint="By default you connect to the shared ANT MOTORS backend (no setup). In Advanced you can point to your own server. When connected, cars and prices added by anyone in your company appear on every signed-in device.";
 I18N.en.syncOffline="Offline mode — this device only"; I18N.en.syncNeedLogin="Sign in to sync"; I18N.en.syncSyncing="Syncing…"; I18N.en.syncSigningIn="Signing in…";
 I18N.en.syncPending="change(s) waiting to upload"; I18N.en.syncedAt="Synced"; I18N.en.syncDone="Sync complete"; I18N.en.syncItems="item(s)";
@@ -1353,7 +1358,7 @@ I18N.en.syncSignedIn="Signed in as"; I18N.en.syncSignedOut="Signed out";
 I18N.en.syncRejPrice="price can only be set by owner/partners"; I18N.en.syncRejTier="only owner/partners can change roles";
 I18N.en.syncRejAcct="you can only edit your own account"; I18N.en.syncRejEmp="unknown staff account";
 I18N.zh.syncTitle="云同步（所有设备共用一份库存）"; I18N.zh.syncServer="服务器地址"; I18N.zh.syncEmpId="员工账号"; I18N.zh.syncPin="密码 PIN";
-I18N.zh.syncSignIn="登录并同步"; I18N.zh.syncNowBtn="立即同步"; I18N.zh.syncSignOut="退出登录"; I18N.zh.syncServerHint="后台地址（登录与同步需要）"; I18N.zh.syncServerHint2="这是保存你账号、并在各设备间同步车辆与价格数据的后台服务器。保持默认即使用 ANT MOTORS 共享后台——所有公司默认都连这里。仅当贵公司自建服务器时才需要修改。"; I18N.zh.ph_setApi="https://你的服务器.up.railway.app"; I18N.zh.ph_fgCode="6 位数字"; I18N.zh.ph_regCoName="例如 安特汽车"; I18N.zh.ph_regId="例如 ama"; I18N.zh.ph_regName="例如 张伟"; I18N.zh.syncConnected="已连接 ANT MOTORS 共享后台——无需配置，各公司数据相互独立、互不可见。"; I18N.zh.advServerTitle="⚙ 高级：后台地址";
+I18N.zh.syncSignIn="登录并同步"; I18N.zh.syncNowBtn="立即同步"; I18N.zh.syncSignOut="退出登录"; I18N.zh.syncServerHint="后台地址（登录与同步需要）"; I18N.zh.syncServerHint2="这是保存你账号、并在各设备间同步车辆与价格数据的后台服务器。保持默认即使用 ANT MOTORS 共享后台——所有公司默认都连这里。仅当贵公司自建服务器时才需要修改。"; I18N.zh.ph_setApi="https://你的服务器.up.railway.app"; I18N.zh.ph_fgCode="6 位数字"; I18N.zh.ph_regCoName="例如 安特汽车"; I18N.zh.ph_regId="例如 ama"; I18N.zh.ph_regName="例如 张伟"; I18N.zh.syncConnected="已连接 ANT MOTORS 共享后台——无需配置，各公司数据相互独立、互不可见。"; I18N.zh.advServerTitle="高级：后台地址";
 I18N.zh.syncHint="默认即连接 ANT MOTORS 共享后台，无需配置。在「高级」里可指向贵公司自建服务器。连接后，贵公司内任何人新增的车辆与价格都会同步到所有已登录设备。";
 I18N.zh.syncOffline="离线模式——仅本机数据"; I18N.zh.syncNeedLogin="请登录后同步"; I18N.zh.syncSyncing="同步中…"; I18N.zh.syncSigningIn="登录中…";
 I18N.zh.syncPending="条修改待上传"; I18N.zh.syncedAt="已同步"; I18N.zh.syncDone="同步完成"; I18N.zh.syncItems="条数据";
@@ -1362,12 +1367,12 @@ I18N.zh.syncSignedIn="已登录："; I18N.zh.syncSignedOut="已退出登录";
 I18N.zh.syncRejPrice="价格只能由老板/合伙人设置"; I18N.zh.syncRejTier="只有老板/合伙人可以调整等级";
 I18N.zh.syncRejAcct="只能修改自己的账号"; I18N.zh.syncRejEmp="未知员工账号";
 /* --- self-registration & company binding --- */
-I18N.en.regHasAccount="✨ New here? Create an account"; I18N.en.regSwitchToLogin="Have an account? Sign in"; I18N.en.regId="Account ID"; I18N.en.regName="Your name";I18N.en.regIdSub="Login handle — short, unique, lowercase. Teammates use it to @-mention you and assign leads (e.g. ama, kwame)."; I18N.en.regNameSub="Display name shown to customers on quotes, chats and bookings (e.g. Ama K., Kwame Asante)."; I18N.en.regWa="WhatsApp"; I18N.en.regPhone="Phone"; I18N.en.regPin="PIN (4-8 digits)"; I18N.en.regCreate="Create account"; I18N.en.regCreating="Creating…"; I18N.en.regSuccess="Account created"; I18N.en.regExists="That account ID is taken"; I18N.en.regHint="Fill in the server address, then your details below to create your own account. If you already have one, tap “Have an account? Sign in”."; I18N.en.regModeCreate="Start a company"; I18N.en.regModeJoin="Join a company"; I18N.en.regCoName="Company name"; I18N.en.regCoLogo="Company logo"; I18N.en.regCode="Invitation code"; I18N.en.coTitle="Company"; I18N.en.coSave="Save company"; I18N.en.coEdit="Edit company"; I18N.en.reqField="required"; I18N.en.coSaved="Company saved";
+I18N.en.regHasAccount="New here? Create an account"; I18N.en.regSwitchToLogin="Have an account? Sign in"; I18N.en.regId="Account ID"; I18N.en.regName="Your name";I18N.en.regIdSub="Login handle — short, unique, lowercase. Teammates use it to @-mention you and assign leads (e.g. ama, kwame)."; I18N.en.regNameSub="Display name shown to customers on quotes, chats and bookings (e.g. Ama K., Kwame Asante)."; I18N.en.regWa="WhatsApp"; I18N.en.regPhone="Phone"; I18N.en.regPin="PIN (4-8 digits)"; I18N.en.regCreate="Create account"; I18N.en.regCreating="Creating…"; I18N.en.regSuccess="Account created"; I18N.en.regExists="That account ID is taken"; I18N.en.regHint="Fill in the server address, then your details below to create your own account. If you already have one, tap “Have an account? Sign in”."; I18N.en.regModeCreate="Start a company"; I18N.en.regModeJoin="Join a company"; I18N.en.regCoName="Company name"; I18N.en.regCoLogo="Company logo"; I18N.en.regCode="Invitation code"; I18N.en.coTitle="Company"; I18N.en.coSave="Save company"; I18N.en.coEdit="Edit company"; I18N.en.reqField="required"; I18N.en.coSaved="Company saved";
 I18N.en.joinTitle="Join your company"; I18N.en.joinHint="Enter the invitation code from your boss, or scan the QR they share. Pick your role, then you get full access."; I18N.en.joinCode="Invitation code"; I18N.en.joinScan="Scan"; I18N.en.joinRole="Your role"; I18N.en.jrPartner="Partner (co-owner)"; I18N.en.jrManager="Manager"; I18N.en.jrSalesA="Senior Sales"; I18N.en.jrSalesB="Sales"; I18N.en.joinBranch="Branch"; I18N.en.joinBind="Bind & activate"; I18N.en.joinNeedCode="Enter or scan the invitation code"; I18N.en.joinSuccess="You are now part of the company"; I18N.en.joinBadCode="Invitation code does not match"; I18N.en.joinBadTier="Pick a role"; I18N.en.joinNotFound="Account not found";
 I18N.en.codeTitle="Company invitation code"; I18N.en.codeHint="Share this with partners & staff. They enter or scan it to join your company and get access."; I18N.en.codeCopy="Copy code"; I18N.en.codeRegen="Regenerate"; I18N.en.codeCopied="Code copied"; I18N.en.codeRegenConfirm="Regenerate the code? Old shares will stop working."; I18N.en.codeRegenOk="New code generated"; I18N.en.scanNoCam="Camera not available"; I18N.en.scanOk="Code scanned";
 I18N.en.memTitle="Membership"; I18N.en.memManage="Manage membership"; I18N.en.memActive="Active"; I18N.en.memExpired="Expired"; I18N.en.memTrial="Trial"; I18N.en.memUntil="Valid until"; I18N.en.memExpiredMsg="Your membership has expired. Renew to add or edit cars and keep staff synced."; I18N.en.memPick="Choose a plan"; I18N.en.memScan="Scan this with Alipay to pay"; I18N.en.memOpenAlipay="Open Alipay"; I18N.en.memSimPay="（测试）模拟支付成功"; I18N.en.memPaying="Creating order…"; I18N.en.memPaid="Payment received — membership activated"; I18N.en.memPayFailed="Payment failed, please retry"; I18N.en.memSimNote="DEV mode: Alipay is simulated — use the test button to activate.";
 I18N.en.memNeedServer="Connect to a server to subscribe"; I18N.en.memNeedLogin="Sign in as the company owner to subscribe"; I18N.en.memSubscribe="Subscribe"; I18N.en.memOwnerOnly="Owner only"; I18N.en.memActive="Active"; I18N.en.perMonth="/month"; I18N.en.perYear="/year"; I18N.en.memRenew="Renew now"; I18N.en.memCurrent="Current plan"; I18N.en.memLifetime="Lifetime"; I18N.en.memLifetimeMsg="You have lifetime membership — active forever, no subscription needed.";
-I18N.zh.regHasAccount="✨ 新用户？注册账号"; I18N.zh.regSwitchToLogin="已有账号？去登录"; I18N.zh.regId="账号 ID"; I18N.zh.regName="你的姓名";I18N.zh.regIdSub="登录账号 — 简短、唯一、小写。同事用它 @ 你、分配客户（如 ama、kwame）。"; I18N.zh.regNameSub="展示给客户的姓名，出现在报价单、聊天与预约里（如 Ama K.、Kwame Asante）。"; I18N.zh.regWa="WhatsApp"; I18N.zh.regPhone="电话"; I18N.zh.regPin="密码 PIN（4-8 位）"; I18N.zh.regCreate="创建账号"; I18N.zh.regCreating="创建中…"; I18N.zh.regSuccess="账号已创建"; I18N.zh.regExists="该账号 ID 已被占用"; I18N.zh.regHint="先填写服务器地址，再在下方填写你的资料即可创建账号。如果已有账号，点“已有账号？去登录”。"; I18N.zh.regModeCreate="创建公司"; I18N.zh.regModeJoin="加入公司"; I18N.zh.regCoName="公司名称"; I18N.zh.regCoLogo="公司 Logo"; I18N.zh.regCode="邀请码"; I18N.zh.coTitle="公司"; I18N.zh.coSave="保存公司"; I18N.zh.coEdit="编辑公司"; I18N.zh.reqField="必填"; I18N.zh.coSaved="公司已保存";
+I18N.zh.regHasAccount="新用户？注册账号"; I18N.zh.regSwitchToLogin="已有账号？去登录"; I18N.zh.regId="账号 ID"; I18N.zh.regName="你的姓名";I18N.zh.regIdSub="登录账号 — 简短、唯一、小写。同事用它 @ 你、分配客户（如 ama、kwame）。"; I18N.zh.regNameSub="展示给客户的姓名，出现在报价单、聊天与预约里（如 Ama K.、Kwame Asante）。"; I18N.zh.regWa="WhatsApp"; I18N.zh.regPhone="电话"; I18N.zh.regPin="密码 PIN（4-8 位）"; I18N.zh.regCreate="创建账号"; I18N.zh.regCreating="创建中…"; I18N.zh.regSuccess="账号已创建"; I18N.zh.regExists="该账号 ID 已被占用"; I18N.zh.regHint="先填写服务器地址，再在下方填写你的资料即可创建账号。如果已有账号，点“已有账号？去登录”。"; I18N.zh.regModeCreate="创建公司"; I18N.zh.regModeJoin="加入公司"; I18N.zh.regCoName="公司名称"; I18N.zh.regCoLogo="公司 Logo"; I18N.zh.regCode="邀请码"; I18N.zh.coTitle="公司"; I18N.zh.coSave="保存公司"; I18N.zh.coEdit="编辑公司"; I18N.zh.reqField="必填"; I18N.zh.coSaved="公司已保存";
 I18N.zh.joinTitle="加入公司"; I18N.zh.joinHint="输入老板给你的邀请码，或扫描对方分享的二维码，选择你的角色即可获得权限。"; I18N.zh.joinCode="邀请码"; I18N.zh.joinScan="扫描"; I18N.zh.joinRole="你的角色"; I18N.zh.jrPartner="合伙人（共同所有者）"; I18N.zh.jrManager="经理"; I18N.zh.jrSalesA="高级销售"; I18N.zh.jrSalesB="销售"; I18N.zh.joinBranch="门店"; I18N.zh.joinBind="绑定并激活"; I18N.zh.joinNeedCode="请填写或扫描邀请码"; I18N.zh.joinSuccess="你已加入公司"; I18N.zh.joinBadCode="邀请码不匹配"; I18N.zh.joinBadTier="请选择角色"; I18N.zh.joinNotFound="未找到账号";
 I18N.zh.codeTitle="公司邀请码"; I18N.zh.codeHint="把这个码发给合伙人和员工，他们输入或扫码即可加入公司并获得权限。"; I18N.zh.codeCopy="复制邀请码"; I18N.zh.codeRegen="重新生成"; I18N.zh.codeCopied="邀请码已复制"; I18N.zh.codeRegenConfirm="重新生成邀请码？旧的分享将失效。"; I18N.zh.codeRegenOk="已生成新邀请码"; I18N.zh.scanNoCam="无法使用摄像头"; I18N.zh.scanOk="已扫描到邀请码";
 I18N.zh.memTitle="会员"; I18N.zh.memManage="管理会员"; I18N.zh.memActive="生效中"; I18N.zh.memExpired="已过期"; I18N.zh.memTrial="试用"; I18N.zh.memUntil="有效期至"; I18N.zh.memExpiredMsg="会员已过期，续费后可继续添加/编辑车辆并保持员工同步。"; I18N.zh.memPick="选择套餐"; I18N.zh.memScan="用支付宝扫描此码付款"; I18N.zh.memOpenAlipay="打开支付宝"; I18N.zh.memSimPay="（测试）模拟支付成功"; I18N.zh.memPaying="正在创建订单…"; I18N.zh.memPaid="已收到付款 — 会员已开通"; I18N.zh.memPayFailed="支付失败，请重试"; I18N.zh.memSimNote="开发模式：支付宝为模拟支付 — 点击测试按钮即可激活。";
@@ -1379,9 +1384,9 @@ I18N.zh.editModeHint="编辑模式：可修改规格、亮点与门店。"; I18N
 I18N.en.bookDone="Booking Confirmed!"; I18N.en.backHome="Back to Home"; I18N.en.waOpening="Opening WhatsApp → ";
 I18N.zh.bookDone="预约成功！"; I18N.zh.backHome="返回首页"; I18N.zh.waOpening="正在打开 WhatsApp → ";
 I18N.en.navMe="Me"; I18N.en.meGuest="Guest"; I18N.en.meGuestSub="Sign in or create a company account"; I18N.en.meSignedIn="Signed in";
-I18N.en.mlFav="My favorites"; I18N.en.mlWork="Workbench"; I18N.en.mlAdmin="Car admin"; I18N.en.mlPerm="Roles & permissions"; I18N.en.mlPrice="How pricing works"; I18N.en.mlSettings="App settings";
+I18N.en.mlFav="My favorites"; I18N.en.mlAdd="Add vehicle"; I18N.en.mlWork="Workbench"; I18N.en.mlAdmin="Car admin"; I18N.en.mlPerm="Roles & permissions"; I18N.en.mlPrice="How pricing works"; I18N.en.mlSettings="App settings"; I18N.en.soldTitle="Sold vehicles";
 I18N.zh.navMe="我的"; I18N.zh.meGuest="访客"; I18N.zh.meGuestSub="登录或创建公司账号"; I18N.zh.meSignedIn="已登录";
-I18N.zh.mlFav="我的收藏"; I18N.zh.mlWork="工作台"; I18N.zh.mlAdmin="车辆后台"; I18N.zh.mlPerm="角色权限"; I18N.zh.mlPrice="定价说明"; I18N.zh.mlSettings="应用设置";
+I18N.zh.mlFav="我的收藏"; I18N.zh.mlAdd="添加车辆"; I18N.zh.mlWork="工作台"; I18N.zh.mlAdmin="车辆后台"; I18N.zh.mlPerm="角色权限"; I18N.zh.mlPrice="定价说明"; I18N.zh.mlSettings="应用设置"; I18N.zh.soldTitle="已售车辆";
 I18N.en.welcomeTitle="👋 Welcome to ANT MOTORS"; I18N.en.welcomeDesc="New here? Create your company account to start adding cars, managing your team and viewing membership. Open the “Me” tab at the bottom right, or tap the button below."; I18N.en.welcomeBtn="Login / Register"; I18N.en.loginRegBtn="👤 Login / Register"; I18N.en.settingsBtn="⚙ Settings";
 I18N.zh.welcomeTitle="👋 欢迎使用 ANT MOTORS"; I18N.zh.welcomeDesc="首次使用？创建公司账号即可添加车辆、管理团队与查看会员。请打开右下角“我的”页，或点击下方按钮。"; I18N.zh.welcomeBtn="登录 / 注册"; I18N.zh.loginRegBtn="👤 登录 / 注册"; I18N.zh.settingsBtn="⚙ 设置";
 /* --- B plan: real password / account security --- */
@@ -1609,7 +1614,7 @@ function setLang(l){
   renderSyncUI(); renderMembershipUI(); try{ renderMe(); }catch(e){}
   updateDemoState(); syncSheet();
   // settings sheet internals: keep user inputs, just refresh language-bound bits
-  if(document.getElementById('regToggle')) document.getElementById('regToggle').textContent=regShowCreate?T('regSwitchToLogin','Have an account? Sign in'):T('regHasAccount','✨ New here? Create an account');
+  if(document.getElementById('regToggle')) document.getElementById('regToggle').textContent=regShowCreate?T('regSwitchToLogin','Have an account? Sign in'):T('regHasAccount','New here? Create an account');
   // password strength hints are generated by T() → refresh them too
   updatePwMeter('regPin','regMeter','regTip'); updatePwMeter('fgPw','fgMeter','fgTip');
   const fgb=document.getElementById('fgSendBtn');
@@ -1993,6 +1998,8 @@ function updateRoleUI(){
   if(permCard) permCard.style.display = ['boss','partnerA','partnerB','manager'].includes(curRole) ? 'block' : 'none';
   const carActs=document.getElementById('carActionsBtn');
   if(carActs) carActs.style.display = canEditCar() ? 'flex' : 'none';
+  const mlAdd=document.getElementById('mlAddBtn');
+  if(mlAdd) mlAdd.style.display = canEditCar() ? 'flex' : 'none';
   const costRow=document.getElementById('costRow');
   if(costRow) costRow.style.display = isTopRole() ? 'flex' : 'none';
   renderDetailThumbs();
@@ -2308,6 +2315,22 @@ function renderMe(){
   const ad=document.getElementById('mlAdminBtn'); if(ad) ad.style.display=staff?'flex':'none';
   const pm=document.getElementById('mlPermBtn'); if(pm) pm.style.display=(loggedIn&&top)?'flex':'none';
   const vr=document.getElementById('meVer'); if(vr) vr.textContent='ANT MOTORS \u00B7 v'+(typeof APP_VER!=='undefined'?APP_VER:'1.0.0');
+  renderSoldList();
+}
+function renderSoldList(){
+  const g=document.getElementById('soldGroup'), list=document.getElementById('soldList');
+  if(!g||!list) return;
+  const sold=Object.keys(CARS).filter(k=>CARS[k]&&CARS[k].sold);
+  g.style.display = sold.length ? 'block' : 'none';
+  if(!sold.length){ list.innerHTML=''; return; }
+  list.innerHTML = sold.map(k=>{
+    const c=CARS[k]; const oc=carCover(k);
+    return '<button class="me-link sold-item" onclick="openDetail(\''+k+'\')">'+
+      (oc?'<img class="sold-thumb" src="'+oc+'" alt="" />':'<span class="sold-dot"></span>')+
+      '<span class="sold-name">'+carName(c)+'</span>'+
+      (c.cond==='NEW'?'<span class="sold-tag new">NEW</span>':'<span class="sold-tag used">USED</span>')+
+      '<span class="ar">&rsaquo;</span></button>';
+  }).join('');
 }
 function saveMyContact(){
   const e=empOf(curEmployee);
@@ -2848,7 +2871,7 @@ function closeForgot(){
   if(s) s.style.display='block';
   if(t) t.style.display='';
   regShowCreate=false;
-  if(t) t.textContent=T('regHasAccount','✨ New here? Create an account');
+  if(t) t.textContent=T('regHasAccount','New here? Create an account');
 }
 let fgTimer=null;
 async function sendResetCode(){
@@ -2887,7 +2910,7 @@ async function submitReset(){
     const r=await api('/api/password/reset',{method:'POST',body:{account:acct,code:code,password:pw}});
     SYNC.token=r.token; localStorage.setItem('am_token',r.token); localStorage.setItem('am_me',r.employee.id);
     if(r.company){ localStorage.setItem('am_company',JSON.stringify(r.company)); applyCompanyLogo(); }
-    upsertEmp(r.employee.id,r.employee); curEmployee=r.employee.id; applyEmployeeScope();
+    upsertEmp(r.employee.id,r.employee); curEmployee=r.employee.id; applyEmployeeScope(); curRole=empOf(curEmployee).tier;
     document.getElementById('fgPw').value=''; document.getElementById('fgPw2').value=''; document.getElementById('fgCode').value='';
     closeForgot();
     await syncNow(true); await refreshMembership(); updateRoleUI(); renderHome(); renderStock(); updateAuthCTA();
@@ -2911,7 +2934,7 @@ function toggleReg(){
   s.style.display = showReg?'none':'block';
   r.style.display = showReg?'block':'none';
   if(h) h.style.display = showReg?'block':'none';
-  t.textContent = showReg ? T('regSwitchToLogin','Have an account? Sign in') : T('regHasAccount','✨ New here? Create an account');
+  t.textContent = showReg ? T('regSwitchToLogin','Have an account? Sign in') : T('regHasAccount','New here? Create an account');
 }
 async function registerAccount(){
   const base=resolveApiBase();
@@ -2947,14 +2970,13 @@ async function registerAccount(){
     const r=await api('/api/register',{method:'POST',body});
     SYNC.token=r.token; localStorage.setItem('am_token',r.token); localStorage.setItem('am_me',r.employee.id);
     if(r.company){ localStorage.setItem('am_company',JSON.stringify(r.company)); applyCompanyLogo(); }
-    upsertEmp(r.employee.id,r.employee); curEmployee=r.employee.id; applyEmployeeScope();
+    upsertEmp(r.employee.id,r.employee); curEmployee=r.employee.id; applyEmployeeScope(); curRole=empOf(curEmployee).tier;
     document.getElementById('setEmpId').value=id;
     document.getElementById('regPin').value=''; document.getElementById('regPin2').value='';
     updatePwMeter('regPin','regMeter','regTip');
     await syncNow(true); await refreshMembership(); updateRoleUI(); renderHome(); renderStock();
     updateAuthCTA();
     toast('✅ '+T('regSuccess','Account created')+': <b>'+r.employee.name+'</b>');
-    const jg=document.getElementById('joinGroup'); if(jg) jg.style.display='block';
   }catch(e){
     setSyncState('err', pwErrText(e)); renderSyncUI();
     toast(pwErrText(e));
