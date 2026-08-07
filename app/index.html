@@ -72,7 +72,8 @@
   .attr .wa-mini{display:flex; align-items:center; gap:5px; color:var(--wa); font-weight:700;}
   .sub-bar{position:fixed;top:0;left:0;right:0;z-index:50;display:flex;align-items:center;padding:env(safe-area-inset-top,0px) 12px 0;height:calc(44px + env(safe-area-inset-top,0px));background:var(--surface);border-bottom:1px solid var(--border);}
   .sub-back{width:36px;height:36px;border-radius:50%;border:none;background:transparent;color:var(--gold);font-size:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;flex:0 0 auto;}
-  .info-dot{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--border);color:var(--text-dim);font-size:11px;font-weight:700;cursor:pointer;vertical-align:middle;margin-left:4px;position:relative;top:-1px;}
+  .info-dot{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;border:1.5px solid var(--border);color:var(--text-dim);font-size:12px;font-style:italic;font-family:Georgia,"Times New Roman",serif;cursor:pointer;vertical-align:middle;margin-left:5px;position:relative;top:-1px;}
+  .info-expand{font-size:11px;color:var(--text-dim);margin-top:4px;line-height:1.5;display:none;font-weight:400;}
   .sub-spacer{width:36px;flex:0 0 auto;}
   .sub-title{flex:1;text-align:center;font-size:15px;font-weight:800;color:var(--text);}
   .co-shopping{font-size:11px;color:var(--text-dim);margin-top:4px;line-height:1.4;}
@@ -218,10 +219,10 @@
   .hl .chip{padding:7px 11px;}
 
   .loc-row{display:flex; align-items:center; gap:10px; margin-top:18px; padding:13px; border-radius:12px; background:var(--surface-2); border:1px solid var(--border); cursor:pointer;}
-  .stock-days{position:absolute; left:8px; bottom:8px; font-size:10px; font-weight:700; padding:3px 7px; border-radius:8px; background:rgba(0,0,0,.5); color:#F5F1E8; z-index:2;}
-  .stock-days.over{background:#E5736B; color:#0F0E0E;}
+  .stock-days{display:block; font-size:10px; font-weight:700; color:var(--text-dim); margin-top:2px;}
+  .stock-days.over{color:#E5736B; font-weight:800;}
   .d-stock{margin-top:12px; font-size:12px;}
-  .d-stock .stock-days{position:static; display:inline-block; background:rgba(232,194,104,.15); color:var(--gold);}
+  .d-stock .stock-days{display:inline-block; background:rgba(232,194,104,.15); color:var(--gold); padding:3px 7px; border-radius:8px;}
   .locked-card{display:flex; align-items:center; gap:12px; padding:12px; border-radius:12px; background:var(--surface-2); border:1px solid var(--border); margin-bottom:6px;}
   .staff-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:8px 0; border-bottom:1px solid var(--border); font-size:12px;}
   .sync-status{display:flex; align-items:center; gap:7px; font-size:11.5px; padding:8px 10px; margin-bottom:10px;
@@ -923,7 +924,7 @@
       </div>
   <div class="grp">
     <div id="syncStatus" class="sync-status">—</div>
-    <div class="lbl" id="authLbl" style="font-weight:700;font-size:14px;margin-bottom:8px;"><span data-i18n="syncTitle">Account</span> <span class="info-dot" onclick="toast(T('syncHint','Connected to shared ANT MOTORS backend. Cars added by anyone in your company sync to every signed-in device.'))">i</span></div>
+    <div class="lbl" id="authLbl" style="font-weight:700;font-size:14px;margin-bottom:2px;"><span data-i18n="syncTitle">Account</span> <span class="info-dot" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">i</span><div class="info-expand" data-i18n="syncHint">By default you connect to the shared ANT MOTORS backend (no setup). In Advanced you can point to your own server.</div></div>
     <button class="submit" id="regToggle" onclick="toggleReg()" data-i18n="regHasAccount" style="background:var(--gold);color:#111;font-weight:700;">New here? Create an account</button>
     <p class="sheet-hint" id="regHint" style="display:none;" data-i18n="regHint">Fill in the server address, then your details below to create your own account. If you already have one, tap "Have an account? Sign in".</p>
     <div id="syncLoginBox">
@@ -1985,7 +1986,7 @@ function carCard(k){
   const ribbon=c.sold?'<span class="cond sold">SOLD</span>':`<span class="cond ${c.cond==='NEW'?'new':'used'}">${condLabel(c)}</span>`;
   d.innerHTML=`<div class="ph ${c.grad}">${cover?`<img class="car-cover" src="${cover}" alt="" />`:carSVG(c.grad)}${ribbon}
       <div class="fav-toggle ${saved?'on':''}" onclick="event.stopPropagation();toggleFav(null,'${k}')">${saved?'♥':'♡'}</div></div>
-    <div class="body"><h4>${carName(c)}</h4><div class="meta">${carSub(c).split('·').slice(0,2).join('·')}</div><div class="pr">${rolePrice(c.price)}</div></div>${stockBadge(k)}`;
+    <div class="body"><h4>${carName(c)}</h4><div class="meta">${carSub(c).split('·').slice(0,2).join('·')}</div><div class="pr">${rolePrice(c.price)}</div>${stockBadge(k)}</div>`;
   return d;
 }
 function renderStockFiltered(){
@@ -2444,6 +2445,7 @@ function openSettings(){
   renderShSettings();
   const nt=document.getElementById('notifToggle'); if(nt) nt.classList.toggle('on', localStorage.getItem('am_notify')==='1');
   showDevices();
+  renderSyncUI(); // refresh signOutGroup visibility
   const x2=document.getElementById('settingsExtra2'); if(x2) x2.style.display=SYNC.token?'':'none';
 }
 /* ---------- ME tab (profile + account + company) ---------- */
