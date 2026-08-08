@@ -77,7 +77,6 @@
   .phone.subpage-mode .screen.active{padding-top:calc(44px + env(safe-area-inset-top,0px));}
   .phone.subpage-mode .screen.active .sec-head,
   .phone.subpage-mode .screen.active .admin-head{display:none;}
-  .phone.subpage-mode .screen.active .detail-top{top:0; justify-content:flex-end;}
   .phone .sub-bar{display:none;}
   .phone.subpage-mode .sub-bar{display:flex;}
 
@@ -87,6 +86,16 @@
   .info-expand{font-size:11px;color:var(--text-dim);margin-top:4px;line-height:1.5;display:none;font-weight:400;}
   .sub-spacer{width:36px;flex:0 0 auto;}
   .sub-title{flex:1;text-align:center;font-size:15px;font-weight:800;color:var(--text);}
+  .sub-actions{position:relative; flex:0 0 auto; width:36px; display:flex; justify-content:flex-end;}
+  .sub-actions .icon-btn{width:34px; height:34px; font-size:20px; line-height:1; background:transparent; border:none; color:var(--text);}
+  .sub-menu{position:absolute; top:calc(100% + 6px); right:0; min-width:170px; background:var(--surface-2); border:1px solid var(--border); border-radius:14px; box-shadow:0 12px 32px rgba(0,0,0,.38); padding:6px; display:none; z-index:60;}
+  .sub-menu.show{display:block; animation:pop .14s ease;}
+  @keyframes pop{from{opacity:0; transform:translateY(-6px);} to{opacity:1; transform:none;}}
+  .sub-menu-item{display:flex; align-items:center; gap:12px; width:100%; padding:11px 12px; border:none; background:none; color:var(--text); font-size:14px; font-weight:600; cursor:pointer; border-radius:9px; text-align:left;}
+  .sub-menu-item:active{background:var(--gold-soft);}
+  .sub-menu-item .mi-ic{width:22px; text-align:center; font-size:16px; color:var(--gold);}
+  .sub-menu-item .mi-ic.on{color:var(--gold);}
+  .sub-menu-item .mi-tx{flex:1;}
   .co-shopping{font-size:11px;color:var(--text-dim);margin-top:4px;line-height:1.4;}
   .co-shopping b{color:var(--gold);font-weight:700;}
   .sh-set-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
@@ -202,7 +211,6 @@
   .gdots{position:absolute; bottom:8px; left:0; right:0; display:flex; gap:5px; justify-content:center; z-index:6; pointer-events:none;}
   .gdot{width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.45); transition:.2s;}
   .gdot.on{background:var(--gold); width:16px; border-radius:3px;}
-  .detail-top{position:absolute; top:0; left:0; right:0; display:flex; justify-content:space-between; padding:12px 14px;}
   .thumbs{display:flex; gap:8px; padding:12px 16px; overflow-x:auto; scrollbar-width:none;}
   .thumbs::-webkit-scrollbar{display:none;}
   .thumb{flex:0 0 auto; width:64px; height:48px; border-radius:6px; border:1.5px solid var(--border); cursor:pointer; display:flex; align-items:center; justify-content:center;}
@@ -596,7 +604,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b>ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v70</span></div>
+        <div><b>ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v71</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -620,11 +628,19 @@
       <div class="wa-mini" onclick="waTap('general')">↗ WhatsApp</div>
     </div>
 
-    <!-- sub-page fixed back bar (workbench / admin / favorites / perm / settings) -->
+    <!-- sub-page fixed back bar (workbench / admin / favorites / perm / settings / detail) -->
     <div class="sub-bar" id="subPageBar">
-      <button class="sub-back" onclick="goBackHome()">‹</button>
+      <button class="sub-back" onclick="goBackHome();closeSubMenu()">‹</button>
       <span class="sub-title" id="subPageTitle">Back</span>
-      <span class="sub-spacer"></span>
+      <div class="sub-actions" id="subActions" style="display:none;">
+        <button class="icon-btn" id="subMoreBtn" onclick="toggleSubMenu(event)" title="More" aria-label="More">⋯</button>
+        <div class="sub-menu" id="subMoreMenu">
+          <button class="sub-menu-item" onclick="closeSubMenu();toggleFav(null)"><span class="mi-ic" id="subSaveIc">♡</span><span class="mi-tx" data-i18n="save">Save</span></button>
+          <button class="sub-menu-item" onclick="closeSubMenu();shareCar()"><span class="mi-ic">↗</span><span class="mi-tx" data-i18n="share">Share</span></button>
+          <button class="sub-menu-item" onclick="closeSubMenu();toggleTheme()"><span class="mi-ic" id="subThemeIcon"></span><span class="mi-tx" data-i18n="theme">Theme</span></button>
+          <button class="sub-menu-item" id="subEditItem" onclick="closeSubMenu();openCarActions()"><span class="mi-ic">✎</span><span class="mi-tx" data-i18n="edit">Edit</span></button>
+        </div>
+      </div>
     </div>
 
     <!-- HOME -->
@@ -639,7 +655,7 @@
         <div class="tag" data-i18n="featured">FEATURED</div>
         <div class="info">
           <h3>Toyota Land Cruiser 2021</h3>
-          <div class="sub">V8 · 56,000 km · Accra Branch · v70</div>
+          <div class="sub">V8 · 56,000 km · Accra Branch · v71</div>
           <div class="price" id="heroPrice">From ₵38,500</div>
         </div>
         <button class="go" onclick="openDetail('lc')" data-i18n="viewDetails">View details</button>
@@ -729,14 +745,6 @@
       <div class="detail-hero">
         <div class="gal" id="detailGal"><div class="gtrack" id="detailTrack"></div></div>
         <div class="gdots" id="detailDots"></div>
-        <div class="detail-top">
-          <div style="display:flex; gap:8px;">
-            <button class="icon-btn fav-star" id="detailFav" onclick="toggleFav(null)" title="Save">♡</button>
-            <button class="icon-btn" onclick="shareCar()" title="Share link">↗</button>
-            <button class="icon-btn" id="themeBtn2" onclick="toggleTheme()"><span id="themeIcon2"></span></button>
-            <button class="icon-btn" id="carActionsBtn" onclick="openCarActions()" title="Edit / actions" style="display:none;">⋯</button>
-          </div>
-        </div>
       </div>
       <div class="upload-banner" id="uploadBanner" style="display:none;">
         <span class="lbl" id="uploadLabel">Upload car media</span>
@@ -1600,7 +1608,7 @@ function hlText(h){ return curLang==="zh" ? (ZH.hl[h]||h) : h; }
 
 const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z" stroke="#E8C268" stroke-width="1.6" stroke-linejoin="round"/></svg>';
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
-function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; document.getElementById('themeIcon').innerHTML=ic; document.getElementById('themeIcon2').innerHTML=ic; }
+function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
 const APP_VER='1.0.0';
 let amTheme = (typeof localStorage!=='undefined' && localStorage.getItem('am_theme')) || 'system';
@@ -1790,8 +1798,14 @@ function go(id){
   if(id==='scr-favorites') renderFav();
   if(id==='scr-me') renderSyncUI();
   document.getElementById('phone').scrollTop=0;
+  const sa=document.getElementById('subActions'); if(sa) sa.style.display=(id==='scr-detail')?'flex':'none';
+  closeSubMenu();
 }
 function goBackHome(){ go('scr-home'); }
+/* Sub-bar "⋯" menu (replaces the old floating detail-top action row) */
+function toggleSubMenu(e){ if(e) e.stopPropagation(); const m=document.getElementById('subMoreMenu'); if(m) m.classList.toggle('show'); }
+function closeSubMenu(){ const m=document.getElementById('subMoreMenu'); if(m) m.classList.remove('show'); }
+document.addEventListener('click', function(e){ const sa=document.getElementById('subActions'); if(sa && !sa.contains(e.target)) closeSubMenu(); });
 
 /* ---- generic chip filter (home quick chips) ---- */
 document.addEventListener('click',e=>{
@@ -2036,7 +2050,7 @@ function renderDetail(){
       `</div>`;
   }
   const ds=document.getElementById('dStock'); if(ds) ds.innerHTML=stockBadge(curCar);
-  const star=document.getElementById('detailFav');
+  const star=document.getElementById('subSaveIc');
   if(star){ star.textContent=SAVED_CARS.has(curCar)?'♥':'♡'; star.classList.toggle('on',SAVED_CARS.has(curCar)); }
   renderRolePrices();
 }
@@ -2200,7 +2214,7 @@ function updateRoleUI(){
   if(adminCard) adminCard.style.display = canEditPrices() ? 'block' : 'none';
   const permCard=document.getElementById('permCard');
   if(permCard) permCard.style.display = ['boss','partnerA','partnerB','manager'].includes(curRole) ? 'block' : 'none';
-  const carActs=document.getElementById('carActionsBtn');
+  const carActs=document.getElementById('subEditItem');
   if(carActs) carActs.style.display = 'flex'; // v65: always show
   const mlAdd=document.getElementById('mlAddBtn');
   if(mlAdd) mlAdd.style.display = canEditCar() ? 'flex' : 'none';
@@ -3464,7 +3478,7 @@ function toggleFav(el,key){
   if(SAVED_CARS.has(key)){ SAVED_CARS.delete(key); toast(T('favRemoved','Removed from saved')); }
   else { SAVED_CARS.add(key); toast(T('favSavedToast','Saved! Tap ♡ in top bar to view')); }
   saveSet();
-  const star=document.getElementById('detailFav');
+  const star=document.getElementById('subSaveIc');
   if(star && key===curCar){ star.textContent=SAVED_CARS.has(key)?'♥':'♡'; star.classList.toggle('on',SAVED_CARS.has(key)); }
   renderHome();
   if(document.getElementById('scr-favorites').classList.contains('on')) renderFav();
@@ -3941,7 +3955,7 @@ bootstrap().then(()=>{
 });
 </script>
 <script>
-if('serviceWorker' in navigator){ window.addEventListener('load',async function(){ const old=await navigator.serviceWorker.getRegistrations(); await Promise.all(old.map(r=>r.unregister())); const reg=await navigator.serviceWorker.register('sw.js?v=70'); await reg.update(); }); }
+if('serviceWorker' in navigator){ window.addEventListener('load',async function(){ const old=await navigator.serviceWorker.getRegistrations(); await Promise.all(old.map(r=>r.unregister())); const reg=await navigator.serviceWorker.register('sw.js?v=71'); await reg.update(); }); }
 </script>
 <div class="sheet" id="carActionsSheet">
   <div class="sheet-handle"></div>
