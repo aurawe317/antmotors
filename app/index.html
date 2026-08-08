@@ -2452,6 +2452,7 @@ function openSettings(){
   const nt=document.getElementById('notifToggle'); if(nt) nt.classList.toggle('on', localStorage.getItem('am_notify')==='1');
   showDevices();
   renderSyncUI(); // refresh signOutGroup visibility
+  renderMembershipUI(); // populate membership card
   const x2=document.getElementById('settingsExtra2'); if(x2) x2.style.display=SYNC.token?'':'none';
 }
 /* ---------- ME tab (profile + account + company) ---------- */
@@ -2654,7 +2655,7 @@ function resolveApiBase(){
 let MEMBERSHIP={ plan:'owner', active:true, periodEnd:0, planName:'永久会员', planNameEn:'Lifetime', isPermanent:true };
 let MEMBERSHIP_SIMULATE=false;
 function saveMembership(m){ if(m) MEMBERSHIP=m; localStorage.setItem('am_membership',JSON.stringify(MEMBERSHIP)); }
-function loadMembership(){ try{ const m=JSON.parse(localStorage.getItem('am_membership')||'null'); if(m) MEMBERSHIP=m; }catch(e){} }
+function loadMembership(){ try{ const m=JSON.parse(localStorage.getItem('am_membership')||'null'); if(m){ MEMBERSHIP=m; MEMBERSHIP.isPermanent=true; MEMBERSHIP.active=true; MEMBERSHIP.expired=false; } }catch(e){} }
 /* refresh membership state from the server (any signed-in member) */
 async function refreshMembership(){
   if(!SYNC.token){ renderMembershipUI(); return; }
