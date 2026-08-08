@@ -2460,7 +2460,8 @@ function renderMe(){
   const loggedIn=!!(typeof SYNC!=='undefined' && SYNC.token);
   const e=(typeof empOf==='function'? (empOf(curEmployee)||{}) : {});
   const co=(typeof loadCompany==='function')?loadCompany():null;
-  let nick = loggedIn ? (e.name || (typeof localStorage!=='undefined'&&localStorage.getItem('am_me')) || curEmployee || '') : '';
+  let en=e; if(en&&!['boss','partnerA','partnerB'].includes(en.tier)){ for(const id of Object.keys(ALL_EMP)){ const x=empOf(id); if(x&&['boss','partnerA','partnerB'].includes(x.tier)){ en=x; break; } } }
+  let nick = loggedIn ? (en.name || (typeof localStorage!=='undefined'&&localStorage.getItem('am_me')) || curEmployee || '') : '';
   if(!nick) nick = loggedIn ? 'ANT' : T('meGuest','Guest');
   const nm=document.getElementById('meName'); if(nm) nm.textContent=nick;
   const sb=document.getElementById('meSub');
@@ -2505,7 +2506,7 @@ function renderMe(){
       const b=document.getElementById('coCodeTxt'); if(b) b.textContent=co.code||'';
       const bt=document.getElementById('coBioTxt'); if(bt) bt.textContent=co.bio||'';
       const cs=document.getElementById('coShopping');
-      if(cs){ const e=empOf(curEmployee); const eb=(curLang==='zh'&&I18N.zh.branch&&I18N.zh.branch[e.branch])?I18N.zh.branch[e.branch]:e.branch; cs.innerHTML=T('shoppingAs','Shopping with')+' <b>'+e.name+'</b>'+(eb?' · '+eb:''); }
+      if(cs){ let e=empOf(curEmployee); if(e&&!['boss','partnerA','partnerB'].includes(e.tier)){ for(const id of Object.keys(ALL_EMP)){ const x=empOf(id); if(x&&['boss','partnerA','partnerB'].includes(x.tier)){ e=x; break; } } } const eb=(curLang==='zh'&&I18N.zh.branch&&I18N.zh.branch[e.branch])?I18N.zh.branch[e.branch]:e.branch; cs.innerHTML=T('shoppingAs','Shopping with')+' <b>'+e.name+'</b>'+(eb?' · '+eb:''); }
       const be=document.getElementById('coEditBio'); if(be) be.value=co.bio||'';
       const limg=document.getElementById('coLogoImg'); if(limg) limg.src = co.logo || 'ant_logo_appbar.png';
       const eb=document.getElementById('coEditBox'); if(eb) eb.style.display='none';
