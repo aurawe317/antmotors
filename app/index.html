@@ -1305,7 +1305,7 @@ const ALL_EMP = Object.assign({}, SALES, OWNERS);
 
 let curTheme="dark", curLang=(typeof localStorage!=='undefined'&&localStorage.getItem('am_lang'))||"en", curRole="customer", curSales="kwame", curCar="lc", curEmployee="boss";
 function isTopEmployee(){ return ["boss","partnerA","partnerB"].includes(empOf(curEmployee).tier); }
-function applyEmployeeScope(){ if(isTopEmployee()){ if(!["boss","partnerA","partnerB","manager","salesA","salesB","customer"].includes(curRole)) curRole=empOf(curEmployee).tier; } else { curRole=empOf(curEmployee).tier; curSales=curEmployee; } }
+function applyEmployeeScope(){ const tier=empOf(curEmployee).tier; curRole=tier; if(!isTopEmployee()){ curSales=curEmployee; } }
 let FILTER={section:"NEW", q:"", sort:"default",
   branch:"all", brand:"all",
   brands:[], colors:[], years:[],
@@ -2839,7 +2839,7 @@ async function bootstrap(){
   loadCars(); loadListed(); loadEmps(); loadShowrooms(); loadCarVideos(); loadCarPhotos(); loadMembership();
   // restore which account is signed in (so a page reload keeps the boss/owner view
   // instead of resetting to the "boss" placeholder and dropping to a customer view)
-  try{ const raw=localStorage.getItem('am_me'); if(raw){ let id=raw; try{ const m=JSON.parse(raw); if(m&&m.id) id=m.id; }catch(e){} curEmployee=ALL_EMP[id]?id:'boss'; } }catch(e){ curEmployee='boss'; }
+  try{ const raw=localStorage.getItem('am_me'); if(raw){ let id=raw; try{ const m=JSON.parse(raw); if(m&&m.id) id=m.id; }catch(e){} const e=empOf(id); curEmployee=(e&&['boss','partnerA','partnerB'].includes(e.tier))?id:'boss'; } }catch(e){ curEmployee='boss'; }
 
   // 0) auto-detect the backend when served from the same origin (e.g. opened from your own server).
   // This lets anyone register / sign in without typing the server address. If no API answers (e.g. a
@@ -3905,7 +3905,7 @@ function deleteShowroom(name){
 function parseDeepLink(){
   try{
     const q=new URLSearchParams(location.search);
-    const ref=q.get('ref'); if(ref && ALL_EMP[ref]){ curSales=ref; curEmployee=ref; }
+    const ref=q.get('ref'); if(ref && ALL_EMP[ref]){ curSales=ref; const rt=empOf(ref).tier; if(!['boss','partnerA','partnerB'].includes(rt)){ curEmployee=ref; curRole=rt; } }
     let car=q.get('c')||q.get('car'); if(!car){ const m=location.pathname.match(/\/c\/([^/?#]+)/); if(m) car=m[1]; }
     if(car && CARS[car]){ curCar=car; }
     if((ref&&ALL_EMP[ref])||(car&&CARS[car])){ curRole='customer'; window.__deeplink=true; }
