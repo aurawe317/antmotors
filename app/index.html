@@ -77,7 +77,7 @@
   .phone.subpage-mode .screen.active{padding-top:calc(44px + env(safe-area-inset-top,0px));}
   .phone.subpage-mode .screen.active .sec-head,
   .phone.subpage-mode .screen.active .admin-head{display:none;}
-  .phone.subpage-mode .screen.active .detail-top{top:44px; justify-content:flex-end;}
+  .phone.subpage-mode .screen.active .detail-top{top:0; justify-content:flex-end;}
   .phone .sub-bar{display:none;}
   .phone.subpage-mode .sub-bar{display:flex;}
 
@@ -596,7 +596,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b>ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v69-redeploy</span></div>
+        <div><b>ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v70</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -639,7 +639,7 @@
         <div class="tag" data-i18n="featured">FEATURED</div>
         <div class="info">
           <h3>Toyota Land Cruiser 2021</h3>
-          <div class="sub">V8 · 56,000 km · Accra Branch · v65</div>
+          <div class="sub">V8 · 56,000 km · Accra Branch · v70</div>
           <div class="price" id="heroPrice">From ₵38,500</div>
         </div>
         <button class="go" onclick="openDetail('lc')" data-i18n="viewDetails">View details</button>
@@ -2143,11 +2143,26 @@ function canUploadCarPhotos(){ return ['boss','partnerA','partnerB','manager','s
 function canUploadShowroomPhotos(){ return ['boss','partnerA','partnerB','manager'].includes(curRole); }
 function canEditCar(){ return ['boss','partnerA','partnerB','manager','salesA'].includes(curRole); }
 function canEditPrices(){ return isTopRole(); }
-/* Update the global "shopping with" banner to match the signed-in account. */
+/* Update the global "shopping with" banner. This is the ONE authoritative writer
+   of #attrText. It shows the signed-in account for owners/staff, and the
+   "shopping with <salesperson>" line only for genuine customer / shared-link views.
+   (renderAttrBanner must NOT write #attrText — that is what caused the
+   "Kwame" flash and the Me-tab staying on Kwame.) */
 function updateAttrBanner(){
   const b=document.getElementById('attrBanner'), t=document.getElementById('attrText'); if(!b||!t) return;
-  const loggedIn=!!SYNC.token;
-  if(!loggedIn){ b.style.display='none'; return; }
+  const loggedIn=!!(SYNC&&SYNC.token);
+  if(!loggedIn){
+    // Public / customer view: show who they are shopping with.
+    if(curRole==='customer' && curSales && empOf(curSales)){
+      const s=empOf(curSales);
+      const br=(curLang==='zh'&&I18N.zh.branch&&I18N.zh.branch[s.branch])?I18N.zh.branch[s.branch]:(s.branch||'');
+      b.style.display='';
+      t.innerHTML=T('shoppingWith',"You're shopping with")+' <b>'+(s.name||curSales)+'</b>'+(br?' · '+br:'');
+    } else {
+      b.style.display='none';
+    }
+    return;
+  }
   b.style.display='';
   let meId=curEmployee;
   // If the loaded employee is a low-tier account (sales/customer),
@@ -2299,10 +2314,14 @@ function handleShowroomPhoto(e,showroomName){
 
 
 function renderAttrBanner(){
+  // Reflects the chosen salesperson in the "Your Sales Consultant" card only.
+  // It must NOT write #attrText (the global banner) — that is updateAttrBanner's
+  // job — otherwise the owner's banner gets overwritten with "Kwame".
   const s=empOf(curSales); if(!s) return;
-  const el=document.getElementById('attrText'); if(!el) return;
-  const b=(curLang==='zh'&&I18N.zh.branch&&I18N.zh.branch[s.branch])?I18N.zh.branch[s.branch]:s.branch;
-  el.innerHTML=T('shoppingWith',"You're shopping with")+' <b>'+s.name+'</b> · '+b;
+  const av=document.getElementById('consultAv'); if(av) av.textContent=s.av||'';
+  const nm=document.getElementById('consultName'); if(nm) nm.textContent=s.name||'';
+  const rl=document.getElementById('consultRole'); if(rl) rl.textContent=(typeof salesRoleLabel==='function')?salesRoleLabel(s):(s.role||'');
+  updateAttrBanner();
 }
 function setSales(key,btn){
   if(!isTopEmployee()){ toast(T('noSwitchSales','Share link is bound to your account')); return; }
@@ -2671,7 +2690,7 @@ function renderMembershipUI(){
   const banner=document.getElementById('memBanner');
   const badge=document.getElementById('memBadge');
   const info=document.getElementById('memInfo');
-  if(grp && SYNC.token && co) grp.style.display = 'block'; // v65: always show
+  if(grp && SYNC.token && isTopRole()) grp.style.display = 'block'; // v70: show company+member block to boss/partner (was gated on an undefined global `co`, so it never showed)
   const m=MEMBERSHIP;
   if(banner){
     if(m && m.expired){
@@ -3922,7 +3941,7 @@ bootstrap().then(()=>{
 });
 </script>
 <script>
-if('serviceWorker' in navigator){ window.addEventListener('load',async function(){ const old=await navigator.serviceWorker.getRegistrations(); await Promise.all(old.map(r=>r.unregister())); const reg=await navigator.serviceWorker.register('sw.js?v=64'); await reg.update(); }); }
+if('serviceWorker' in navigator){ window.addEventListener('load',async function(){ const old=await navigator.serviceWorker.getRegistrations(); await Promise.all(old.map(r=>r.unregister())); const reg=await navigator.serviceWorker.register('sw.js?v=70'); await reg.update(); }); }
 </script>
 <div class="sheet" id="carActionsSheet">
   <div class="sheet-handle"></div>
