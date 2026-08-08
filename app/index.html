@@ -1003,17 +1003,19 @@
         <div id="coShopping" class="co-shopping"></div>
       </div>
     </div>
-    <div id="coEditBox" style="display:none;">
+    <div id="coEditBox" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
       <div class="form-row"><label data-i18n="regCoName">Company name</label><input type="text" id="coEditName" autocomplete="off" /></div>
       <div class="form-row"><label data-i18n="coBioLbl">About</label><textarea id="coEditBio" rows="3" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none;resize:vertical;"></textarea></div>
       <div class="form-row"><label data-i18n="regCoLogo">Company logo</label>
-        <input type="file" id="coEditLogo" accept="image/*" onchange="previewCoEditLogo()" style="padding:6px;" />
+        <input type="file" id="coEditLogo" accept="image/*" onchange="previewCoEditLogo()" style="padding:6px;width:100%;" />
         <img id="coEditLogoPrev" style="display:none;max-height:46px;max-width:120px;margin-top:6px;border-radius:8px;background:var(--surface-2);" />
       </div>
-      <button class="submit" onclick="saveCompany()" data-i18n="coSave">Save company</button>
+      <button class="submit" onclick="saveCompany()" data-i18n="coSave" style="margin-top:8px;">Save company</button>
     </div>
-    <button class="share-copy" id="coEditBtn" onclick="toggleCoEdit()" data-i18n="coEdit">Edit company</button>
-    <button class="share-copy" id="coCopyBtn" onclick="copyCoCode()" data-i18n="codeCopy" style="margin-left:6px;">Copy code</button>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button class="share-copy" id="coEditBtn" onclick="toggleCoEdit()" data-i18n="coEdit" style="flex:1;">Edit company</button>
+      <button class="share-copy" id="coCopyBtn" onclick="copyCoCode()" data-i18n="codeCopy" style="flex:1;">Copy code</button>
+    </div>
     <div class="mem-card" id="memCard" style="margin-top:12px;">
       <div class="mem-card-top">
         <div class="mem-plan" id="memPlan">—</div>
@@ -2147,7 +2149,12 @@ function updateAttrBanner(){
   const loggedIn=!!SYNC.token;
   if(!loggedIn){ b.style.display='none'; return; }
   b.style.display='';
-  let meId=curEmployee; try{ const m=JSON.parse(localStorage.getItem('am_me')||'null'); if(m&&m.id) meId=m.id; }catch(e){}
+  let meId=curEmployee;
+  // If the loaded employee is a low-tier account (sales/customer),
+  // walk ALL_EMP for the first owner-level account available.
+  const e0=empOf(meId); if(e0&&!['boss','partnerA','partnerB'].includes(e0.tier)){ for(const id of Object.keys(ALL_EMP)){ const x=empOf(id); if(x&&['boss','partnerA','partnerB'].includes(x.tier)){ meId=id; break; } } }
+  // Also check the am_me token in case login saved a top-tier ID directly
+  try{ const m=JSON.parse(localStorage.getItem('am_me')||'null'); if(m&&m.tier&&['boss','partnerA','partnerB'].includes(m.tier)) meId=m.id||meId; }catch(e){}
   const e=empOf(meId); const ename=e.name||meId||'';
   t.innerHTML=T('shoppingAs','Shopping with')+' <b>'+ename+'</b>';
 }
@@ -2832,7 +2839,7 @@ async function bootstrap(){
   loadCars(); loadListed(); loadEmps(); loadShowrooms(); loadCarVideos(); loadCarPhotos(); loadMembership();
   // restore which account is signed in (so a page reload keeps the boss/owner view
   // instead of resetting to the "boss" placeholder and dropping to a customer view)
-  try{ const me=localStorage.getItem('am_me'); if(me) curEmployee=me; }catch(e){}
+  try{ const raw=localStorage.getItem('am_me'); if(raw){ let id=raw; try{ const m=JSON.parse(raw); if(m&&m.id) id=m.id; }catch(e){} curEmployee=ALL_EMP[id]?id:'boss'; } }catch(e){ curEmployee='boss'; }
 
   // 0) auto-detect the backend when served from the same origin (e.g. opened from your own server).
   // This lets anyone register / sign in without typing the server address. If no API answers (e.g. a
