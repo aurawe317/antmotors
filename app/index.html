@@ -95,6 +95,10 @@
   .sub-menu-item:active{background:var(--gold-soft);}
   .sub-menu-item .mi-tx{flex:1; font-size:13px; font-weight:500; white-space:nowrap;}
   .sub-menu-item.danger{margin-top:5px; border-top:1px solid var(--border); border-radius:0 0 9px 9px; padding-top:11px;}
+  .update-banner{position:fixed; left:50%; top:8px; transform:translateX(-50%) translateY(-140%); z-index:200; background:var(--gold); color:#1a1305; font-size:13px; font-weight:600; padding:8px 10px; border-radius:10px; box-shadow:0 8px 24px rgba(0,0,0,.35); display:flex; align-items:center; gap:8px; max-width:92%; transition:transform .3s ease;}
+  .update-banner.show{transform:translateX(-50%) translateY(0);}
+  .update-banner button{border:none; background:rgba(0,0,0,.14); color:#1a1305; font-weight:700; padding:5px 11px; border-radius:7px; cursor:pointer; font-size:12px;}
+  .update-banner .later{background:transparent; text-decoration:underline; padding:5px 6px;}
   .sub-menu-item.danger .mi-tx{color:var(--danger); font-weight:600;}
   .co-shopping{font-size:11px;color:var(--text-dim);margin-top:4px;line-height:1.4;}
   .co-shopping b{color:var(--gold);font-weight:700;}
@@ -620,7 +624,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b>ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v78</span></div>
+        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v79</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -1502,8 +1506,8 @@ I18N.en.navMe="Me"; I18N.en.meGuest="Guest"; I18N.en.meGuestSub="Sign in or crea
 I18N.en.mlFav="My favorites"; I18N.en.mlAdd="Add vehicle"; I18N.en.mlWork="Workbench"; I18N.en.mlAdmin="Car admin"; I18N.en.mlPerm="Roles & permissions"; I18N.en.mlPrice="How pricing works"; I18N.en.mlSettings="App settings"; I18N.en.soldTitle="Sold vehicles";
 I18N.zh.navMe="我的"; I18N.zh.meGuest="访客"; I18N.zh.meGuestSub="登录或创建公司账号"; I18N.zh.meSignedIn="已登录";
 I18N.zh.mlFav="我的收藏"; I18N.zh.mlAdd="添加车辆"; I18N.zh.mlWork="工作台"; I18N.zh.mlAdmin="车辆后台"; I18N.zh.mlPerm="角色权限"; I18N.zh.mlPrice="定价说明"; I18N.zh.mlSettings="应用设置"; I18N.zh.soldTitle="已售车辆";
-I18N.en.welcomeTitle="👋 Welcome to ANT MOTORS"; I18N.en.welcomeDesc="New here? Create your company account to start adding cars, managing your team and viewing membership. Open the “Me” tab at the bottom right, or tap the button below."; I18N.en.welcomeBtn="Login / Register"; I18N.en.loginRegBtn="👤 Login / Register"; I18N.en.settingsBtn="⚙ Settings";
-I18N.zh.welcomeTitle="👋 欢迎使用 ANT MOTORS"; I18N.zh.welcomeDesc="首次使用？创建公司账号即可添加车辆、管理团队与查看会员。请打开右下角“我的”页，或点击下方按钮。"; I18N.zh.welcomeBtn="登录 / 注册"; I18N.zh.loginRegBtn="👤 登录 / 注册"; I18N.zh.settingsBtn="⚙ 设置";
+I18N.en.welcomeTitle="👋 Welcome to ANT MOTORS"; I18N.en.welcomeDesc="New here? Create your company account to start adding cars, managing your team and viewing membership. Open the “Me” tab at the bottom right, or tap the button below."; I18N.en.welcomeBtn="Login / Register"; I18N.en.loginRegBtn="👤 Login / Register"; I18N.en.settingsBtn="⚙ Settings"; I18N.en.welcomeTo="Welcome to"; I18N.en.errOccurred="Something went wrong — try refreshing"; I18N.en.updateAvail="New version available";
+I18N.zh.welcomeTitle="👋 欢迎使用 ANT MOTORS"; I18N.zh.welcomeDesc="首次使用？创建公司账号即可添加车辆、管理团队与查看会员。请打开右下角“我的”页，或点击下方按钮。"; I18N.zh.welcomeBtn="登录 / 注册"; I18N.zh.loginRegBtn="👤 登录 / 注册"; I18N.zh.settingsBtn="⚙ 设置"; I18N.zh.welcomeTo="欢迎使用"; I18N.zh.errOccurred="出错了，请尝试刷新"; I18N.zh.updateAvail="有新版本可用";
 /* --- detail-page ⋯ menu labels (were missing → stayed English on lang switch) --- */
 I18N.en.save="Save"; I18N.en.saved="Saved"; I18N.en.share="Share"; I18N.en.theme="Theme"; I18N.en.edit="Edit"; I18N.en.navGoogleSub="Navigate in Google Maps"; I18N.en.navAppleSub="Navigate in Apple Maps"; I18N.en.navAmapSub="Search in Amap"; I18N.en.noAddr="No address set for this showroom";
 I18N.zh.save="收藏"; I18N.zh.saved="已收藏"; I18N.zh.share="分享"; I18N.zh.theme="主题"; I18N.zh.edit="编辑"; I18N.zh.navGoogleSub="在 Google 地图中导航"; I18N.zh.navAppleSub="在 Apple 地图中导航"; I18N.zh.navAmapSub="在高德地图中搜索"; I18N.zh.noAddr="该门店未设置地址";
@@ -1621,6 +1625,14 @@ const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circl
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
 const APP_VER='1.0.0';
+// v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
+let _lastErrToast=0;
+window.addEventListener('error', function(ev){
+  console.error('[app error]', ev && ev.message, ev && ev.filename, ev && ev.lineno);
+  try{ const log=JSON.parse(localStorage.getItem('am_errlog')||'[]'); log.unshift({t:Date.now(), m:String((ev&&ev.message)||'').slice(0,200)}); localStorage.setItem('am_errlog', JSON.stringify(log.slice(0,20))); }catch(e){}
+  const now=Date.now(); if(now-_lastErrToast>8000){ _lastErrToast=now; try{ toast(T('errOccurred','Something went wrong — try refreshing')); }catch(e){} }
+});
+window.addEventListener('unhandledrejection', function(ev){ console.error('[unhandledrejection]', ev && ev.reason); });
 let amTheme = (typeof localStorage!=='undefined' && localStorage.getItem('am_theme')) || 'system';
 const __mqDark = (typeof matchMedia!=='undefined') ? matchMedia('(prefers-color-scheme: dark)') : null;
 function effectiveTheme(){ return (amTheme==='system') ? ((__mqDark&&__mqDark.matches)?'dark':'light') : amTheme; }
@@ -1711,7 +1723,7 @@ function setDefSales(v){ try{localStorage.setItem('am_defSales',v);}catch(e){} c
 function pushNotif(title, body, icon){
   try{ const list=JSON.parse(localStorage.getItem('am_notifs')||'[]'); list.unshift({t:title,d:body||'',ic:icon||'🔔',ts:Date.now()}); localStorage.setItem('am_notifs', JSON.stringify(list.slice(0,30))); }catch(e){}
   renderNotifs();
-  if(localStorage.getItem('am_notify')==='1' && typeof Notification!=='undefined' && Notification.permission==='granted'){ try{ new Notification('ANT MOTORS · '+title,{body:body||''}); }catch(e){} }
+  if(localStorage.getItem('am_notify')==='1' && typeof Notification!=='undefined' && Notification.permission==='granted'){ try{ new Notification(brandName()+' · '+title,{body:body||''}); }catch(e){} }
   toast('🔔 '+title+(body?('<br><span style="font-size:11px;">'+body+'</span>'):''));
 }
 function renderNotifs(){
@@ -2242,7 +2254,7 @@ function updateRoleUI(){
   if(adminCard) adminCard.style.display = canEditPrices() ? 'block' : 'none';
   const permCard=document.getElementById('permCard');
   if(permCard) permCard.style.display = ['boss','partnerA','partnerB','manager'].includes(curRole) ? 'block' : 'none';
-  refreshDetailMenu(); // v78: hug text — min-width 124px, reduced horizontal padding, nowrap
+  refreshDetailMenu(); // v79: frontend white-label (brandName) + global error guard + auto-update banner
   const mlAdd=document.getElementById('mlAddBtn');
   if(mlAdd) mlAdd.style.display = canEditCar() ? 'flex' : 'none';
   const costRow=document.getElementById('costRow');
@@ -2595,7 +2607,7 @@ function renderMe(){
   const w=document.getElementById('mlWorkBtn'); if(w) w.style.display=staff?'flex':'none';
   const ad=document.getElementById('mlAdminBtn'); if(ad) ad.style.display=staff?'flex':'none';
   const pm=document.getElementById('mlPermBtn'); if(pm) pm.style.display=(loggedIn&&top)?'flex':'none';
-  const vr=document.getElementById('meVer'); if(vr) vr.textContent='ANT MOTORS \u00B7 v'+(typeof APP_VER!=='undefined'?APP_VER:'1.0.0');
+  const vr=document.getElementById('meVer'); if(vr) vr.textContent=brandName()+' \u00B7 v'+(typeof APP_VER!=='undefined'?APP_VER:'1.0.0');
   renderSoldList();
 }
 function renderSoldList(){
@@ -3060,7 +3072,7 @@ function updateAuthCTA(){
   const loggedIn=!!SYNC.token;
   const wb=document.getElementById('welcomeBar'); if(wb) wb.style.display=loggedIn?'none':'block';
   // refresh welcome bar language
-  const wt=document.getElementById('welcomeTitle'); if(wt) wt.textContent=T('welcomeTitle','Welcome to ANT MOTORS');
+  const wt=document.getElementById('welcomeTitle'); if(wt) wt.textContent='👋 '+T('welcomeTo','Welcome to')+' '+brandName();
   const wd=document.getElementById('welcomeDesc'); if(wd) wd.textContent=T('welcomeDesc','New here? Create your company account to start adding cars, managing your team and viewing membership info. Tap the settings button above or the button below.');
   const wbtn=document.getElementById('welcomeBtn'); if(wbtn) wbtn.textContent=T('welcomeBtn','Login / Register');
   renderAttrBanner();
@@ -3301,10 +3313,19 @@ async function registerAccount(){
 }
 /* ---- company helpers ---- */
 function loadCompany(){ try{ return JSON.parse(localStorage.getItem('am_company')||'null'); }catch(e){ return null; } }
+function brandName(){ const c=loadCompany(); return (c&&c.name&&c.name.trim())?c.name.trim():'ANT MOTORS'; }
 function applyCompanyLogo(){
   const co=loadCompany();
   const img=document.getElementById('appLogo');
   if(img) img.src = (co&&co.logo) ? co.logo : 'ant_logo_appbar.png';
+  applyBranding();
+}
+function applyBranding(){
+  const b=brandName();
+  const foot=document.getElementById('brandNameFoot');
+  if(foot) foot.textContent=b;
+  const mev=document.getElementById('meVer');
+  if(mev) mev.textContent=b+' · v'+(typeof APP_VER!=='undefined'?APP_VER:'1.0.0');
 }
 function setRegMode(mode){
   const c=document.getElementById('regModeCreate'), j=document.getElementById('regModeJoin');
@@ -4003,7 +4024,20 @@ bootstrap().then(()=>{
 });
 </script>
 <script>
-if('serviceWorker' in navigator){ window.addEventListener('load',async function(){ const old=await navigator.serviceWorker.getRegistrations(); await Promise.all(old.map(r=>r.unregister())); const reg=await navigator.serviceWorker.register('sw.js?v=78'); await reg.update(); }); }
+function showUpdateBanner(){ const b=document.getElementById('updateBanner'); if(b) b.classList.add('show'); }
+function applyUpdate(){ try{ localStorage.setItem('am_force_sw','1'); }catch(e){} location.reload(); }
+if('serviceWorker' in navigator){ window.addEventListener('load',async function(){ try{
+  const old=await navigator.serviceWorker.getRegistrations();
+  await Promise.all(old.map(r=>r.unregister()));
+  const reg=await navigator.serviceWorker.register('sw.js?v=79');
+  await reg.update();
+  reg.addEventListener('updatefound', function(){
+    const installing=reg.installing;
+    if(installing){ installing.addEventListener('statechange', function(){
+      if(installing.state==='installed' && navigator.serviceWorker.controller){ showUpdateBanner(); }
+    }); }
+  });
+}catch(e){ console.error('sw register failed', e); } }); }
 </script>
 <div class="sheet" id="carActionsSheet">
   <div class="sheet-handle"></div>
@@ -4019,5 +4053,6 @@ if('serviceWorker' in navigator){ window.addEventListener('load',async function(
   <button class="nav-opt" onclick="navTo('amap')"><span class="nav-ic">高</span><span><b>高德地图</b><i data-i18n="navAmapSub">在高德地图中搜索</i></span></button>
   <button class="nav-cancel" onclick="closeNavSheet()" data-i18n="close">Close</button>
 </div>
+  <div class="update-banner" id="updateBanner"><span data-i18n="updateAvail">New version available</span><button onclick="applyUpdate()">Reload</button><button class="later" onclick="this.parentNode.classList.remove('show')">Later</button></div>
 </body>
 </html>
