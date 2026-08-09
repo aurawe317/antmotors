@@ -350,6 +350,15 @@
   .sheet-mask.show{opacity:1; pointer-events:auto;}
   .sheet{position:fixed; left:50%; bottom:0; transform:translateX(-50%) translateY(100%); width:392px; max-width:100%; background:var(--surface); border:1px solid var(--border-strong); border-radius:22px 22px 0 0; padding:14px 18px 26px; z-index:45; transition:.3s cubic-bezier(.2,.8,.2,1); max-height:88vh; overflow:auto;}
   .sheet.show{transform:translateX(-50%) translateY(0);}
+  .nav-head{padding:4px 4px 14px;text-align:center;}
+  .nav-title{font-size:16px;font-weight:700;color:var(--text);}
+  .nav-sub{font-size:12px;color:var(--text-dim);margin-top:4px;word-break:break-word;}
+  .nav-opt{display:flex;align-items:center;gap:14px;width:100%;padding:13px 14px;margin-top:10px;background:var(--surface-2);border:1px solid var(--border);border-radius:14px;cursor:pointer;text-align:left;}
+  .nav-opt:active{background:var(--gold-soft);}
+  .nav-ic{flex:0 0 auto;width:38px;height:38px;border-radius:50%;background:var(--gold-soft);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;}
+  .nav-opt b{display:block;font-size:15px;font-weight:600;color:var(--text);}
+  .nav-opt i{display:block;font-style:normal;font-size:11px;color:var(--text-dim);margin-top:3px;}
+  .nav-cancel{width:100%;margin-top:14px;padding:13px;background:none;border:none;color:var(--text-dim);font-size:14px;font-weight:600;cursor:pointer;}
   .sheet-handle{width:38px; height:4px; border-radius:2px; background:var(--border-strong); margin:0 auto 12px;}
   .sheet-title{font-size:15px; font-weight:800;}
   /* sticky settings header: always-visible top-left back button + in-panel language switch */
@@ -611,7 +620,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b>ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v74</span></div>
+        <div><b>ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v75</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -1496,8 +1505,8 @@ I18N.zh.mlFav="我的收藏"; I18N.zh.mlAdd="添加车辆"; I18N.zh.mlWork="工�
 I18N.en.welcomeTitle="👋 Welcome to ANT MOTORS"; I18N.en.welcomeDesc="New here? Create your company account to start adding cars, managing your team and viewing membership. Open the “Me” tab at the bottom right, or tap the button below."; I18N.en.welcomeBtn="Login / Register"; I18N.en.loginRegBtn="👤 Login / Register"; I18N.en.settingsBtn="⚙ Settings";
 I18N.zh.welcomeTitle="👋 欢迎使用 ANT MOTORS"; I18N.zh.welcomeDesc="首次使用？创建公司账号即可添加车辆、管理团队与查看会员。请打开右下角“我的”页，或点击下方按钮。"; I18N.zh.welcomeBtn="登录 / 注册"; I18N.zh.loginRegBtn="👤 登录 / 注册"; I18N.zh.settingsBtn="⚙ 设置";
 /* --- detail-page ⋯ menu labels (were missing → stayed English on lang switch) --- */
-I18N.en.save="Save"; I18N.en.saved="Saved"; I18N.en.share="Share"; I18N.en.theme="Theme"; I18N.en.edit="Edit";
-I18N.zh.save="收藏"; I18N.zh.saved="已收藏"; I18N.zh.share="分享"; I18N.zh.theme="主题"; I18N.zh.edit="编辑";
+I18N.en.save="Save"; I18N.en.saved="Saved"; I18N.en.share="Share"; I18N.en.theme="Theme"; I18N.en.edit="Edit"; I18N.en.navGoogleSub="Navigate in Google Maps"; I18N.en.navAppleSub="Navigate in Apple Maps"; I18N.en.navAmapSub="Search in Amap"; I18N.en.noAddr="No address set for this showroom";
+I18N.zh.save="收藏"; I18N.zh.saved="已收藏"; I18N.zh.share="分享"; I18N.zh.theme="主题"; I18N.zh.edit="编辑"; I18N.zh.navGoogleSub="在 Google 地图中导航"; I18N.zh.navAppleSub="在 Apple 地图中导航"; I18N.zh.navAmapSub="在高德地图中搜索"; I18N.zh.noAddr="该门店未设置地址";
 /* --- B plan: real password / account security --- */
 I18N.en.syncEmpId="Account / e-mail"; I18N.en.syncPw="Password"; I18N.en.rememberMe="Remember me"; I18N.en.forgotPw="Forgot password?";
 I18N.en.syncNeedCreds="Enter your account and password"; I18N.en.syncBadCreds="Wrong account or password";
@@ -2233,7 +2242,7 @@ function updateRoleUI(){
   if(adminCard) adminCard.style.display = canEditPrices() ? 'block' : 'none';
   const permCard=document.getElementById('permCard');
   if(permCard) permCard.style.display = ['boss','partnerA','partnerB','manager'].includes(curRole) ? 'block' : 'none';
-  refreshDetailMenu(); // v74: text-only ⋯ menu (no emoji) + saved-state label
+  refreshDetailMenu(); // v75: text-only ⋯ menu (no emoji) + saved-state label
   const mlAdd=document.getElementById('mlAddBtn');
   if(mlAdd) mlAdd.style.display = canEditCar() ? 'flex' : 'none';
   const costRow=document.getElementById('costRow');
@@ -2397,7 +2406,11 @@ function closeSettings(){
   const ph=document.getElementById('phone'); if(ph) ph.classList.toggle('subpage-mode', isSub);
   updateAttrBanner();
 }
-function closeSheets(){ closeSettings(); document.getElementById('sheetMask').classList.remove('show'); document.getElementById('previewSheet').classList.remove('show'); const ps=document.getElementById('pricingSheet'); if(ps) ps.classList.remove('show'); const ms=document.getElementById('membershipSheet'); if(ms) ms.classList.remove('show'); const ca=document.getElementById('carActionsSheet'); if(ca) ca.classList.remove('show'); }
+function closeSheets(){ closeSettings(); document.getElementById('sheetMask').classList.remove('show'); document.getElementById('previewSheet').classList.remove('show'); const ps=document.getElementById('pricingSheet'); if(ps) ps.classList.remove('show'); const ms=document.getElementById('membershipSheet'); if(ms) ms.classList.remove('show'); const ca=document.getElementById('carActionsSheet'); if(ca) ca.classList.remove('show'); const ns=document.getElementById('navSheet'); if(ns) ns.classList.remove('show'); }
+let NAV_ADDR='', NAV_NAME='';
+function openNavSheet(name){ const s=SHOWROOMS.find(x=>x.name===name); if(!s) return; NAV_NAME=s.name; NAV_ADDR=(s.addr||'').trim(); const t=document.getElementById('navSheetTitle'); if(t) t.textContent=T('dirTo','Directions to')+' '+bName(s.name); const a=document.getElementById('navSheetAddr'); if(a) a.textContent=NAV_ADDR||T('noAddr','No address set for this showroom'); const m=document.getElementById('sheetMask'), n=document.getElementById('navSheet'); if(m) m.classList.add('show'); if(n) n.classList.add('show'); }
+function closeNavSheet(){ const m=document.getElementById('sheetMask'), n=document.getElementById('navSheet'); if(m) m.classList.remove('show'); if(n) n.classList.remove('show'); }
+function navTo(app){ closeNavSheet(); if(!NAV_ADDR){ toast(T('noAddr','No address set for this showroom')); return; } const q=encodeURIComponent(NAV_ADDR); let url=''; if(app==='google') url='https://www.google.com/maps/dir/?api=1&destination='+q; else if(app==='apple') url='https://maps.apple.com/?daddr='+q+'&dirflg=d'; else if(app==='amap') url='https://uri.amap.com/search?keyword='+q; if(url) window.open(url,'_blank'); }
 function openCarActions(){
   const c=CARS[curCar]; if(!c) return;
   if(!canEditCar()){ toast(T('noPermPhoto','Your role cannot perform this action.')); return; }
@@ -3931,7 +3944,7 @@ function renderShowroomList(){
       </div>
       <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">${s.phone}</div>
       <div style="font-size:11px;color:var(--gold);font-weight:600;margin-top:4px;">${s.dist}</div>
-      <div class="row"><button onclick="toast('${T('dirTo','Directions to')} ${s.name}')">${T('directions','Directions')}</button><button class="wa" onclick="waTap('general')">↗ WhatsApp</button></div></div>`;
+      <div class="row"><button onclick="openNavSheet('${s.name.replace(/\'/g,"\\'")}')">${T('directions','Directions')}</button><button class="wa" onclick="waTap('general')">↗ WhatsApp</button></div></div>`;
     sl.appendChild(item);
   });
 }
@@ -3990,13 +4003,21 @@ bootstrap().then(()=>{
 });
 </script>
 <script>
-if('serviceWorker' in navigator){ window.addEventListener('load',async function(){ const old=await navigator.serviceWorker.getRegistrations(); await Promise.all(old.map(r=>r.unregister())); const reg=await navigator.serviceWorker.register('sw.js?v=74'); await reg.update(); }); }
+if('serviceWorker' in navigator){ window.addEventListener('load',async function(){ const old=await navigator.serviceWorker.getRegistrations(); await Promise.all(old.map(r=>r.unregister())); const reg=await navigator.serviceWorker.register('sw.js?v=75'); await reg.update(); }); }
 </script>
 <div class="sheet" id="carActionsSheet">
   <div class="sheet-handle"></div>
   <div class="sheet-title" id="caTitle">Car actions</div>
   <div id="caBody"></div>
   <button class="share-copy" style="width:100%;margin-top:14px;" onclick="closeSheets()">Close</button>
+</div>
+<div class="sheet" id="navSheet">
+  <div class="sheet-handle"></div>
+  <div class="nav-head"><div class="nav-title" id="navSheetTitle">Directions</div><div class="nav-sub" id="navSheetAddr"></div></div>
+  <button class="nav-opt" onclick="navTo('google')"><span class="nav-ic">G</span><span><b>Google Maps</b><i data-i18n="navGoogleSub">Navigate in Google Maps</i></span></button>
+  <button class="nav-opt" onclick="navTo('apple')"><span class="nav-ic">A</span><span><b>Apple Maps</b><i data-i18n="navAppleSub">Navigate in Apple Maps</i></span></button>
+  <button class="nav-opt" onclick="navTo('amap')"><span class="nav-ic">高</span><span><b>高德地图</b><i data-i18n="navAmapSub">在高德地图中搜索</i></span></button>
+  <button class="nav-cancel" onclick="closeNavSheet()" data-i18n="close">Close</button>
 </div>
 </body>
 </html>
