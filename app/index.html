@@ -96,20 +96,28 @@
   .sub-menu-item .mi-ic{width:22px; text-align:center; font-size:16px; color:var(--gold);}
   .sub-menu-item .mi-ic.on{color:var(--gold);}
   .sub-menu-item .mi-tx{flex:1;}
+  .sub-menu-item.danger .mi-ic,.sub-menu-item.danger .mi-tx{color:var(--danger);}
   .co-shopping{font-size:11px;color:var(--text-dim);margin-top:4px;line-height:1.4;}
   .co-shopping b{color:var(--gold);font-weight:700;}
   .sh-set-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
   .sh-set-row span:first-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
   .hero{margin:14px 16px 0; border-radius:14px; overflow:hidden; position:relative; height:206px; background:linear-gradient(160deg,#2a2723,#0f0e0e 70%); border:1px solid var(--border);}
-  .hero .photo{position:absolute; inset:0; background:radial-gradient(120px 90px at 70% 60%, rgba(232,194,104,0.22), transparent 70%), linear-gradient(120deg,#3a352e,#15130f); display:flex; align-items:flex-end; justify-content:center;}
-  .hero .car-svg{width:240px; opacity:.92; filter:drop-shadow(0 8px 18px rgba(0,0,0,.5));}
-  .hero .tag{position:absolute; top:12px; left:12px; font-size:10px; letter-spacing:1.5px; font-weight:700; color:#0F0E0E; background:var(--gold); padding:4px 9px; border-radius:var(--r-pill);}
-  .hero .info{position:absolute; left:14px; right:14px; bottom:14px; z-index:2;}
-  .hero .info h3{font-size:18px; font-weight:800; letter-spacing:.3px;}
-  .hero .info .sub{font-size:12px; color:var(--text-dim); margin-top:2px;}
-  .hero .price{font-size:15px; font-weight:800; color:var(--gold); margin-top:7px;}
-  .hero .go{position:absolute; right:14px; bottom:14px; z-index:2; background:var(--gold); color:#0F0E0E; border:none; font-weight:800; font-size:12px; padding:9px 14px; border-radius:var(--r-btn); cursor:pointer;}
+  .hero-track{display:flex; height:100%; width:100%; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none;}
+  .hero-track::-webkit-scrollbar{display:none;}
+  .hero-slide{flex:0 0 100%; scroll-snap-align:start; position:relative; height:100%; overflow:hidden;}
+  .hero-slide .ph{position:absolute; inset:0; background:radial-gradient(120px 90px at 70% 60%, rgba(232,194,104,0.22), transparent 70%), linear-gradient(120deg,#3a352e,#15130f); display:flex; align-items:flex-end; justify-content:center;}
+  .hero-slide .ph img{position:absolute; inset:0; width:100%; height:100%; object-fit:cover;}
+  .hero-slide .scrim{position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,.74) 0%, rgba(0,0,0,.15) 45%, transparent 70%);}
+  .hero-slide .tag{position:absolute; top:12px; left:12px; font-size:10px; letter-spacing:1.5px; font-weight:700; color:#0F0E0E; background:var(--gold); padding:4px 9px; border-radius:var(--r-pill); z-index:3;}
+  .hero-slide .info{position:absolute; left:14px; right:14px; bottom:14px; z-index:2;}
+  .hero-slide .info h3{font-size:18px; font-weight:800; letter-spacing:.3px; color:#fff;}
+  .hero-slide .info .sub{font-size:12px; color:rgba(255,255,255,.82); margin-top:2px;}
+  .hero-slide .price{font-size:15px; font-weight:800; color:var(--gold); margin-top:7px;}
+  .hero-slide .go{position:absolute; right:14px; bottom:14px; z-index:2; background:var(--gold); color:#0F0E0E; border:none; font-weight:800; font-size:12px; padding:9px 14px; border-radius:var(--r-btn); cursor:pointer;}
+  .hero-dots{display:flex; gap:5px; justify-content:center; margin:9px 0 2px;}
+  .hero-dots span{width:6px; height:6px; border-radius:50%; background:var(--text-dim); opacity:.4; transition:.2s;}
+  .hero-dots span.on{background:var(--gold); opacity:1; width:16px; border-radius:3px;}
 
   .search{margin:16px 16px 0; display:flex; align-items:center; gap:9px; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-pill); padding:11px 15px; color:var(--text-dim);}
   .search input{flex:1; background:none; border:none; outline:none; color:var(--text); font-size:13px; font-family:inherit;}
@@ -604,7 +612,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b>ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v71</span></div>
+        <div><b>ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v72</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -638,7 +646,9 @@
           <button class="sub-menu-item" onclick="closeSubMenu();toggleFav(null)"><span class="mi-ic" id="subSaveIc">♡</span><span class="mi-tx" data-i18n="save">Save</span></button>
           <button class="sub-menu-item" onclick="closeSubMenu();shareCar()"><span class="mi-ic">↗</span><span class="mi-tx" data-i18n="share">Share</span></button>
           <button class="sub-menu-item" onclick="closeSubMenu();toggleTheme()"><span class="mi-ic" id="subThemeIcon"></span><span class="mi-tx" data-i18n="theme">Theme</span></button>
-          <button class="sub-menu-item" id="subEditItem" onclick="closeSubMenu();openCarActions()"><span class="mi-ic">✎</span><span class="mi-tx" data-i18n="edit">Edit</span></button>
+          <button class="sub-menu-item" id="subSoldItem" onclick="closeSubMenu();toggleSold()"><span class="mi-ic">🏷</span><span class="mi-tx" id="subSoldTx" data-i18n="markSold">Mark as sold</span></button>
+          <button class="sub-menu-item" id="subFeatItem" onclick="closeSubMenu();toggleFeatured()"><span class="mi-ic">⭐</span><span class="mi-tx" id="subFeatTx" data-i18n="markFeat">Set as featured</span></button>
+          <button class="sub-menu-item danger" id="subDelItem" onclick="closeSubMenu();confirmDeleteCar()"><span class="mi-ic">🗑</span><span class="mi-tx" data-i18n="deleteCar">Delete</span></button>
         </div>
       </div>
     </div>
@@ -650,24 +660,13 @@
         <div id="welcomeDesc" style="font-size:12px;margin-top:4px;line-height:1.5;" data-i18n="welcomeDesc">New here? Create your company account to start adding cars, managing your team and viewing membership info. Tap the settings button above or the button below.</div>
         <button class="submit" id="welcomeBtn" style="margin-top:10px;background:var(--gold);color:#111;font-weight:700;border:none;" onclick="go('scr-me')" data-i18n="welcomeBtn">Login / Register</button>
       </div>
-      <div class="hero">
-        <div class="photo"><span id="carHeroSvg"></span></div>
-        <div class="tag" data-i18n="featured">FEATURED</div>
-        <div class="info">
-          <h3>Toyota Land Cruiser 2021</h3>
-          <div class="sub">V8 · 56,000 km · Accra Branch · v71</div>
-          <div class="price" id="heroPrice">From ₵38,500</div>
-        </div>
-        <button class="go" onclick="openDetail('lc')" data-i18n="viewDetails">View details</button>
-      </div>
+      <div class="hero" id="heroCarousel"><div class="hero-track" id="heroTrack"></div></div>
+      <div class="hero-dots" id="heroDots"></div>
 
       <div class="search" onclick="go('scr-stock')">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.6"/><path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
         <input type="text" placeholder="Search brand, model, year…" readonly />
       </div>
-
-      <div class="sec-head" id="featHead" style="display:none;"><h2 data-i18n="featuredCars">Featured</h2><a onclick="go('scr-stock')" data-i18n="browseAll">Browse all</a></div>
-      <div class="hscroll feat-track" id="homeFeatured" style="display:none;"></div>
 
       <div class="trust">
         <div class="t">🛡 <div><b data-i18n="trust1">Duty cleared</b></div></div>
@@ -1497,6 +1496,9 @@ I18N.zh.navMe="我的"; I18N.zh.meGuest="访客"; I18N.zh.meGuestSub="登录或�
 I18N.zh.mlFav="我的收藏"; I18N.zh.mlAdd="添加车辆"; I18N.zh.mlWork="工作台"; I18N.zh.mlAdmin="车辆后台"; I18N.zh.mlPerm="角色权限"; I18N.zh.mlPrice="定价说明"; I18N.zh.mlSettings="应用设置"; I18N.zh.soldTitle="已售车辆";
 I18N.en.welcomeTitle="👋 Welcome to ANT MOTORS"; I18N.en.welcomeDesc="New here? Create your company account to start adding cars, managing your team and viewing membership. Open the “Me” tab at the bottom right, or tap the button below."; I18N.en.welcomeBtn="Login / Register"; I18N.en.loginRegBtn="👤 Login / Register"; I18N.en.settingsBtn="⚙ Settings";
 I18N.zh.welcomeTitle="👋 欢迎使用 ANT MOTORS"; I18N.zh.welcomeDesc="首次使用？创建公司账号即可添加车辆、管理团队与查看会员。请打开右下角“我的”页，或点击下方按钮。"; I18N.zh.welcomeBtn="登录 / 注册"; I18N.zh.loginRegBtn="👤 登录 / 注册"; I18N.zh.settingsBtn="⚙ 设置";
+/* --- detail-page ⋯ menu labels (were missing → stayed English on lang switch) --- */
+I18N.en.save="Save"; I18N.en.share="Share"; I18N.en.theme="Theme"; I18N.en.edit="Edit";
+I18N.zh.save="收藏"; I18N.zh.share="分享"; I18N.zh.theme="主题"; I18N.zh.edit="编辑";
 /* --- B plan: real password / account security --- */
 I18N.en.syncEmpId="Account / e-mail"; I18N.en.syncPw="Password"; I18N.en.rememberMe="Remember me"; I18N.en.forgotPw="Forgot password?";
 I18N.en.syncNeedCreds="Enter your account and password"; I18N.en.syncBadCreds="Wrong account or password";
@@ -1760,6 +1762,7 @@ function setLang(l){
   renderWorkbench(); renderPerm(); updateRoleUI(); renderRolePrices();
   updateAttrBanner(); // force refresh shopping-with line after language switch
   renderSyncUI(); try{ renderMe(); }catch(e){} renderMembershipUI();
+  if(document.getElementById('scr-detail') && document.getElementById('scr-detail').classList.contains('active')) refreshDetailMenu();
   updateDemoState(); syncSheet();
   // settings sheet internals: keep user inputs, just refresh language-bound bits
   if(document.getElementById('regToggle')) document.getElementById('regToggle').textContent=regShowCreate?T('regSwitchToLogin','Have an account? Sign in'):T('regHasAccount','New here? Create an account');
@@ -1964,10 +1967,8 @@ function renderHome(){
   const homeKeys=Object.keys(CARS).filter(matchCar).slice(0,6);
   if(homeKeys.length===0){ grid.innerHTML='<div class="empty" style="margin:40px 16px;text-align:center;color:var(--text-dim)">'+T('needServer','Please enter your server address in Settings to load inventory.')+'</div>'; }
   homeKeys.forEach(k=>{ grid.appendChild(carCard(k)); });
-  // Featured swipeable carousel
-  const ft=document.getElementById('homeFeatured'); const fh=document.getElementById('featHead');
-  if(ft){ ft.innerHTML=""; const fk=Object.keys(CARS).filter(k=>CARS[k].featured && !CARS[k].sold);
-    if(fk.length){ fh.style.display=''; ft.style.display=''; fk.forEach(k=>ft.appendChild(featCard(k))); } else { fh.style.display='none'; ft.style.display='none'; } }
+  // Featured cars now live in the big hero carousel (see renderHeroCarousel) — no separate section below.
+  renderHeroCarousel();
   const hs=document.getElementById('homeShowrooms'); hs.innerHTML="";
   SHOWROOMS.forEach(s=>{
     const c=document.createElement('div'); c.className="sh-card"; c.onclick=()=>go('scr-showrooms');
@@ -1975,17 +1976,24 @@ function renderHome(){
       <div class="body"><h4>${s.name}</h4><div class="meta">${s.addr.split('·')[0]}</div><div class="dist">${s.dist}</div></div>`;
     hs.appendChild(c);
   });
-  document.getElementById('carHeroSvg').innerHTML=carSVG('g1');
+}
+/* Build the homepage hero as a swipeable carousel of featured cars (falls back to all cars). */
+function renderHeroCarousel(){
+  const track=document.getElementById('heroTrack'); const dots=document.getElementById('heroDots');
+  if(!track) return;
+  track.innerHTML="";
+  const feat=Object.keys(CARS).filter(k=>CARS[k].featured && !CARS[k].sold);
+  const keys = feat.length ? feat : Object.keys(CARS).filter(k=>!CARS[k].sold).slice(0,6);
+  track.innerHTML = keys.map(k=>{
+    const c=CARS[k]; const cover=carCover(k);
+    const ribbon=c.sold?'<span class="cond sold">SOLD</span>':`<span class="cond ${c.cond==='NEW'?'new':'used'}">${condLabel(c)}</span>`;
+    const isFeat=feat.includes(k);
+    return `<div class="hero-slide"><div class="ph">${cover?`<img class="car-cover" src="${cover}" alt="" />`:carSVG(c.grad)}${ribbon}</div><div class="scrim"></div>${isFeat?`<div class="tag">${T('featured','FEATURED')}</div>`:''}<div class="info"><h3>${carName(c)}</h3><div class="sub">${carSub(c)}</div><div class="price">${rolePrice(c.price)}</div></div><button class="go" onclick="openDetail('${k}')">${T('viewDetails','View details')}</button></div>`;
+  }).join('');
+  if(dots){ dots.innerHTML=''; if(keys.length>1) keys.forEach((_,i)=>{ const d=document.createElement('span'); if(i===0) d.className='on'; dots.appendChild(d); }); }
+  track.onscroll=()=>{ if(!dots||!dots.children.length) return; const i=Math.round(track.scrollLeft/(track.clientWidth||1)); [...dots.children].forEach((d,k)=>d.classList.toggle('on',k===i)); };
 }
 function carCover(k){ const p=CAR_PHOTOS[k]; return (p&&p.length)?p[0]:null; }
-function featCard(k){
-  const c=CARS[k]; const d=document.createElement('div'); d.className="feat-card"+(c.sold?" sold":""); d.onclick=()=>openDetail(k);
-  const cover=carCover(k);
-  const ribbon=c.sold?'<span class="cond sold">SOLD</span>':`<span class="cond ${c.cond==='NEW'?'new':'used'}">${condLabel(c)}</span>`;
-  d.innerHTML=`<div class="ph ${c.grad}">${cover?`<img class="car-cover" src="${cover}" alt="" />`:carSVG(c.grad)}${ribbon}</div>
-    <div class="fc-body"><div class="fc-name">${carName(c)}</div><div class="fc-price">${rolePrice(c.price)}</div></div>`;
-  return d;
-}
 function toggleFeatured(){
   const c=CARS[curCar]; if(!c) return;
   c.featured=!c.featured; saveCars(); markCarDirty(curCar);
@@ -2053,6 +2061,16 @@ function renderDetail(){
   const star=document.getElementById('subSaveIc');
   if(star){ star.textContent=SAVED_CARS.has(curCar)?'♥':'♡'; star.classList.toggle('on',SAVED_CARS.has(curCar)); }
   renderRolePrices();
+  refreshDetailMenu();
+}
+/* Refresh the ⋯ menu's permission-gated items + dynamic labels (sold/featured toggle) */
+function refreshDetailMenu(){
+  const sold=document.getElementById('subSoldItem'), feat=document.getElementById('subFeatItem'), del=document.getElementById('subDelItem');
+  const c=CARS[curCar];
+  const canEdit = c ? (canEditCar() && canEditThisCar(curCar)) : false;
+  if(sold){ sold.style.display = canEdit ? 'flex' : 'none'; const tx=document.getElementById('subSoldTx'); if(tx) tx.textContent = (c&&c.sold)?T('markAvail','Mark as available'):T('markSold','Mark as sold'); }
+  if(feat){ feat.style.display = isTopRole() ? 'flex' : 'none'; const tx=document.getElementById('subFeatTx'); if(tx) tx.textContent = (c&&c.featured)?T('unmarkFeat','Remove from featured'):T('markFeat','Set as featured'); }
+  if(del){ del.style.display = canEdit ? 'flex' : 'none'; }
 }
 function buildGallery(c){
   const gal=document.getElementById('detailGal');
@@ -2214,8 +2232,7 @@ function updateRoleUI(){
   if(adminCard) adminCard.style.display = canEditPrices() ? 'block' : 'none';
   const permCard=document.getElementById('permCard');
   if(permCard) permCard.style.display = ['boss','partnerA','partnerB','manager'].includes(curRole) ? 'block' : 'none';
-  const carActs=document.getElementById('subEditItem');
-  if(carActs) carActs.style.display = 'flex'; // v65: always show
+  refreshDetailMenu(); // v72: permission-gated sold/featured/delete items in the ⋯ menu
   const mlAdd=document.getElementById('mlAddBtn');
   if(mlAdd) mlAdd.style.display = canEditCar() ? 'flex' : 'none';
   const costRow=document.getElementById('costRow');
@@ -2368,7 +2385,17 @@ function updateDemoState(){
 /* ---- preview bottom sheet ---- */
 function openPreview(){ document.getElementById('sheetMask').classList.add('show'); document.getElementById('previewSheet').classList.add('show'); syncSheet(); syncPreviewAccess(); }
 function closePreview(){ closeSheets(); }
-function closeSettings(){ document.getElementById('sheetMask').classList.remove('show'); document.getElementById('settingsSheet').classList.remove('show'); const ph=document.getElementById('phone'); if(ph) ph.classList.remove('subpage-mode'); updateAttrBanner(); }
+function closeSettings(){
+  document.getElementById('sheetMask').classList.remove('show');
+  document.getElementById('settingsSheet').classList.remove('show');
+  // Don't kill the sub-page fixed bar: if a sub-page screen is still active (e.g. detail),
+  // keep subpage-mode on. Previously this removed it unconditionally, so closing any
+  // bottom sheet (car actions, etc.) on a sub-page made the top bar vanish.
+  const active=document.querySelector('.screen.active');
+  const isSub = !!(active && ['scr-workbench','scr-admin','scr-favorites','scr-perm','scr-detail'].includes(active.id));
+  const ph=document.getElementById('phone'); if(ph) ph.classList.toggle('subpage-mode', isSub);
+  updateAttrBanner();
+}
 function closeSheets(){ closeSettings(); document.getElementById('sheetMask').classList.remove('show'); document.getElementById('previewSheet').classList.remove('show'); const ps=document.getElementById('pricingSheet'); if(ps) ps.classList.remove('show'); const ms=document.getElementById('membershipSheet'); if(ms) ms.classList.remove('show'); const ca=document.getElementById('carActionsSheet'); if(ca) ca.classList.remove('show'); }
 function openCarActions(){
   const c=CARS[curCar]; if(!c) return;
@@ -2694,7 +2721,14 @@ async function refreshMembership(){
   if(!SYNC.token){ renderMembershipUI(); return; }
   try{
     const r=await api('/api/membership');
-    if(r && r.membership) saveMembership(r.membership);
+    if(r && r.membership){
+      const inc=r.membership;
+      // The owner company is a lifetime member. The server response may not echo isPermanent
+      // (it often returns plan:'trial'), so preserve the permanent flag instead of overwriting it.
+      if(MEMBERSHIP && MEMBERSHIP.isPermanent) inc.isPermanent=true;
+      inc.active=true; inc.expired=false;
+      saveMembership(inc);
+    }
   }catch(e){ /* offline: keep cached membership */ }
   renderMembershipUI();
 }
@@ -3955,7 +3989,7 @@ bootstrap().then(()=>{
 });
 </script>
 <script>
-if('serviceWorker' in navigator){ window.addEventListener('load',async function(){ const old=await navigator.serviceWorker.getRegistrations(); await Promise.all(old.map(r=>r.unregister())); const reg=await navigator.serviceWorker.register('sw.js?v=71'); await reg.update(); }); }
+if('serviceWorker' in navigator){ window.addEventListener('load',async function(){ const old=await navigator.serviceWorker.getRegistrations(); await Promise.all(old.map(r=>r.unregister())); const reg=await navigator.serviceWorker.register('sw.js?v=72'); await reg.update(); }); }
 </script>
 <div class="sheet" id="carActionsSheet">
   <div class="sheet-handle"></div>
