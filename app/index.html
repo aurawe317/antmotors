@@ -88,15 +88,14 @@
   .sub-title{flex:1;text-align:center;font-size:15px;font-weight:800;color:var(--text);}
   .sub-actions{position:relative; flex:0 0 auto; width:36px; display:flex; justify-content:flex-end;}
   .sub-actions .icon-btn{width:34px; height:34px; font-size:20px; line-height:1; background:transparent; border:none; color:var(--text);}
-  .sub-menu{position:absolute; top:calc(100% + 6px); right:0; min-width:170px; background:var(--surface-2); border:1px solid var(--border); border-radius:14px; box-shadow:0 12px 32px rgba(0,0,0,.38); padding:6px; display:none; z-index:60;}
+  .sub-menu{position:absolute; top:calc(100% + 6px); right:0; min-width:188px; background:var(--surface-2); border:1px solid var(--border); border-radius:14px; box-shadow:0 12px 32px rgba(0,0,0,.38); padding:6px; display:none; z-index:60;}
   .sub-menu.show{display:block; animation:pop .14s ease;}
   @keyframes pop{from{opacity:0; transform:translateY(-6px);} to{opacity:1; transform:none;}}
-  .sub-menu-item{display:flex; align-items:center; gap:12px; width:100%; padding:11px 12px; border:none; background:none; color:var(--text); font-size:14px; font-weight:600; cursor:pointer; border-radius:9px; text-align:left;}
+  .sub-menu-item{display:flex; align-items:center; width:100%; padding:12px 14px; border:none; background:none; color:var(--text); font-size:15px; font-weight:500; cursor:pointer; border-radius:10px; text-align:left; line-height:1.2;}
   .sub-menu-item:active{background:var(--gold-soft);}
-  .sub-menu-item .mi-ic{width:22px; text-align:center; font-size:16px; color:var(--gold);}
-  .sub-menu-item .mi-ic.on{color:var(--gold);}
-  .sub-menu-item .mi-tx{flex:1;}
-  .sub-menu-item.danger .mi-ic,.sub-menu-item.danger .mi-tx{color:var(--danger);}
+  .sub-menu-item .mi-tx{flex:1; font-size:15px; font-weight:500;}
+  .sub-menu-item.danger{margin-top:6px; border-top:1px solid var(--border); border-radius:0 0 10px 10px; padding-top:14px;}
+  .sub-menu-item.danger .mi-tx{color:var(--danger); font-weight:600;}
   .co-shopping{font-size:11px;color:var(--text-dim);margin-top:4px;line-height:1.4;}
   .co-shopping b{color:var(--gold);font-weight:700;}
   .sh-set-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
@@ -612,7 +611,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b>ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v73</span></div>
+        <div><b>ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v74</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -643,12 +642,12 @@
       <div class="sub-actions" id="subActions" style="display:none;">
         <button class="icon-btn" id="subMoreBtn" onclick="toggleSubMenu(event)" title="More" aria-label="More">⋯</button>
         <div class="sub-menu" id="subMoreMenu">
-          <button class="sub-menu-item" onclick="closeSubMenu();toggleFav(null)"><span class="mi-ic" id="subSaveIc">♡</span><span class="mi-tx" data-i18n="save">Save</span></button>
-          <button class="sub-menu-item" onclick="closeSubMenu();shareCar()"><span class="mi-ic">↗</span><span class="mi-tx" data-i18n="share">Share</span></button>
-          <button class="sub-menu-item" onclick="closeSubMenu();toggleTheme()"><span class="mi-ic" id="subThemeIcon"></span><span class="mi-tx" data-i18n="theme">Theme</span></button>
-          <button class="sub-menu-item" id="subSoldItem" onclick="closeSubMenu();toggleSold()"><span class="mi-ic">🏷</span><span class="mi-tx" id="subSoldTx" data-i18n="markSold">Mark as sold</span></button>
-          <button class="sub-menu-item" id="subFeatItem" onclick="closeSubMenu();toggleFeatured()"><span class="mi-ic">⭐</span><span class="mi-tx" id="subFeatTx" data-i18n="markFeat">Set as featured</span></button>
-          <button class="sub-menu-item danger" id="subDelItem" onclick="closeSubMenu();confirmDeleteCar()"><span class="mi-ic">🗑</span><span class="mi-tx" data-i18n="deleteCar">Delete</span></button>
+          <button class="sub-menu-item" onclick="closeSubMenu();toggleFav(null)"><span class="mi-tx" data-i18n="save">Save</span></button>
+          <button class="sub-menu-item" onclick="closeSubMenu();shareCar()"><span class="mi-tx" data-i18n="share">Share</span></button>
+          <button class="sub-menu-item" onclick="closeSubMenu();toggleTheme()"><span class="mi-tx" data-i18n="theme">Theme</span></button>
+          <button class="sub-menu-item" id="subSoldItem" onclick="closeSubMenu();toggleSold()"><span class="mi-tx" id="subSoldTx" data-i18n="markSold">Mark as sold</span></button>
+          <button class="sub-menu-item" id="subFeatItem" onclick="closeSubMenu();toggleFeatured()"><span class="mi-tx" id="subFeatTx" data-i18n="markFeat">Set as featured</span></button>
+          <button class="sub-menu-item danger" id="subDelItem" onclick="closeSubMenu();confirmDeleteCar()"><span class="mi-tx" data-i18n="deleteCar">Delete</span></button>
         </div>
       </div>
     </div>
@@ -1497,8 +1496,8 @@ I18N.zh.mlFav="我的收藏"; I18N.zh.mlAdd="添加车辆"; I18N.zh.mlWork="工�
 I18N.en.welcomeTitle="👋 Welcome to ANT MOTORS"; I18N.en.welcomeDesc="New here? Create your company account to start adding cars, managing your team and viewing membership. Open the “Me” tab at the bottom right, or tap the button below."; I18N.en.welcomeBtn="Login / Register"; I18N.en.loginRegBtn="👤 Login / Register"; I18N.en.settingsBtn="⚙ Settings";
 I18N.zh.welcomeTitle="👋 欢迎使用 ANT MOTORS"; I18N.zh.welcomeDesc="首次使用？创建公司账号即可添加车辆、管理团队与查看会员。请打开右下角“我的”页，或点击下方按钮。"; I18N.zh.welcomeBtn="登录 / 注册"; I18N.zh.loginRegBtn="👤 登录 / 注册"; I18N.zh.settingsBtn="⚙ 设置";
 /* --- detail-page ⋯ menu labels (were missing → stayed English on lang switch) --- */
-I18N.en.save="Save"; I18N.en.share="Share"; I18N.en.theme="Theme"; I18N.en.edit="Edit";
-I18N.zh.save="收藏"; I18N.zh.share="分享"; I18N.zh.theme="主题"; I18N.zh.edit="编辑";
+I18N.en.save="Save"; I18N.en.saved="Saved"; I18N.en.share="Share"; I18N.en.theme="Theme"; I18N.en.edit="Edit";
+I18N.zh.save="收藏"; I18N.zh.saved="已收藏"; I18N.zh.share="分享"; I18N.zh.theme="主题"; I18N.zh.edit="编辑";
 /* --- B plan: real password / account security --- */
 I18N.en.syncEmpId="Account / e-mail"; I18N.en.syncPw="Password"; I18N.en.rememberMe="Remember me"; I18N.en.forgotPw="Forgot password?";
 I18N.en.syncNeedCreds="Enter your account and password"; I18N.en.syncBadCreds="Wrong account or password";
@@ -2058,8 +2057,8 @@ function renderDetail(){
       `</div>`;
   }
   const ds=document.getElementById('dStock'); if(ds) ds.innerHTML=stockBadge(curCar);
-  const star=document.getElementById('subSaveIc');
-  if(star){ star.textContent=SAVED_CARS.has(curCar)?'♥':'♡'; star.classList.toggle('on',SAVED_CARS.has(curCar)); }
+  const saveTx=document.querySelector('#subMoreMenu .mi-tx[data-i18n="save"]');
+  if(saveTx){ const sv=SAVED_CARS.has(curCar); saveTx.textContent=sv?T('saved','Saved'):T('save','Save'); saveTx.style.color=sv?'var(--gold)':''; }
   renderRolePrices();
   refreshDetailMenu();
 }
@@ -2071,6 +2070,8 @@ function refreshDetailMenu(){
   if(sold){ sold.style.display = canEdit ? 'flex' : 'none'; const tx=document.getElementById('subSoldTx'); if(tx) tx.textContent = (c&&c.sold)?T('markAvail','Mark as available'):T('markSold','Mark as sold'); }
   if(feat){ feat.style.display = isTopRole() ? 'flex' : 'none'; const tx=document.getElementById('subFeatTx'); if(tx) tx.textContent = (c&&c.featured)?T('unmarkFeat','Remove from featured'):T('markFeat','Set as featured'); }
   if(del){ del.style.display = canEdit ? 'flex' : 'none'; }
+  const saveTx=document.querySelector('#subMoreMenu .mi-tx[data-i18n="save"]');
+  if(saveTx){ const sv=(c&&SAVED_CARS.has(curCar)); saveTx.textContent=sv?T('saved','Saved'):T('save','Save'); saveTx.style.color=sv?'var(--gold)':''; }
 }
 function buildGallery(c){
   const gal=document.getElementById('detailGal');
@@ -2232,7 +2233,7 @@ function updateRoleUI(){
   if(adminCard) adminCard.style.display = canEditPrices() ? 'block' : 'none';
   const permCard=document.getElementById('permCard');
   if(permCard) permCard.style.display = ['boss','partnerA','partnerB','manager'].includes(curRole) ? 'block' : 'none';
-  refreshDetailMenu(); // v73: permission-gated sold/featured/delete items in the ⋯ menu
+  refreshDetailMenu(); // v74: text-only ⋯ menu (no emoji) + saved-state label
   const mlAdd=document.getElementById('mlAddBtn');
   if(mlAdd) mlAdd.style.display = canEditCar() ? 'flex' : 'none';
   const costRow=document.getElementById('costRow');
@@ -3512,8 +3513,8 @@ function toggleFav(el,key){
   if(SAVED_CARS.has(key)){ SAVED_CARS.delete(key); toast(T('favRemoved','Removed from saved')); }
   else { SAVED_CARS.add(key); toast(T('favSavedToast','Saved! Tap ♡ in top bar to view')); }
   saveSet();
-  const star=document.getElementById('subSaveIc');
-  if(star && key===curCar){ star.textContent=SAVED_CARS.has(key)?'♥':'♡'; star.classList.toggle('on',SAVED_CARS.has(key)); }
+  const saveTx=document.querySelector('#subMoreMenu .mi-tx[data-i18n="save"]');
+  if(saveTx && key===curCar){ const sv=SAVED_CARS.has(key); saveTx.textContent=sv?T('saved','Saved'):T('save','Save'); saveTx.style.color=sv?'var(--gold)':''; }
   renderHome();
   if(document.getElementById('scr-favorites').classList.contains('on')) renderFav();
 }
@@ -3989,7 +3990,7 @@ bootstrap().then(()=>{
 });
 </script>
 <script>
-if('serviceWorker' in navigator){ window.addEventListener('load',async function(){ const old=await navigator.serviceWorker.getRegistrations(); await Promise.all(old.map(r=>r.unregister())); const reg=await navigator.serviceWorker.register('sw.js?v=73'); await reg.update(); }); }
+if('serviceWorker' in navigator){ window.addEventListener('load',async function(){ const old=await navigator.serviceWorker.getRegistrations(); await Promise.all(old.map(r=>r.unregister())); const reg=await navigator.serviceWorker.register('sw.js?v=74'); await reg.update(); }); }
 </script>
 <div class="sheet" id="carActionsSheet">
   <div class="sheet-handle"></div>
