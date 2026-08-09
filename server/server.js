@@ -179,6 +179,46 @@ addCol('tokens', 'expires_at', 'INTEGER NOT NULL DEFAULT 0');
 const now = () => Date.now();
 const clampTs = (t) => { const n = now(); const v = +t; return (!v || v > n) ? n : v; };
 const q = (sql) => db.prepare(sql);
+
+/* ====================================================== Supabase mirror
+ * Dual-track migration (Phase 0/1): every business write is mirrored to a
+ * Supabase project so that, later, read traffic can be flipped with zero data
+ * loss. The mirror is ENV-DRIVEN and FAIL-SAFE:
+ *   - If SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY are unset, mirroring is a
+ *     no-op and never touches the request path (SQLite stays the source).
+ *   - If the @supabase/supabase-js package is missing, mirroring is disabled
+ *     (the require is wrapped in try/catch) — the server still runs fine.
+ *   - Any mirror error is logged and swallowed — the primary (SQLite) request
+ *     is never delayed or broken, because mirrorRow fires the upsert
+ *     fire-and-forget (the caller never awaits it).
+ * Tokens / audit / reset_codes are intentionally NOT mirrored (secrets & logs).
+ */
+let _sb = null;
+try {
+  if (process.env.SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    const { createClient } = require('@supabase/supabase-js');
+    _sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, { auth: { persistSession: false } });
+  }
+} catch (e) { console.warn('[mirror] Supabase init failed — mirroring disabled:', e.message); _sb = null; }
+
+const MIRROR_TABLES = new Set(['companies', 'cars', 'employees', 'showrooms', 'orders']);
+const MIRROR_CONFLICT = { companies: 'id', cars: 'id,company_id', employees: 'id,company_id', showrooms: 'id,company_id', orders: 'out_trade_no' };
+
+function mirrorRow(table, whereSql, params) {
+  if (!_sb || !MIRROR_TABLES.has(table)) return;
+  // Fire-and-forget async: never awaited by callers, so the SQLite request path
+  // is not delayed. Internal try/catch guarantees the promise always resolves
+  // (no unhandled rejections) even if Supabase is unreachable.
+  Promise.resolve().then(async () => {
+    try {
+      const row = q('SELECT * FROM ' + table + ' WHERE ' + whereSql).get(...params);
+      if (!row) return;
+      const clean = {};
+      for (const k of Object.keys(row)) clean[k] = (row[k] === undefined) ? null : row[k];
+      await _sb.from(table).upsert(clean, { onConflict: MIRROR_CONFLICT[table] || 'id' });
+    } catch (e) { console.warn('[mirror] upsert failed for', table, '-', e.message); }
+  });
+}
 /* -------------------------------------------------- self-use companies
  * Which company(ies) get free, never-expiring membership is decided EXPLICITLY
  * in server/config.json (gitignored). Nothing is permanent by default — only the
@@ -318,6 +358,7 @@ function activatePlan(companyId, planId, tradeNo) {
   const end = start + p.days * 864e5;
   q('UPDATE companies SET plan=?, status=?, plan_started_at=?, current_period_end=?, alipay_trade_no=?, subscription_id=?, last_paid_at=? WHERE id=?')
     .run(planId, 'active', start, end, tradeNo || '', tradeNo || '', start, companyId);
+  mirrorRow('companies', 'id=?', [companyId]);
 }
 function ensureDefaultCompany() {
   const n = q('SELECT COUNT(*) n FROM companies').get().n;
@@ -476,6 +517,7 @@ function applyPush(emp, payload) {
        ON CONFLICT(id,company_id) DO UPDATE SET data=excluded.data, listed_at=excluded.listed_at,
        updated_at=excluded.updated_at, updated_by=excluded.updated_by, deleted=excluded.deleted`)
       .run(c.id, cid, JSON.stringify(incoming), c.listedAt || null, ts, emp.id, c.deleted ? 1 : 0);
+    mirrorRow('cars', 'id=? AND company_id=?', [c.id, cid]);
     if (c.photos) writePhotos(c.id, c.photos, cid);
     if (c.videos) writeVideos(c.id, c.videos, cid);
     applied.push(c.id);
@@ -501,6 +543,7 @@ function applyPush(emp, payload) {
       if (inc.tier && inc.tier !== old.tier) rejected.push({ id: e.id, reason: 'tier_forbidden' });
     } else { rejected.push({ id: e.id, reason: 'not_your_account' }); continue; }
     q('UPDATE employees SET data=?, updated_at=? WHERE id=? AND company_id=?').run(JSON.stringify(next), ts, e.id, cid);
+    mirrorRow('employees', 'id=? AND company_id=?', [e.id, cid]);
     applied.push(e.id);
     audit(emp.id, 'employee.update', e.id, JSON.stringify({ tier: next.tier }), cid);
   }
@@ -696,6 +739,7 @@ const server = http.createServer(async (req, res) => {
       if (!order) return send(res, 200, 'success');
       if (order.status !== 'paid') {
         q('UPDATE orders SET status=?, paid_at=? WHERE out_trade_no=?').run('paid', now(), b.out_trade_no);
+        mirrorRow('orders', 'out_trade_no=?', [b.out_trade_no]);
         activatePlan(order.company_id, order.plan_id, b.trade_no);
         audit(order.company_id, 'payment.paid', order.company_id, b.out_trade_no, order.company_id);
       }
@@ -717,6 +761,7 @@ const server = http.createServer(async (req, res) => {
       if (!order) return send(res, 404, { error: 'no_order' });
       if (order.status !== 'paid') {
         q('UPDATE orders SET status=?, paid_at=? WHERE out_trade_no=?').run('paid', now(), b.outTradeNo);
+        mirrorRow('orders', 'out_trade_no=?', [b.outTradeNo]);
         activatePlan(order.company_id, order.plan_id, 'SIM_' + b.outTradeNo);
         audit(order.company_id, 'payment.simulated', order.company_id, b.outTradeNo, order.company_id);
       }
@@ -753,6 +798,7 @@ const server = http.createServer(async (req, res) => {
         const isPermanent = !!(b.inviteCode && PERMANENT_CODES.has(String(b.inviteCode).trim().toUpperCase()));
         q('INSERT INTO companies(id,name,logo,owner_id,code,plan,status,created_at,trial_ends_at,permanent) VALUES(?,?,?,?,?,?,?,?,?,?)')
           .run(companyId, String(b.companyName).trim().slice(0, 80), logo, id, code, isPermanent ? 'permanent' : 'trial', 'active', now(), now() + TRIAL_DAYS * 864e5, isPermanent ? 1 : 0);
+        mirrorRow('companies', 'id=?', [companyId]);
         company = companyById(companyId);
         tier = 'boss'; role = 'Boss / Owner'; roleZh = '老板 / 所有者';
       } else if (b.companyCode && String(b.companyCode).trim()) {
@@ -767,6 +813,7 @@ const server = http.createServer(async (req, res) => {
       const data = { name, av: name.charAt(0).toUpperCase(), tier, role, roleZh, wa, phone, branch: '' };
       q("INSERT INTO employees(id,company_id,data,pin_hash,email,cred_kind,pw_changed_at,updated_at,deleted) VALUES(?,?,?,?,?,'password',?,?,0)")
         .run(id, companyId, JSON.stringify(data), hashPin(pw), email || null, now(), now());
+      mirrorRow('employees', 'id=? AND company_id=?', [id, companyId]);
       const token = issueToken(id, companyId);
       audit(id, 'register', id, JSON.stringify({ company: companyId, name }), companyId);
       return send(res, 200, { token, employee: Object.assign({ id, companyId, email }, data), company: company ? publicCompany(company) : null });
@@ -799,6 +846,7 @@ const server = http.createServer(async (req, res) => {
       }
       if (b.bio !== undefined) co.bio = String(b.bio || '').slice(0, 500);
       q('UPDATE companies SET name=?, logo=?, bio=? WHERE id=?').run(co.name, co.logo, co.bio, emp.companyId);
+      mirrorRow('companies', 'id=?', [emp.companyId]);
       audit(emp.id, 'company.update', emp.companyId, '', emp.companyId);
       return send(res, 200, { company: publicCompany(co) });
     }
@@ -813,6 +861,7 @@ const server = http.createServer(async (req, res) => {
       if (!isTop(emp)) return send(res, 403, { error: 'forbidden' });
       const code = genCompanyCode();
       q('UPDATE companies SET code=? WHERE id=?').run(code, emp.companyId);
+      mirrorRow('companies', 'id=?', [emp.companyId]);
       audit(emp.id, 'company.code.regen', emp.companyId, '', emp.companyId);
       return send(res, 200, { code });
     }
@@ -838,6 +887,7 @@ const server = http.createServer(async (req, res) => {
       d.role = ROLE[tier] + (branch ? ' · ' + branch : '');
       d.roleZh = ROLE_ZH[tier] + (branch ? ' · ' + branch : '');
       q('UPDATE employees SET data=?, updated_at=? WHERE id=? AND company_id=?').run(JSON.stringify(d), now(), emp.id, emp.companyId);
+      mirrorRow('employees', 'id=? AND company_id=?', [emp.id, emp.companyId]);
       audit(emp.id, 'company.bind', emp.id, JSON.stringify({ tier }), emp.companyId);
       return send(res, 200, { employee: Object.assign({ id: emp.id, companyId: emp.companyId }, d) });
     }
@@ -860,6 +910,7 @@ const server = http.createServer(async (req, res) => {
       const outTradeNo = 'AM' + now().toString(36).toUpperCase() + crypto.randomBytes(3).toString('hex').toUpperCase();
       q('INSERT INTO orders(out_trade_no,company_id,plan_id,amount,status,created_at) VALUES(?,?,?,?,?,?)')
         .run(outTradeNo, emp.companyId, planId, plan.price, 'pending', now());
+      mirrorRow('orders', 'out_trade_no=?', [outTradeNo]);
       let payUrl;
       if (alipay.enabled()) {
         payUrl = alipay.wapPayUrl({
