@@ -612,7 +612,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b>ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v72</span></div>
+        <div><b>ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v73</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -2104,7 +2104,7 @@ function renderRolePrices(){
   const hero=CARS.lc || CARS[Object.keys(CARS)[0]];
   if(!hero || !hero.price) return;
   const hp=(curRole==='customer' || typeof hero.price.cost!=='number') ? hero.price.quote : hero.price.cost;
-  document.getElementById('heroPrice').textContent = "From "+fmtMoney(hp);
+  const hpEl=document.getElementById('heroPrice'); if(hpEl) hpEl.textContent = "From "+fmtMoney(hp);
   const c=CARS[curCar]; if(!c) return;
   const pb=document.getElementById('priceBlock'); const sale=empOf(curSales); const contactName=sale.name;
   if(curRole==="customer"){
@@ -2232,7 +2232,7 @@ function updateRoleUI(){
   if(adminCard) adminCard.style.display = canEditPrices() ? 'block' : 'none';
   const permCard=document.getElementById('permCard');
   if(permCard) permCard.style.display = ['boss','partnerA','partnerB','manager'].includes(curRole) ? 'block' : 'none';
-  refreshDetailMenu(); // v72: permission-gated sold/featured/delete items in the ⋯ menu
+  refreshDetailMenu(); // v73: permission-gated sold/featured/delete items in the ⋯ menu
   const mlAdd=document.getElementById('mlAddBtn');
   if(mlAdd) mlAdd.style.display = canEditCar() ? 'flex' : 'none';
   const costRow=document.getElementById('costRow');
@@ -3989,7 +3989,7 @@ bootstrap().then(()=>{
 });
 </script>
 <script>
-if('serviceWorker' in navigator){ window.addEventListener('load',async function(){ const old=await navigator.serviceWorker.getRegistrations(); await Promise.all(old.map(r=>r.unregister())); const reg=await navigator.serviceWorker.register('sw.js?v=72'); await reg.update(); }); }
+if('serviceWorker' in navigator){ window.addEventListener('load',async function(){ const old=await navigator.serviceWorker.getRegistrations(); await Promise.all(old.map(r=>r.unregister())); const reg=await navigator.serviceWorker.register('sw.js?v=73'); await reg.update(); }); }
 </script>
 <div class="sheet" id="carActionsSheet">
   <div class="sheet-handle"></div>
