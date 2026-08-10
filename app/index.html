@@ -624,7 +624,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v81</span></div>
+        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v82</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -1624,7 +1624,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.0.2';
+const APP_VER='1.0.3';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -4007,13 +4007,32 @@ function deleteShowroom(name){
   toast(T('shDeleted','Showroom deleted')+': '+name);
 }
 
+// Capture raw deep-link params here; resolve them only AFTER CARS/ALL_EMP
+// are loaded (bootstrap is async, so resolving at script-parse time fails
+// because CARS is still empty and the shared car never lands correctly).
+let _dlCar=null, _dlRef=null;
 function parseDeepLink(){
   try{
     const q=new URLSearchParams(location.search);
-    const ref=q.get('ref'); if(ref && ALL_EMP[ref]){ curSales=ref; const rt=empOf(ref).tier; if(!['boss','partnerA','partnerB'].includes(rt)){ curEmployee=ref; curRole=rt; } }
-    let car=q.get('c')||q.get('car'); if(!car){ const m=location.pathname.match(/\/c\/([^/?#]+)/); if(m) car=m[1]; }
-    if(car && CARS[car]){ curCar=car; }
-    if((ref&&ALL_EMP[ref])||(car&&CARS[car])){ curRole='customer'; window.__deeplink=true; }
+    _dlRef=q.get('ref');
+    _dlCar=q.get('c')||q.get('car'); if(!_dlCar){ const m=location.pathname.match(/\/c\/([^/?#]+)/); if(m) _dlCar=m[1]; }
+  }catch(e){}
+}
+// Called from bootstrap().then() once data is ready.
+function resolveDeepLink(){
+  try{
+    let hit=false;
+    if(_dlRef && ALL_EMP[_dlRef]){
+      curSales=_dlRef;
+      const rt=empOf(_dlRef).tier;
+      if(!['boss','partnerA','partnerB'].includes(rt)){ curEmployee=_dlRef; curRole=rt; }
+      hit=true;
+    }
+    if(_dlCar && CARS[_dlCar]){ curCar=_dlCar; hit=true; }
+    if(hit){
+      curRole='customer'; window.__deeplink=true;
+      openDetail(curCar);
+    }
   }catch(e){}
 }
 parseDeepLink();
@@ -4021,7 +4040,7 @@ applyTheme(); syncLangUI(); applyI18n(); renderSyncUI(); updateAuthCTA();
 applyDefSales(); renderNotifs(); genDeviceId();
 bootstrap().then(()=>{
   renderRolePrices(); updateDemoState(); syncSheet(); updateRoleUI(); renderWorkbench();
-  if(window.__deeplink && CARS[curCar]) openDetail(curCar);
+  resolveDeepLink();
 });
 </script>
 <script>
@@ -4030,7 +4049,7 @@ function applyUpdate(){ try{ localStorage.setItem('am_force_sw','1'); }catch(e){
 if('serviceWorker' in navigator){ window.addEventListener('load',async function(){ try{
   const old=await navigator.serviceWorker.getRegistrations();
   await Promise.all(old.map(r=>r.unregister()));
-  const reg=await navigator.serviceWorker.register('sw.js?v=81');
+  const reg=await navigator.serviceWorker.register('sw.js?v=82');
   await reg.update();
   reg.addEventListener('updatefound', function(){
     const installing=reg.installing;
