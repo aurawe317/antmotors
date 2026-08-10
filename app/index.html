@@ -624,7 +624,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v85</span></div>
+        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v86</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -1624,7 +1624,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.0.6';
+const APP_VER='1.0.7';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2496,13 +2496,17 @@ function openPricingInfo(){
   document.getElementById('sheetMask').classList.add('show');
   document.getElementById('pricingSheet').classList.add('show');
 }
+// Best ref to embed in a share link: prefer the current "view as" salesperson
+// if it's a real known employee, else fall back to the logged-in user. Avoids
+// embedding the stale default "kwame" when the real company has different staff.
+function shareRefVal(){ return (ALL_EMP[curSales]) ? curSales : (ALL_EMP[curEmployee] ? curEmployee : curSales); }
 function syncSheet(){
   document.querySelectorAll('#previewSheet [data-role]').forEach(b=>b.classList.toggle('on',b.dataset.role===curRole));
   document.querySelectorAll('#previewSheet [data-sales]').forEach(b=>b.classList.toggle('on',b.dataset.sales===curSales));
   document.querySelectorAll('#previewSheet [data-login]').forEach(b=>b.classList.toggle('on',b.dataset.login===curEmployee));
-  document.getElementById('shareUrl').textContent=location.origin+'/?c='+curCar+'&ref='+curSales;
+  document.getElementById('shareUrl').textContent=location.origin+'/?c='+curCar+'&ref='+shareRefVal();
 }
-function copyShare(){ const u=location.origin+'/?c='+curCar+'&ref='+curSales; if(navigator.clipboard) navigator.clipboard.writeText(u); toast(T('shareLinkCopied','Share link copied')+':<br><b>'+u+'</b>'); }
+function copyShare(){ const u=location.origin+'/?c='+curCar+'&ref='+shareRefVal(); if(navigator.clipboard) navigator.clipboard.writeText(u); toast(T('shareLinkCopied','Share link copied')+':<br><b>'+u+'</b>'); }
 function syncPreviewAccess(){
   const top=isTopEmployee();
   const topOnly=document.getElementById('pvTopOnly');
@@ -2692,7 +2696,7 @@ function addEmployee(){
 }
 function assignTier(id,tier){ const e=ALL_EMP[id]; if(e){ e.tier=tier; markEmpDirty(id); toast(T('tierAssigned','Assigned ')+e.name+' → '+tier); } }
 function shareCar(){
-  const u=location.origin+'/?c='+curCar+'&ref='+curSales;
+  const u=location.origin+'/?c='+curCar+'&ref='+shareRefVal();
   if(navigator.share){ navigator.share({title:brandName()+' · '+carName(CARS[curCar]), text:'Check this car on '+brandName(), url:u}).catch(()=>{}); return; }
   if(navigator.clipboard) navigator.clipboard.writeText(u).catch(()=>{});
   toast(T('linkCopiedRef','Link copied · ref')+' <b>'+curSales+'</b><br><span style="font-size:10px;word-break:break-all;">'+u+'</span>');
@@ -2936,6 +2940,8 @@ async function bootstrap(){
   // restore which account is signed in (so a page reload keeps the boss/owner view
   // instead of resetting to the "boss" placeholder and dropping to a customer view)
   try{ const raw=localStorage.getItem('am_me'); if(raw){ let id=raw; try{ const m=JSON.parse(raw); if(m&&m.id) id=m.id; }catch(e){} const e=empOf(id); curEmployee=(e&&['boss','partnerA','partnerB'].includes(e.tier))?id:'boss'; } }catch(e){ curEmployee='boss'; }
+  // capture the ?ref= from a shared link so public list/showroom fetches resolve to the right company
+  let shrRef=null; try{ shrRef=new URL(location.href).searchParams.get('ref'); }catch(e){}
 
   // 0) auto-detect the backend when served from the same origin (e.g. opened from your own server).
   // This lets anyone register / sign in without typing the server address. If no API answers (e.g. a
@@ -2964,8 +2970,8 @@ async function bootstrap(){
       const pub = publicBase();
       if(pub!==null){
         const [list, rooms] = await Promise.all([
-          apiPublic('/api/public/cars'),
-          apiPublic('/api/showrooms')
+          apiPublic('/api/public/cars'+(shrRef?'?ref='+encodeURIComponent(shrRef):'')),
+          apiPublic('/api/showrooms'+(shrRef?'?ref='+encodeURIComponent(shrRef):''))
         ]);
         (list.cars||[]).forEach(c=>{ const id=c.id; delete c.id; CARS[id]=c; if(c.listedAt) LISTED_AT[id]=c.listedAt; });
         if(rooms.showrooms && rooms.showrooms.length){
@@ -2981,7 +2987,7 @@ async function bootstrap(){
         if(carId){
           const detail=await apiPublic('/api/public/car/'+encodeURIComponent(carId)+(ref?'?ref='+encodeURIComponent(ref):''));
           if(detail.car){ const id=detail.car.id; delete detail.car.id; CARS[id]=detail.car; if(detail.car.listedAt) LISTED_AT[id]=detail.car.listedAt; }
-          if(detail.agent) upsertEmp(detail.agent.id||ref, detail.agent);
+          if(detail.agent){ curSales=detail.agent.id; upsertEmp(detail.agent.id||ref, detail.agent); }
         }
         saveCars(); saveListed(); saveEmps(); saveShowrooms();
         loaded=true;

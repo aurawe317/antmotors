@@ -711,15 +711,22 @@ const server = http.createServer(async (req, res) => {
     }
     if (p.startsWith('/api/public/car/')) {
       const id = p.slice('/api/public/car/'.length);
-      const cid = resolveCompanyId(u);
-      const row = q('SELECT * FROM cars WHERE id=? AND company_id=? AND deleted=0').get(id, cid);
+      // Resolve the company from the CAR itself (car ids are unique within a
+      // deployment), NOT from ?ref. Previously the company was derived via
+      // resolveCompanyId(u), which trusted the link's ref to name a valid
+      // employee/company. When the sharer's ref was a stale default (e.g. the
+      // seed "kwame") that didn't exist in the real production company, cid fell
+      // back to DEFAULT_COMPANY and the car 404'd — so the app silently landed on
+      // the default car instead of the shared one. Now the car always resolves by
+      // its own id; ref is only used to attribute the displayed sales agent.
+      const row = q('SELECT * FROM cars WHERE id=? AND deleted=0').get(id);
       if (!row) return send(res, 404, { error: 'not_found' });
+      const cid = row.company_id;
       const ref = u.searchParams.get('ref');
+      const empData = (eid) => { const e = q('SELECT data FROM employees WHERE id=? AND company_id=? AND deleted=0').get(eid, cid); return e ? JSON.parse(e.data) : null; };
       let agent = null;
-      if (ref) {
-        const e = q('SELECT data FROM employees WHERE id=? AND company_id=? AND deleted=0').get(ref, cid);
-        if (e) { const d = JSON.parse(e.data); agent = { id: ref, name: d.name, wa: d.wa, phone: d.phone, role: d.role, roleZh: d.roleZh, branch: d.branch }; }
-      }
+      if (ref) { const d = empData(ref); if (d) agent = { id: ref, name: d.name, wa: d.wa, phone: d.phone, role: d.role, roleZh: d.roleZh, branch: d.branch }; }
+      if (!agent) { const cd = JSON.parse(row.data); if (cd && cd.sales) { const d = empData(cd.sales); if (d) agent = { id: cd.sales, name: d.name, wa: d.wa, phone: d.phone, role: d.role, roleZh: d.roleZh, branch: d.branch }; } }
       return send(res, 200, { car: publicCar(row), photos: photosOf(id), videos: videosOf(id), agent });
     }
 
