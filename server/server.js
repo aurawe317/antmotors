@@ -701,7 +701,9 @@ const server = http.createServer(async (req, res) => {
     /* ---- public (customer share link) — sanitized, no auth, company-scoped ---- */
     if (p === '/api/public/cars') {
       const cid = resolveCompanyId(u);
-      const rows = q('SELECT * FROM cars WHERE company_id=? AND deleted=0 ORDER BY updated_at DESC').all(cid);
+      // Exclude sold cars too — a shared "this car is gone" link sends the
+      // customer to the homepage to browse OTHER (available) vehicles.
+      const rows = q("SELECT * FROM cars WHERE company_id=? AND deleted=0 AND COALESCE(json_extract(data,'$.sold'),0)!=1 ORDER BY updated_at DESC").all(cid);
       return send(res, 200, { company: cid, cars: rows.map(publicCar) });
     }
     if (p === '/api/showrooms') {
@@ -719,15 +721,32 @@ const server = http.createServer(async (req, res) => {
       // back to DEFAULT_COMPANY and the car 404'd — so the app silently landed on
       // the default car instead of the shared one. Now the car always resolves by
       // its own id; ref is only used to attribute the displayed sales agent.
-      const row = q('SELECT * FROM cars WHERE id=? AND deleted=0').get(id);
+      const row = q('SELECT * FROM cars WHERE id=?').get(id);
       if (!row) return send(res, 404, { error: 'not_found' });
       const cid = row.company_id;
+      const co = companyById(cid);
+      const pubCo = co ? publicCompany(co) : null;
+      const companyInfo = pubCo ? { id: pubCo.id, name: pubCo.name, logo: pubCo.logo }
+                                : { id: cid, name: null, logo: null };
+
+      // A shared link should permanently show the car — UNTIL it is deleted or
+      // marked sold. In that case we don't 404 (which would just show a blank
+      // page); instead we tell the customer the car is gone and let them browse
+      // the rest of the showroom. The company is ALWAYS the car's OWN company,
+      // never derived from the link's ref, so a customer can never land on the
+      // wrong dealership's inventory ("串公司").
+      const cd = JSON.parse(row.data);
+      const gone = !!row.deleted || !!cd.sold;
+      if (gone) {
+        return send(res, 200, { gone: true, reason: row.deleted ? 'deleted' : 'sold', company: companyInfo, carName: cd.name || '' });
+      }
+
       const ref = u.searchParams.get('ref');
       const empData = (eid) => { const e = q('SELECT data FROM employees WHERE id=? AND company_id=? AND deleted=0').get(eid, cid); return e ? JSON.parse(e.data) : null; };
       let agent = null;
       if (ref) { const d = empData(ref); if (d) agent = { id: ref, name: d.name, wa: d.wa, phone: d.phone, role: d.role, roleZh: d.roleZh, branch: d.branch }; }
-      if (!agent) { const cd = JSON.parse(row.data); if (cd && cd.sales) { const d = empData(cd.sales); if (d) agent = { id: cd.sales, name: d.name, wa: d.wa, phone: d.phone, role: d.role, roleZh: d.roleZh, branch: d.branch }; } }
-      return send(res, 200, { car: publicCar(row), photos: photosOf(id), videos: videosOf(id), agent });
+      if (!agent) { if (cd && cd.sales) { const d = empData(cd.sales); if (d) agent = { id: cd.sales, name: d.name, wa: d.wa, phone: d.phone, role: d.role, roleZh: d.roleZh, branch: d.branch }; } }
+      return send(res, 200, { car: publicCar(row), photos: photosOf(id), videos: videosOf(id), agent, company: companyInfo });
     }
 
     /* ---- public membership plans (no auth needed to browse) ---- */

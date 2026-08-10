@@ -624,7 +624,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v86</span></div>
+        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v87</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -785,6 +785,16 @@
       <div class="sticky">
         <button class="book" onclick="openBooking()" data-i18n="bookViewing">Book Viewing</button>
         <button class="wa" onclick="waTap('car')" title="WhatsApp">↗</button>
+      </div>
+    </section>
+
+    <!-- SHARED CAR GONE (deleted / sold) -->
+    <section class="screen" id="scr-gone" style="display:none;">
+      <div style="max-width:440px;margin:0 auto;padding:48px 22px;text-align:center;">
+        <div id="goneLogo" style="min-height:64px;margin:0 auto 20px;display:flex;align-items:center;justify-content:center;"></div>
+        <h2 id="goneTitle" style="font-size:20px;font-weight:800;margin:0 0 12px;">This vehicle is no longer available</h2>
+        <p id="goneMsg" style="color:var(--text-dim);line-height:1.65;margin:0 0 26px;">The car you're looking for has been sold or removed. Browse other great vehicles from <b id="goneCompany"></b>.</p>
+        <button class="submit" onclick="goGoneHome()" data-i18n="goneSeeOthers">See other cars</button>
       </div>
     </section>
 
@@ -1384,7 +1394,7 @@ const I18N = {
       favSavedToast:"Saved! Tap ♡ in top bar to view",favRemoved:"Removed from saved",msgPlaceholder:"I'd like to see the car and discuss the deal.",
       photoUp:"Photo uploaded for",noPermPhoto:"Your role cannot upload photos.",dirTo:"Directions to",
       moreCars:"More cars",
-      markSold:"Mark as sold",markAvail:"Mark as available",deleteCar:"Delete this car",delConfirm:"Delete this car? This cannot be undone and syncs to all devices.",markedSold:"Marked as sold",markedAvail:"Marked as available",carDeleted:"Car deleted",sold:"SOLD",
+      markSold:"Mark as sold",markAvail:"Mark as available",deleteCar:"Delete this car",delConfirm:"Delete this car? This cannot be undone and syncs to all devices.",markedSold:"Marked as sold",markedAvail:"Marked as available",carDeleted:"Car deleted",sold:"SOLD",goneTitle:"This vehicle is no longer available",goneSoldTitle:"This vehicle has been sold",goneSeeOthers:"See other cars",
       pvTitle:"🎛 Preview Role · Share Link",pvHint:"Switch the viewer role and the assigned sales — the same car updates its price and contact. Boss, Partner A & Partner B see cost + full edit; Manager & Sales A can upload photos on the detail page; the share link carries the sales ref so customers reach the right person.",
       pvWho:"Who is viewing?",pvSales:"Assigned sales (share link)",pvCopy:"Copy",
       pvR_customer:"Customer",pvR_customer_sub:"Sees the selling quote",
@@ -1432,7 +1442,7 @@ const I18N = {
       favSavedToast:"已收藏！点击顶部 ♡ 查看",favRemoved:"已取消收藏",msgPlaceholder:"我想看车并谈谈价格。",
       photoUp:"已上传照片：",noPermPhoto:"您的角色不能上传照片。",dirTo:"导航至",
       moreCars:"更多车辆",
-      markSold:"标记为已售",markAvail:"标记为在售",deleteCar:"删除此车辆",delConfirm:"确定删除这辆车吗？此操作不可撤销，并将同步到所有设备。",markedSold:"已标记为已售",markedAvail:"已标记为在售",carDeleted:"车辆已删除",sold:"已售",
+      markSold:"标记为已售",markAvail:"标记为在售",deleteCar:"删除此车辆",delConfirm:"确定删除这辆车吗？此操作不可撤销，并将同步到所有设备。",markedSold:"已标记为已售",markedAvail:"已标记为在售",carDeleted:"车辆已删除",sold:"已售",goneTitle:"该车辆已不再提供",goneSoldTitle:"该车辆已售出",goneSeeOthers:"查看其它车辆",
       pvTitle:"🎛 预览身份 · 分享链接",pvHint:"切换查看角色与指派销售——同一辆车会按角色显示不同价格与联系方式。老板、合伙人A、合伙人B 可见成本与全部编辑权限；店长与销售A 可在详情页上传照片；分享链接携带销售 ref，客户由此联系到对应销售。",
       pvWho:"谁在查看？",pvSales:"指派销售（分享链接）",pvCopy:"复制",
       pvR_customer:"客户",pvR_customer_sub:"看到对外售价",
@@ -1624,7 +1634,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.0.7';
+const APP_VER='1.0.8';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2969,9 +2979,36 @@ async function bootstrap(){
     try{
       const pub = publicBase();
       if(pub!==null){
+        const url=new URL(location.href);
+        const carId=url.searchParams.get('c')||url.searchParams.get('car');
+        const ref=url.searchParams.get('ref');
+
+        // If a specific car is shared, load IT first. By its own id the backend
+        // returns the car's REAL company, plus its photos & videos — which the
+        // old code dropped (that's why shared links showed no images). We then
+        // scope the homepage list + showrooms to that exact company so a customer
+        // can never see a different dealership's inventory ("串公司").
+        let cid=null;
+        if(carId){
+          const detail=await apiPublic('/api/public/car/'+encodeURIComponent(carId)+(ref?'?ref='+encodeURIComponent(ref):''));
+          if(detail.gone){
+            sharedGone={ reason: detail.reason, company: detail.company||null, carName: detail.carName||'' };
+            if(detail.company && detail.company.id) cid=detail.company.id; // scope homepage to this company even without ?ref
+          } else if(detail.car){
+            const id=detail.car.id; delete detail.car.id; CARS[id]=detail.car; if(detail.car.listedAt) LISTED_AT[id]=detail.car.listedAt;
+            if(detail.photos) CAR_PHOTOS[carId]=detail.photos;        // <-- was missing: now the gallery shows
+            if(detail.videos) CAR_VIDEOS[carId]=detail.videos;
+            if(detail.agent){ curSales=detail.agent.id; upsertEmp(detail.agent.id||ref, detail.agent); }
+            if(detail.company && detail.company.id) cid=detail.company.id;
+          }
+          saveCars(); saveCarPhotos(); saveCarVideos(); saveEmps();
+        }
+
+        const listQ = cid ? ('?company='+encodeURIComponent(cid))
+                          : (ref?'?ref='+encodeURIComponent(ref):'');
         const [list, rooms] = await Promise.all([
-          apiPublic('/api/public/cars'+(shrRef?'?ref='+encodeURIComponent(shrRef):'')),
-          apiPublic('/api/showrooms'+(shrRef?'?ref='+encodeURIComponent(shrRef):''))
+          apiPublic('/api/public/cars'+listQ),
+          apiPublic('/api/showrooms'+listQ)
         ]);
         (list.cars||[]).forEach(c=>{ const id=c.id; delete c.id; CARS[id]=c; if(c.listedAt) LISTED_AT[id]=c.listedAt; });
         if(rooms.showrooms && rooms.showrooms.length){
@@ -2981,14 +3018,8 @@ async function bootstrap(){
           rooms.showrooms.forEach(x=>SHOWROOMS.push(x));
           localOnly.forEach(x=>SHOWROOMS.push(x));
         }
-        // deep-link share: load the bound agent as well
-        const url=new URL(location.href);
-        const carId=url.searchParams.get('c'), ref=url.searchParams.get('ref');
-        if(carId){
-          const detail=await apiPublic('/api/public/car/'+encodeURIComponent(carId)+(ref?'?ref='+encodeURIComponent(ref):''));
-          if(detail.car){ const id=detail.car.id; delete detail.car.id; CARS[id]=detail.car; if(detail.car.listedAt) LISTED_AT[id]=detail.car.listedAt; }
-          if(detail.agent){ curSales=detail.agent.id; upsertEmp(detail.agent.id||ref, detail.agent); }
-        }
+        if(!cid && list.company) cid=list.company;
+        sharedCompany=cid;
         saveCars(); saveListed(); saveEmps(); saveShowrooms();
         loaded=true;
       }
@@ -3003,11 +3034,17 @@ async function bootstrap(){
     const dlu=new URL(location.href);
     const dCarId=dlu.searchParams.get('c')||dlu.searchParams.get('car');
     const dRef=dlu.searchParams.get('ref');
-    if(dCarId && !CARS[dCarId]){
+    if(dCarId && !CARS[dCarId] && !(sharedGone && sharedGone.company)){
       const d2=await apiPublic('/api/public/car/'+encodeURIComponent(dCarId)+(dRef?'?ref='+encodeURIComponent(dRef):''));
-      if(d2.car){ const id=d2.car.id; delete d2.car.id; CARS[id]=d2.car; if(d2.car.listedAt) LISTED_AT[id]=d2.car.listedAt; }
-      if(d2.agent) upsertEmp(d2.agent.id||dRef, d2.agent);
-      saveCars();
+      if(d2.gone){ sharedGone={ reason:d2.reason, company:d2.company||null, carName:d2.carName||'' }; }
+      else if(d2.car){
+        const id=d2.car.id; delete d2.car.id; CARS[id]=d2.car; if(d2.car.listedAt) LISTED_AT[id]=d2.car.listedAt;
+        if(d2.photos) CAR_PHOTOS[dCarId]=d2.photos;
+        if(d2.videos) CAR_VIDEOS[dCarId]=d2.videos;
+        if(d2.agent) upsertEmp(d2.agent.id||dRef, d2.agent);
+        if(d2.company && d2.company.id) sharedCompany=d2.company.id;
+        saveCars(); saveCarPhotos(); saveCarVideos(); saveEmps();
+      }
     }
   }catch(e){ console.error('deeplink car load failed', e); }
 
@@ -4043,6 +4080,11 @@ function deleteShowroom(name){
 // are loaded (bootstrap is async, so resolving at script-parse time fails
 // because CARS is still empty and the shared car never lands correctly).
 let _dlCar=null, _dlRef=null;
+/* shared-link state: the real company of a shared car (so the homepage list
+   can never show a different dealership), and whether the shared car is gone
+   (deleted or sold) so we can show a "browse other cars" notice instead. */
+let sharedCompany=null;
+let sharedGone=null;
 function parseDeepLink(){
   try{
     const q=new URLSearchParams(location.search);
@@ -4063,9 +4105,33 @@ function resolveDeepLink(){
     if(_dlCar && CARS[_dlCar]){ curCar=_dlCar; hit=true; }
     if(hit){
       curRole='customer'; window.__deeplink=true;
+      if(sharedGone){ renderCarGone(); return; }
       openDetail(curCar);
     }
   }catch(e){}
+}
+/* When a shared car has been deleted or sold, show a friendly notice and let
+   the customer browse the rest of THAT company's showroom (never a blank 404). */
+function renderCarGone(){
+  try{
+    const info=sharedGone||{}; const co=info.company||{};
+    const logoEl=document.getElementById('goneLogo');
+    if(logoEl) logoEl.innerHTML = co.logo ? `<img src="${co.logo}" alt="" style="max-height:64px;max-width:220px;object-fit:contain;" />` : '';
+    const name=info.carName||'';
+    const titleEl=document.getElementById('goneTitle');
+    if(titleEl) titleEl.textContent = info.reason==='sold'
+      ? (name ? name+' has been sold' : T('goneSoldTitle','This vehicle has been sold'))
+      : (name ? name+' is no longer listed' : T('goneTitle','This vehicle is no longer available'));
+    const coEl=document.getElementById('goneCompany');
+    if(coEl) coEl.textContent = co.name || brandName();
+    if(co.id) sharedCompany=co.id;
+  }catch(e){}
+  go('scr-gone');
+}
+function goGoneHome(){
+  curRole='customer'; window.__deeplink=true;
+  renderHome(); renderStock();
+  go('scr-home');
 }
 parseDeepLink();
 applyTheme(); syncLangUI(); applyI18n(); renderSyncUI(); updateAuthCTA();
