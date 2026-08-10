@@ -624,7 +624,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v80</span></div>
+        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v81</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -1183,7 +1183,7 @@
   </div>
   <p class="hint" id="pvStatus" style="margin:10px 2px 0;font-size:11px;color:var(--gold);"></p>
   <div class="share-box">
-    <span class="share-url" id="shareUrl">https://antmotors.com/?c=lc&amp;ref=kwame</span>
+    <span class="share-url" id="shareUrl">/?c=lc&amp;ref=kwame</span>
     <button class="share-copy" onclick="copyShare()" data-i18n="pvCopy">Copy</button>
   </div>
 </div>
@@ -1624,7 +1624,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.0.1';
+const APP_VER='1.0.2';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2499,9 +2499,9 @@ function syncSheet(){
   document.querySelectorAll('#previewSheet [data-role]').forEach(b=>b.classList.toggle('on',b.dataset.role===curRole));
   document.querySelectorAll('#previewSheet [data-sales]').forEach(b=>b.classList.toggle('on',b.dataset.sales===curSales));
   document.querySelectorAll('#previewSheet [data-login]').forEach(b=>b.classList.toggle('on',b.dataset.login===curEmployee));
-  document.getElementById('shareUrl').textContent='https://antmotors.com/?c='+curCar+'&ref='+curSales;
+  document.getElementById('shareUrl').textContent=location.origin+'/?c='+curCar+'&ref='+curSales;
 }
-function copyShare(){ const u='https://antmotors.com/?c='+curCar+'&ref='+curSales; if(navigator.clipboard) navigator.clipboard.writeText(u); toast(T('shareLinkCopied','Share link copied')+':<br><b>'+u+'</b>'); }
+function copyShare(){ const u=location.origin+'/?c='+curCar+'&ref='+curSales; if(navigator.clipboard) navigator.clipboard.writeText(u); toast(T('shareLinkCopied','Share link copied')+':<br><b>'+u+'</b>'); }
 function syncPreviewAccess(){
   const top=isTopEmployee();
   const topOnly=document.getElementById('pvTopOnly');
@@ -2691,8 +2691,8 @@ function addEmployee(){
 }
 function assignTier(id,tier){ const e=ALL_EMP[id]; if(e){ e.tier=tier; markEmpDirty(id); toast(T('tierAssigned','Assigned ')+e.name+' → '+tier); } }
 function shareCar(){
-  const u='https://antmotors.com/?c='+curCar+'&ref='+curSales;
-  if(navigator.share){ navigator.share({title:'Ant Motors · '+carName(CARS[curCar]), text:'Check this car on Ant Motors', url:u}).catch(()=>{}); return; }
+  const u=location.origin+'/?c='+curCar+'&ref='+curSales;
+  if(navigator.share){ navigator.share({title:brandName()+' · '+carName(CARS[curCar]), text:'Check this car on '+brandName(), url:u}).catch(()=>{}); return; }
   if(navigator.clipboard) navigator.clipboard.writeText(u).catch(()=>{});
   toast(T('linkCopiedRef','Link copied · ref')+' <b>'+curSales+'</b><br><span style="font-size:10px;word-break:break-all;">'+u+'</span>');
 }
@@ -3638,7 +3638,7 @@ function renderWorkbench(){
   myLinks.forEach(l=>{
     const car=CARS[l.car]; if(!car) return;
     const d=document.createElement('div'); d.className='wb-link';
-    const url='antmotors.com/?c='+l.car+'&ref='+l.sales;
+    const url=location.origin+'/?c='+l.car+'&ref='+l.sales;
     d.innerHTML=`<div style="flex:1;min-width:0;"><div class="car">${carName(car)}</div><div class="url">${url}</div></div>
       <div style="text-align:right;font-size:10px;color:var(--text-dim);"><b style="color:var(--gold);">${l.clicks}</b> ${T('clicksLbl','clicks')}<br>${l.leads} ${T('leadsLbl','leads')}</div>
       <button onclick="copyShareUrl('${l.car}','${l.sales}')">Copy</button>`;
@@ -3671,7 +3671,7 @@ function renderWorkbench(){
   if(aa) aa.style.display = canEditPrices() ? 'block' : 'none';
 }
 function copyShareUrl(car,sales){
-  const u='https://antmotors.com/?c='+car+'&ref='+sales;
+  const u=location.origin+'/?c='+car+'&ref='+sales;
   if(navigator.clipboard) navigator.clipboard.writeText(u);
   toast('Copied: '+u);
 }
@@ -4030,7 +4030,7 @@ function applyUpdate(){ try{ localStorage.setItem('am_force_sw','1'); }catch(e){
 if('serviceWorker' in navigator){ window.addEventListener('load',async function(){ try{
   const old=await navigator.serviceWorker.getRegistrations();
   await Promise.all(old.map(r=>r.unregister()));
-  const reg=await navigator.serviceWorker.register('sw.js?v=80');
+  const reg=await navigator.serviceWorker.register('sw.js?v=81');
   await reg.update();
   reg.addEventListener('updatefound', function(){
     const installing=reg.installing;
