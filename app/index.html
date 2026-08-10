@@ -624,7 +624,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v82</span></div>
+        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v83</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -1624,7 +1624,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.0.3';
+const APP_VER='1.0.4';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3068,9 +3068,18 @@ function renderSyncUI(){
   try{ renderMe(); }catch(err){}
 }
 /* show the "登录 / 注册" CTA only when signed out */
+function isSharedView(){
+  try{
+    const q=new URLSearchParams(location.search);
+    if(q.get('c')||q.get('car')||q.get('ref')) return true;
+    if(/\/c\/[^/?#]+/.test(location.pathname)) return true;
+  }catch(e){}
+  return false;
+}
 function updateAuthCTA(){
   const loggedIn=!!SYNC.token;
-  const wb=document.getElementById('welcomeBar'); if(wb) wb.style.display=loggedIn?'none':'block';
+  const shared=isSharedView(); // customer opened a shared car link -> never show a register prompt
+  const wb=document.getElementById('welcomeBar'); if(wb) wb.style.display=(loggedIn||shared)?'none':'block';
   // refresh welcome bar language
   const wt=document.getElementById('welcomeTitle'); if(wt) wt.textContent='👋 '+T('welcomeTo','Welcome to')+' '+brandName();
   const wd=document.getElementById('welcomeDesc'); if(wd) wd.textContent=T('welcomeDesc','New here? Create your company account to start adding cars, managing your team and viewing membership info. Tap the settings button above or the button below.');
@@ -4049,7 +4058,7 @@ function applyUpdate(){ try{ localStorage.setItem('am_force_sw','1'); }catch(e){
 if('serviceWorker' in navigator){ window.addEventListener('load',async function(){ try{
   const old=await navigator.serviceWorker.getRegistrations();
   await Promise.all(old.map(r=>r.unregister()));
-  const reg=await navigator.serviceWorker.register('sw.js?v=82');
+  const reg=await navigator.serviceWorker.register('sw.js?v=83');
   await reg.update();
   reg.addEventListener('updatefound', function(){
     const installing=reg.installing;
