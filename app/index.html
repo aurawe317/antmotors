@@ -624,7 +624,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v87</span></div>
+        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v88</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -1634,7 +1634,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.0.8';
+const APP_VER='1.0.9';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2294,6 +2294,7 @@ function handleCarPhoto(e){
     CAR_PHOTOS[curCar].push(ev.target.result);
     saveCarPhotos();
     renderDetailThumbs();
+    markCarDirty(curCar);   // FIX: push the new photo to the server so shared links show it
     toast(T('photoUp','Photo uploaded for')+' <b>'+CARS[curCar].name+'</b>');
   };
   reader.readAsDataURL(file);
@@ -3536,10 +3537,19 @@ async function syncNow(silent){
   try{
     /* 1 — push everything queued locally */
     const payload={cars:[],employees:[]};
-    for(const id in SYNC.cars){
+    // Push every dirty car, PLUS any car that has local photos/videos but was
+    // never marked dirty (e.g. photos added before this fix) — so already-taken
+    // pictures still reach the server and appear on shared links.
+    const pushIds=new Set();
+    for(const id in SYNC.cars) pushIds.add(id);
+    for(const id in CAR_PHOTOS) if(CAR_PHOTOS[id]&&CAR_PHOTOS[id].length) pushIds.add(id);
+    for(const id in CAR_VIDEOS) if(CAR_VIDEOS[id]&&CAR_VIDEOS[id].length) pushIds.add(id);
+    for(const id of pushIds){
       if(CAR_DELETED[id]){ payload.cars.push({id:id,updatedAt:CAR_DELETED[id],deleted:true}); continue; }
       if(!CARS[id]) continue;
-      payload.cars.push({id:id,updatedAt:SYNC.cars[id],listedAt:LISTED_AT[id]||null,data:CARS[id],photos:CAR_PHOTOS[id]||undefined,videos:CAR_VIDEOS[id]||undefined}); }
+      const dirty=SYNC.cars[id]!=null;
+      if(!dirty && !(CAR_PHOTOS[id]&&CAR_PHOTOS[id].length) && !(CAR_VIDEOS[id]&&CAR_VIDEOS[id].length)) continue;
+      payload.cars.push({id:id,updatedAt:SYNC.cars[id]||Date.now(),listedAt:LISTED_AT[id]||null,data:CARS[id],photos:CAR_PHOTOS[id]||undefined,videos:CAR_VIDEOS[id]||undefined}); }
     for(const id in SYNC.emps){ const e=ALL_EMP[id]; if(!e) continue;
       payload.employees.push({id:id,updatedAt:SYNC.emps[id],data:e}); }
     let rejected=[];
