@@ -624,7 +624,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v84</span></div>
+        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v85</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -1624,7 +1624,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.0.5';
+const APP_VER='1.0.6';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2056,6 +2056,7 @@ function openDetail(k){
   curCar=k; addToRecent(k);
   renderDetail();
   go('scr-detail');
+  if(typeof syncSheet==='function') syncSheet(); // keep the displayed share URL in sync with the car on screen
 }
 function renderDetail(){
   const c=CARS[curCar];
@@ -2987,6 +2988,22 @@ async function bootstrap(){
       }
     }catch(e){ error=e; console.error('public load failed', e); }
   }
+
+  // Always make sure the deep-linked car is present — even for signed-in users,
+  // whose authenticated pull above may belong to a DIFFERENT company than the
+  // shared link's ref. Without this, resolveDeepLink can't find CARS[_dlCar] and
+  // silently falls back to the default car. (cheap no-op if already loaded)
+  try{
+    const dlu=new URL(location.href);
+    const dCarId=dlu.searchParams.get('c')||dlu.searchParams.get('car');
+    const dRef=dlu.searchParams.get('ref');
+    if(dCarId && !CARS[dCarId]){
+      const d2=await apiPublic('/api/public/car/'+encodeURIComponent(dCarId)+(dRef?'?ref='+encodeURIComponent(dRef):''));
+      if(d2.car){ const id=d2.car.id; delete d2.car.id; CARS[id]=d2.car; if(d2.car.listedAt) LISTED_AT[id]=d2.car.listedAt; }
+      if(d2.agent) upsertEmp(d2.agent.id||dRef, d2.agent);
+      saveCars();
+    }
+  }catch(e){ console.error('deeplink car load failed', e); }
 
   recomputeFacets();
   renderHome(); renderStock(); renderPerm(); renderFilterBranch(); renderShowroomList(); initAdminBranch();
