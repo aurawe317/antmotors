@@ -644,7 +644,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v94</span></div>
+        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v95</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -1643,7 +1643,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.1.5';
+const APP_VER='1.1.6';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2356,16 +2356,19 @@ function closeCropper(apply){
   }
   _cropState=null;
 }
-(function wireCrop(){
+function wireCrop(){
   const stage=document.getElementById('cropStage');
   const zoom=document.getElementById('cropZoom');
+  if(!stage||!zoom) return;   // modal markup may not be parsed yet — guarded
   zoom.addEventListener('input',()=>{ if(_cropState){ _cropState.scale=parseFloat(zoom.value); applyCropTransform(); } });
-  let moved=false, sx0=0, sy0=0;
   stage.addEventListener('pointerdown',e=>{ if(!_cropState) return; _cropState.dragging=true; _cropState.lx=e.clientX; _cropState.ly=e.clientY; moved=false; stage.setPointerCapture(e.pointerId); });
   stage.addEventListener('pointermove',e=>{ if(!_cropState||!_cropState.dragging) return; const dx=e.clientX-_cropState.lx, dy=e.clientY-_cropState.ly; if(Math.abs(dx)+Math.abs(dy)>3) moved=true; _cropState.x+=dx; _cropState.y+=dy; _cropState.lx=e.clientX; _cropState.ly=e.clientY; applyCropTransform(); });
   stage.addEventListener('pointerup',()=>{ if(_cropState) _cropState.dragging=false; });
   stage.addEventListener('wheel',e=>{ if(!_cropState) return; e.preventDefault(); const z=Math.min(3,Math.max(1,_cropState.scale - (e.deltaY>0?0.08:-0.08))); _cropState.scale=z; document.getElementById('cropZoom').value=z; applyCropTransform(); },{passive:false});
-})();
+  if(typeof applyI18n==='function') applyI18n();   // translate the (now present) crop modal strings
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', wireCrop);
+else wireCrop();
 function frameRatio(sel, fallback){
   const el=document.querySelector(sel);
   if(el && el.clientWidth>0 && el.clientHeight>0) return el.clientWidth/el.clientHeight;
@@ -2452,7 +2455,7 @@ function renderDetailThumbs(){
 function handleShowroomPhoto(e,showroomName){
   const file=e.target.files[0]; if(!file) return;
   if(!canUploadShowroomPhotos()){ toast(T('noPermPhoto','Your role cannot upload photos.')); return; }
-  const ratio=frameRatio('.sh-item .ph', 16/9);   // showroom photo frame
+  const ratio=4/3;   // unified 4:3 cover per user request
   openCropper(file, ratio, dataUrl=>{
     if(!SHOWROOM_PHOTOS[showroomName]) SHOWROOM_PHOTOS[showroomName]=[];
     SHOWROOM_PHOTOS[showroomName].push(dataUrl);
