@@ -189,7 +189,7 @@
   .feat-card .fc-name{font-size:12px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .feat-card .fc-price{font-size:12px; color:var(--gold); font-weight:700; margin-top:2px;}
   .sh-card{flex:0 0 200px; border-radius:var(--r-card); overflow:hidden; position:relative; border:1px solid var(--border); cursor:pointer;}
-  .sh-card .ph{height:96px; display:flex; align-items:center; justify-content:center;}
+  .sh-card .ph{height:64px; display:flex; align-items:center; justify-content:center;}
   .sh-card .ph .pin{color:var(--gold);}
   .sh-card .body{padding:9px 11px 11px; background:var(--surface-2);}
   .sh-card .body h4{font-size:13px; font-weight:700;}
@@ -624,7 +624,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v90</span></div>
+        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v91</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -1621,7 +1621,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.1.1';
+const APP_VER='1.1.2';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -1802,6 +1802,7 @@ function setLang(l){
 }
 
 function go(id){
+  if(id!=='scr-home' && heroTimer){ clearInterval(heroTimer); heroTimer=null; }
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   const map=['scr-home','scr-showrooms','scr-me'];
@@ -1982,9 +1983,12 @@ function renderHome(){
   });
 }
 /* Build the homepage hero as a swipeable carousel of featured cars (falls back to all cars). */
+let heroTimer=null; let heroResetTO=null;
 function renderHeroCarousel(){
   const track=document.getElementById('heroTrack'); const dots=document.getElementById('heroDots');
   if(!track) return;
+  if(heroTimer){ clearInterval(heroTimer); heroTimer=null; }
+  if(heroResetTO){ clearTimeout(heroResetTO); heroResetTO=null; }
   track.innerHTML="";
   const feat=Object.keys(CARS).filter(k=>CARS[k].featured && !CARS[k].sold).slice(0,6);
   const keys = feat.length ? feat : Object.keys(CARS).filter(k=>!CARS[k].sold).slice(0,6);
@@ -1995,7 +1999,18 @@ function renderHeroCarousel(){
     return `<div class="hero-slide"><div class="ph">${cover?`<img class="car-cover" src="${cover}" alt="" />`:carSVG(c.grad)}${ribbon}</div><div class="scrim"></div>${isFeat?`<div class="tag">${T('featured','FEATURED')}</div>`:''}<div class="info"><h3>${carName(c)}</h3><div class="sub">${carSub(c)}</div><div class="price">${rolePrice(c.price)}</div></div><button class="go" onclick="openDetail('${k}')">${T('viewDetails','View details')}</button></div>`;
   }).join('');
   if(dots){ dots.innerHTML=''; if(keys.length>1) keys.forEach((_,i)=>{ const d=document.createElement('span'); if(i===0) d.className='on'; dots.appendChild(d); }); }
-  track.onscroll=()=>{ if(!dots||!dots.children.length) return; const i=Math.round(track.scrollLeft/(track.clientWidth||1)); [...dots.children].forEach((d,k)=>d.classList.toggle('on',k===i)); };
+  const updateDots=()=>{ if(!dots||!dots.children.length) return; const i=Math.round(track.scrollLeft/(track.clientWidth||1)); [...dots.children].forEach((d,k)=>d.classList.toggle('on',k===i)); };
+  let userScrolling=false;
+  track.onscroll=(e)=>{ updateDots(); if(e&&e.isTrusted){ userScrolling=true; if(heroResetTO) clearTimeout(heroResetTO); heroResetTO=setTimeout(()=>{ userScrolling=false; },5000); } };
+  if(keys.length>1){
+    heroTimer=setInterval(()=>{
+      if(document.hidden || userScrolling) return;
+      const w=track.clientWidth||1;
+      let next=Math.round(track.scrollLeft/w)+1;
+      if(next>=keys.length) next=0;
+      track.scrollTo({left:next*w, behavior:'smooth'});
+    },4000);
+  }
 }
 function carCover(k){ const p=CAR_PHOTOS[k]; return (p&&p.length)?p[0]:null; }
 function toggleFeatured(){
