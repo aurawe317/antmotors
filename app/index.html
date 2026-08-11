@@ -624,7 +624,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v89</span></div>
+        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v90</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -1621,7 +1621,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.1.0';
+const APP_VER='1.1.1';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -1910,7 +1910,7 @@ function buildAdvanced(){
   html+='<div class="adv-group"><h4 data-i18n="brand">Brand</h4><div class="adv-chips" id="afBrands"></div></div>';
   html+='<div class="adv-group"><h4 data-i18n="color">Color</h4><div class="adv-chips" id="afColors"></div></div>';
   html+='<div class="adv-group"><h4 data-i18n="year">Year</h4><div class="adv-chips" id="afYears"></div></div>';
-  html+='<div class="adv-row"><label data-i18n="advBranch">Branch</label><select id="afAdvBranch"><option value="all" data-i18n="allBranches">All branches</option>'+FACETS.branches.map(b=>`<option value="${b}">${branchLabel(b)}</option>`).join('')+'</select></div>';
+  html+='<div class="adv-row"><label data-i18n="advBranch">Branch</label><select id="afAdvBranch"><option value="all">'+T('allBranches','All branches')+'</option>'+FACETS.branches.map(b=>`<option value="${b}">${branchLabel(b)}</option>`).join('')+'</select></div>';
   html+='<div class="adv-actions"><button class="adv-reset" onclick="resetAdvanced()"><span data-i18n="resetFilters">Reset</span></button><button class="adv-apply" onclick="applyAdvanced()"><span data-i18n="applyFilters">Apply</span></button></div>';
   p.innerHTML=html;
   fillAdvChips('afBrands', FACETS.brands, FILTER.brands, brandLabel);
@@ -1948,9 +1948,9 @@ function resetAdvanced(){
 function populateFilterSelects(){
   recomputeFacets();
   const fb=document.getElementById('fbBranch');
-  if(fb){ fb.innerHTML='<option value="all" data-i18n="allBranches">All branches</option>'+FACETS.branches.map(b=>`<option value="${b}">${branchLabel(b)}</option>`).join(''); fb.value=FILTER.branch; }
+  if(fb){ fb.innerHTML='<option value="all">'+T('allBranches','All branches')+'</option>'+FACETS.branches.map(b=>`<option value="${b}">${branchLabel(b)}</option>`).join(''); fb.value=FILTER.branch; }
   const fbr=document.getElementById('fbBrand');
-  if(fbr){ fbr.innerHTML='<option value="all" data-i18n="allBrands">All brands</option>'+FACETS.brands.map(b=>`<option value="${b}">${brandLabel(b)}</option>`).join(''); fbr.value=FILTER.brand; }
+  if(fbr){ fbr.innerHTML='<option value="all">'+T('allBrands','All brands')+'</option>'+FACETS.brands.map(b=>`<option value="${b}">${brandLabel(b)}</option>`).join(''); fbr.value=FILTER.brand; }
 }
 function renderStock(){
   populateFilterSelects();
@@ -1986,7 +1986,7 @@ function renderHeroCarousel(){
   const track=document.getElementById('heroTrack'); const dots=document.getElementById('heroDots');
   if(!track) return;
   track.innerHTML="";
-  const feat=Object.keys(CARS).filter(k=>CARS[k].featured && !CARS[k].sold);
+  const feat=Object.keys(CARS).filter(k=>CARS[k].featured && !CARS[k].sold).slice(0,6);
   const keys = feat.length ? feat : Object.keys(CARS).filter(k=>!CARS[k].sold).slice(0,6);
   track.innerHTML = keys.map(k=>{
     const c=CARS[k]; const cover=carCover(k);
@@ -3960,7 +3960,7 @@ function openBooking(){
   document.getElementById('bookTitle').textContent=carName(c);
   document.getElementById('bookSub').textContent=bName(c.loc.name)+" · "+condLabel(c);
   const sel=document.getElementById('bkBranch'); sel.innerHTML="";
-  SHOWROOMS.forEach(s=>{ const o=document.createElement('option'); o.textContent=s.name; if(s.name===c.loc.name)o.selected=true; sel.appendChild(o); });
+  SHOWROOMS.forEach(s=>{ const o=document.createElement('option'); o.textContent=branchLabel(s.name); if(s.name===c.loc.name)o.selected=true; sel.appendChild(o); });
   document.getElementById('bookPh').innerHTML=carSVG(c.grad);
   document.querySelector('#scr-book .form').style.display='';
   document.getElementById('bookingConfirm').style.display='none';
