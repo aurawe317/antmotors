@@ -644,7 +644,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v96</span></div>
+        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v97</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -765,10 +765,10 @@
         <div class="gdots" id="detailDots"></div>
       </div>
       <div class="upload-banner" id="uploadBanner" style="display:none;">
-        <span class="lbl" id="uploadLabel">Upload car media</span>
+        <span class="lbl" id="uploadLabel" data-i18n="uploadMedia">Upload car media</span>
         <div class="upload-actions">
-          <button class="upload-btn" onclick="document.getElementById('carPhotoInput').click()">+ Photo</button>
-          <button class="upload-btn video" onclick="document.getElementById('carVideoInput').click()">+ Video</button>
+          <button class="upload-btn" onclick="document.getElementById('carPhotoInput').click()" data-i18n="addPhoto">+ Photo</button>
+          <button class="upload-btn video" onclick="document.getElementById('carVideoInput').click()" data-i18n="addVideo">+ Video</button>
         </div>
         <input type="file" id="carPhotoInput" accept="image/*" style="display:none;" onchange="handleCarPhoto(event)" />
         <input type="file" id="carVideoInput" accept="video/*" style="display:none;" onchange="handleCarVideo(event)" />
@@ -1531,7 +1531,7 @@ I18N.en.syncEmpId="Account / e-mail"; I18N.en.syncPw="Password"; I18N.en.remembe
 I18N.en.syncNeedCreds="Enter your account and password"; I18N.en.syncBadCreds="Wrong account or password";
 I18N.en.pwRule="At least 8 characters with upper & lower case, a number and a symbol."; I18N.en.pwStrong="Strong password ✓";
 I18N.en.pwTooShort="At least 8 characters"; I18N.en.pwTooLong="64 characters max"; I18N.en.pwNeedLower="Add a lower-case letter"; I18N.en.pwNeedUpper="Add a CAPITAL letter"; I18N.en.pwNeedDigit="Add a number"; I18N.en.pwNeedSymbol="Add a symbol (!@#$…)"; I18N.en.pwTooSimple="Too simple";
-I18N.en.cancel="Cancel"; I18N.en.cropZoom="Zoom"; I18N.en.cropReset="Reset"; I18N.en.cropHint="Drag to reposition · the box keeps the display ratio"; I18N.en.cropApply="Apply crop"; I18N.en.cropTitle="Adjust photo";
+I18N.en.cancel="Cancel"; I18N.en.cropZoom="Zoom"; I18N.en.cropReset="Reset"; I18N.en.cropHint="Drag to reposition · the box keeps the display ratio"; I18N.en.cropApply="Apply crop"; I18N.en.cropTitle="Adjust photo"; I18N.en.uploadMedia="Upload car media"; I18N.en.addPhoto="+ Photo"; I18N.en.addVideo="+ Video"; I18N.en.from="From";
 I18N.en.pwMismatch="The two passwords do not match"; I18N.en.pwSame="New password must differ from the current one";
 I18N.en.pwLocked="Too many attempts — account locked, try again in"; I18N.en.pwMinutes="min";
 I18N.en.pwUpgradeHint="Your account still uses an old PIN — set a real password via “Forgot password?”";
@@ -1543,7 +1543,7 @@ I18N.zh.syncEmpId="账号 / 邮箱"; I18N.zh.syncPw="密码"; I18N.zh.rememberMe
 I18N.zh.syncNeedCreds="请输入账号和密码"; I18N.zh.syncBadCreds="账号或密码错误";
 I18N.zh.pwRule="至少 8 位，需包含大写、小写、数字和符号。"; I18N.zh.pwStrong="密码强度：强 ✓";
 I18N.zh.pwTooShort="至少 8 位字符"; I18N.zh.pwTooLong="最多 64 位字符"; I18N.zh.pwNeedLower="需要包含小写字母"; I18N.zh.pwNeedUpper="需要包含大写字母"; I18N.zh.pwNeedDigit="需要包含数字"; I18N.zh.pwNeedSymbol="需要包含符号（!@#$…）"; I18N.zh.pwTooSimple="密码过于简单";
-I18N.zh.cancel="取消"; I18N.zh.cropZoom="缩放"; I18N.zh.cropReset="重置"; I18N.zh.cropHint="拖动调整位置 · 裁剪框锁定展示比例"; I18N.zh.cropApply="应用裁剪"; I18N.zh.cropTitle="调整照片";
+I18N.zh.cancel="取消"; I18N.zh.cropZoom="缩放"; I18N.zh.cropReset="重置"; I18N.zh.cropHint="拖动调整位置 · 裁剪框锁定展示比例"; I18N.zh.cropApply="应用裁剪"; I18N.zh.cropTitle="调整照片"; I18N.zh.uploadMedia="上传车辆媒体"; I18N.zh.addPhoto="+ 照片"; I18N.zh.addVideo="+ 视频"; I18N.zh.from="起";
 I18N.zh.pwMismatch="两次输入的密码不一致"; I18N.zh.pwSame="新密码不能与当前密码相同";
 I18N.zh.pwLocked="尝试次数过多——账号已锁定，请稍后再试："; I18N.zh.pwMinutes="分钟";
 I18N.zh.pwUpgradeHint="你的账号仍在使用旧的 PIN——请通过“忘记密码？”设置正式密码";
@@ -1643,7 +1643,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.1.7';
+const APP_VER='1.1.8';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
