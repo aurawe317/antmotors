@@ -644,7 +644,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v93</span></div>
+        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v94</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -1643,7 +1643,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.1.4';
+const APP_VER='1.1.5';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2375,7 +2375,7 @@ function frameRatio(sel, fallback){
 function handleCarPhoto(e){
   const file=e.target.files[0]; if(!file) return;
   if(!canUploadCarPhotos()){ toast(T('noPermPhoto','Your role cannot upload photos.')); return; }
-  const ratio=frameRatio('.card .ph', 4/3);   // car cover frame (card / hero)
+  const ratio=4/3;   // fixed 4:3 cover per user request
   openCropper(file, ratio, dataUrl=>{
     if(!CAR_PHOTOS[curCar]) CAR_PHOTOS[curCar]=[];
     CAR_PHOTOS[curCar].push(dataUrl);
@@ -3864,13 +3864,20 @@ function renderAfVideoThumbs(){
   });
 }
 function handleAdminPhotos(e){
-  const files=e.target.files;
-  for(let f of files){
-    const reader=new FileReader();
-    reader.onload=ev=>{ ADMIN_PHOTOS.push(ev.target.result); renderAfThumbs(); };
-    reader.readAsDataURL(f);
-  }
+  const files=Array.from(e.target.files||[]);
   e.target.value='';
+  if(!files.length) return;
+  let i=0;
+  const next=()=>{
+    if(i>=files.length) return;
+    const file=files[i++];
+    openCropper(file, 4/3, dataUrl=>{   // fixed 4:3, crop one by one for multi-select
+      ADMIN_PHOTOS.push(dataUrl);
+      renderAfThumbs();
+      next();
+    });
+  };
+  next();
 }
 function renderAfThumbs(){
   const t=document.getElementById('afThumbs'); if(!t) return;
