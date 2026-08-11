@@ -624,7 +624,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v88</span></div>
+        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v89</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -675,16 +675,24 @@
       <div class="hero" id="heroCarousel"><div class="hero-track" id="heroTrack"></div></div>
       <div class="hero-dots" id="heroDots"></div>
 
-      <div class="search" onclick="go('scr-stock')">
+      <div class="search">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.6"/><path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        <input type="text" placeholder="Search brand, model, year…" readonly />
+        <input type="text" id="homeSearchInput" placeholder="Search brand, model, year…" />
       </div>
 
-      <div class="trust">
-        <div class="t">🛡 <div><b data-i18n="trust1">Duty cleared</b></div></div>
-        <div class="t">🔧 <div><b data-i18n="trust2">12-mo warranty</b></div></div>
-        <div class="t">🚢 <div><b data-i18n="trust3">CN exports</b></div></div>
+      <div class="filterbar" style="margin-top:10px;">
+        <select id="fbSort" class="fb-select" onchange="onSortChange(this.value)">
+          <option value="default" data-i18n="sortDefault">Default</option>
+          <option value="priceAsc" data-i18n="sortPriceAsc">Price ↑</option>
+          <option value="priceDesc" data-i18n="sortPriceDesc">Price ↓</option>
+          <option value="newest" data-i18n="sortNewest">Listed newest</option>
+          <option value="oldest" data-i18n="sortOldest">Listed oldest</option>
+        </select>
+        <select id="fbBranch" class="fb-select" onchange="onBranchChange(this.value)"></select>
+        <select id="fbBrand" class="fb-select" onchange="onBrandChange(this.value)"></select>
+        <button class="fb-adv" id="btnAdv" onclick="toggleAdvanced()"><span data-i18n="advanced">Advanced</span></button>
       </div>
+      <div class="adv-panel" id="advPanel" style="display:none;"></div>
 
       <div class="sec-head"><h2 data-i18n="ourShowrooms">Our Showrooms</h2><a onclick="go('scr-showrooms')" data-i18n="seeAll">See all</a></div>
       <div class="hscroll" id="homeShowrooms"></div>
@@ -724,30 +732,9 @@
 
     </section>
 
-    <!-- STOCK -->
+    <!-- STOCK (full inventory list — filters live on the homepage) -->
     <section class="screen" id="scr-stock">
-      <div class="sec-head"><h2 data-i18n="inventory">Inventory</h2></div>
-      <div class="search" style="margin-top:4px;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="1.6"/><path d="M16.5 16.5L21 21" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
-        <input type="text" id="stockSearchInput" placeholder="Search brand, model, year…" />
-      </div>
-      <div class="seg-tabs" id="condTabs">
-        <button class="seg-tab on" id="tabNEW" data-cond="NEW" onclick="setSection('NEW')"><span id="cntNew">New</span></button>
-        <button class="seg-tab" id="tabUSED" data-cond="USED" onclick="setSection('USED')"><span id="cntUsed">Used</span></button>
-      </div>
-      <div class="filterbar">
-        <select id="fbSort" class="fb-select" onchange="onSortChange(this.value)">
-          <option value="default" data-i18n="sortDefault">Default</option>
-          <option value="priceAsc" data-i18n="sortPriceAsc">Price ↑</option>
-          <option value="priceDesc" data-i18n="sortPriceDesc">Price ↓</option>
-          <option value="newest" data-i18n="sortNewest">Listed newest</option>
-          <option value="oldest" data-i18n="sortOldest">Listed oldest</option>
-        </select>
-        <select id="fbBranch" class="fb-select" onchange="onBranchChange(this.value)"></select>
-        <select id="fbBrand" class="fb-select" onchange="onBrandChange(this.value)"></select>
-        <button class="fb-adv" id="btnAdv" onclick="toggleAdvanced()"><span data-i18n="advanced">Advanced</span></button>
-      </div>
-      <div class="adv-panel" id="advPanel" style="display:none;"></div>
+      <div class="sec-head"><h2 data-i18n="inventory">Inventory</h2><a onclick="go('scr-home')" data-i18n="back">Back</a></div>
       <div class="grid" id="stockGrid" style="margin-top:10px;"></div>
     </section>
 
@@ -1121,7 +1108,6 @@
 
     <div class="tabbar">
       <button class="tab on" onclick="go('scr-home')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 10.5L12 4l8 6.5V20a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1v-9.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span data-i18n="navHome">Home</span></button>
-      <button class="tab" onclick="go('scr-stock')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M3.2 15.5v-2.7c0-.4.1-.7.3-1L5.8 8c.3-.6.9-.9 1.6-.9h9.2c.7 0 1.3.3 1.6.9l2.3 3.8c.2.3.3.6.3 1v2.7" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M3.2 15.5h17.6v2.6a.6.6 0 01-.6.6h-2.3a.6.6 0 01-.6-.6v-1H6.7v1a.6.6 0 01-.6.6H3.8a.6.6 0 01-.6-.6v-2.6z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span data-i18n="navStock">Stock</span></button>
       <button class="tab" onclick="go('scr-showrooms')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4.2 9.8V20a1 1 0 001 1h13.6a1 1 0 001-1V9.8" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M2.6 6.4L4 3h16l1.4 3.4a2.7 2.7 0 01-5.1 1.5 2.7 2.7 0 01-5.1 0 2.7 2.7 0 01-5.1 0 2.7 2.7 0 01-3.5-1.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span data-i18n="navShops">Shops</span></button>
       <button class="tab" onclick="go('scr-me')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="8.2" r="3.7" stroke="currentColor" stroke-width="1.6"/><path d="M4.6 20.2c.7-3.7 3.7-5.8 7.4-5.8s6.7 2.1 7.4 5.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg><span data-i18n="navMe">Me</span></button>
     </div>
@@ -1335,11 +1321,10 @@ const ALL_EMP = Object.assign({}, SALES, OWNERS);
 let curTheme="dark", curLang=(typeof localStorage!=='undefined'&&localStorage.getItem('am_lang'))||"en", curRole="customer", curSales="kwame", curCar="lc", curEmployee="boss";
 function isTopEmployee(){ return ["boss","partnerA","partnerB"].includes(empOf(curEmployee).tier); }
 function applyEmployeeScope(){ const tier=empOf(curEmployee).tier; curRole=tier; if(!isTopEmployee()){ curSales=curEmployee; } }
-let FILTER={section:"NEW", q:"", sort:"default",
+let FILTER={section:"all", q:"", sort:"default",
   branch:"all", brand:"all",
   brands:[], colors:[], years:[],
   priceMin:null, priceMax:null,
-  mileageMin:null, mileageMax:null,
   cond:"all", body:"all", price:"all"};
 
 function carSVG(grad){
@@ -1609,7 +1594,9 @@ function cnToEn(src,type){
   const terms=s.split(/[,，、\s]+/).filter(Boolean).map(t=>revT(t));
   return terms.join(', ');
 }
-function bName(n){ return ZH.branch[n]||n; }
+function branchLabel(n){ return curLang==="zh" ? (ZH.branch[n]||n) : n; }
+function brandLabel(s){ return curLang==="zh" ? (ZH.brand[s]||s) : s; }
+function bName(n){ return branchLabel(n); }
 function carName(c){ if(curLang!=="zh") return c.name; if(c.nameZh) return c.nameZh;
   const p=c.name.split(" "); const yr=p[p.length-1]; const brand=p[0]; const model=p.slice(1,p.length-1).join(" ");
   return zBrand(brand)+" "+zModel(model)+" "+yr; }
@@ -1634,7 +1621,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.0.9';
+const APP_VER='1.1.0';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -1808,12 +1795,16 @@ function setLang(l){
   if(lastBooking && document.getElementById('bookingConfirm') && document.getElementById('bookingConfirm').style.display!=='none') renderBookingConfirm(lastBooking);
   if(document.getElementById('pricingSheet') && document.getElementById('pricingSheet').classList.contains('show')) openPricingInfo();
   if(document.getElementById('membershipSheet') && document.getElementById('membershipSheet').classList.contains('show')) showMembership(true);
+  // refresh the home filter dropdowns + advanced panel chips so category
+  // labels (branch/brand) switch language immediately on toggle
+  if(document.getElementById('fbBranch')) populateFilterSelects();
+  const ap=document.getElementById('advPanel'); if(ap && ap.style.display==='block') buildAdvanced();
 }
 
 function go(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
-  const map=['scr-home','scr-stock','scr-showrooms','scr-me'];
+  const map=['scr-home','scr-showrooms','scr-me'];
   document.querySelectorAll('.tabbar .tab').forEach((t,i)=>t.classList.toggle('on', map[i]===id));
   /* Sub-pages: toggle CSS class on .phone for instant visual switch */
   const isSub=['scr-workbench','scr-admin','scr-favorites','scr-perm','scr-detail'].includes(id);
@@ -1879,11 +1870,6 @@ function matchCar(k){
   if(FILTER.years.length && !FILTER.years.includes(carYear(c))) return false;
   if(FILTER.priceMin!=null && c.price.quote<FILTER.priceMin) return false;
   if(FILTER.priceMax!=null && c.price.quote>FILTER.priceMax) return false;
-  if(sec==='USED' && (FILTER.mileageMin!=null||FILTER.mileageMax!=null)){
-    const m=carMileage(c); if(m==null) return false;
-    if(FILTER.mileageMin!=null && m<FILTER.mileageMin) return false;
-    if(FILTER.mileageMax!=null && m>FILTER.mileageMax) return false;
-  }
   if(FILTER.q){ const q=FILTER.q.toLowerCase(); const zh=c.nameZh||carName(c); const zhs=c.subZh||carSub(c);
     const t=(c.name+' '+c.brand+' '+c.sub+' '+c.body+' '+zh+' '+zhs).toLowerCase(); if(!t.includes(q)) return false; }
   return true;
@@ -1897,27 +1883,20 @@ function recomputeFacets(){
   FACETS.brands=[...new Set(Object.values(CARS).map(c=>c.brand))].sort();
   FACETS.colors=[...new Set(Object.keys(CARS).map(k=>carColor(k)))].sort();
   FACETS.years=[...new Set(Object.values(CARS).map(c=>carYear(c)).filter(Boolean))].sort((a,b)=>b-a);
-  const used=Object.keys(CARS).filter(k=>CARS[k].cond==="USED").map(k=>carMileage(CARS[k])).filter(x=>x!=null);
-  FACETS.mileMin=used.length?Math.min(...used):0;
-  FACETS.mileMax=used.length?Math.max(...used):0;
 }
 function resetAllFilters(){
-  Object.assign(FILTER,{section:FILTER.section,q:"",brand:"all",branch:"all",brands:[],colors:[],years:[],priceMin:null,priceMax:null,mileageMin:null,mileageMax:null,cond:"all",body:"all",price:"all"});
+  Object.assign(FILTER,{section:FILTER.section,q:"",brand:"all",branch:"all",brands:[],colors:[],years:[],priceMin:null,priceMax:null,cond:"all",body:"all",price:"all"});
   const p=document.getElementById('advPanel'); if(p) p.style.display='none';
   const b=document.getElementById('btnAdv'); if(b) b.classList.remove('on');
-  renderStock();
+  renderStock(); renderHome();
 }
 function setSection(sec, fromChip){
   FILTER.section=sec;
-  const tN=document.getElementById('tabNEW'), tU=document.getElementById('tabUSED');
-  if(tN) tN.classList.toggle('on', sec==='NEW');
-  if(tU) tU.classList.toggle('on', sec==='USED');
-  const mp=document.getElementById('afMileageRow'); if(mp) mp.style.display = sec==='USED' ? 'flex':'none';
   if(!fromChip) renderStock();
 }
-function onSortChange(v){ FILTER.sort=v; renderStock(); }
-function onBranchChange(v){ FILTER.branch=v; renderStock(); }
-function onBrandChange(v){ FILTER.brand=v; renderStock(); }
+function onSortChange(v){ FILTER.sort=v; renderStock(); renderHome(); }
+function onBranchChange(v){ FILTER.branch=v; renderStock(); renderHome(); }
+function onBrandChange(v){ FILTER.brand=v; renderStock(); renderHome(); }
 function toggleAdvanced(){
   const p=document.getElementById('advPanel'); if(!p) return;
   const open=p.style.display!=='block';
@@ -1931,11 +1910,10 @@ function buildAdvanced(){
   html+='<div class="adv-group"><h4 data-i18n="brand">Brand</h4><div class="adv-chips" id="afBrands"></div></div>';
   html+='<div class="adv-group"><h4 data-i18n="color">Color</h4><div class="adv-chips" id="afColors"></div></div>';
   html+='<div class="adv-group"><h4 data-i18n="year">Year</h4><div class="adv-chips" id="afYears"></div></div>';
-  html+='<div class="adv-row"><label data-i18n="advBranch">Branch</label><select id="afAdvBranch"><option value="all" data-i18n="allBranches">All branches</option>'+FACETS.branches.map(b=>`<option value="${b}">${b.split(' ')[0]}</option>`).join('')+'</select></div>';
-  html+='<div class="adv-row" id="afMileageRow" style="'+(FILTER.section==='USED'?'':'display:none;')+'"><label data-i18n="mileage">Mileage</label><div class="range"><input type="number" id="afMileMin" placeholder="Min km"><span>–</span><input type="number" id="afMileMax" placeholder="Max km"></div></div>';
+  html+='<div class="adv-row"><label data-i18n="advBranch">Branch</label><select id="afAdvBranch"><option value="all" data-i18n="allBranches">All branches</option>'+FACETS.branches.map(b=>`<option value="${b}">${branchLabel(b)}</option>`).join('')+'</select></div>';
   html+='<div class="adv-actions"><button class="adv-reset" onclick="resetAdvanced()"><span data-i18n="resetFilters">Reset</span></button><button class="adv-apply" onclick="applyAdvanced()"><span data-i18n="applyFilters">Apply</span></button></div>';
   p.innerHTML=html;
-  fillAdvChips('afBrands', FACETS.brands, FILTER.brands);
+  fillAdvChips('afBrands', FACETS.brands, FILTER.brands, brandLabel);
   fillAdvChips('afColors', FACETS.colors, FILTER.colors);
   fillAdvChips('afYears', FACETS.years, FILTER.years);
   const pMin=document.getElementById('afPriceMin'); if(pMin) pMin.value = FILTER.priceMin!=null?FILTER.priceMin:'';
@@ -1947,10 +1925,11 @@ function buildAdvanced(){
   }
   applyI18n();
 }
-function fillAdvChips(id, options, selected){
+function fillAdvChips(id, options, selected, labeler){
+  const lbl = labeler || function(x){ return x; };
   const box=document.getElementById(id); if(!box) return; box.innerHTML='';
   options.forEach(o=>{
-    const d=document.createElement('div'); d.className='adv-chip'+(selected.includes(o)?' on':''); d.textContent=o;
+    const d=document.createElement('div'); d.className='adv-chip'+(selected.includes(o)?' on':''); d.textContent=lbl(o);
     d.onclick=()=>{ const i=selected.indexOf(o); if(i>=0) selected.splice(i,1); else selected.push(o); d.classList.toggle('on'); };
     box.appendChild(d);
   });
@@ -1960,27 +1939,21 @@ function applyAdvanced(){
   FILTER.priceMin = pMin&&pMin.value? parseInt(pMin.value):null;
   FILTER.priceMax = pMax&&pMax.value? parseInt(pMax.value):null;
   const br=document.getElementById('afAdvBranch'); if(br) FILTER.branch=br.value;
-  if(FILTER.section==='USED'){
-    const mMin=document.getElementById('afMileMin'), mMax=document.getElementById('afMileMax');
-    FILTER.mileageMin = mMin&&mMin.value? parseInt(mMin.value):null;
-    FILTER.mileageMax = mMax&&mMax.value? parseInt(mMax.value):null;
-  }
-  renderStock();
+  renderStock(); renderHome();
 }
 function resetAdvanced(){
-  FILTER.brands=[]; FILTER.colors=[]; FILTER.years=[]; FILTER.priceMin=null; FILTER.priceMax=null; FILTER.mileageMin=null; FILTER.mileageMax=null;
-  buildAdvanced(); renderStock();
+  FILTER.brands=[]; FILTER.colors=[]; FILTER.years=[]; FILTER.priceMin=null; FILTER.priceMax=null;
+  buildAdvanced(); renderStock(); renderHome();
+}
+function populateFilterSelects(){
+  recomputeFacets();
+  const fb=document.getElementById('fbBranch');
+  if(fb){ fb.innerHTML='<option value="all" data-i18n="allBranches">All branches</option>'+FACETS.branches.map(b=>`<option value="${b}">${branchLabel(b)}</option>`).join(''); fb.value=FILTER.branch; }
+  const fbr=document.getElementById('fbBrand');
+  if(fbr){ fbr.innerHTML='<option value="all" data-i18n="allBrands">All brands</option>'+FACETS.brands.map(b=>`<option value="${b}">${brandLabel(b)}</option>`).join(''); fbr.value=FILTER.brand; }
 }
 function renderStock(){
-  recomputeFacets();
-  const nNew=Object.keys(CARS).filter(k=>CARS[k].cond==='NEW').length;
-  const nUsed=Object.keys(CARS).filter(k=>CARS[k].cond==='USED').length;
-  const cN=document.getElementById('cntNew'); if(cN) cN.textContent=T('new','New')+' · '+nNew;
-  const cU=document.getElementById('cntUsed'); if(cU) cU.textContent=T('used','Used')+' · '+nUsed;
-  const fb=document.getElementById('fbBranch');
-  if(fb){ fb.innerHTML='<option value="all" data-i18n="allBranches">All branches</option>'+FACETS.branches.map(b=>`<option value="${b}">${b.split(' ')[0]}</option>`).join(''); fb.value=FILTER.branch; }
-  const fbr=document.getElementById('fbBrand');
-  if(fbr){ fbr.innerHTML='<option value="all" data-i18n="allBrands">All brands</option>'+FACETS.brands.map(b=>`<option value="${b}">${b}</option>`).join(''); fbr.value=FILTER.brand; }
+  populateFilterSelects();
   const g=document.getElementById('stockGrid'); if(!g) return; g.innerHTML='';
   let ks=Object.keys(CARS).filter(matchCar);
   const s=FILTER.sort;
@@ -1993,6 +1966,7 @@ function renderStock(){
 }
 
 function renderHome(){
+  populateFilterSelects();
   const grid=document.getElementById('homeGrid'); grid.innerHTML="";
   const homeKeys=Object.keys(CARS).filter(matchCar).slice(0,6);
   if(homeKeys.length===0){ grid.innerHTML='<div class="empty" style="margin:40px 16px;text-align:center;color:var(--text-dim)">'+T('needServer','Please enter your server address in Settings to load inventory.')+'</div>'; }
@@ -3823,7 +3797,7 @@ function submitNewCar(){
   const nameEn=(pv('pvNameEn')&&pv('pvNameEn').value.trim())||(brand+' '+model+' '+year);
   const nameZh=(pv('pvNameZh')&&pv('pvNameZh').value.trim())||(zBrand(brand)+' '+zModel(model)+' '+(year||'')).trim();
   const subEn=(pv('pvSubEn')&&pv('pvSubEn').value.trim())||[year,cond,body+' · '+showroom.name.split(' ')[0]].join(' · ');
-  const subZh=(pv('pvSubZh')&&pv('pvSubZh').value.trim())||[year,ZH.cond[cond]||cond,ZH.body[body]||body+' · '+bName(showroom.name)].join(' · ');
+  const subZh=(pv('pvSubZh')&&pv('pvSubZh').value.trim())||[year,ZH.cond[cond]||cond,ZH.body[body]||body+' · '+(ZH.branch[showroom.name]||showroom.name)].join(' · ');
   const specsSrc=(pv('pvSpecEn')&&pv('pvSpecEn').value.trim())||specs;
   const hlSrc=(pv('pvHlEn')&&pv('pvHlEn').value.trim())||highlights;
   const key=brand.toLowerCase().replace(/\s/g,'')+model.toLowerCase().replace(/\s/g,'');
