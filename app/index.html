@@ -588,6 +588,26 @@
   .zh-preview .zhp-row b{flex:1;font-weight:600;color:var(--text);}
   .photo-upload-area{border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;color:var(--text-dim);font-size:12px;cursor:pointer;transition:border-color .15s;}
   .photo-upload-area:hover{border-color:var(--gold);}
+  /* ---- photo cropper ---- */
+  .crop-overlay{position:fixed; inset:0; z-index:200; background:rgba(0,0,0,.78); display:flex; align-items:center; justify-content:center; padding:14px;}
+  .crop-modal{width:100%; max-width:420px; background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.5);}
+  .crop-head{display:flex; align-items:center; justify-content:space-between; padding:12px 14px; font-weight:700; font-size:14px; border-bottom:1px solid var(--border);}
+  .crop-x{background:none; border:none; color:var(--text-dim); font-size:18px; cursor:pointer; line-height:1;}
+  .crop-stage{position:relative; width:100%; height:300px; background:#0c0b0a; overflow:hidden; touch-action:none; user-select:none;}
+  .crop-stage img{position:absolute; left:0; top:0; transform-origin:0 0; will-change:transform; pointer-events:none;}
+  .crop-box{position:absolute; box-shadow:0 0 0 9999px rgba(0,0,0,.55); border:2px solid var(--gold); border-radius:2px; box-sizing:border-box;}
+  .crop-box::before,.crop-box::after{content:''; position:absolute; background:rgba(232,194,104,.55);}
+  .crop-box::before{left:33.33%; right:33.33%; top:0; bottom:0; border-left:1px solid rgba(232,194,104,.4); border-right:1px solid rgba(232,194,104,.4);}
+  .crop-box::after{top:33.33%; bottom:33.33%; left:0; right:0; border-top:1px solid rgba(232,194,104,.4); border-bottom:1px solid rgba(232,194,104,.4);}
+  .crop-ctrl{display:flex; align-items:center; gap:10px; padding:12px 14px 4px;}
+  .crop-ctrl span{font-size:11px; color:var(--text-dim); white-space:nowrap;}
+  .crop-ctrl input[type=range]{flex:1; accent-color:var(--gold);}
+  .crop-reset{background:var(--surface-2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:6px 10px; font-size:11px; cursor:pointer;}
+  .crop-hint{font-size:10px; color:var(--text-faint); text-align:center; padding:6px 14px 0;}
+  .crop-actions{display:flex; gap:10px; padding:12px 14px 16px;}
+  .crop-actions button{flex:1; border:none; border-radius:10px; padding:12px; font-weight:800; font-size:13px; cursor:pointer;}
+  .crop-cancel{background:var(--surface-2); color:var(--text); border:1px solid var(--border);}
+  .crop-ok{background:var(--gold); color:#0F0E0E;}
   .af-thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
   .af-thumbs img{width:60px;height:60px;object-fit:cover;border-radius:8px;}
   .form-preview{margin-top:18px;padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);}
@@ -624,7 +644,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v92</span></div>
+        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v93</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -1511,6 +1531,7 @@ I18N.en.syncEmpId="Account / e-mail"; I18N.en.syncPw="Password"; I18N.en.remembe
 I18N.en.syncNeedCreds="Enter your account and password"; I18N.en.syncBadCreds="Wrong account or password";
 I18N.en.pwRule="At least 8 characters with upper & lower case, a number and a symbol."; I18N.en.pwStrong="Strong password ✓";
 I18N.en.pwTooShort="At least 8 characters"; I18N.en.pwTooLong="64 characters max"; I18N.en.pwNeedLower="Add a lower-case letter"; I18N.en.pwNeedUpper="Add a CAPITAL letter"; I18N.en.pwNeedDigit="Add a number"; I18N.en.pwNeedSymbol="Add a symbol (!@#$…)"; I18N.en.pwTooSimple="Too simple";
+I18N.en.cancel="Cancel"; I18N.en.cropZoom="Zoom"; I18N.en.cropReset="Reset"; I18N.en.cropHint="Drag to reposition · the box keeps the display ratio"; I18N.en.cropApply="Apply crop"; I18N.en.cropTitle="Adjust photo";
 I18N.en.pwMismatch="The two passwords do not match"; I18N.en.pwSame="New password must differ from the current one";
 I18N.en.pwLocked="Too many attempts — account locked, try again in"; I18N.en.pwMinutes="min";
 I18N.en.pwUpgradeHint="Your account still uses an old PIN — set a real password via “Forgot password?”";
@@ -1522,6 +1543,7 @@ I18N.zh.syncEmpId="账号 / 邮箱"; I18N.zh.syncPw="密码"; I18N.zh.rememberMe
 I18N.zh.syncNeedCreds="请输入账号和密码"; I18N.zh.syncBadCreds="账号或密码错误";
 I18N.zh.pwRule="至少 8 位，需包含大写、小写、数字和符号。"; I18N.zh.pwStrong="密码强度：强 ✓";
 I18N.zh.pwTooShort="至少 8 位字符"; I18N.zh.pwTooLong="最多 64 位字符"; I18N.zh.pwNeedLower="需要包含小写字母"; I18N.zh.pwNeedUpper="需要包含大写字母"; I18N.zh.pwNeedDigit="需要包含数字"; I18N.zh.pwNeedSymbol="需要包含符号（!@#$…）"; I18N.zh.pwTooSimple="密码过于简单";
+I18N.zh.cancel="取消"; I18N.zh.cropZoom="缩放"; I18N.zh.cropReset="重置"; I18N.zh.cropHint="拖动调整位置 · 裁剪框锁定展示比例"; I18N.zh.cropApply="应用裁剪"; I18N.zh.cropTitle="调整照片";
 I18N.zh.pwMismatch="两次输入的密码不一致"; I18N.zh.pwSame="新密码不能与当前密码相同";
 I18N.zh.pwLocked="尝试次数过多——账号已锁定，请稍后再试："; I18N.zh.pwMinutes="分钟";
 I18N.zh.pwUpgradeHint="你的账号仍在使用旧的 PIN——请通过“忘记密码？”设置正式密码";
@@ -1621,7 +1643,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.1.3';
+const APP_VER='1.1.4';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2276,19 +2298,92 @@ function loadCarPhotos(){ const o=jload('am_car_photos',null); if(o) Object.assi
 function saveShowroomPhotos(){ jsave('am_showroom_photos',SHOWROOM_PHOTOS); }
 function loadShowroomPhotos(){ const o=jload('am_showroom_photos',null); if(o) Object.assign(SHOWROOM_PHOTOS,o); }
 
+/* ---------- reusable photo cropper ---------- */
+/* aspect: crop-box ratio (w/h). callback receives a cropped DataURL. */
+let _cropState=null;
+function openCropper(file, aspect, callback){
+  const reader=new FileReader();
+  reader.onload=ev=>{
+    const img=new Image();
+    img.onload=()=>{
+      const stage=document.getElementById('cropStage');
+      const box=document.getElementById('cropBox');
+      const im=document.getElementById('cropImg');
+      im.src=ev.target.result; im.style.transform='';
+      const sr=stage.clientWidth, sh=stage.clientHeight;
+      // size the crop box to the requested ratio, centered, with margin
+      let bw=sr*0.9, bh=bw/aspect;
+      if(bh>sh*0.9){ bh=sh*0.9; bw=bh*aspect; }
+      const bx=(sr-bw)/2, by=(sh-bh)/2;
+      box.style.left=bx+'px'; box.style.top=by+'px'; box.style.width=bw+'px'; box.style.height=bh+'px';
+      // initial "cover" scale so image fully fills the box at zoom=1
+      const cover=Math.max(bw/img.naturalWidth, bh/img.naturalHeight);
+      _cropState={img, im, stage, box, sr, sh, bw, bh, bx, by, aspect, cover, scale:1, x:(sr-bw)/2, y:(sh-bh)/2, callback, dragging:false, lx:0, ly:0};
+      applyCropTransform();
+      document.getElementById('cropOverlay').style.display='flex';
+      document.getElementById('cropZoom').value=1;
+    };
+    img.src=ev.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+function applyCropTransform(){
+  const s=_cropState; if(!s) return;
+  s.im.style.transform=`translate(${s.x}px,${s.y}px) scale(${s.cover*s.scale})`;
+  s.im.style.width=s.img.naturalWidth+'px'; s.im.style.height=s.img.naturalHeight+'px';
+}
+function cropReset(){
+  const s=_cropState; if(!s) return;
+  s.scale=1; s.x=(s.sr-s.bw)/2; s.y=(s.sh-s.bh)/2;
+  applyCropTransform(); document.getElementById('cropZoom').value=1;
+}
+function closeCropper(apply){
+  const s=_cropState; if(!s){ return; }
+  document.getElementById('cropOverlay').style.display='none';
+  if(apply){
+    const cv=document.createElement('canvas');
+    const outW=Math.round(s.bw), outH=Math.round(s.bh);
+    cv.width=outW; cv.height=outH;
+    const ctx=cv.getContext('2d');
+    ctx.fillStyle='#000'; ctx.fillRect(0,0,outW,outH);
+    const dispScale=s.cover*s.scale;
+    const sx=(s.bx - s.x)/dispScale;
+    const sy=(s.by - s.y)/dispScale;
+    const sw=s.bw/dispScale, sh=s.bh/dispScale;
+    try{ ctx.drawImage(s.img, sx, sy, sw, sh, 0, 0, outW, outH); }catch(e){}
+    const url=cv.toDataURL('image/jpeg',0.9);
+    s.callback(url);
+  }
+  _cropState=null;
+}
+(function wireCrop(){
+  const stage=document.getElementById('cropStage');
+  const zoom=document.getElementById('cropZoom');
+  zoom.addEventListener('input',()=>{ if(_cropState){ _cropState.scale=parseFloat(zoom.value); applyCropTransform(); } });
+  let moved=false, sx0=0, sy0=0;
+  stage.addEventListener('pointerdown',e=>{ if(!_cropState) return; _cropState.dragging=true; _cropState.lx=e.clientX; _cropState.ly=e.clientY; moved=false; stage.setPointerCapture(e.pointerId); });
+  stage.addEventListener('pointermove',e=>{ if(!_cropState||!_cropState.dragging) return; const dx=e.clientX-_cropState.lx, dy=e.clientY-_cropState.ly; if(Math.abs(dx)+Math.abs(dy)>3) moved=true; _cropState.x+=dx; _cropState.y+=dy; _cropState.lx=e.clientX; _cropState.ly=e.clientY; applyCropTransform(); });
+  stage.addEventListener('pointerup',()=>{ if(_cropState) _cropState.dragging=false; });
+  stage.addEventListener('wheel',e=>{ if(!_cropState) return; e.preventDefault(); const z=Math.min(3,Math.max(1,_cropState.scale - (e.deltaY>0?0.08:-0.08))); _cropState.scale=z; document.getElementById('cropZoom').value=z; applyCropTransform(); },{passive:false});
+})();
+function frameRatio(sel, fallback){
+  const el=document.querySelector(sel);
+  if(el && el.clientWidth>0 && el.clientHeight>0) return el.clientWidth/el.clientHeight;
+  return fallback;
+}
+
 function handleCarPhoto(e){
   const file=e.target.files[0]; if(!file) return;
   if(!canUploadCarPhotos()){ toast(T('noPermPhoto','Your role cannot upload photos.')); return; }
-  const reader=new FileReader();
-  reader.onload=ev=>{
+  const ratio=frameRatio('.card .ph', 4/3);   // car cover frame (card / hero)
+  openCropper(file, ratio, dataUrl=>{
     if(!CAR_PHOTOS[curCar]) CAR_PHOTOS[curCar]=[];
-    CAR_PHOTOS[curCar].push(ev.target.result);
+    CAR_PHOTOS[curCar].push(dataUrl);
     saveCarPhotos();
     renderDetailThumbs();
     markCarDirty(curCar);   // FIX: push the new photo to the server so shared links show it
     toast(T('photoUp','Photo uploaded for')+' <b>'+CARS[curCar].name+'</b>');
-  };
-  reader.readAsDataURL(file);
+  });
   e.target.value='';
 }
 function handleCarVideo(e){
@@ -2357,15 +2452,14 @@ function renderDetailThumbs(){
 function handleShowroomPhoto(e,showroomName){
   const file=e.target.files[0]; if(!file) return;
   if(!canUploadShowroomPhotos()){ toast(T('noPermPhoto','Your role cannot upload photos.')); return; }
-  const reader=new FileReader();
-  reader.onload=ev=>{
+  const ratio=frameRatio('.sh-item .ph', 16/9);   // showroom photo frame
+  openCropper(file, ratio, dataUrl=>{
     if(!SHOWROOM_PHOTOS[showroomName]) SHOWROOM_PHOTOS[showroomName]=[];
-    SHOWROOM_PHOTOS[showroomName].push(ev.target.result);
+    SHOWROOM_PHOTOS[showroomName].push(dataUrl);
     saveShowroomPhotos();   // FIX: persist so uploaded showroom photos survive a refresh
     renderShowroomList();
     toast(T('photoUp','Photo uploaded for')+' <b>'+showroomName+'</b>');
-  };
-  reader.readAsDataURL(file);
+  });
   e.target.value='';
 }
 
@@ -4174,5 +4268,29 @@ if('serviceWorker' in navigator){ window.addEventListener('load',async function(
   <button class="nav-cancel" onclick="closeNavSheet()" data-i18n="close">Close</button>
 </div>
   <div class="update-banner" id="updateBanner"><span data-i18n="updateAvail">New version available</span><button onclick="applyUpdate()">Reload</button><button class="later" onclick="this.parentNode.classList.remove('show')">Later</button></div>
+
+  <!-- PHOTO CROPPER -->
+  <div class="crop-overlay" id="cropOverlay" style="display:none;">
+    <div class="crop-modal">
+      <div class="crop-head">
+        <span id="cropTitle">Adjust photo</span>
+        <button class="crop-x" onclick="closeCropper(false)">✕</button>
+      </div>
+      <div class="crop-stage" id="cropStage">
+        <img id="cropImg" alt="" />
+        <div class="crop-box" id="cropBox"></div>
+      </div>
+      <div class="crop-ctrl">
+        <span data-i18n="cropZoom">Zoom</span>
+        <input type="range" id="cropZoom" min="1" max="3" step="0.01" value="1" />
+        <button class="crop-reset" onclick="cropReset()" data-i18n="cropReset">Reset</button>
+      </div>
+      <div class="crop-hint" data-i18n="cropHint">Drag to reposition · the box keeps the display ratio</div>
+      <div class="crop-actions">
+        <button class="crop-cancel" onclick="closeCropper(false)" data-i18n="cancel">Cancel</button>
+        <button class="crop-ok" onclick="closeCropper(true)" data-i18n="cropApply">Apply crop</button>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
