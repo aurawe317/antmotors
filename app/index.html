@@ -1666,7 +1666,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.6';
+const APP_VER='1.2.7';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3990,28 +3990,35 @@ async function clearWorkbenchData(){
   if(!confirm(T('clearConfirm','Clear demo sample cars, leads, share links and booking alerts? This cannot be undone.'))) return;
   MOCK_LEADS=[]; MOCK_LINKS=[]; BOOKING_NOTIFS=[];
   renderWorkbench();
-  // Also wipe the seeded demo inventory from the server (keeps cars you actually
-  // entered or edited), so customers opening a shared link no longer see the old sample cars.
+  // Collect every sample id the server actually removed, from BOTH clear paths,
+  // then purge them from local state before syncing (so the stale local copy is
+  // never re-uploaded and the samples can't resurrect on the next refresh).
+  const clearedAll=new Set();
+  const collect=function(r){ if(r&&r.clearedIds) r.clearedIds.forEach(function(id){ clearedAll.add(id); }); };
+  // 1) authenticated clear (only when signed in) — clears the owner's own company
   if(SYNC.base && SYNC.token){
-    try{
-      const r=await api('/api/clear-sample',{method:'POST'});
-      // Drop the cleared sample ids from local state BEFORE syncing, otherwise the
-      // next sync would re-push our stale local copy back to the server under our
-      // own account and the samples would instantly reappear.
-      const cleared=(r&&r.clearedIds)||[];
-      cleared.forEach(function(id){
-        delete CARS[id]; delete LISTED_AT[id]; delete CAR_PHOTOS[id];
-        delete CAR_VIDEOS[id]; delete SYNC.cars[id]; delete CAR_DELETED[id];
-        const si=SAVED_CARS.indexOf(id); if(si>=0) SAVED_CARS.splice(si,1);
-        const ri=RECENT_CARS.indexOf(id); if(ri>=0) RECENT_CARS.splice(ri,1);
-      });
-      saveCars(); saveListed(); saveSaved(); saveRecent();
-      jsave('am_dirty_cars',SYNC.cars); jsave('am_car_deleted',CAR_DELETED);
-      recomputeFacets(); renderHome(); renderStock();
-      SYNC.since=0; localStorage.setItem('am_since','0');
-      await syncNow(true);
-    }catch(e){ console.error('clear-sample failed',e); }
+    try{ const r=await api('/api/clear-sample',{method:'POST'}); collect(r); }catch(e){ console.error('clear-sample failed',e); }
   }
+  // 2) login-free clear scoped to the company this page / share link resolves to.
+  //    Runs even with no session token, so the samples are REALLY removed from the
+  //    server and a refresh cannot pull them back. Only ever deletes seed ids.
+  if(SYNC.base){
+    try{
+      let qs=''; try{ const u=new URL(location.href); qs=u.search||''; }catch(e){}
+      const r=await api('/api/clear-sample-public'+qs,{method:'POST'}); collect(r);
+    }catch(e){ console.error('clear-sample-public failed',e); }
+  }
+  [...clearedAll].forEach(function(id){
+    delete CARS[id]; delete LISTED_AT[id]; delete CAR_PHOTOS[id];
+    delete CAR_VIDEOS[id]; delete SYNC.cars[id]; delete CAR_DELETED[id];
+    const si=SAVED_CARS.indexOf(id); if(si>=0) SAVED_CARS.splice(si,1);
+    const ri=RECENT_CARS.indexOf(id); if(ri>=0) RECENT_CARS.splice(ri,1);
+  });
+  saveCars(); saveListed(); saveSaved(); saveRecent();
+  jsave('am_dirty_cars',SYNC.cars); jsave('am_car_deleted',CAR_DELETED);
+  recomputeFacets(); renderHome(); renderStock();
+  SYNC.since=0; localStorage.setItem('am_since','0');
+  if(SYNC.base && SYNC.token){ try{ await syncNow(true); }catch(e){} }
   toast(T('dataCleared','Demo data cleared'));
 }
 function submitNewCar(){

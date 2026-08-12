@@ -1075,6 +1075,32 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { ok: true, carsCleared: existing.length, clearedIds: existing });
     }
 
+    /* Login-free variant used by the in-app "Clear demo data" button when the
+       viewer has NO session token (e.g. opened straight from a shared link).
+       It only ever removes SEED/SAMPLE car ids for the company this page resolves
+       to, so it can never delete cars the owner actually entered. Scoped by
+       ?ref= / ?company= using the same resolution as the public car feed. */
+    if (p === '/api/clear-sample-public' && req.method === 'POST') {
+      let companyId = DEFAULT_COMPANY;
+      try {
+        const u = new URL(req.url, 'http://localhost');
+        const ref = u.searchParams.get('ref');
+        if (ref) { const e = q('SELECT company_id FROM employees WHERE id=? AND deleted=0').get(ref); if (e) companyId = e.company_id; }
+        else { const cp = u.searchParams.get('company'); if (cp) { const c = q('SELECT id FROM companies WHERE id=?').get(cp); if (c) companyId = c.id; } }
+      } catch (e) {}
+      const allIds = [...new Set([...SEED_CAR_IDS, ...CLEARED_SAMPLES])];
+      const existing = q(`SELECT id FROM cars WHERE company_id=? AND id IN (${allIds.map(() => '?').join(',')}) AND deleted=0`).all(companyId, ...allIds).map(r => r.id);
+      if (existing.length) {
+        const ph = existing.map(() => '?').join(',');
+        q(`DELETE FROM photos WHERE company_id=? AND car_id IN (${ph})`).run(companyId, ...existing);
+        q(`DELETE FROM videos WHERE company_id=? AND car_id IN (${ph})`).run(companyId, ...existing);
+        q(`UPDATE cars SET deleted=1, updated_at=? WHERE company_id=? AND id IN (${ph})`).run(now(), companyId, ...existing);
+      }
+      existing.forEach(id => CLEARED_SAMPLES.add(id));
+      setMeta('cleared_samples', JSON.stringify([...CLEARED_SAMPLES]));
+      return send(res, 200, { ok: true, carsCleared: existing.length, clearedIds: existing, company: companyId });
+    }
+
     if (p === '/api/audit' && isTop(emp)) {
       return send(res, 200, { rows: q('SELECT * FROM audit WHERE company_id=? ORDER BY id DESC LIMIT 200').all(emp.companyId) });
     }
