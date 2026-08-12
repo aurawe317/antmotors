@@ -655,7 +655,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v101</span></div>
+        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span id="footVer" style="display:block;font-size:9px;color:var(--gold);opacity:.6;"></span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -1666,7 +1666,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.5';
+const APP_VER='1.2.6';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -4387,6 +4387,8 @@ bootstrap().then(()=>{
 function showUpdateBanner(){ const b=document.getElementById('updateBanner'); if(b) b.classList.add('show'); }
 function applyUpdate(){ try{ localStorage.setItem('am_force_sw','1'); }catch(e){} location.reload(); }
 if('serviceWorker' in navigator){
+  // footer build number always reflects the real APP_VER (never a stale literal)
+  try{ const fv=document.getElementById('footVer'); if(fv) fv.textContent='v'+APP_VER; }catch(e){}
   // When a newer service worker takes control, reload automatically so a PWA
   // installed to the home screen is never stuck on an old build (e.g. v101).
   navigator.serviceWorker.addEventListener('message', function(e){
