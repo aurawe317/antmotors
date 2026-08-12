@@ -1,5 +1,9 @@
-const CACHE = 'antmotors-v114';
+const CACHE = 'antmotors-v115';
 const STATIC = ['./', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon.svg'];
+
+// Allow the page to force this worker to take over immediately (used by the
+// controllerchange/update logic in index.html so an old build never sticks).
+self.addEventListener('message', e => { if(e.data && e.data.type==='skipWaiting') self.skipWaiting(); });
 
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(STATIC)).then(() => self.skipWaiting()));
