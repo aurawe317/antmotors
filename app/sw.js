@@ -1,4 +1,4 @@
-const CACHE = 'antmotors-v116';
+const CACHE = 'antmotors-v117';
 const STATIC = ['./', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon.svg'];
 
 // Allow the page to force this worker to take over immediately (used by the
