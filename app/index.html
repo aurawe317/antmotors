@@ -1670,7 +1670,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.12';
+const APP_VER='1.2.13';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3077,6 +3077,17 @@ async function bootstrap(){
   let loaded=false, error=null;
   // 1) local cache first (instant UI)
   loadCars(); loadListed(); loadEmps(); loadShowrooms(); loadCarVideos(); loadCarPhotos(); loadShowroomPhotos(); loadMembership();
+  // Hard purge any demo/sample cars from the local cache at startup. The server is
+  // already clean; this guarantees the browser cache is too, so a sample car can
+  // never re-appear on the homepage / shared link even if an older service-worker
+  // served stale JS that lacked the later eviction logic.
+  SAMPLE_CAR_IDS.forEach(function(id){
+    if(CARS[id]){ delete CARS[id]; delete LISTED_AT[id]; delete CAR_PHOTOS[id]; delete CAR_VIDEOS[id]; }
+    const si=SAVED_CARS.indexOf(id); if(si>=0) SAVED_CARS.splice(si,1);
+    const ri=RECENT_CARS.indexOf(id); if(ri>=0) RECENT_CARS.splice(ri,1);
+    delete SYNC.cars[id]; delete CAR_DELETED[id];
+  });
+  saveCars(); saveCarPhotos(); saveCarVideos(); saveListed();
   // restore which account is signed in (so a page reload keeps the boss/owner view
   // instead of resetting to the "boss" placeholder and dropping to a customer view)
   try{ const raw=localStorage.getItem('am_me'); if(raw){ let id=raw; try{ const m=JSON.parse(raw); if(m&&m.id) id=m.id; }catch(e){} const e=empOf(id); curEmployee=(e&&['boss','partnerA','partnerB'].includes(e.tier))?id:'boss'; } }catch(e){ curEmployee='boss'; }
