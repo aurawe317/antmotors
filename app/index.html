@@ -1343,6 +1343,10 @@ const CARS = {};
 // never linger in the local cache once cleared on the server (the recurring
 // "sample cars resurrect on the homepage" bug). Kept in sync with server SEED_CAR_IDS.
 const SAMPLE_CAR_IDS = new Set(['lc','tuc','son','cam','hil','hilux','rav4','navara','elantra']);
+// Stale demo showroom names seeded into old builds. Showrooms are kept only in
+// localStorage (the client never syncs them to the server), so these defaults can
+// linger in the browser cache forever. Purged at startup so they can't resurface.
+const DEMO_SHOWROOM_NAMES = new Set(['Accra Branch','Tema Branch','Kumasi Branch']);
 const LISTED_AT={};
 function daysInStock(k){ const c=CARS[k]; if(c&&c.inStockDays!=null&&c.inStockDays!==''){ const n=parseInt(c.inStockDays); if(!isNaN(n)) return Math.max(0,n); } const d=LISTED_AT[k]; if(!d) return null; return Math.max(0,Math.floor((Date.now()-new Date(d).getTime())/86400000)); }
 const COLORS={};
@@ -1670,7 +1674,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.13';
+const APP_VER='1.2.14';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3077,6 +3081,14 @@ async function bootstrap(){
   let loaded=false, error=null;
   // 1) local cache first (instant UI)
   loadCars(); loadListed(); loadEmps(); loadShowrooms(); loadCarVideos(); loadCarPhotos(); loadShowroomPhotos(); loadMembership();
+  // Drop any stale demo showrooms (Accra/Tema/Kumasi Branch) lingering in the local
+  // cache from older builds. Showrooms are kept only in localStorage — the client never
+  // syncs them to the server — so these seeded defaults would otherwise never clear.
+  (function purgeDemoShowrooms(){
+    let removed=false;
+    for(let i=SHOWROOMS.length-1;i>=0;i--){ if(DEMO_SHOWROOM_NAMES.has(SHOWROOMS[i] && SHOWROOMS[i].name)){ SHOWROOMS.splice(i,1); removed=true; } }
+    if(removed) saveShowrooms();
+  })();
   // Hard purge any demo/sample cars from the local cache at startup. The server is
   // already clean; this guarantees the browser cache is too, so a sample car can
   // never re-appear on the homepage / shared link even if an older service-worker
