@@ -1674,7 +1674,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.14';
+const APP_VER='1.2.15';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3123,12 +3123,25 @@ async function bootstrap(){
 
   // 2) authenticated pull if we are signed in
   if(SYNC.base && SYNC.token){
-    try{ await syncNow(true); await refreshMembership(); loaded=true; }
+    try{
+      // Always do a FULL pull on app start (since=0). The server /api/pull is incremental
+      // (updated_at > since), so a normal refresh with an up-to-date cursor returns nothing —
+      // leaving the homepage empty until the user manually clicks sync. A full pull guarantees
+      // the complete inventory + staff roster load every time. (cheap at a dealership's scale)
+      SYNC.since=0; try{ localStorage.setItem('am_since','0'); }catch(e){}
+      await syncNow(true);
+      loaded=true;
+    }
     catch(e){ error=e; console.error('auth pull failed', e); }
+    // Membership refresh must NEVER block the car load / account resolution above.
+    try{ await refreshMembership(); }catch(e){ console.error('membership refresh failed', e); }
   }
 
   // 3) public API for customers / unconfigured staff preview
-  if(!loaded){
+  // For an OWN authenticated app (signed in, no shared ?ref) the inventory already came
+  // from the full sync above — never fall through to the public default company, which would
+  // evict the owner's own cars against an empty co_default list.
+  if(!loaded && !(SYNC.token && !shrRef)){
     try{
       const pub = publicBase();
       if(pub!==null){
@@ -3206,6 +3219,18 @@ async function bootstrap(){
       }
     }
   }catch(e){ console.error('deeplink car load failed', e); }
+
+  // Re-resolve the signed-in account now that the staff roster is loaded. am_me only
+  // stores the employee id; the real record (name/tier) arrives from the sync pull.
+  // Without this the homepage would keep showing the hardcoded "Boss" placeholder.
+  try{
+    const raw=localStorage.getItem('am_me');
+    if(raw){
+      let id=raw; try{ const m=JSON.parse(raw); if(m&&m.id) id=m.id; }catch(e){}
+      const e=empOf(id);
+      if(e) curEmployee=id;
+    }
+  }catch(e){}
 
   recomputeFacets();
   renderHome(); renderStock(); renderPerm(); renderFilterBranch(); renderShowroomList(); initAdminBranch();
