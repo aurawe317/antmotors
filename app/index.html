@@ -1023,6 +1023,7 @@
     <div id="regBox" style="display:none;">
       <div class="seg-tabs" style="margin:10px 0;">
         <div class="seg-tab on" id="regModeCreate" onclick="setRegMode('create')" data-i18n="regModeCreate">Start a company</div>
+        <div class="seg-tab" id="regModeJoin" onclick="setRegMode('join')" data-i18n="regModeJoin">Join a company</div>
       </div>
       <div id="regCreateFields">
         <div class="form-row"><label data-i18n="regCoName">Company name</label><input type="text" id="regCoName" placeholder="Ant Motors Ghana" data-ph="ph_regCoName" autocomplete="off" /></div>
@@ -1030,6 +1031,18 @@
           <input type="file" id="regCoLogo" accept="image/*" onchange="previewCoLogo()" style="padding:6px;" />
           <img id="regCoLogoPrev" style="display:none;max-height:46px;max-width:120px;margin-top:6px;border-radius:8px;background:var(--surface-2);" />
         </div>
+      </div>
+      <div id="regJoinFields" style="display:none;">
+        <div class="form-row"><label data-i18n="regCode">Invitation code</label><input type="text" id="regCode" placeholder="ANT-XXXXXX" autocomplete="off" style="text-transform:uppercase;" /></div>
+        <div class="form-row"><label data-i18n="joinRole">Your role</label>
+          <select id="regJoinTier">
+            <option value="partnerA" data-i18n="jrPartner">Partner (co-owner)</option>
+            <option value="manager" data-i18n="jrManager">Manager</option>
+            <option value="salesA" data-i18n="jrSalesA">Senior Sales</option>
+            <option value="salesB" data-i18n="jrSalesB">Sales</option>
+          </select>
+        </div>
+        <div class="form-row"><label data-i18n="joinBranch">Branch</label><input type="text" id="regJoinBranch" list="afBranchList" placeholder="Select or type" autocomplete="off" /></div>
       </div>
       <div class="form-row"><label data-i18n="regId">Account ID</label><input type="text" id="regId" placeholder="e.g. ama" data-ph="ph_regId" autocomplete="off" /><div class="sub" data-i18n="regIdSub">Login handle — short, unique, lowercase. Teammates use it to @-mention you and assign leads (e.g. ama, kwame).</div></div>
       <div class="form-row"><label data-i18n="regName">Your name</label><input type="text" id="regName" placeholder="Ama K." data-ph="ph_regName" autocomplete="off" /><div class="sub" data-i18n="regNameSub">Display name shown to customers on quotes, chats and bookings (e.g. Ama K., Kwame Asante).</div></div>
@@ -1674,7 +1687,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.16';
+const APP_VER='1.2.17';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3546,6 +3559,10 @@ async function registerAccount(){
     const code=(document.getElementById('regCode').value||'').trim().toUpperCase();
     if(!code){ toast(T('regCode','Invitation code')+': '+T('reqField','required')); return; }
     body.companyCode=code;
+    const jt=(document.getElementById('regJoinTier')||{}).value||'';
+    const jb=(document.getElementById('regJoinBranch')||{}).value||'';
+    if(jt) body.tier=jt;
+    if(jb) body.branch=jb;
   }
   try{
     setSyncState('pending',T('regCreating','Creating…')); renderSyncUI();

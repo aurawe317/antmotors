@@ -864,7 +864,7 @@ const server = http.createServer(async (req, res) => {
       const wa = String(b.wa || '').replace(/[^0-9]/g, '').slice(0, 20);
       const phone = String(b.phone || '').slice(0, 40);
 
-      let companyId, company, tier, role, roleZh;
+      let companyId, company, tier, role, roleZh, joinBranch = '';
       if (b.companyName && String(b.companyName).trim()) {
         companyId = 'co_' + crypto.randomBytes(6).toString('hex');
         const code = genCompanyCode();
@@ -884,12 +884,24 @@ const server = http.createServer(async (req, res) => {
         const co = q('SELECT * FROM companies WHERE UPPER(code)=? AND status=?').get(String(b.companyCode).trim().toUpperCase(), 'active');
         if (!co) return send(res, 400, { error: 'bad_code', detail: 'invitation code does not match' });
         companyId = co.id; company = co;
-        tier = 'customer'; role = 'Personal account'; roleZh = '个人账号';
+        const BIND_TIERS = ['partnerA', 'manager', 'salesA', 'salesB'];
+        const ROLE = { partnerA: 'Co-owner (Partner)', manager: 'Manager', salesA: 'Senior Sales', salesB: 'Sales' };
+        const ROLE_ZH = { partnerA: '合伙人', manager: '经理', salesA: '高级销售', salesB: '销售' };
+        const wantTier = String(b.tier || '');
+        if (wantTier && !BIND_TIERS.includes(wantTier)) return send(res, 400, { error: 'bad_tier', detail: 'choose partner or staff role' });
+        joinBranch = String(b.branch || '').trim().slice(0, 60);
+        if (wantTier) {
+          tier = wantTier;
+          role = ROLE[tier] + (joinBranch ? ' · ' + joinBranch : '');
+          roleZh = ROLE_ZH[tier] + (joinBranch ? ' · ' + joinBranch : '');
+        } else {
+          tier = 'customer'; role = 'Personal account'; roleZh = '个人账号';
+        }
       } else {
         return send(res, 400, { error: 'need_company', detail: 'provide companyName to create, or companyCode to join' });
       }
 
-      const data = { name, av: name.charAt(0).toUpperCase(), tier, role, roleZh, wa, phone, branch: '' };
+      const data = { name, av: name.charAt(0).toUpperCase(), tier, role, roleZh, wa, phone, branch: joinBranch };
       q("INSERT INTO employees(id,company_id,data,pin_hash,email,cred_kind,pw_changed_at,updated_at,deleted) VALUES(?,?,?,?,?,'password',?,?,0)")
         .run(id, companyId, JSON.stringify(data), hashPin(pw), email || null, now(), now());
       mirrorRow('employees', 'id=? AND company_id=?', [id, companyId]);
