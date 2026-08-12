@@ -647,7 +647,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v99</span></div>
+        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v100</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -1628,8 +1628,8 @@ function cnToEn(src,type){
 function branchLabel(n){ return curLang==="zh" ? (ZH.branch[n]||n) : n; }
 function brandLabel(s){ return curLang==="zh" ? (ZH.brand[s]||s) : s; }
 function bName(n){ return branchLabel(n); }
-function carName(c){ if(curLang!=="zh") return c.name; if(c.nameZh) return c.nameZh;
-  const p=c.name.split(" "); const yr=p[p.length-1]; const brand=p[0]; const model=p.slice(1,p.length-1).join(" ");
+function carName(c){ if(curLang!=="zh") return c.name||""; if(c.nameZh) return c.nameZh;
+  const p=String(c.name||"").split(" "); const yr=p[p.length-1]; const brand=p[0]; const model=p.slice(1,p.length-1).join(" ");
   return zBrand(brand)+" "+zModel(model)+" "+yr; }
 function translateToken(t){
   if(ZH.cond[t]) return ZH.cond[t];
@@ -1640,8 +1640,9 @@ function translateToken(t){
   let r=t.replace(/(\d[\d,]*)\s*km/g,"$1 公里").replace(/(\d[\d.]*)\s*L\b/g,"$1 升");
   return r;
 }
-function carSub(c){ if(curLang!=="zh") return c.sub; if(c.subZh) return c.subZh;
-  return c.sub.split(" · ").map(t=>translateToken(t)).join(" · "); }
+function carSub(c){ if(curLang!=="zh"){ if(c.sub) return c.sub; return [c.year,c.cond,c.body].filter(Boolean).join(" · "); }
+  if(c.subZh) return c.subZh;
+  return (c.sub||"").split(" · ").map(t=>translateToken(t)).join(" · "); }
 function condLabel(c){ return curLang==="zh" ? (ZH.cond[c.cond]||c.cond) : c.cond; }
 function specLabel(l){ return curLang==="zh" ? (ZH.specLabel[l]||l) : l; }
 function specVal(v){ if(curLang!=="zh") return v; if(ZH.specVal[v]) return ZH.specVal[v];
@@ -1652,7 +1653,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.0';
+const APP_VER='1.2.1';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2009,7 +2010,7 @@ function renderHome(){
   SHOWROOMS.forEach(s=>{
     const c=document.createElement('div'); c.className="sh-card"; c.onclick=()=>go('scr-showrooms');
     c.innerHTML=`<div class="ph">${showroomSVG(s.grad)}<span class="pin" style="position:relative;z-index:1;">📍</span></div>
-      <div class="body"><h4>${s.name}</h4><div class="meta">${s.addr.split('·')[0]}</div><div class="dist">${s.dist}</div></div>`;
+      <div class="body"><h4>${s.name}</h4><div class="meta">${(s.addr||'').split('·')[0]}</div><div class="dist">${s.dist||''}</div></div>`;
     hs.appendChild(c);
   });
 }
@@ -2095,7 +2096,7 @@ function renderDetail(){
   const badge=document.getElementById('dBadge'); if(c.sold){ badge.textContent=T('sold','SOLD'); badge.className="cond-badge sold"; } else { badge.textContent=condLabel(c); badge.className="cond-badge "+(c.cond==='NEW'?'new':'used'); }
   document.getElementById('dSub').textContent=carSub(c);
   document.getElementById('dLocName').textContent=bName(c.loc.name);
-  document.getElementById('dLocAddr').textContent=c.loc.addr+' · '+c.loc.hours;
+  document.getElementById('dLocAddr').textContent=(c.loc&&c.loc.addr||'')+' · '+(c.loc&&c.loc.hours||'');
   renderDetailThumbs();
   const sg=document.getElementById('specGrid'); sg.innerHTML="";
   c.specs.forEach(([k,v])=>{ const d=document.createElement('div'); d.className="spec"; d.innerHTML=`<div class="k">${specLabel(k)}</div><div class="v">${specVal(v)}</div>`; sg.appendChild(d); });
@@ -2143,7 +2144,7 @@ function buildGallery(c){
   } else { slides = [
     `<div class="gv">${carSVG(c.grad)}</div>`,
     `<div class="gv gv-alt">${carSVG(c.grad)}</div>`,
-    `<div class="gv gv-shop"><div>${carSVG(c.grad)}</div><div class="gv-cap">${bName(c.loc.name)}<br>${c.loc.addr}</div></div>`
+    `<div class="gv gv-shop"><div>${carSVG(c.grad)}</div><div class="gv-cap">${bName(c.loc.name)}<br>${c.loc&&c.loc.addr||''}</div></div>`
   ]; }
   slides.forEach((h,i)=>{ const s=document.createElement('div'); s.className='gslide'; s.innerHTML=h; track.appendChild(s); const d=document.createElement('span'); d.className='gdot'+(i===0?' on':''); dots.appendChild(d); });
   gal.scrollLeft=0; gal.onscroll=updateGalDots; updateGalDots();
