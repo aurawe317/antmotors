@@ -1028,6 +1028,22 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, Object.assign({ now: now() }, r));
     }
 
+    /* Clear the seeded demo / sample inventory for THIS company only.
+       Seed rows are tagged updated_by='seed'; anything the owner or staff actually
+       entered or later edited carries their own account id, so it is preserved. */
+    if (p === '/api/clear-sample' && req.method === 'POST') {
+      if (!emp) return send(res, 401, { error: 'unauthorized' });
+      const ids = q("SELECT id FROM cars WHERE company_id=? AND updated_by='seed' AND deleted=0").all(emp.companyId).map(r => r.id);
+      if (ids.length) {
+        const ph = ids.map(() => '?').join(',');
+        q(`DELETE FROM photos WHERE company_id=? AND car_id IN (${ph})`).run(emp.companyId, ...ids);
+        q(`DELETE FROM videos WHERE company_id=? AND car_id IN (${ph})`).run(emp.companyId, ...ids);
+        q(`UPDATE cars SET deleted=1, updated_at=? WHERE company_id=? AND updated_by='seed' AND deleted=0`).run(now(), emp.companyId);
+      }
+      audit(emp.id, 'sample.clear', emp.companyId, JSON.stringify({ cars: ids.length }), emp.companyId);
+      return send(res, 200, { ok: true, carsCleared: ids.length });
+    }
+
     if (p === '/api/audit' && isTop(emp)) {
       return send(res, 200, { rows: q('SELECT * FROM audit WHERE company_id=? ORDER BY id DESC LIMIT 200').all(emp.companyId) });
     }

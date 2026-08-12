@@ -188,8 +188,8 @@
   .feat-card .fc-body{padding:8px 10px 10px;}
   .feat-card .fc-name{font-size:12px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .feat-card .fc-price{font-size:12px; color:var(--gold); font-weight:700; margin-top:2px;}
-  .sh-card{flex:0 0 200px; border-radius:var(--r-card); overflow:hidden; position:relative; border:1px solid var(--border); cursor:pointer;}
-  .sh-card .ph{height:64px; display:flex; align-items:center; justify-content:center;}
+  .sh-card{flex:0 0 150px; border-radius:var(--r-card); overflow:hidden; position:relative; border:1px solid var(--border); cursor:pointer;}
+  .sh-card .ph{height:46px; display:flex; align-items:center; justify-content:center;}
   .sh-card .ph .pin{color:var(--gold);}
   .sh-card .body{padding:9px 11px 11px; background:var(--surface-2);}
   .sh-card .body h4{font-size:13px; font-weight:700;}
@@ -729,7 +729,7 @@
       <div class="sec-head"><h2 data-i18n="ourShowrooms">Our Showrooms</h2><a onclick="go('scr-showrooms')" data-i18n="seeAll">See all</a></div>
       <div class="hscroll" id="homeShowrooms"></div>
 
-      <div class="sec-head"><h2 data-i18n="newArrivals">New Arrivals</h2><a onclick="go('scr-stock')" data-i18n="browseAll">Browse all</a></div>
+      <div class="sec-head"><h2 data-i18n="allVehicles">All Vehicles</h2></div>
       <div class="grid" id="homeGrid"></div>
 
       <div class="sec-head"><h2 data-i18n="yourConsultant">Your Sales Consultant</h2></div>
@@ -1386,7 +1386,7 @@ function showroomSVG(grad){
 }
 
 const I18N = {
-  en:{tagline:"GHANA · CHINA-AUTO EXPORT",st_new:"New",st_contacted:"Contacted",st_closed:"Closed",stAdvance:"Click to advance",stUpdated:"Lead moved to",featured:"FEATURED",viewDetails:"View details",ourShowrooms:"Our Showrooms",seeAll:"See all",
+  en:{tagline:"GHANA · CHINA-AUTO EXPORT",st_new:"New",st_contacted:"Contacted",st_closed:"Closed",stAdvance:"Click to advance",stUpdated:"Lead moved to",featured:"FEATURED",viewDetails:"View details",ourShowrooms:"Our Showrooms",seeAll:"See all",allVehicles:"All Vehicles",
       newArrivals:"New Arrivals",browseAll:"Browse all",yourConsultant:"Your Sales Consultant",consultRole:"Senior Sales · Accra Branch",
       inventory:"Inventory",all:"All",new:"New",used:"Used",highlights:"Highlights",bookViewing:"Book Viewing",back:"Back",
       showroomsTitle:"Showrooms",searchFilter:"Search & Filter",close:"Close",hToyota:"Toyota",hSUV:"SUV",h2021:"2021",hUnder40:"Under ₵40k",
@@ -1434,7 +1434,7 @@ const I18N = {
       pvS_kwame:"Kwame A. · Accra",pvS_ama:"Ama K. · Tema",pvS_kwasi:"Kwasi O. · Kumasi",
       prTitle:"💰 Pricing model",prHint:"One car, up to three prices by role. Prices show in your chosen display currency. Owner + 2 Partners see cost; Sales see a graded floor; the customer sees the quote.",
       priceSetByTop:"Only Boss/Owner & Partners can set price tiers.",loginAs:"Login as",pvLogin:"Login as (admin only)",pvL_boss:"Boss / Owner",pvL_partnerA:"Partner A",pvL_partnerB:"Partner B",boundLink:"Bound link · customers reach only you",noSwitchRole:"Roles are assigned by admin — you cannot switch",noSwitchSales:"Share link is bound to your account",viewingAs:"viewing as",loggedInAs:"Logged in as",sortDefault:"Default",sortPriceAsc:"Price ↑",sortPriceDesc:"Price ↓",sortNewest:"Listed newest",sortOldest:"Listed oldest",inStockDays:"In stock",days:"days",overstock:"overstock",settingsTitle:"Settings",myContact:"My contact (customer reaches you)",fWhatsApp:"WhatsApp number",fPhone:"Phone",saveContact:"Save",installTitle:"Install the app (employees)",installHint:"iOS: Safari → Share → Add to Home Screen. Android: Chrome → ⋮ → Install app. Customers just open the shared link — no install needed.",staffMgmt:"Staff & roles (admin)",addStaff:"+ Add staff",staffId:"Staff ID",staffName:"Name",staffRole:"Role",staffBranch:"Branch",staffWa:"WhatsApp",staffPhone:"Phone",staffPin:"PIN (4-8 digits)",staffCreate:"Create & invite",staffCreated:"Staff created",contactSaved:"Contact saved",tierAssigned:"Assigned ",pvEditContact:"Edit my WhatsApp & phone",pvLockNote:"Your share link is bound to this account — customers can only reach you. Role switching is assigned by admin.",close:"Close",edit:"Edit",noContact:"No contact set",shoppingAs:"Shopping with",cap_cost:"See cost price",cap_floors:"See all floor prices",cap_ownfloor:"See own floor price",cap_quote:"See selling quote",cap_editcar:"Edit car info (specs, highlights)",cap_editprice:"Edit prices (cost, floor, quote)",cap_photocar:"Upload car photos",cap_photoshowroom:"Upload showroom photos",cap_addcar:"Add / remove cars",cap_managestaff:"Manage sales staff",cap_sharelinks:"Generate share links",cap_leads:"View customer leads",permNote:"<b>Boss + Partner A + Partner B</b> share identical top-level access — cost, pricing, full edit. &nbsp; <b>*</b> Manager: limited to own branch. &nbsp; <b>**</b> Sales A: limited to cars they manage.",memNone:"No plan",memActive:"Active",ph_paste:"Smart paste: drop a full vehicle description and fields fill automatically. e.g. Toyota Camry 2021, SUV, Black, Accra, 2.5L Auto, 45,000 km, Sunroof Leather seats",bilingualPrev:"Bilingual preview (editable)",featuredCars:"Featured",browseAll:"Browse all",markFeat:"Set as Featured",unmarkFeat:"Remove from Featured",markedFeat:"Marked as featured",unmarkedFeat:"Removed from featured",noPermBranch:"This car belongs to another branch.",addShowroom:"+ Add sales point",shName:"Name",shAddr:"Address",shPhone:"Phone",shHours:"Hours",shDist:"Distance",shSave:"Save",del:"Delete",showroomsTitle:"Showrooms",shDelConfirm:"Delete showroom",unassigned:"Unassigned",shSettingsTitle:"Sales points / Showrooms",wbStatLeads:"Leads",wbStatClicks:"Link clicks",wbStatConv:"Conversion",noLeads:"No leads yet",noBookings:"No new bookings",clicksLbl:"clicks",leadsLbl:"leads",back:"Back"},
-  zh:{tagline:"加纳 · 中国车出口",st_new:"新",st_contacted:"已联系",st_closed:"已成交",stAdvance:"点击推进",stUpdated:"线索状态更新为",featured:"精选",viewDetails:"查看详情",ourShowrooms:"门店网点",seeAll:"全部",
+  zh:{tagline:"加纳 · 中国车出口",st_new:"新",st_contacted:"已联系",st_closed:"已成交",stAdvance:"点击推进",stUpdated:"线索状态更新为",featured:"精选",viewDetails:"查看详情",ourShowrooms:"门店网点",seeAll:"全部",allVehicles:"全部车源",
       newArrivals:"新到车源",browseAll:"浏览全部",yourConsultant:"您的销售顾问",consultRole:"高级销售 · 阿克拉店",
       inventory:"在售库存",all:"全部",new:"新车",used:"二手车",highlights:"配置亮点",bookViewing:"预约看车",back:"返回",
       showroomsTitle:"门店网点",searchFilter:"搜索与筛选",close:"关闭",hToyota:"丰田",hSUV:"SUV",h2021:"2021",hUnder40:"40万以下",
@@ -1553,7 +1553,7 @@ I18N.en.syncEmpId="Account / e-mail"; I18N.en.syncPw="Password"; I18N.en.remembe
 I18N.en.syncNeedCreds="Enter your account and password"; I18N.en.syncBadCreds="Wrong account or password";
 I18N.en.pwRule="At least 8 characters with upper & lower case, a number and a symbol."; I18N.en.pwStrong="Strong password ✓";
 I18N.en.pwTooShort="At least 8 characters"; I18N.en.pwTooLong="64 characters max"; I18N.en.pwNeedLower="Add a lower-case letter"; I18N.en.pwNeedUpper="Add a CAPITAL letter"; I18N.en.pwNeedDigit="Add a number"; I18N.en.pwNeedSymbol="Add a symbol (!@#$…)"; I18N.en.pwTooSimple="Too simple";
-I18N.en.cancel="Cancel"; I18N.en.cropZoom="Zoom"; I18N.en.cropReset="Reset"; I18N.en.cropHint="Drag to reposition · the box keeps the display ratio"; I18N.en.cropApply="Apply crop"; I18N.en.cropTitle="Adjust photo"; I18N.en.uploadMedia="Upload car media"; I18N.en.addPhoto="+ Photo"; I18N.en.addVideo="+ Video"; I18N.en.from="From"; I18N.en.editCar="Edit"; I18N.en.updateCar="Update Car"; I18N.en.clearData="Clear demo data"; I18N.en.clearConfirm="Clear all leads, share links and booking alerts? This cannot be undone."; I18N.en.dataCleared="Demo data cleared";
+I18N.en.cancel="Cancel"; I18N.en.cropZoom="Zoom"; I18N.en.cropReset="Reset"; I18N.en.cropHint="Drag to reposition · the box keeps the display ratio"; I18N.en.cropApply="Apply crop"; I18N.en.cropTitle="Adjust photo"; I18N.en.uploadMedia="Upload car media"; I18N.en.addPhoto="+ Photo"; I18N.en.addVideo="+ Video"; I18N.en.from="From"; I18N.en.editCar="Edit"; I18N.en.updateCar="Update Car"; I18N.en.clearData="Clear demo data"; I18N.en.clearConfirm="Clear demo sample cars, leads, share links and booking alerts? This cannot be undone."; I18N.en.dataCleared="Demo data cleared";
 I18N.en.pwMismatch="The two passwords do not match"; I18N.en.pwSame="New password must differ from the current one";
 I18N.en.pwLocked="Too many attempts — account locked, try again in"; I18N.en.pwMinutes="min";
 I18N.en.pwUpgradeHint="Your account still uses an old PIN — set a real password via “Forgot password?”";
@@ -1565,7 +1565,7 @@ I18N.zh.syncEmpId="账号 / 邮箱"; I18N.zh.syncPw="密码"; I18N.zh.rememberMe
 I18N.zh.syncNeedCreds="请输入账号和密码"; I18N.zh.syncBadCreds="账号或密码错误";
 I18N.zh.pwRule="至少 8 位，需包含大写、小写、数字和符号。"; I18N.zh.pwStrong="密码强度：强 ✓";
 I18N.zh.pwTooShort="至少 8 位字符"; I18N.zh.pwTooLong="最多 64 位字符"; I18N.zh.pwNeedLower="需要包含小写字母"; I18N.zh.pwNeedUpper="需要包含大写字母"; I18N.zh.pwNeedDigit="需要包含数字"; I18N.zh.pwNeedSymbol="需要包含符号（!@#$…）"; I18N.zh.pwTooSimple="密码过于简单";
-I18N.zh.cancel="取消"; I18N.zh.cropZoom="缩放"; I18N.zh.cropReset="重置"; I18N.zh.cropHint="拖动调整位置 · 裁剪框锁定展示比例"; I18N.zh.cropApply="应用裁剪"; I18N.zh.cropTitle="调整照片"; I18N.zh.uploadMedia="上传车辆媒体"; I18N.zh.addPhoto="+ 照片"; I18N.zh.addVideo="+ 视频"; I18N.zh.from="起"; I18N.zh.editCar="编辑"; I18N.zh.updateCar="更新车辆"; I18N.zh.clearData="清空演示数据"; I18N.zh.clearConfirm="清空全部客户线索、分享链接和预约提醒？此操作不可撤销。"; I18N.zh.dataCleared="演示数据已清空";
+I18N.zh.cancel="取消"; I18N.zh.cropZoom="缩放"; I18N.zh.cropReset="重置"; I18N.zh.cropHint="拖动调整位置 · 裁剪框锁定展示比例"; I18N.zh.cropApply="应用裁剪"; I18N.zh.cropTitle="调整照片"; I18N.zh.uploadMedia="上传车辆媒体"; I18N.zh.addPhoto="+ 照片"; I18N.zh.addVideo="+ 视频"; I18N.zh.from="起"; I18N.zh.editCar="编辑"; I18N.zh.updateCar="更新车辆"; I18N.zh.clearData="清空演示数据"; I18N.zh.clearConfirm="清空示例车辆、客户线索、分享链接和预约提醒？此操作不可撤销。"; I18N.zh.dataCleared="演示数据已清空";
 I18N.zh.pwMismatch="两次输入的密码不一致"; I18N.zh.pwSame="新密码不能与当前密码相同";
 I18N.zh.pwLocked="尝试次数过多——账号已锁定，请稍后再试："; I18N.zh.pwMinutes="分钟";
 I18N.zh.pwUpgradeHint="你的账号仍在使用旧的 PIN——请通过“忘记密码？”设置正式密码";
@@ -1666,7 +1666,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.2';
+const APP_VER='1.2.3';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -1895,6 +1895,9 @@ document.addEventListener('click',e=>{
 });
 const stockSearch=document.getElementById('stockSearchInput');
 if(stockSearch) stockSearch.addEventListener('input',e=>{ FILTER.q=e.target.value.trim(); renderStock(); });
+// Home-screen search: filter the homepage car grid the same way as the stock screen.
+const homeSearch=document.getElementById('homeSearchInput');
+if(homeSearch) homeSearch.addEventListener('input',e=>{ FILTER.q=e.target.value.trim(); renderHome(); });
 
 function matchCar(k){
   const c=CARS[k];
@@ -2014,7 +2017,7 @@ function renderStock(){
 function renderHome(){
   populateFilterSelects();
   const grid=document.getElementById('homeGrid'); grid.innerHTML="";
-  const homeKeys=Object.keys(CARS).filter(matchCar).slice(0,6);
+  const homeKeys=Object.keys(CARS).filter(matchCar);
   if(homeKeys.length===0){ grid.innerHTML='<div class="empty" style="margin:40px 16px;text-align:center;color:var(--text-dim)">'+T('needServer','Please enter your server address in Settings to load inventory.')+'</div>'; }
   homeKeys.forEach(k=>{ grid.appendChild(carCard(k)); });
   // Featured cars now live in the big hero carousel (see renderHeroCarousel) — no separate section below.
@@ -3982,10 +3985,19 @@ function cancelEdit(){
   ADMIN_PHOTOS=[]; renderAfThumbs(); ADMIN_VIDEOS=[]; renderAfVideoThumbs();
   go('scr-workbench');
 }
-function clearWorkbenchData(){
-  if(!confirm(T('clearConfirm','Clear all leads, share links and booking alerts? This cannot be undone.'))) return;
+async function clearWorkbenchData(){
+  if(!confirm(T('clearConfirm','Clear demo sample cars, leads, share links and booking alerts? This cannot be undone.'))) return;
   MOCK_LEADS=[]; MOCK_LINKS=[]; BOOKING_NOTIFS=[];
   renderWorkbench();
+  // Also wipe the seeded demo inventory from the server (keeps cars you actually
+  // entered or edited), so customers opening a shared link no longer see the old sample cars.
+  if(SYNC.base && SYNC.token){
+    try{
+      await api('/api/clear-sample',{method:'POST'});
+      SYNC.since=0; localStorage.setItem('am_since','0');
+      await syncNow(true);
+    }catch(e){ console.error('clear-sample failed',e); }
+  }
   toast(T('dataCleared','Demo data cleared'));
 }
 function submitNewCar(){
