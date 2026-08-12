@@ -1339,6 +1339,10 @@
 
 <script>
 const CARS = {};
+// Authoritative seed/sample car ids. Cars with these ids are demo data and must
+// never linger in the local cache once cleared on the server (the recurring
+// "sample cars resurrect on the homepage" bug). Kept in sync with server SEED_CAR_IDS.
+const SAMPLE_CAR_IDS = new Set(['lc','tuc','son','cam','hil','hilux','rav4','navara','elantra']);
 const LISTED_AT={};
 function daysInStock(k){ const c=CARS[k]; if(c&&c.inStockDays!=null&&c.inStockDays!==''){ const n=parseInt(c.inStockDays); if(!isNaN(n)) return Math.max(0,n); } const d=LISTED_AT[k]; if(!d) return null; return Math.max(0,Math.floor((Date.now()-new Date(d).getTime())/86400000)); }
 const COLORS={};
@@ -1666,7 +1670,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.11';
+const APP_VER='1.2.12';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3136,7 +3140,13 @@ async function bootstrap(){
           apiPublic('/api/public/cars'+listQ),
           apiPublic('/api/showrooms'+listQ)
         ]);
-        (list.cars||[]).forEach(c=>{ const id=c.id; delete c.id; CARS[id]=c; if(c.listedAt) LISTED_AT[id]=c.listedAt; });
+        const listCars=list.cars||[];
+        const serverIds=new Set(listCars.map(c=>c.id));
+        listCars.forEach(c=>{ const id=c.id; delete c.id; CARS[id]=c; if(c.listedAt) LISTED_AT[id]=c.listedAt; });
+        // Evict any local car the server did NOT return for this company. Without this,
+        // sample cars cleared server-side keep lingering in the browser cache and
+        // re-appear on the shared-link homepage (the long-standing "复活" bug).
+        for(const id of Object.keys(CARS)){ if(!serverIds.has(id)) delete CARS[id]; }
         if(rooms.showrooms && rooms.showrooms.length){
           const serverNames=new Set(rooms.showrooms.map(x=>x.name));
           const localOnly=SHOWROOMS.filter(s=>!serverNames.has(s.name)); // keep user-added locations not yet on server
@@ -3698,6 +3708,10 @@ async function syncNow(silent){
       }
       n++;
     });
+    // Belt-and-suspenders: never let a demo/sample car (known seed id) linger in
+    // the local cache after a sync — it was cleared on the server but may have
+    // missed the deletion event if the sync cursor predated it.
+    SAMPLE_CAR_IDS.forEach(function(id){ if(CARS[id]){ delete CARS[id]; delete LISTED_AT[id]; delete CAR_PHOTOS[id]; delete CAR_VIDEOS[id]; } });
     (p.employees||[]).forEach(e=>{ if(e.deleted){ delete SALES[e.id]; delete OWNERS[e.id]; delete ALL_EMP[e.id]; } else { upsertEmp(e.id,e.data); n++; } });
     SYNC.since=p.now; localStorage.setItem('am_since',String(p.now));
     saveCars(); saveListed(); saveEmps();
@@ -4009,6 +4023,10 @@ async function clearWorkbenchData(){
     const si=SAVED_CARS.indexOf(id); if(si>=0) SAVED_CARS.splice(si,1);
     const ri=RECENT_CARS.indexOf(id); if(ri>=0) RECENT_CARS.splice(ri,1);
   });
+  // Also purge any known sample car that lives ONLY in the local cache (never
+  // pushed to the server, so the server-side clear can't reach it). Otherwise it
+  // survives and re-appears on the homepage after a refresh.
+  SAMPLE_CAR_IDS.forEach(function(id){ delete CARS[id]; delete LISTED_AT[id]; delete CAR_PHOTOS[id]; delete CAR_VIDEOS[id]; delete SYNC.cars[id]; delete CAR_DELETED[id]; });
   saveCars(); saveListed(); saveSaved(); saveRecent();
   jsave('am_dirty_cars',SYNC.cars); jsave('am_car_deleted',CAR_DELETED);
   // Purge cleared sample staff from local state BEFORE syncing, otherwise a stale
