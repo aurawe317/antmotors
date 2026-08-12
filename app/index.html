@@ -1666,7 +1666,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.8';
+const APP_VER='1.2.9';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3785,13 +3785,9 @@ function renderFav(){
 }
 
 /* ---- sales workbench ---- */
-let MOCK_LEADS=[
-  {id:0,name:'Kofi M.',car:'Toyota Land Cruiser',date:'Aug 3',status:'new',sales:'kwame'},
-  {id:1,name:'Akosua D.',car:'Hyundai Tucson',date:'Aug 2',status:'contacted',sales:'kwame'},
-  {id:2,name:'Yaw B.',car:'Honda Civic',date:'Aug 1',status:'closed',sales:'kwame'},
-  {id:3,name:'Ama O.',car:'Kia Sportage',date:'Aug 3',status:'new',sales:'ama'},
-  {id:4,name:'Kwesi T.',car:'Nissan Navara',date:'Aug 2',status:'contacted',sales:'kwasi'},
-];
+// Workbench starts empty — no seeded fake leads/links. Real data arrives only
+// when customers actually generate leads (booking form, share-link clicks).
+let MOCK_LEADS=[];
 const LEAD_FLOW=['new','contacted','closed'];
 function cycleLead(id){
   const l=MOCK_LEADS.find(x=>x.id===id); if(!l) return;
@@ -3800,18 +3796,10 @@ function cycleLead(id){
   renderWorkbench();
   toast(T('stUpdated','Lead moved to')+' · '+T('st_'+l.status,l.status));
 }
-let MOCK_LINKS=[
-  {car:'lc',sales:'kwame',clicks:47,leads:5},
-  {car:'tucson',sales:'kwame',clicks:32,leads:3},
-  {car:'civic',sales:'kwame',clicks:18,leads:1},
-  {car:'sportage',sales:'ama',clicks:29,leads:4},
-  {car:'navara',sales:'kwasi',clicks:12,leads:2},
-];
+let MOCK_LINKS=[];
 
 /* booking alerts delivered to the assigned sales (and to all top roles) */
-let BOOKING_NOTIFS=[
-  {sales:'kwame',name:'Kofi M.',phone:'+233241112233',car:'lc',date:'Aug 3',time:'14:00',branch:'Accra Branch',status:'new'},
-];
+let BOOKING_NOTIFS=[];
 
 function renderWorkbench(){
   const isStaff=curRole!=='customer';
