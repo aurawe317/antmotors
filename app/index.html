@@ -536,6 +536,14 @@
   .wb-lead .status.contacted{background:rgba(37,211,102,.15);color:#25D366;}
   .wb-lead .status.closed{background:rgba(136,135,128,.15);color:var(--text-dim);}
   .wb-link{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+  .feat-order{display:flex;flex-direction:column;gap:8px;}
+  .feat-row{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:var(--surface-2);}
+  .feat-row .fr-idx{width:22px;height:22px;flex:0 0 22px;border-radius:50%;background:var(--gold-soft);color:var(--gold);font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;}
+  .feat-row .fr-name{flex:1;min-width:0;font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .feat-row .fr-btns{display:flex;gap:6px;}
+  .feat-row .fr-btns button{width:34px;height:30px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:15px;font-weight:700;cursor:pointer;}
+  .feat-row .fr-btns button:disabled{opacity:.35;cursor:default;}
+  .empty-hint{font-size:12px;color:var(--text-dim);padding:8px 2px;}
   .wb-link .car{font-size:12px;font-weight:600;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
   .wb-link .url{font-size:10px;color:var(--text-dim);font-family:monospace;}
   .wb-link button{font-size:10px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;}
@@ -647,7 +655,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v100</span></div>
+        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v101</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -854,6 +862,10 @@
       <div id="wbNotifs"></div>
       <div class="sec-head" style="margin-top:18px;"><h3 data-i18n="wbMyCars">My Cars</h3></div>
       <div id="wbMyCars" class="grid wb-mycar" style="margin-top:8px;"></div>
+      <div id="wbFeatWrap" style="display:none;margin-top:18px;">
+        <div class="sec-head"><h3 data-i18n="wbFeatOrder">Featured Order</h3></div>
+        <div id="wbFeatOrder" class="feat-order"></div>
+      </div>
       <div id="wbAdminActions" style="display:none;margin-top:18px;">
         <div class="sec-head"><h3 data-i18n="wbAdmin">Admin Actions</h3></div>
         <button class="submit" onclick="go('scr-admin')" data-i18n="addNewCar" style="margin-bottom:8px;">+ Add New Car</button>
@@ -880,6 +892,7 @@
           <div class="form-row"><label data-i18n="fCond">Condition</label><select id="afCond" onchange="liveZh()"><option>NEW</option><option>USED</option></select></div>
           <div class="form-row"><label data-i18n="fBody">Body Type</label><select id="afBody" onchange="liveZh()"><option>SUV</option><option>Sedan</option><option>Pickup</option><option>Hatchback</option></select></div>
           <div class="form-row"><label data-i18n="color">Color</label><select id="afColor" onchange="liveZh()"><option>Black</option><option>White</option><option>Silver</option><option>Gray</option><option>Red</option><option>Blue</option><option>Brown</option><option>Other</option></select></div>
+          <div class="form-row"><label data-i18n="fDays">Days in stock</label><input type="number" id="afDays" placeholder="auto" min="0"></div>
         </div>
 
         <div class="form-row"><label data-i18n="fBranch">Branch</label><input type="text" id="afBranch" list="afBranchList" autocomplete="off" placeholder="Select or type a new location" style="width:100%;"><datalist id="afBranchList"></datalist></div>
@@ -1327,7 +1340,7 @@
 <script>
 const CARS = {};
 const LISTED_AT={};
-function daysInStock(k){ const d=LISTED_AT[k]; if(!d) return null; return Math.max(0,Math.floor((Date.now()-new Date(d).getTime())/86400000)); }
+function daysInStock(k){ const c=CARS[k]; if(c&&c.inStockDays!=null&&c.inStockDays!==''){ const n=parseInt(c.inStockDays); if(!isNaN(n)) return Math.max(0,n); } const d=LISTED_AT[k]; if(!d) return null; return Math.max(0,Math.floor((Date.now()-new Date(d).getTime())/86400000)); }
 const COLORS={};
 function carColor(k){ return (CARS[k]&&CARS[k].color)||COLORS[k]||"Other"; }
 function carYear(c){ const m=String(c.name).match(/(\d{4})/); return m?+m[1]:null; }
@@ -1380,10 +1393,10 @@ const I18N = {
       cond:"Condition",brand:"Brand",body:"Body",branch:"Branch",priceRange:"Price Range",applyFilters:"Apply Filters",
       navHome:"Home",navStock:"Stock",navShops:"Shops",navPerm:"Prices",navMore:"Search",
       staffPortal:"Staff Portal",workbench:"Workbench",workbenchSub:"Leads · links · stats",addCar:"Add Car",addCarSub:"New listing entry",permTitleShort:"Role & permission matrix",permSub:"7 tiers · who sees what",
-      workbenchTitle:"Sales Workbench",wbLeads:"Customer Leads",wbLinks:"Share Links",wbNotifs:"Booking Alerts",wbMyCars:"My Cars",wbAdmin:"Admin Actions",addNewCar:"+ Add New Car",
+      workbenchTitle:"Sales Workbench",wbLeads:"Customer Leads",wbLinks:"Share Links",wbNotifs:"Booking Alerts",wbMyCars:"My Cars",wbFeatOrder:"Featured Order",noFeat:"No featured cars yet. Mark a car as featured from its ⋯ menu.",wbAdmin:"Admin Actions",addNewCar:"+ Add New Car",
       wbStatLeads:"Leads",wbStatClicks:"Link clicks",wbStatConv:"Conversion",
       adminTitle:"Add New Car",fBrand:"Brand",fModel:"Model",fYear:"Year",fCond:"Condition",fBody:"Body Type",fBranch:"Branch",
-      fSpecs:"Specs (comma-separated)",fHighlights:"Highlights (comma-separated)",priceTiers:"Price Tiers",
+      fSpecs:"Specs (comma-separated)",fHighlights:"Highlights (comma-separated)",fDays:"Days in stock",priceTiers:"Price Tiers",
       fCost:"Cost",fFloorA:"Floor A (Senior)",fFloorB:"Floor B (Junior)",fQuote:"Quote (Customer Price)",
       fPhotos:"Photos",fPhotosHint:"Tap to upload car photos",fVideos:"Videos",fVideosHint:"Tap to add a car video (max 25MB)",preview:"Preview",saveCar:"Save Car",zhAuto:"Chinese preview (auto)",zhName:"Name",zhSub:"Sub",zhSpec:"Specs",zhHl:"Highlights",
       favTitle:"Saved & Recent",favSaved:"Saved",favRecent:"Recently viewed",favEmptyHint:"Tap the heart on any car to save it here",
@@ -1428,10 +1441,10 @@ const I18N = {
       cond:"车况",brand:"品牌",body:"车型",branch:"门店",priceRange:"价格区间",applyFilters:"应用筛选",
       navHome:"首页",navStock:"库存",navShops:"门店",navPerm:"价格",navMore:"搜索",
       staffPortal:"员工入口",workbench:"工作台",workbenchSub:"线索 · 链接 · 统计",addCar:"录车",addCarSub:"新增车辆",permTitleShort:"角色与权限矩阵",permSub:"七级角色 · 权限一览",
-      workbenchTitle:"销售工作台",wbLeads:"客户线索",wbLinks:"分享链接",wbNotifs:"预约提醒",wbMyCars:"我的车源",wbAdmin:"管理操作",addNewCar:"+ 新增车辆",
+      workbenchTitle:"销售工作台",wbLeads:"客户线索",wbLinks:"分享链接",wbNotifs:"预约提醒",wbMyCars:"我的车源",wbFeatOrder:"精选排序",noFeat:"还没有精选车辆。在车辆右上角 ⋯ 菜单中设为精选即可。",wbAdmin:"管理操作",addNewCar:"+ 新增车辆",
       wbStatLeads:"线索数",wbStatClicks:"链接点击",wbStatConv:"转化率",
       adminTitle:"新增车辆",fBrand:"品牌",fModel:"型号",fYear:"年份",fCond:"车况",fBody:"车型",fBranch:"门店",
-      fSpecs:"规格（逗号分隔）",fHighlights:"亮点（逗号分隔）",priceTiers:"价格分级",
+      fSpecs:"规格（逗号分隔）",fHighlights:"亮点（逗号分隔）",fDays:"在库时长（天）",priceTiers:"价格分级",
       fCost:"成本",fFloorA:"底价A（高级）",fFloorB:"底价B（初级）",fQuote:"报价（客户价）",
       fPhotos:"照片",fPhotosHint:"点击上传车辆照片",fVideos:"视频",fVideosHint:"点击添加车辆视频（最大 25MB）",preview:"预览",saveCar:"保存车辆",zhAuto:"中文预览（自动生成）",zhName:"名称",zhSub:"副标",zhSpec:"配置",zhHl:"亮点",
       favTitle:"收藏与历史",favSaved:"已收藏",favRecent:"最近浏览",favEmptyHint:"点击任意车辆的爱心即可收藏",
@@ -1653,7 +1666,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.1';
+const APP_VER='1.2.2';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2022,12 +2035,13 @@ function renderHeroCarousel(){
   if(heroTimer){ clearInterval(heroTimer); heroTimer=null; }
   if(heroResetTO){ clearTimeout(heroResetTO); heroResetTO=null; }
   track.innerHTML="";
-  const feat=Object.keys(CARS).filter(k=>CARS[k].featured && !CARS[k].sold).slice(0,6);
-  const keys = feat.length ? feat : Object.keys(CARS).filter(k=>!CARS[k].sold).slice(0,6);
+  let feat=Object.keys(CARS).filter(k=>CARS[k].featured && !CARS[k].sold);
+  feat.sort((a,b)=>{ const oa=CARS[a].featuredOrder==null?1e9:CARS[a].featuredOrder, ob=CARS[b].featuredOrder==null?1e9:CARS[b].featuredOrder; if(oa!==ob) return oa-ob; return new Date(LISTED_AT[b]||0)-new Date(LISTED_AT[a]||0); });
+  const keys = feat.length ? feat.slice(0,6) : Object.keys(CARS).filter(k=>!CARS[k].sold).slice(0,6);
   track.innerHTML = keys.map(k=>{
     const c=CARS[k]; const cover=carCover(k);
     const ribbon=c.sold?'<span class="cond sold">SOLD</span>':`<span class="cond ${c.cond==='NEW'?'new':'used'}">${condLabel(c)}</span>`;
-    const isFeat=feat.includes(k);
+    const isFeat=CARS[k].featured && !CARS[k].sold;
     return `<div class="hero-slide"><div class="ph">${cover?`<img class="car-cover" src="${cover}" alt="" />`:carSVG(c.grad)}${ribbon}</div><div class="scrim"></div>${isFeat?`<div class="tag">${T('featured','FEATURED')}</div>`:''}<div class="info"><h3>${carName(c)}</h3><div class="sub">${carSub(c)}</div><div class="price">${rolePrice(c.price)}</div></div><button class="go" onclick="openDetail('${k}')">${T('viewDetails','View details')}</button></div>`;
   }).join('');
   if(dots){ dots.innerHTML=''; if(keys.length>1) keys.forEach((_,i)=>{ const d=document.createElement('span'); if(i===0) d.className='on'; dots.appendChild(d); }); }
@@ -2047,7 +2061,10 @@ function renderHeroCarousel(){
 function carCover(k){ const p=CAR_PHOTOS[k]; return (p&&p.length)?p[0]:null; }
 function toggleFeatured(){
   const c=CARS[curCar]; if(!c) return;
-  c.featured=!c.featured; saveCars(); markCarDirty(curCar);
+  c.featured=!c.featured;
+  if(c.featured){ if(c.featuredOrder==null){ let mx=0; Object.values(CARS).forEach(x=>{ if(x.featuredOrder&&x.featuredOrder>mx) mx=x.featuredOrder; }); c.featuredOrder=mx+1; } }
+  else { c.featuredOrder=undefined; }
+  saveCars(); markCarDirty(curCar);
   toast(c.featured?T('markedFeat','Marked as featured'):T('unmarkedFeat','Removed from featured'));
   renderDetail(); renderHome(); renderStock();
 }
@@ -3848,8 +3865,24 @@ function renderWorkbench(){
       <div class="body"><h4>${carName(c)}</h4><div class="meta">${carSub(c).split('·').slice(0,2).join('·')}</div><div class="pr">${rolePrice(c.price)}</div></div>`;
     mc.appendChild(d);
   }); }
+  renderFeaturedOrder();
+  const fw=document.getElementById('wbFeatWrap'); if(fw) fw.style.display = isTopRole() ? 'block' : 'none';
   const aa=document.getElementById('wbAdminActions');
   if(aa) aa.style.display = canEditPrices() ? 'block' : 'none';
+}
+function renderFeaturedOrder(){
+  const box=document.getElementById('wbFeatOrder'); if(!box) return;
+  const feat=Object.keys(CARS).filter(k=>CARS[k].featured && !CARS[k].sold);
+  feat.sort((a,b)=>(CARS[a].featuredOrder==null?1e9:CARS[a].featuredOrder)-(CARS[b].featuredOrder==null?1e9:CARS[b].featuredOrder));
+  if(!feat.length){ box.innerHTML='<div class="empty-hint" data-i18n="noFeat">No featured cars yet. Mark a car as featured from its ⋯ menu.</div>'; return; }
+  box.innerHTML=feat.map((k,i)=>`<div class="feat-row"><span class="fr-idx">${i+1}</span><span class="fr-name">${carName(CARS[k])}</span><span class="fr-btns"><button onclick="moveFeatured('${k}',-1)" ${i===0?'disabled':''}>↑</button><button onclick="moveFeatured('${k}',1)" ${i===feat.length-1?'disabled':''}>↓</button></span></div>`).join('');
+}
+function moveFeatured(k,dir){
+  const feat=Object.keys(CARS).filter(x=>CARS[x].featured && !CARS[x].sold);
+  feat.sort((a,b)=>(CARS[a].featuredOrder==null?1e9:CARS[a].featuredOrder)-(CARS[b].featuredOrder==null?1e9:CARS[b].featuredOrder));
+  const i=feat.indexOf(k), j=i+dir; if(j<0||j>=feat.length) return;
+  const a=feat[i], b=feat[j], t=CARS[a].featuredOrder; CARS[a].featuredOrder=CARS[b].featuredOrder; CARS[b].featuredOrder=t;
+  saveCars(); renderFeaturedOrder(); renderHeroCarousel(); renderHome();
 }
 function copyShareUrl(car,sales){
   const u=location.origin+'/?c='+car+'&ref='+sales;
@@ -3919,6 +3952,7 @@ function openEditCar(key){
   set('afBranch', c.branch||'');
   set('afSpecs', (c.specs||[]).map(s=>s[0]).join(', '));
   set('afHighlights', (c.hl||[]).join(', '));
+  set('afDays', c.inStockDays);
   set('afCost', c.price&&c.price.cost); set('afFloorA', c.price&&c.price.floorA); set('afFloorB', c.price&&c.price.floorB); set('afQuote', c.price&&c.price.quote);
   set('pvNameEn', c.name); set('pvNameZh', c.nameZh); set('pvSubEn', c.sub); set('pvSubZh', c.subZh);
   set('pvSpecEn', (c.specs||[]).map(s=>s[0]).join(', ')); set('pvSpecZh', (c.specs||[]).map(s=>s[1]||'').join(', '));
@@ -3970,6 +4004,8 @@ function submitNewCar(){
   const floorB=parseInt(document.getElementById('afFloorB').value)||0;
   const quote=parseInt(document.getElementById('afQuote').value)||0;
   if(quote===0){ toast(T('afNeedQuote','Please enter a customer quote price')); return; }
+  const daysVal=document.getElementById('afDays').value.trim();
+  const inStockDays = daysVal!=='' ? parseInt(daysVal) : null;
   let showroom=SHOWROOMS.find(s=>s.name===branch);
   if(!showroom && branch){            // brand-new location typed by user → save it as an option
     showroom={name:branch, grad:'g3'};
@@ -3992,6 +4028,7 @@ function submitNewCar(){
   CARS[targetKey]={name:nameEn.trim(),sub:subEn.trim(),nameZh:nameZh.trim(),subZh:subZh.trim(),
     cond:cond,body:body,color:color,brand:brand,model:model,year:year,branch:showroom.name,
     grad:prev.grad||'g3',loc:prev.loc||showroom,sold:prev.sold||false,featured:prev.featured||false,
+    inStockDays:inStockDays,
     specs:specsArr,hl:hlArr,
     price:{cost:cost||floorA-5000,floorA:floorA||quote-5000,floorB:floorB||floorA+1500,quote:quote}};
   CAR_PHOTOS[targetKey]=ADMIN_PHOTOS.slice();
