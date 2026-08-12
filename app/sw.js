@@ -1,4 +1,4 @@
-const CACHE = 'antmotors-v103';
+const CACHE = 'antmotors-v104';
 const STATIC = ['./', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon.svg'];
 
 self.addEventListener('install', e => {
@@ -10,6 +10,11 @@ self.addEventListener('activate', e => {
     caches.keys().then(keys =>
       Promise.all(keys.filter(k => k !== CACHE).map(k => caches.delete(k)))
     ).then(() => self.clients.claim())
+  );
+  // Notify any open pages that a new service worker took over, so they can
+  // reload and pick up the freshly-served index.html (fixes "stuck on old build").
+  self.clients.matchAll({ includeUncontrolled: true }).then(cls =>
+    cls.forEach(c => c.postMessage({ type: 'sw-updated', cache: CACHE }))
   );
 });
 
