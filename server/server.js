@@ -537,6 +537,11 @@ const CLEARED_EMPS = new Set();
   try { const v = getMeta('cleared_emps'); if (v) JSON.parse(v).forEach(x => CLEARED_EMPS.add(x)); } catch (e) {}
 })();
 
+/* Hard-coded default showroom (branch) names seeded into the demo company. These
+   must NEVER be inherited by a real company — every owner adds their own. Used by
+   the "clear demo data" action to delete them by name across all companies. */
+const DEMO_SHOWROOM_NAMES = ['Accra Branch', 'Tema Branch', 'Kumasi Branch'];
+
 function applyPush(emp, payload) {
   const applied = [], rejected = [];
   const top = isTop(emp);
@@ -899,23 +904,30 @@ const server = http.createServer(async (req, res) => {
        SEED/SAMPLE car ids for the company this page resolves to, so it can never
        delete cars the owner actually entered. Scoped by ?ref= / ?company=. */
     if (p === '/api/clear-sample-public' && req.method === 'POST') {
-      let companyId = DEFAULT_COMPANY;
-      try {
-        const ref = u.searchParams.get('ref');
-        if (ref) { const e = q('SELECT company_id FROM employees WHERE id=? AND deleted=0').get(ref); if (e) companyId = e.company_id; }
-        else { const cp = u.searchParams.get('company'); if (cp) { const c = q('SELECT id FROM companies WHERE id=?').get(cp); if (c) companyId = c.id; } }
-      } catch (e) {}
+      // Demo CARS are cleared GLOBALLY, not just for the resolved company. A sample
+      // car can be pushed into ANY company via a stale local cache (sync resurrection),
+      // so scoping the delete to one company would miss it and the sample would reappear
+      // on a shared link. We only ever touch the authoritative seed ids — never a real car.
       const allIds = [...new Set([...SEED_CAR_IDS, ...CLEARED_SAMPLES])];
-      const existing = q(`SELECT id FROM cars WHERE company_id=? AND id IN (${allIds.map(() => '?').join(',')}) AND deleted=0`).all(companyId, ...allIds).map(r => r.id);
-      if (existing.length) {
-        const ph = existing.map(() => '?').join(',');
-        q(`DELETE FROM photos WHERE company_id=? AND car_id IN (${ph})`).run(companyId, ...existing);
-        q(`DELETE FROM videos WHERE company_id=? AND car_id IN (${ph})`).run(companyId, ...existing);
-        q(`UPDATE cars SET deleted=1, updated_at=? WHERE company_id=? AND id IN (${ph})`).run(now(), companyId, ...existing);
+      const rows = q(`SELECT id FROM cars WHERE id IN (${allIds.map(() => '?').join(',')}) AND deleted=0`).all(...allIds);
+      let clearedIds = [];
+      if (rows.length) {
+        clearedIds = rows.map(r => r.id);
+        const ph = clearedIds.map(() => '?').join(',');
+        q(`DELETE FROM photos WHERE car_id IN (${ph})`).run(...clearedIds);
+        q(`DELETE FROM videos WHERE car_id IN (${ph})`).run(...clearedIds);
+        q(`UPDATE cars SET deleted=1, updated_at=? WHERE id IN (${ph})`).run(now(), ...clearedIds);
       }
-      existing.forEach(id => CLEARED_SAMPLES.add(id));
+      rows.forEach(r => CLEARED_SAMPLES.add(r.id));
       setMeta('cleared_samples', JSON.stringify([...CLEARED_SAMPLES]));
-      return send(res, 200, { ok: true, carsCleared: existing.length, clearedIds: existing, company: companyId });
+      // Demo SHOWROOMS (the hard-coded default branches) are cleared by name across ALL
+      // companies — no company should ever inherit these defaults; owners add their own.
+      let showroomsCleared = 0;
+      if (DEMO_SHOWROOM_NAMES.length) {
+        const ph = DEMO_SHOWROOM_NAMES.map(() => '?').join(',');
+        showroomsCleared = q(`DELETE FROM showrooms WHERE id IN (${ph})`).run(...DEMO_SHOWROOM_NAMES).changes || 0;
+      }
+      return send(res, 200, { ok: true, carsCleared: rows.length, clearedIds, showroomsCleared });
     }
 
     /* ---- authenticated ---- */
@@ -1118,6 +1130,11 @@ const server = http.createServer(async (req, res) => {
       }
       existing.forEach(id => CLEARED_SAMPLES.add(id));
       setMeta('cleared_samples', JSON.stringify([...CLEARED_SAMPLES]));
+      // also wipe the hard-coded demo showrooms (default branches) for this company
+      if (DEMO_SHOWROOM_NAMES.length) {
+        const ph = DEMO_SHOWROOM_NAMES.map(() => '?').join(',');
+        q(`DELETE FROM showrooms WHERE company_id=? AND id IN (${ph})`).run(emp.companyId, ...DEMO_SHOWROOM_NAMES);
+      }
       audit(emp.id, 'sample.clear', emp.companyId, JSON.stringify({ cars: existing.length }), emp.companyId);
       return send(res, 200, { ok: true, carsCleared: existing.length, clearedIds: existing });
     }

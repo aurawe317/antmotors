@@ -735,7 +735,7 @@
       <div class="sec-head"><h2 data-i18n="yourConsultant">Your Sales Consultant</h2></div>
       <div class="consult">
         <div class="av" id="consultAv">K</div>
-        <div class="info"><h4 id="consultName">Kwame A.</h4><p id="consultRole" data-i18n="consultRole">Senior Sales · Accra Branch</p></div>
+        <div class="info"><h4 id="consultName">Kwame A.</h4><p id="consultRole" data-i18n="consultRole">Sales Consultant</p></div>
         <button class="wa" onclick="waTap('consult')">↗ WhatsApp</button>
       </div>
 
@@ -788,14 +788,14 @@
       <div class="thumbs" id="detailThumbs"></div>
       <div class="detail-body">
         <div class="detail-title"><h2 id="dTitle">Toyota Land Cruiser 2021</h2><span class="cond-badge used" id="dBadge">USED</span></div>
-        <div class="detail-sub" id="dSub">V8 5.7L · Automatic · 56,000 km · Petrol · Accra Branch</div>
+        <div class="detail-sub" id="dSub">V8 5.7L · Automatic · 56,000 km · Petrol</div>
         <div class="price-block" id="priceBlock"></div>
         <div class="spec-grid" id="specGrid"></div>
         <h4 style="font-size:13px; font-weight:800; margin-top:18px;" data-i18n="highlights">Highlights</h4>
         <div class="hl" id="dHighlights"></div>
         <div class="loc-row" onclick="go('scr-showrooms')">
           <span class="pin">📍</span>
-          <div class="t"><b id="dLocName">Accra Branch</b><span id="dLocAddr">Tema Motorway, Accra · Open 8:00–18:00</span></div>
+          <div class="t"><b id="dLocName"></b><span id="dLocAddr"></span></div>
           <span style="margin-left:auto; color:var(--gold);">›</span>
         </div>
         <div class="d-stock" id="dStock"></div>
@@ -822,7 +822,7 @@
       <div class="sec-head"><h2 data-i18n="bookViewing">Book a Viewing</h2><a onclick="go('scr-detail')" data-i18n="back">Back</a></div>
       <div class="booking-summary">
         <div class="ph" id="bookPh"></div>
-        <div><h4 id="bookTitle">Toyota Land Cruiser 2021</h4><p id="bookSub">Accra Branch · USED</p></div>
+        <div><h4 id="bookTitle">Toyota Land Cruiser 2021</h4><p id="bookSub">USED</p></div>
       </div>
       <div class="form">
         <div class="field"><label data-i18n="fName">Full Name</label><input id="bkName" placeholder="e.g. John Mensah" /></div>
@@ -1270,7 +1270,7 @@
     <div id="shSettingsList"></div>
     <button class="submit" onclick="toggleShForm()" data-i18n="addShowroom" style="margin-top:8px;">+ Add sales point</button>
     <div id="shForm" style="display:none;margin-top:10px;">
-      <div class="form-row"><label data-i18n="shName">Name</label><input type="text" id="shName" placeholder="e.g. Accra Branch"></div>
+      <div class="form-row"><label data-i18n="shName">Name</label><input type="text" id="shName" placeholder="e.g. Main Showroom"></div>
       <div class="form-row"><label data-i18n="shAddr">Address</label><input type="text" id="shAddr" placeholder="123 Spintex Rd"></div>
       <div class="form-row"><label data-i18n="shPhone">Phone</label><input type="text" id="shPhone" placeholder="+233 20 000 0001"></div>
       <div class="form-row"><label data-i18n="shHours">Hours</label><input type="text" id="shHours" placeholder="Mon-Sat 9am-6pm"></div>
@@ -1349,7 +1349,7 @@ function stockBadge(k){ if(curRole==='customer') return ''; const d=daysInStock(
 const SHOWROOMS = [];
 const SALES = {};
 const OWNERS = {
-  boss:{name:'Boss', av:'B', tier:'boss', role:'Boss / Owner', roleZh:'老板 / 业主', wa:'', phone:'', branch:'Accra Branch'}
+  boss:{name:'Boss', av:'B', tier:'boss', role:'Boss / Owner', roleZh:'老板 / 业主', wa:'', phone:'', branch:''}
 };
 function empOf(id){
   const e=SALES[id] || OWNERS[id];
@@ -1387,9 +1387,9 @@ function showroomSVG(grad){
 
 const I18N = {
   en:{tagline:"GHANA · CHINA-AUTO EXPORT",st_new:"New",st_contacted:"Contacted",st_closed:"Closed",stAdvance:"Click to advance",stUpdated:"Lead moved to",featured:"FEATURED",viewDetails:"View details",ourShowrooms:"Our Showrooms",seeAll:"See all",allVehicles:"All Vehicles",
-      newArrivals:"New Arrivals",browseAll:"Browse all",yourConsultant:"Your Sales Consultant",consultRole:"Senior Sales · Accra Branch",
+      newArrivals:"New Arrivals",browseAll:"Browse all",yourConsultant:"Your Sales Consultant",consultRole:"Sales Consultant",
       inventory:"Inventory",all:"All",new:"New",used:"Used",highlights:"Highlights",bookViewing:"Book Viewing",back:"Back",
-      showroomsTitle:"Showrooms",searchFilter:"Search & Filter",close:"Close",hToyota:"Toyota",hSUV:"SUV",h2021:"2021",hUnder40:"Under ₵40k",
+      showroomsTitle:"Showrooms",noShowrooms:"No showrooms added yet",searchFilter:"Search & Filter",close:"Close",hToyota:"Toyota",hSUV:"SUV",h2021:"2021",hUnder40:"Under ₵40k",
       cond:"Condition",brand:"Brand",body:"Body",branch:"Branch",priceRange:"Price Range",applyFilters:"Apply Filters",
       navHome:"Home",navStock:"Stock",navShops:"Shops",navPerm:"Prices",navMore:"Search",
       staffPortal:"Staff Portal",workbench:"Workbench",workbenchSub:"Leads · links · stats",addCar:"Add Car",addCarSub:"New listing entry",permTitleShort:"Role & permission matrix",permSub:"7 tiers · who sees what",
@@ -1435,9 +1435,9 @@ const I18N = {
       prTitle:"💰 Pricing model",prHint:"One car, up to three prices by role. Prices show in your chosen display currency. Owner + 2 Partners see cost; Sales see a graded floor; the customer sees the quote.",
       priceSetByTop:"Only Boss/Owner & Partners can set price tiers.",loginAs:"Login as",pvLogin:"Login as (admin only)",pvL_boss:"Boss / Owner",pvL_partnerA:"Partner A",pvL_partnerB:"Partner B",boundLink:"Bound link · customers reach only you",noSwitchRole:"Roles are assigned by admin — you cannot switch",noSwitchSales:"Share link is bound to your account",viewingAs:"viewing as",loggedInAs:"Logged in as",sortDefault:"Default",sortPriceAsc:"Price ↑",sortPriceDesc:"Price ↓",sortNewest:"Listed newest",sortOldest:"Listed oldest",inStockDays:"In stock",days:"days",overstock:"overstock",settingsTitle:"Settings",myContact:"My contact (customer reaches you)",fWhatsApp:"WhatsApp number",fPhone:"Phone",saveContact:"Save",installTitle:"Install the app (employees)",installHint:"iOS: Safari → Share → Add to Home Screen. Android: Chrome → ⋮ → Install app. Customers just open the shared link — no install needed.",staffMgmt:"Staff & roles (admin)",addStaff:"+ Add staff",staffId:"Staff ID",staffName:"Name",staffRole:"Role",staffBranch:"Branch",staffWa:"WhatsApp",staffPhone:"Phone",staffPin:"PIN (4-8 digits)",staffCreate:"Create & invite",staffCreated:"Staff created",contactSaved:"Contact saved",tierAssigned:"Assigned ",pvEditContact:"Edit my WhatsApp & phone",pvLockNote:"Your share link is bound to this account — customers can only reach you. Role switching is assigned by admin.",close:"Close",edit:"Edit",noContact:"No contact set",shoppingAs:"Shopping with",cap_cost:"See cost price",cap_floors:"See all floor prices",cap_ownfloor:"See own floor price",cap_quote:"See selling quote",cap_editcar:"Edit car info (specs, highlights)",cap_editprice:"Edit prices (cost, floor, quote)",cap_photocar:"Upload car photos",cap_photoshowroom:"Upload showroom photos",cap_addcar:"Add / remove cars",cap_managestaff:"Manage sales staff",cap_sharelinks:"Generate share links",cap_leads:"View customer leads",permNote:"<b>Boss + Partner A + Partner B</b> share identical top-level access — cost, pricing, full edit. &nbsp; <b>*</b> Manager: limited to own branch. &nbsp; <b>**</b> Sales A: limited to cars they manage.",memNone:"No plan",memActive:"Active",ph_paste:"Smart paste: drop a full vehicle description and fields fill automatically. e.g. Toyota Camry 2021, SUV, Black, Accra, 2.5L Auto, 45,000 km, Sunroof Leather seats",bilingualPrev:"Bilingual preview (editable)",featuredCars:"Featured",browseAll:"Browse all",markFeat:"Set as Featured",unmarkFeat:"Remove from Featured",markedFeat:"Marked as featured",unmarkedFeat:"Removed from featured",noPermBranch:"This car belongs to another branch.",addShowroom:"+ Add sales point",shName:"Name",shAddr:"Address",shPhone:"Phone",shHours:"Hours",shDist:"Distance",shSave:"Save",del:"Delete",showroomsTitle:"Showrooms",shDelConfirm:"Delete showroom",unassigned:"Unassigned",shSettingsTitle:"Sales points / Showrooms",wbStatLeads:"Leads",wbStatClicks:"Link clicks",wbStatConv:"Conversion",noLeads:"No leads yet",noBookings:"No new bookings",clicksLbl:"clicks",leadsLbl:"leads",back:"Back"},
   zh:{tagline:"加纳 · 中国车出口",st_new:"新",st_contacted:"已联系",st_closed:"已成交",stAdvance:"点击推进",stUpdated:"线索状态更新为",featured:"精选",viewDetails:"查看详情",ourShowrooms:"门店网点",seeAll:"全部",allVehicles:"全部车源",
-      newArrivals:"新到车源",browseAll:"浏览全部",yourConsultant:"您的销售顾问",consultRole:"高级销售 · 阿克拉店",
+      newArrivals:"新到车源",browseAll:"浏览全部",yourConsultant:"您的销售顾问",consultRole:"销售顾问",
       inventory:"在售库存",all:"全部",new:"新车",used:"二手车",highlights:"配置亮点",bookViewing:"预约看车",back:"返回",
-      showroomsTitle:"门店网点",searchFilter:"搜索与筛选",close:"关闭",hToyota:"丰田",hSUV:"SUV",h2021:"2021",hUnder40:"40万以下",
+      showroomsTitle:"门店网点",noShowrooms:"尚未添加门店",searchFilter:"搜索与筛选",close:"关闭",hToyota:"丰田",hSUV:"SUV",h2021:"2021",hUnder40:"40万以下",
       cond:"车况",brand:"品牌",body:"车型",branch:"门店",priceRange:"价格区间",applyFilters:"应用筛选",
       navHome:"首页",navStock:"库存",navShops:"门店",navPerm:"价格",navMore:"搜索",
       staffPortal:"员工入口",workbench:"工作台",workbenchSub:"线索 · 链接 · 统计",addCar:"录车",addCarSub:"新增车辆",permTitleShort:"角色与权限矩阵",permSub:"七级角色 · 权限一览",
@@ -1592,7 +1592,7 @@ const ZH = {
   model:{"Land Cruiser":"兰德酷路泽","Camry":"凯美瑞","Tucson":"途胜","Sportage":"狮跑","CR-V":"CR-V","Hilux":"海拉克斯","RAV4":"RAV4","Navara":"纳瓦拉","Elantra":"伊兰特","Corolla":"卡罗拉","Prado":"普拉多","Civic":"思域","Accord":"雅阁","Santa Fe":"胜达","Sorento":"索兰托"},
   cond:{"NEW":"全新","USED":"二手"},
   body:{"SUV":"SUV","Sedan":"轿车","Pickup":"皮卡","Hatchback":"两厢车","Van":"商务车"},
-  branch:{"Accra Branch":"阿克拉店","Tema Branch":"特马店","Kumasi Branch":"库马西店"},
+  branch:{},
   specLabel:{"Engine":"发动机","Transmission":"变速箱","Mileage":"里程","Fuel":"燃料","Drivetrain":"驱动方式","Seats":"座位数","Power":"动力","Color":"颜色","Year":"年份","Top Speed":"最高车速"},
   specVal:{"Automatic":"自动","Manual":"手动","CVT":"无级变速","DCT":"双离合","Petrol":"汽油","Diesel":"柴油","FWD":"前驱","RWD":"后驱","AWD":"四驱","4WD":"四驱","Hybrid":"混动","Electric":"纯电","Turbo":"涡轮"},
   hl:{"Leather Seats":"真皮座椅","Sunroof":"天窗","360 Camera":"360°全景影像","Adaptive Cruise":"自适应巡航","3rd Row":"第三排座椅","Apple CarPlay":"苹果CarPlay","Blind Spot":"盲点监测","Heated Seats":"座椅加热","Lane Assist":"车道保持辅助","Brand New":"全新车","Panoramic Roof":"全景天窗","Smart Key":"智能钥匙","Wireless Charge":"无线充电","Reliable":"皮实耐用","Low Fuel":"省油","Backup Camera":"倒车影像","Bluetooth":"蓝牙","AWD":"四驱","Cargo Space":"大储物空间","Honda Sensing":"本田SENSING","Workhorse":"耐造实用","Tow Pack":"拖拽套件","Heavy Duty":"重载版","Toyota Safety":"丰田TSS安全","Smart Entry":"智能进入","Reverse Cam":"倒车影像","Dual Cab":"双排座舱","Bed Liner":"货箱防护垫","Tow Bar":"拖车钩","Fuel Efficient":"省油经济","Lane Keep":"车道保持","Warranty Left":"质保期内","Keyless":"无钥匙进入","Reverse Camera":"倒车影像"}
@@ -1666,7 +1666,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.10';
+const APP_VER='1.2.11';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2023,12 +2023,16 @@ function renderHome(){
   // Featured cars now live in the big hero carousel (see renderHeroCarousel) — no separate section below.
   renderHeroCarousel();
   const hs=document.getElementById('homeShowrooms'); hs.innerHTML="";
-  SHOWROOMS.forEach(s=>{
-    const c=document.createElement('div'); c.className="sh-card"; c.onclick=()=>go('scr-showrooms');
-    c.innerHTML=`<div class="ph">${showroomSVG(s.grad)}<span class="pin" style="position:relative;z-index:1;">📍</span></div>
-      <div class="body"><h4>${s.name}</h4><div class="meta">${(s.addr||'').split('·')[0]}</div><div class="dist">${s.dist||''}</div></div>`;
-    hs.appendChild(c);
-  });
+  if(!SHOWROOMS.length){
+    hs.innerHTML='<div class="empty" style="padding:18px 4px;color:var(--text-dim);font-size:13px;">'+T('noShowrooms','No showrooms added yet')+'</div>';
+  } else {
+    SHOWROOMS.forEach(s=>{
+      const c=document.createElement('div'); c.className="sh-card"; c.onclick=()=>go('scr-showrooms');
+      c.innerHTML=`<div class="ph">${showroomSVG(s.grad)}<span class="pin" style="position:relative;z-index:1;">📍</span></div>
+        <div class="body"><h4>${s.name}</h4><div class="meta">${(s.addr||'').split('·')[0]}</div><div class="dist">${s.dist||''}</div></div>`;
+      hs.appendChild(c);
+    });
+  }
 }
 /* Build the homepage hero as a swipeable carousel of featured cars (falls back to all cars). */
 let heroTimer=null; let heroResetTO=null;
@@ -4254,6 +4258,10 @@ function toast(html){ const t=document.getElementById('toast'); t.innerHTML=html
 function renderShowroomList(){
   const sl=document.getElementById('shList'); if(!sl) return;
   sl.innerHTML="";
+  if(!SHOWROOMS.length){
+    sl.innerHTML='<div class="empty" style="padding:40px 16px;text-align:center;color:var(--text-dim)">'+T('noShowrooms','No showrooms added yet')+'</div>';
+    return;
+  }
   SHOWROOMS.forEach((s,idx)=>{
     const photos=SHOWROOM_PHOTOS[s.name]||[];
     const hasPhoto=photos.length>0;

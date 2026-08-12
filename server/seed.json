@@ -6,8 +6,8 @@
       "grad": "g1",
       "brand": "Toyota",
       "body": "SUV",
-      "branch": "Accra Branch",
-      "sub": "V8 5.7L · Automatic · 56,000 km · Petrol · Accra Branch",
+      "branch": "",
+      "sub": "V8 5.7L · Automatic · 56,000 km · Petrol",
       "specs": [
         [
           "Engine",
@@ -42,8 +42,8 @@
         "3rd Row"
       ],
       "loc": {
-        "name": "Accra Branch",
-        "addr": "Tema Motorway, Accra · Open 8:00–18:00"
+        "name": "",
+        "addr": "Tema Motorway, Accra"
       },
       "price": {
         "cost": 28500,
@@ -58,8 +58,8 @@
       "grad": "g2",
       "brand": "Hyundai",
       "body": "SUV",
-      "branch": "Tema Branch",
-      "sub": "1.6L Turbo · DCT · 31,000 km · Petrol · Tema Branch",
+      "branch": "",
+      "sub": "1.6L Turbo · DCT · 31,000 km · Petrol",
       "specs": [
         [
           "Engine",
@@ -93,8 +93,8 @@
         "Lane Assist"
       ],
       "loc": {
-        "name": "Tema Branch",
-        "addr": "Community 25, Tema · Open 8:00–18:00"
+        "name": "",
+        "addr": "Community 25, Tema"
       },
       "price": {
         "cost": 19800,
@@ -109,8 +109,8 @@
       "grad": "g3",
       "brand": "Kia",
       "body": "SUV",
-      "branch": "Accra Branch",
-      "sub": "1.5L Turbo · Automatic · 0 km · Petrol · Accra Branch",
+      "branch": "",
+      "sub": "1.5L Turbo · Automatic · 0 km · Petrol",
       "specs": [
         [
           "Engine",
@@ -144,8 +144,8 @@
         "Wireless Charge"
       ],
       "loc": {
-        "name": "Accra Branch",
-        "addr": "Tema Motorway, Accra · Open 8:00–18:00"
+        "name": "",
+        "addr": "Tema Motorway, Accra"
       },
       "price": {
         "cost": 24200,
@@ -160,8 +160,8 @@
       "grad": "g4",
       "brand": "Toyota",
       "body": "Sedan",
-      "branch": "Kumasi Branch",
-      "sub": "2.5L · CVT · 64,000 km · Petrol · Kumasi Branch",
+      "branch": "",
+      "sub": "2.5L · CVT · 64,000 km · Petrol",
       "specs": [
         [
           "Engine",
@@ -195,8 +195,8 @@
         "Bluetooth"
       ],
       "loc": {
-        "name": "Kumasi Branch",
-        "addr": "Adum Ring Rd, Kumasi · Open 8:00–18:00"
+        "name": "",
+        "addr": "Adum Ring Rd, Kumasi"
       },
       "price": {
         "cost": 15600,
@@ -211,8 +211,8 @@
       "grad": "g5",
       "brand": "Honda",
       "body": "SUV",
-      "branch": "Accra Branch",
-      "sub": "1.5L Turbo · CVT · 42,000 km · Petrol · Accra Branch",
+      "branch": "",
+      "sub": "1.5L Turbo · CVT · 42,000 km · Petrol",
       "specs": [
         [
           "Engine",
@@ -246,8 +246,8 @@
         "Sunroof"
       ],
       "loc": {
-        "name": "Accra Branch",
-        "addr": "Tema Motorway, Accra · Open 8:00–18:00"
+        "name": "",
+        "addr": "Tema Motorway, Accra"
       },
       "price": {
         "cost": 20100,
@@ -262,8 +262,8 @@
       "grad": "g6",
       "brand": "Toyota",
       "body": "Pickup",
-      "branch": "Tema Branch",
-      "sub": "2.8L Diesel · Manual · 38,000 km · Diesel · Tema Branch",
+      "branch": "",
+      "sub": "2.8L Diesel · Manual · 38,000 km · Diesel",
       "specs": [
         [
           "Engine",
@@ -297,8 +297,8 @@
         "Heavy Duty"
       ],
       "loc": {
-        "name": "Tema Branch",
-        "addr": "Community 25, Tema · Open 8:00–18:00"
+        "name": "",
+        "addr": "Community 25, Tema"
       },
       "price": {
         "cost": 26800,
@@ -313,8 +313,8 @@
       "grad": "g7",
       "brand": "Toyota",
       "body": "SUV",
-      "branch": "Accra Branch",
-      "sub": "2.0L · CVT · 0 km · Petrol · Accra Branch",
+      "branch": "",
+      "sub": "2.0L · CVT · 0 km · Petrol",
       "specs": [
         [
           "Engine",
@@ -348,8 +348,8 @@
         "Reverse Cam"
       ],
       "loc": {
-        "name": "Accra Branch",
-        "addr": "Tema Motorway, Accra · Open 8:00–18:00"
+        "name": "",
+        "addr": "Tema Motorway, Accra"
       },
       "price": {
         "cost": 22400,
@@ -364,8 +364,8 @@
       "grad": "g8",
       "brand": "Nissan",
       "body": "Pickup",
-      "branch": "Tema Branch",
-      "sub": "2.3L Diesel · Manual · 47,000 km · Diesel · Tema Branch",
+      "branch": "",
+      "sub": "2.3L Diesel · Manual · 47,000 km · Diesel",
       "specs": [
         [
           "Engine",
@@ -399,8 +399,8 @@
         "Tow Bar"
       ],
       "loc": {
-        "name": "Tema Branch",
-        "addr": "Community 25, Tema · Open 8:00–18:00"
+        "name": "",
+        "addr": "Community 25, Tema"
       },
       "price": {
         "cost": 18900,
@@ -415,8 +415,8 @@
       "grad": "g9",
       "brand": "Hyundai",
       "body": "Sedan",
-      "branch": "Accra Branch",
-      "sub": "2.0L · CVT · 29,000 km · Petrol · Accra Branch",
+      "branch": "",
+      "sub": "2.0L · CVT · 29,000 km · Petrol",
       "specs": [
         [
           "Engine",
@@ -450,8 +450,8 @@
         "Warranty Left"
       ],
       "loc": {
-        "name": "Accra Branch",
-        "addr": "Tema Motorway, Accra · Open 8:00–18:00"
+        "name": "",
+        "addr": "Tema Motorway, Accra"
       },
       "price": {
         "cost": 15200,
@@ -483,62 +483,36 @@
     "navara": "Black",
     "elantra": "Silver"
   },
-  "showrooms": [
-    {
-      "name": "Accra Branch",
-      "addr": "Tema Motorway, Accra",
-      "hours": "Mon–Sat 8:00–18:00",
-      "phone": "+233 30 700 1234",
-      "dist": "City center · 4.2 km",
-      "grad": "g1"
-    },
-    {
-      "name": "Tema Branch",
-      "addr": "Community 25, Tema",
-      "hours": "Mon–Sat 8:00–18:00",
-      "phone": "+233 30 330 5678",
-      "dist": "Harbor area · 12 km",
-      "grad": "g2"
-    },
-    {
-      "name": "Kumasi Branch",
-      "addr": "Adum Ring Rd, Kumasi",
-      "hours": "Mon–Sat 8:00–18:00",
-      "phone": "+233 32 202 9012",
-      "dist": "Ashanti · 250 km",
-      "grad": "g4"
-    }
-  ],
   "employees": {
     "kwame": {
       "name": "Kwame A.",
       "av": "K",
       "tier": "salesA",
-      "role": "Senior Sales · Accra Branch",
-      "roleZh": "高级销售 · 阿克拉店",
+      "role": "Senior Sales",
+      "roleZh": "高级销售",
       "wa": "233200000001",
       "phone": "+233 20 000 0001",
-      "branch": "Accra Branch"
+      "branch": ""
     },
     "ama": {
       "name": "Ama K.",
       "av": "A",
       "tier": "salesB",
-      "role": "Sales · Tema Branch",
-      "roleZh": "销售 · 特马店",
+      "role": "Sales",
+      "roleZh": "销售",
       "wa": "233200000002",
       "phone": "+233 20 000 0002",
-      "branch": "Tema Branch"
+      "branch": ""
     },
     "kwasi": {
       "name": "Kwasi O.",
       "av": "K",
       "tier": "salesB",
-      "role": "Sales · Kumasi Branch",
-      "roleZh": "销售 · 库马西店",
+      "role": "Sales",
+      "roleZh": "销售",
       "wa": "233200000003",
       "phone": "+233 20 000 0003",
-      "branch": "Kumasi Branch"
+      "branch": ""
     },
     "boss": {
       "name": "Owner (You)",
@@ -548,7 +522,7 @@
       "roleZh": "老板 / 业主",
       "wa": "233200000099",
       "phone": "+233 20 000 0099",
-      "branch": "All Branches"
+      "branch": ""
     },
     "partnerA": {
       "name": "Partner A",
@@ -558,7 +532,7 @@
       "roleZh": "合伙人A",
       "wa": "233200000098",
       "phone": "+233 20 000 0098",
-      "branch": "All Branches"
+      "branch": ""
     },
     "partnerB": {
       "name": "Partner B",
@@ -568,7 +542,7 @@
       "roleZh": "合伙人B",
       "wa": "233200000097",
       "phone": "+233 20 000 0097",
-      "branch": "All Branches"
+      "branch": ""
     }
   },
   "pins": {
