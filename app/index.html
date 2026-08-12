@@ -519,6 +519,9 @@
   .bc-sales-card .info span{font-size:11px;color:var(--text-dim);display:block;margin-top:2px;}
   .bc-sales-card .wa-btn{padding:6px 14px;border-radius:8px;background:#25D366;color:#fff;font-size:11px;font-weight:700;border:none;cursor:pointer;}
 
+  .wb-mycar .card{position:relative;}
+  .card-dot{position:absolute;top:6px;right:6px;z-index:3;width:28px;height:28px;border-radius:50%;border:none;background:rgba(0,0,0,.45);color:#fff;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
+  .card-dot:hover{background:var(--gold);color:#111;}
   .wb-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
   .wb-stat{padding:14px 10px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);text-align:center;}
   .wb-stat .num{font-size:22px;font-weight:800;color:var(--gold);}
@@ -644,7 +647,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v97</span></div>
+        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v98</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -680,6 +683,7 @@
           <button class="sub-menu-item" onclick="closeSubMenu();toggleTheme()"><span class="mi-tx" data-i18n="theme">Theme</span></button>
           <button class="sub-menu-item" id="subSoldItem" onclick="closeSubMenu();toggleSold()"><span class="mi-tx" id="subSoldTx" data-i18n="markSold">Mark as sold</span></button>
           <button class="sub-menu-item" id="subFeatItem" onclick="closeSubMenu();toggleFeatured()"><span class="mi-tx" id="subFeatTx" data-i18n="markFeat">Set as featured</span></button>
+          <button class="sub-menu-item" id="subEditItem" onclick="closeSubMenu();openEditCar(curCar)"><span class="mi-tx" data-i18n="editCar">Edit</span></button>
           <button class="sub-menu-item danger" id="subDelItem" onclick="closeSubMenu();confirmDeleteCar()"><span class="mi-tx" data-i18n="deleteCar">Delete</span></button>
         </div>
       </div>
@@ -849,15 +853,20 @@
       <div class="sec-head" style="margin-top:18px;"><h3 data-i18n="wbNotifs">Booking Alerts</h3></div>
       <div id="wbNotifs"></div>
       <div class="sec-head" style="margin-top:18px;"><h3 data-i18n="wbMyCars">My Cars</h3></div>
-      <div id="wbMyCars" class="grid" style="margin-top:8px;"></div>
+      <div id="wbMyCars" class="grid wb-mycar" style="margin-top:8px;"></div>
       <div id="wbAdminActions" style="display:none;margin-top:18px;">
         <div class="sec-head"><h3 data-i18n="wbAdmin">Admin Actions</h3></div>
         <button class="submit" onclick="go('scr-admin')" data-i18n="addNewCar" style="margin-bottom:8px;">+ Add New Car</button>
+        <button class="submit ghost" onclick="clearWorkbenchData()" data-i18n="clearData" style="margin-bottom:8px;background:transparent;border:1px solid var(--border);color:var(--text-dim);">Clear demo data</button>
       </div>
     </section>
 
     <!-- ADMIN CAR ENTRY -->
     <section class="screen" id="scr-admin">
+      <div id="afEditBanner" style="display:none;margin:0 0 14px;padding:10px 12px;border-radius:10px;background:var(--gold-soft);border:1px solid var(--gold-line);font-size:12px;align-items:center;gap:8px;">
+        <span id="afEditName" style="flex:1;color:var(--gold);font-weight:700;"></span>
+        <button class="submit" style="margin:0;padding:6px 12px;background:var(--surface);color:var(--text);border:1px solid var(--border);" onclick="cancelEdit()" data-i18n="cancel">Cancel</button>
+      </div>
       <div class="sec-head" style="margin-bottom:14px;">
         <h2 data-i18n="adminTitle">Add New Car</h2>
       </div>
@@ -916,7 +925,7 @@
           <h4 data-i18n="preview">Preview</h4>
           <div id="afPreviewCard"></div>
         </div>
-        <button class="submit" onclick="submitNewCar()" data-i18n="saveCar" style="margin-top:16px;">Save Car</button>
+        <button class="submit" id="afSaveBtn" onclick="submitNewCar()" data-i18n="saveCar" style="margin-top:16px;">Save Car</button>
       </div>
     </section>
 
@@ -1531,7 +1540,7 @@ I18N.en.syncEmpId="Account / e-mail"; I18N.en.syncPw="Password"; I18N.en.remembe
 I18N.en.syncNeedCreds="Enter your account and password"; I18N.en.syncBadCreds="Wrong account or password";
 I18N.en.pwRule="At least 8 characters with upper & lower case, a number and a symbol."; I18N.en.pwStrong="Strong password ✓";
 I18N.en.pwTooShort="At least 8 characters"; I18N.en.pwTooLong="64 characters max"; I18N.en.pwNeedLower="Add a lower-case letter"; I18N.en.pwNeedUpper="Add a CAPITAL letter"; I18N.en.pwNeedDigit="Add a number"; I18N.en.pwNeedSymbol="Add a symbol (!@#$…)"; I18N.en.pwTooSimple="Too simple";
-I18N.en.cancel="Cancel"; I18N.en.cropZoom="Zoom"; I18N.en.cropReset="Reset"; I18N.en.cropHint="Drag to reposition · the box keeps the display ratio"; I18N.en.cropApply="Apply crop"; I18N.en.cropTitle="Adjust photo"; I18N.en.uploadMedia="Upload car media"; I18N.en.addPhoto="+ Photo"; I18N.en.addVideo="+ Video"; I18N.en.from="From";
+I18N.en.cancel="Cancel"; I18N.en.cropZoom="Zoom"; I18N.en.cropReset="Reset"; I18N.en.cropHint="Drag to reposition · the box keeps the display ratio"; I18N.en.cropApply="Apply crop"; I18N.en.cropTitle="Adjust photo"; I18N.en.uploadMedia="Upload car media"; I18N.en.addPhoto="+ Photo"; I18N.en.addVideo="+ Video"; I18N.en.from="From"; I18N.en.editCar="Edit"; I18N.en.updateCar="Update Car"; I18N.en.clearData="Clear demo data"; I18N.en.clearConfirm="Clear all leads, share links and booking alerts? This cannot be undone."; I18N.en.dataCleared="Demo data cleared";
 I18N.en.pwMismatch="The two passwords do not match"; I18N.en.pwSame="New password must differ from the current one";
 I18N.en.pwLocked="Too many attempts — account locked, try again in"; I18N.en.pwMinutes="min";
 I18N.en.pwUpgradeHint="Your account still uses an old PIN — set a real password via “Forgot password?”";
@@ -1543,7 +1552,7 @@ I18N.zh.syncEmpId="账号 / 邮箱"; I18N.zh.syncPw="密码"; I18N.zh.rememberMe
 I18N.zh.syncNeedCreds="请输入账号和密码"; I18N.zh.syncBadCreds="账号或密码错误";
 I18N.zh.pwRule="至少 8 位，需包含大写、小写、数字和符号。"; I18N.zh.pwStrong="密码强度：强 ✓";
 I18N.zh.pwTooShort="至少 8 位字符"; I18N.zh.pwTooLong="最多 64 位字符"; I18N.zh.pwNeedLower="需要包含小写字母"; I18N.zh.pwNeedUpper="需要包含大写字母"; I18N.zh.pwNeedDigit="需要包含数字"; I18N.zh.pwNeedSymbol="需要包含符号（!@#$…）"; I18N.zh.pwTooSimple="密码过于简单";
-I18N.zh.cancel="取消"; I18N.zh.cropZoom="缩放"; I18N.zh.cropReset="重置"; I18N.zh.cropHint="拖动调整位置 · 裁剪框锁定展示比例"; I18N.zh.cropApply="应用裁剪"; I18N.zh.cropTitle="调整照片"; I18N.zh.uploadMedia="上传车辆媒体"; I18N.zh.addPhoto="+ 照片"; I18N.zh.addVideo="+ 视频"; I18N.zh.from="起";
+I18N.zh.cancel="取消"; I18N.zh.cropZoom="缩放"; I18N.zh.cropReset="重置"; I18N.zh.cropHint="拖动调整位置 · 裁剪框锁定展示比例"; I18N.zh.cropApply="应用裁剪"; I18N.zh.cropTitle="调整照片"; I18N.zh.uploadMedia="上传车辆媒体"; I18N.zh.addPhoto="+ 照片"; I18N.zh.addVideo="+ 视频"; I18N.zh.from="起"; I18N.zh.editCar="编辑"; I18N.zh.updateCar="更新车辆"; I18N.zh.clearData="清空演示数据"; I18N.zh.clearConfirm="清空全部客户线索、分享链接和预约提醒？此操作不可撤销。"; I18N.zh.dataCleared="演示数据已清空";
 I18N.zh.pwMismatch="两次输入的密码不一致"; I18N.zh.pwSame="新密码不能与当前密码相同";
 I18N.zh.pwLocked="尝试次数过多——账号已锁定，请稍后再试："; I18N.zh.pwMinutes="分钟";
 I18N.zh.pwUpgradeHint="你的账号仍在使用旧的 PIN——请通过“忘记密码？”设置正式密码";
@@ -1643,7 +1652,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.1.8';
+const APP_VER='1.1.9';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2113,6 +2122,7 @@ function refreshDetailMenu(){
   if(sold){ sold.style.display = canEdit ? 'flex' : 'none'; const tx=document.getElementById('subSoldTx'); if(tx) tx.textContent = (c&&c.sold)?T('markAvail','Mark as available'):T('markSold','Mark as sold'); }
   if(feat){ feat.style.display = isTopRole() ? 'flex' : 'none'; const tx=document.getElementById('subFeatTx'); if(tx) tx.textContent = (c&&c.featured)?T('unmarkFeat','Remove from featured'):T('markFeat','Set as featured'); }
   if(del){ del.style.display = canEdit ? 'flex' : 'none'; }
+  const ed=document.getElementById('subEditItem'); if(ed) ed.style.display = canEdit ? 'flex' : 'none';
   const saveTx=document.querySelector('#subMoreMenu .mi-tx[data-i18n="save"]');
   if(saveTx){ const sv=(c&&SAVED_CARS.has(curCar)); saveTx.textContent=sv?T('saved','Saved'):T('save','Save'); saveTx.style.color=sv?'var(--gold)':''; }
 }
@@ -2530,7 +2540,8 @@ function openCarActions(){
   if(!canEditThisCar(curCar)){ toast(T('noPermBranch','This car belongs to another branch.')); return; }
   document.getElementById('caTitle').textContent=carName(c);
   const sold=!!c.sold;
-  let html=`<button class="row-action" onclick="closeSheets();toggleSold()">${sold?T('markAvail','Mark as available'):T('markSold','Mark as sold')}</button>`;
+  let html=`<button class="row-action" onclick="closeSheets();openEditCar(curCar)">${T('editCar','Edit')}</button>`;
+  html+=`<button class="row-action" onclick="closeSheets();toggleSold()">${sold?T('markAvail','Mark as available'):T('markSold','Mark as sold')}</button>`;
   if(isTopRole()) html+=`<button class="row-action" onclick="closeSheets();toggleFeatured()">${c.featured?T('unmarkFeat','Remove from Featured'):T('markFeat','Set as Featured')}</button>`;
   html+=`<button class="row-action danger" onclick="confirmDeleteCar()">${T('deleteCar','Delete this car')}</button>`;
   document.getElementById('caBody').innerHTML=html;
@@ -3831,7 +3842,8 @@ function renderWorkbench(){
   if(mc){ mc.innerHTML=''; Object.keys(CARS).forEach(k=>{
     const c=CARS[k];
     const d=document.createElement('div'); d.className='card'; d.onclick=()=>openDetail(k);
-    d.innerHTML=`<div class="ph ${c.grad}">${carSVG(c.grad)}<span class="cond ${c.cond==='NEW'?'new':'used'}">${condLabel(c)}</span></div>
+    const dot = canEditCar() ? `<button class="card-dot" title="${T('editCar','Edit')}" onclick="event.stopPropagation();curCar='${k}';openCarActions()">⋯</button>` : '';
+    d.innerHTML=`${dot}<div class="ph ${c.grad}">${carSVG(c.grad)}<span class="cond ${c.cond==='NEW'?'new':'used'}">${condLabel(c)}</span></div>
       <div class="body"><h4>${carName(c)}</h4><div class="meta">${carSub(c).split('·').slice(0,2).join('·')}</div><div class="pr">${rolePrice(c.price)}</div></div>`;
     mc.appendChild(d);
   }); }
@@ -3892,6 +3904,49 @@ function renderAfThumbs(){
     t.appendChild(img);
   });
 }
+let editingKey=null;
+function openEditCar(key){
+  const c=CARS[key]; if(!c) return;
+  if(!canEditCar()||!canEditThisCar(key)){ toast(T('noPermPhoto','Your role cannot edit this car.')); return; }
+  editingKey=key;
+  const set=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=(v==null?'':v); };
+  let y=c.year||'', m=c.model||'';
+  if(!y){ const mm=String(c.name||'').match(/\b(19|20)\d{2}\b/); if(mm) y=mm[0]; }
+  if(!m){ let rest=String(c.name||'').replace(String(c.brand||''),'').replace(y,'').trim(); m=rest; }
+  set('afBrand', c.brand); set('afModel', m); set('afYear', y);
+  set('afCond', c.cond||'USED'); set('afBody', c.body||'SUV'); set('afColor', c.color||'Black');
+  set('afBranch', c.branch||'');
+  set('afSpecs', (c.specs||[]).map(s=>s[0]).join(', '));
+  set('afHighlights', (c.hl||[]).join(', '));
+  set('afCost', c.price&&c.price.cost); set('afFloorA', c.price&&c.price.floorA); set('afFloorB', c.price&&c.price.floorB); set('afQuote', c.price&&c.price.quote);
+  set('pvNameEn', c.name); set('pvNameZh', c.nameZh); set('pvSubEn', c.sub); set('pvSubZh', c.subZh);
+  set('pvSpecEn', (c.specs||[]).map(s=>s[0]).join(', ')); set('pvSpecZh', (c.specs||[]).map(s=>s[1]||'').join(', '));
+  set('pvHlEn', (c.hl||[]).join(', ')); set('pvHlZh', (c.hl||[]).map(s=>revT(s)||'').join(', '));
+  ADMIN_PHOTOS = CAR_PHOTOS[key] ? CAR_PHOTOS[key].slice() : [];
+  ADMIN_VIDEOS = CAR_VIDEOS[key] ? CAR_VIDEOS[key].slice() : [];
+  renderAfThumbs(); renderAfVideoThumbs();
+  document.getElementById('afZhPreview').style.display='block';
+  const banner=document.getElementById('afEditBanner'); if(banner){ banner.style.display='flex'; document.getElementById('afEditName').textContent=carName(c); }
+  const btn=document.getElementById('afSaveBtn'); if(btn) btn.textContent=T('updateCar','Update Car');
+  go('scr-admin');
+}
+function cancelEdit(){
+  editingKey=null;
+  const b=document.getElementById('afEditBanner'); if(b) b.style.display='none';
+  const sb=document.getElementById('afSaveBtn'); if(sb) sb.textContent=T('saveCar','Save Car');
+  document.querySelectorAll('#scr-admin input[type=text],#scr-admin input[type=number]').forEach(i=>i.value='');
+  document.querySelectorAll('#scr-admin textarea').forEach(i=>i.value='');
+  ['pvNameEn','pvNameZh','pvSubEn','pvSubZh','pvSpecEn','pvSpecZh','pvHlEn','pvHlZh'].forEach(id=>{ const el=document.getElementById(id); if(el){ el.value=''; delete el.dataset.touched; } });
+  document.getElementById('afZhPreview').style.display='none';
+  ADMIN_PHOTOS=[]; renderAfThumbs(); ADMIN_VIDEOS=[]; renderAfVideoThumbs();
+  go('scr-workbench');
+}
+function clearWorkbenchData(){
+  if(!confirm(T('clearConfirm','Clear all leads, share links and booking alerts? This cannot be undone.'))) return;
+  MOCK_LEADS=[]; MOCK_LINKS=[]; BOOKING_NOTIFS=[];
+  renderWorkbench();
+  toast(T('dataCleared','Demo data cleared'));
+}
 function submitNewCar(){
   const brand=document.getElementById('afBrand').value.trim();
   const model=document.getElementById('afModel').value.trim();
@@ -3923,17 +3978,20 @@ function submitNewCar(){
   const specsSrc=(pv('pvSpecEn')&&pv('pvSpecEn').value.trim())||specs;
   const hlSrc=(pv('pvHlEn')&&pv('pvHlEn').value.trim())||highlights;
   const key=brand.toLowerCase().replace(/\s/g,'')+model.toLowerCase().replace(/\s/g,'');
+  const targetKey=editingKey||key;
   const specsArr=specsSrc?specsSrc.split(/[,，]/).map(s=>[s.trim(),s.trim()]):[['Mileage','—']];
   const hlArr=hlSrc?hlSrc.split(/[,，]/).map(s=>s.trim()).filter(Boolean):[];
-  CARS[key]={name:nameEn.trim(),sub:subEn.trim(),nameZh:nameZh.trim(),subZh:subZh.trim(),
-    cond:cond,body:body,color:color,brand:brand,branch:showroom.name,grad:'g3',loc:showroom,sold:false,featured:false,
+  const prev=CARS[targetKey]||{};
+  CARS[targetKey]={name:nameEn.trim(),sub:subEn.trim(),nameZh:nameZh.trim(),subZh:subZh.trim(),
+    cond:cond,body:body,color:color,brand:brand,model:model,year:year,branch:showroom.name,
+    grad:prev.grad||'g3',loc:prev.loc||showroom,sold:prev.sold||false,featured:prev.featured||false,
     specs:specsArr,hl:hlArr,
     price:{cost:cost||floorA-5000,floorA:floorA||quote-5000,floorB:floorB||floorA+1500,quote:quote}};
-  if(ADMIN_PHOTOS.length>0) CAR_PHOTOS[key]=ADMIN_PHOTOS.slice();
-  if(ADMIN_VIDEOS.length>0) CAR_VIDEOS[key]=ADMIN_VIDEOS.slice();
+  CAR_PHOTOS[targetKey]=ADMIN_PHOTOS.slice();
+  if(ADMIN_VIDEOS.length>0) CAR_VIDEOS[targetKey]=ADMIN_VIDEOS.slice(); else delete CAR_VIDEOS[targetKey];
   saveCarPhotos();
-  LISTED_AT[key]=new Date().toISOString().slice(0,10);
-  saveCars(); recomputeFacets(); markCarDirty(key);
+  if(!editingKey) LISTED_AT[targetKey]=new Date().toISOString().slice(0,10);
+  saveCars(); recomputeFacets(); markCarDirty(targetKey);
   toast('Car saved: <b>'+nameEn.trim()+'</b> · 中文: <b>'+nameZh.trim()+'</b>');
   // Learn any novel Chinese→English pairs from manually-edited previews
   if(pv('pvNameZh')&&pv('pvNameZh').dataset.touched){ const auto=zBrand(brand)+' '+zModel(model)+' '+(year||''); if(auto.trim()!==nameZh.trim()) learn(auto.trim(),nameEn.trim()); }
@@ -3944,6 +4002,11 @@ function submitNewCar(){
   ['pvNameEn','pvNameZh','pvSubEn','pvSubZh','pvSpecEn','pvSpecZh','pvHlEn','pvHlZh'].forEach(id=>{ const el=pv(id); if(el) delete el.dataset.touched; });
   document.getElementById('afZhPreview').style.display='none';
   ADMIN_PHOTOS=[]; renderAfThumbs(); ADMIN_VIDEOS=[]; renderAfVideoThumbs();
+  if(editingKey){
+    editingKey=null;
+    const b=document.getElementById('afEditBanner'); if(b) b.style.display='none';
+    const sb=document.getElementById('afSaveBtn'); if(sb) sb.textContent=T('saveCar','Save Car');
+  }
   renderHome(); renderStock();
   go('scr-workbench');
 }
