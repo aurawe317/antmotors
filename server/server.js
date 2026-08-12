@@ -516,6 +516,27 @@ const CLEARED_SAMPLES = new Set();
   try { const v = getMeta('cleared_samples'); if (v) JSON.parse(v).forEach(x => CLEARED_SAMPLES.add(x)); } catch (e) {}
 })();
 
+/* Demo / sample staff ids seeded for the default company: the fake sales
+   (kwame/ama/kwasi) and fake partners (partnerA/partnerB). The owner seat
+   'boss' is the real account and must NEVER be treated as a demo. */
+const DEMO_EMP_IDS = new Set();
+(function loadSeedEmpIds() {
+  try {
+    const sf = path.join(__dirname, 'seed.json');
+    if (fs.existsSync(sf)) {
+      const s = JSON.parse(fs.readFileSync(sf, 'utf8'));
+      Object.keys(s.employees || {}).forEach(id => { if (id !== 'boss') DEMO_EMP_IDS.add(id); });
+    }
+  } catch (e) { console.warn('[seed] load sample emp ids failed', e.message); }
+})();
+
+/* Ids the owner has explicitly cleared as sample staff. Once here, applyPush
+   refuses to resurrect them even if a client re-pushes the same employee id. */
+const CLEARED_EMPS = new Set();
+(function loadClearedEmps() {
+  try { const v = getMeta('cleared_emps'); if (v) JSON.parse(v).forEach(x => CLEARED_EMPS.add(x)); } catch (e) {}
+})();
+
 function applyPush(emp, payload) {
   const applied = [], rejected = [];
   const top = isTop(emp);
@@ -555,6 +576,7 @@ function applyPush(emp, payload) {
     const cur = q('SELECT * FROM employees WHERE id=? AND company_id=?').get(e.id, cid);
     const ts = clampTs(e.updatedAt);
     if (!cur) { rejected.push({ id: e.id, reason: 'unknown_employee' }); continue; }
+    if (cur.deleted && CLEARED_EMPS.has(e.id)) { rejected.push({ id: e.id, reason: 'sample_cleared' }); continue; }
     if (cur.updated_at > ts) { rejected.push({ id: e.id, reason: 'stale' }); continue; }
     const old = JSON.parse(cur.data);
     const inc = e.data || {};
@@ -1098,6 +1120,26 @@ const server = http.createServer(async (req, res) => {
       setMeta('cleared_samples', JSON.stringify([...CLEARED_SAMPLES]));
       audit(emp.id, 'sample.clear', emp.companyId, JSON.stringify({ cars: existing.length }), emp.companyId);
       return send(res, 200, { ok: true, carsCleared: existing.length, clearedIds: existing });
+    }
+
+    /* Clear the seeded demo staff (fake sales + fake partners) for THIS company.
+       Demo employee ids come from seed.json (everything except the owner 'boss').
+       We never delete the logged-in user's own account or the owner seat. Returns
+       the exact ids cleared so the client can drop them locally before its next
+       sync (preventing a stale cache from re-pushing them back). */
+    if (p === '/api/clear-sample-employees' && req.method === 'POST') {
+      if (!emp) return send(res, 401, { error: 'unauthorized' });
+      const allIds = [...new Set([...DEMO_EMP_IDS, ...CLEARED_EMPS])].filter(id => id !== 'boss' && id !== emp.id);
+      let cleared = [];
+      if (allIds.length) {
+        const ph = allIds.map(() => '?').join(',');
+        q(`UPDATE employees SET deleted=1, updated_at=? WHERE company_id=? AND id IN (${ph}) AND deleted=0`).run(now(), emp.companyId, ...allIds);
+        cleared = q(`SELECT id FROM employees WHERE company_id=? AND id IN (${ph}) AND deleted=1`).all(emp.companyId, ...allIds).map(r => r.id);
+      }
+      cleared.forEach(id => CLEARED_EMPS.add(id));
+      setMeta('cleared_emps', JSON.stringify([...CLEARED_EMPS]));
+      audit(emp.id, 'sample.emp.clear', emp.companyId, JSON.stringify({ employees: cleared.length }), emp.companyId);
+      return send(res, 200, { ok: true, employeesCleared: cleared.length, clearedIds: cleared });
     }
 
     if (p === '/api/audit' && isTop(emp)) {

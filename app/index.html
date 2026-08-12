@@ -1666,7 +1666,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.9';
+const APP_VER='1.2.10';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3694,7 +3694,7 @@ async function syncNow(silent){
       }
       n++;
     });
-    (p.employees||[]).forEach(e=>{ if(!e.deleted){ upsertEmp(e.id,e.data); n++; } });
+    (p.employees||[]).forEach(e=>{ if(e.deleted){ delete SALES[e.id]; delete OWNERS[e.id]; delete ALL_EMP[e.id]; } else { upsertEmp(e.id,e.data); n++; } });
     SYNC.since=p.now; localStorage.setItem('am_since',String(p.now));
     saveCars(); saveListed(); saveEmps();
     if(n){ recomputeFacets(); renderHome(); renderStock(); if(isTopEmployee()&&document.getElementById('staffList')) renderStaff(); }
@@ -3982,10 +3982,13 @@ async function clearWorkbenchData(){
   // then purge them from local state before syncing (so the stale local copy is
   // never re-uploaded and the samples can't resurrect on the next refresh).
   const clearedAll=new Set();
+  const clearedEmps=new Set();
   const collect=function(r){ if(r&&r.clearedIds) r.clearedIds.forEach(function(id){ clearedAll.add(id); }); };
+  const collectEmp=function(r){ if(r&&r.clearedIds) r.clearedIds.forEach(function(id){ clearedEmps.add(id); }); };
   // 1) authenticated clear (only when signed in) — clears the owner's own company
   if(SYNC.base && SYNC.token){
     try{ const r=await api('/api/clear-sample',{method:'POST'}); collect(r); }catch(e){ console.error('clear-sample failed',e); }
+    try{ const r=await api('/api/clear-sample-employees',{method:'POST'}); collectEmp(r); }catch(e){ console.error('clear-sample-employees failed',e); }
   }
   // 2) login-free clear scoped to the company this page / share link resolves to.
   //    Runs even with no session token, so the samples are REALLY removed from the
@@ -4004,7 +4007,12 @@ async function clearWorkbenchData(){
   });
   saveCars(); saveListed(); saveSaved(); saveRecent();
   jsave('am_dirty_cars',SYNC.cars); jsave('am_car_deleted',CAR_DELETED);
+  // Purge cleared sample staff from local state BEFORE syncing, otherwise a stale
+  // local copy would be re-uploaded and the demo employees would instantly reappear.
+  clearedEmps.forEach(function(id){ delete SALES[id]; delete OWNERS[id]; delete ALL_EMP[id]; delete SYNC.emps[id]; });
+  saveEmps();
   recomputeFacets(); renderHome(); renderStock();
+  if(document.getElementById('staffList')) renderStaff();
   SYNC.since=0; localStorage.setItem('am_since','0');
   if(SYNC.base && SYNC.token){ try{ await syncNow(true); }catch(e){} }
   toast(T('dataCleared','Demo data cleared'));
