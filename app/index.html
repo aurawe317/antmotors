@@ -1666,7 +1666,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.3';
+const APP_VER='1.2.4';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3704,7 +3704,8 @@ async function syncNow(silent){
       const why={price_forbidden:T('syncRejPrice','price can only be set by owner/partners'),
                  tier_forbidden:T('syncRejTier','only owner/partners can change roles'),
                  not_your_account:T('syncRejAcct','you can only edit your own account'),
-                 unknown_employee:T('syncRejEmp','unknown staff account')};
+                 unknown_employee:T('syncRejEmp','unknown staff account'),
+                 sample_cleared:T('syncRejSample','sample car cleared')};
       toast('⚠ '+bad.map(r=>r.id+': '+(why[r.reason]||r.reason)).join('<br>'));
     }
     setSyncState('ok',T('syncedAt','Synced')+' · '+new Date().toLocaleTimeString());
@@ -3993,7 +3994,20 @@ async function clearWorkbenchData(){
   // entered or edited), so customers opening a shared link no longer see the old sample cars.
   if(SYNC.base && SYNC.token){
     try{
-      await api('/api/clear-sample',{method:'POST'});
+      const r=await api('/api/clear-sample',{method:'POST'});
+      // Drop the cleared sample ids from local state BEFORE syncing, otherwise the
+      // next sync would re-push our stale local copy back to the server under our
+      // own account and the samples would instantly reappear.
+      const cleared=(r&&r.clearedIds)||[];
+      cleared.forEach(function(id){
+        delete CARS[id]; delete LISTED_AT[id]; delete CAR_PHOTOS[id];
+        delete CAR_VIDEOS[id]; delete SYNC.cars[id]; delete CAR_DELETED[id];
+        const si=SAVED_CARS.indexOf(id); if(si>=0) SAVED_CARS.splice(si,1);
+        const ri=RECENT_CARS.indexOf(id); if(ri>=0) RECENT_CARS.splice(ri,1);
+      });
+      saveCars(); saveListed(); saveSaved(); saveRecent();
+      jsave('am_dirty_cars',SYNC.cars); jsave('am_car_deleted',CAR_DELETED);
+      recomputeFacets(); renderHome(); renderStock();
       SYNC.since=0; localStorage.setItem('am_since','0');
       await syncNow(true);
     }catch(e){ console.error('clear-sample failed',e); }

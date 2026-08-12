@@ -493,6 +493,29 @@ function resolveCompanyId(u) {
 }
 
 /* --------------------------------------------------------------- sync */
+/* Authoritative list of seed/sample car ids (from seed.json) — used by the
+   "clear sample data" action so that demo cars are removed regardless of who
+   later touched them (a sample the owner edited gets re-stamped with their own
+   account id, so filtering by updated_by alone would miss it). */
+const SEED_CAR_IDS = new Set();
+(function loadSeedIds() {
+  try {
+    const sf = path.join(__dirname, 'seed.json');
+    if (fs.existsSync(sf)) {
+      const s = JSON.parse(fs.readFileSync(sf, 'utf8'));
+      Object.keys(s.cars || {}).forEach(id => SEED_CAR_IDS.add(id));
+    }
+  } catch (e) { console.warn('[seed] load sample ids failed', e.message); }
+})();
+
+/* Ids the owner has explicitly cleared as samples. Once here, applyPush refuses
+   to resurrect them even if a client pushes the same car id back — so a demo car
+   can never reappear on a shared link after being cleared. */
+const CLEARED_SAMPLES = new Set();
+(function loadCleared() {
+  try { const v = getMeta('cleared_samples'); if (v) JSON.parse(v).forEach(x => CLEARED_SAMPLES.add(x)); } catch (e) {}
+})();
+
 function applyPush(emp, payload) {
   const applied = [], rejected = [];
   const top = isTop(emp);
@@ -501,6 +524,9 @@ function applyPush(emp, payload) {
   for (const c of (payload.cars || [])) {
     if (!c || !c.id) continue;
     const cur = q('SELECT * FROM cars WHERE id=? AND company_id=?').get(c.id, cid);
+    // Never resurrect a car the owner cleared as a sample, even if a client
+    // re-pushes it (e.g. a stale local cache). It stays deleted.
+    if (cur && cur.deleted && CLEARED_SAMPLES.has(c.id)) { rejected.push({ id: c.id, reason: 'sample_cleared' }); continue; }
     const ts = clampTs(c.updatedAt);
     if (cur && cur.updated_at > ts) { rejected.push({ id: c.id, reason: 'stale' }); continue; }
 
@@ -1028,20 +1054,25 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, Object.assign({ now: now() }, r));
     }
 
-    /* Clear the seeded demo / sample inventory for THIS company only.
-       Seed rows are tagged updated_by='seed'; anything the owner or staff actually
-       entered or later edited carries their own account id, so it is preserved. */
+    /* Clear the seeded demo / sample inventory for THIS company.
+       We match by the authoritative seed-id list (not updated_by) so that samples
+       the owner edited — which got re-stamped with their own account id — are still
+       removed. Returns the exact ids cleared so the client can drop them locally
+       before its next sync (preventing a stale cache from re-pushing them). */
     if (p === '/api/clear-sample' && req.method === 'POST') {
       if (!emp) return send(res, 401, { error: 'unauthorized' });
-      const ids = q("SELECT id FROM cars WHERE company_id=? AND updated_by='seed' AND deleted=0").all(emp.companyId).map(r => r.id);
-      if (ids.length) {
-        const ph = ids.map(() => '?').join(',');
-        q(`DELETE FROM photos WHERE company_id=? AND car_id IN (${ph})`).run(emp.companyId, ...ids);
-        q(`DELETE FROM videos WHERE company_id=? AND car_id IN (${ph})`).run(emp.companyId, ...ids);
-        q(`UPDATE cars SET deleted=1, updated_at=? WHERE company_id=? AND updated_by='seed' AND deleted=0`).run(now(), emp.companyId);
+      const allIds = [...new Set([...SEED_CAR_IDS, ...CLEARED_SAMPLES])];
+      const existing = q(`SELECT id FROM cars WHERE company_id=? AND id IN (${allIds.map(() => '?').join(',')}) AND deleted=0`).all(emp.companyId, ...allIds).map(r => r.id);
+      if (existing.length) {
+        const ph = existing.map(() => '?').join(',');
+        q(`DELETE FROM photos WHERE company_id=? AND car_id IN (${ph})`).run(emp.companyId, ...existing);
+        q(`DELETE FROM videos WHERE company_id=? AND car_id IN (${ph})`).run(emp.companyId, ...existing);
+        q(`UPDATE cars SET deleted=1, updated_at=? WHERE company_id=? AND id IN (${ph})`).run(now(), emp.companyId, ...existing);
       }
-      audit(emp.id, 'sample.clear', emp.companyId, JSON.stringify({ cars: ids.length }), emp.companyId);
-      return send(res, 200, { ok: true, carsCleared: ids.length });
+      existing.forEach(id => CLEARED_SAMPLES.add(id));
+      setMeta('cleared_samples', JSON.stringify([...CLEARED_SAMPLES]));
+      audit(emp.id, 'sample.clear', emp.companyId, JSON.stringify({ cars: existing.length }), emp.companyId);
+      return send(res, 200, { ok: true, carsCleared: existing.length, clearedIds: existing });
     }
 
     if (p === '/api/audit' && isTop(emp)) {
