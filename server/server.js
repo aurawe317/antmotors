@@ -887,16 +887,13 @@ const server = http.createServer(async (req, res) => {
         const BIND_TIERS = ['partnerA', 'manager', 'salesA', 'salesB'];
         const ROLE = { partnerA: 'Co-owner (Partner)', manager: 'Manager', salesA: 'Senior Sales', salesB: 'Sales' };
         const ROLE_ZH = { partnerA: '合伙人', manager: '经理', salesA: '高级销售', salesB: '销售' };
-        const wantTier = String(b.tier || '');
-        if (wantTier && !BIND_TIERS.includes(wantTier)) return send(res, 400, { error: 'bad_tier', detail: 'choose partner or staff role' });
+        // A new person joining a company may NOT self-assign a privilege level
+        // (that was a security hole and confused owners). Everyone joins as basic
+        // "Senior Sales" and the owner promotes them via Staff management.
         joinBranch = String(b.branch || '').trim().slice(0, 60);
-        if (wantTier) {
-          tier = wantTier;
-          role = ROLE[tier] + (joinBranch ? ' · ' + joinBranch : '');
-          roleZh = ROLE_ZH[tier] + (joinBranch ? ' · ' + joinBranch : '');
-        } else {
-          tier = 'customer'; role = 'Personal account'; roleZh = '个人账号';
-        }
+        tier = 'salesA';
+        role = ROLE[tier] + (joinBranch ? ' · ' + joinBranch : '');
+        roleZh = ROLE_ZH[tier] + (joinBranch ? ' · ' + joinBranch : '');
       } else {
         return send(res, 400, { error: 'need_company', detail: 'provide companyName to create, or companyCode to join' });
       }
@@ -1082,6 +1079,27 @@ const server = http.createServer(async (req, res) => {
         .run(id, emp.companyId, JSON.stringify(data), hashPin(staffPw), staffEmail || null, now(), now());
       audit(emp.id, 'employee.create', id, JSON.stringify({ tier }), emp.companyId);
       return send(res, 200, { ok: true, id, name: data.name });
+    }
+
+    /* ---- remove an employee (soft delete, propagates via the next pull) ---- */
+    if (p === '/api/employees' && req.method === 'DELETE') {
+      if (!isTop(emp)) return send(res, 403, { error: 'forbidden', detail: 'only owners/partners can remove staff' });
+      const b = await readBody(req).catch(() => ({}));
+      const id = String((b && b.id) || '').trim();
+      if (!id) return send(res, 400, { error: 'bad_id', detail: 'employee id required' });
+      if (id === emp.id) return send(res, 400, { error: 'self_delete', detail: 'cannot remove your own account' });
+      const row = q('SELECT * FROM employees WHERE id=? AND company_id=? AND deleted=0').get(id, emp.companyId);
+      if (!row) return send(res, 404, { error: 'not_found' });
+      let td = {};
+      try { td = JSON.parse(row.data || '{}'); } catch (e) {}
+      if (td.tier === 'boss') {
+        // never delete the last remaining owner
+        const owners = q("SELECT COUNT(*) c FROM employees WHERE company_id=? AND deleted=0 AND json_extract(data,'$.tier')='boss'").get(emp.companyId).c;
+        if (owners <= 1) return send(res, 400, { error: 'last_owner', detail: 'cannot remove the only owner' });
+      }
+      q('UPDATE employees SET deleted=1, updated_at=? WHERE id=? AND company_id=?').run(now(), id, emp.companyId);
+      audit(emp.id, 'employee.delete', id, JSON.stringify({ tier: td.tier }), emp.companyId);
+      return send(res, 200, { ok: true, id });
     }
 
     /* ---- change own password (signed in) ---- */

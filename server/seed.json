@@ -484,36 +484,6 @@
     "elantra": "Silver"
   },
   "employees": {
-    "kwame": {
-      "name": "Kwame A.",
-      "av": "K",
-      "tier": "salesA",
-      "role": "Senior Sales",
-      "roleZh": "高级销售",
-      "wa": "233200000001",
-      "phone": "+233 20 000 0001",
-      "branch": ""
-    },
-    "ama": {
-      "name": "Ama K.",
-      "av": "A",
-      "tier": "salesB",
-      "role": "Sales",
-      "roleZh": "销售",
-      "wa": "233200000002",
-      "phone": "+233 20 000 0002",
-      "branch": ""
-    },
-    "kwasi": {
-      "name": "Kwasi O.",
-      "av": "K",
-      "tier": "salesB",
-      "role": "Sales",
-      "roleZh": "销售",
-      "wa": "233200000003",
-      "phone": "+233 20 000 0003",
-      "branch": ""
-    },
     "boss": {
       "name": "Owner (You)",
       "av": "B",
@@ -523,34 +493,10 @@
       "wa": "233200000099",
       "phone": "+233 20 000 0099",
       "branch": ""
-    },
-    "partnerA": {
-      "name": "Partner A",
-      "av": "A",
-      "tier": "partnerA",
-      "role": "Co-owner",
-      "roleZh": "合伙人A",
-      "wa": "233200000098",
-      "phone": "+233 20 000 0098",
-      "branch": ""
-    },
-    "partnerB": {
-      "name": "Partner B",
-      "av": "P",
-      "tier": "partnerB",
-      "role": "Co-owner",
-      "roleZh": "合伙人B",
-      "wa": "233200000097",
-      "phone": "+233 20 000 0097",
-      "branch": ""
     }
   },
   "pins": {
     "boss": "8888",
-    "partnerA": "1111",
-    "partnerB": "2222",
-    "kwame": "1001",
-    "ama": "1002",
     "kwasi": "1003"
   }
 }

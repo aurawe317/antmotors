@@ -420,6 +420,11 @@
   .collapsible[open] > summary::after{transform:rotate(-90deg);}
   .collapsible > summary ~ *{margin-top:12px;}
   .collapsible > summary ~ #staffList{margin-top:12px;}
+  .staff-row{display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid rgba(255,255,255,.06);}
+  .staff-row > span{flex:1; font-size:13px;}
+  .staff-row select{max-width:130px;}
+  .staff-del{background:rgba(255,90,90,.14); color:#ff8a8a; border:1px solid rgba(255,90,90,.3); border-radius:8px; padding:4px 10px; font-size:12px; cursor:pointer;}
+  .staff-del:hover{background:rgba(255,90,90,.24);}
   #scr-me .form-row{display:flex; flex-direction:column; gap:4px; margin:8px 0;}
   #scr-me .form-row label{font-size:11px; color:var(--text-dim);}
   #scr-me input:not([type=checkbox]), #scr-me textarea, #scr-me select{background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:9px 10px; font-size:13px; font-family:inherit; outline:none;}
@@ -1036,12 +1041,7 @@
       <div id="regJoinFields" style="display:none;">
         <div class="form-row"><label data-i18n="regCode">Invitation code</label><input type="text" id="regCode" placeholder="ANT-XXXXXX" autocomplete="off" style="text-transform:uppercase;" /></div>
         <div class="form-row"><label data-i18n="joinRole">Your role</label>
-          <select id="regJoinTier">
-            <option value="partnerA" data-i18n="jrPartner">Partner (co-owner)</option>
-            <option value="manager" data-i18n="jrManager">Manager</option>
-            <option value="salesA" data-i18n="jrSalesA">Senior Sales</option>
-            <option value="salesB" data-i18n="jrSalesB">Sales</option>
-          </select>
+          <div class="sub">加入后默认为「销售」角色，具体权限由老板在"员工管理"里分配。</div>
         </div>
         <div class="form-row"><label data-i18n="joinBranch">Branch</label><input type="text" id="regJoinBranch" list="afBranchList" placeholder="Select or type" autocomplete="off" /></div>
       </div>
@@ -1187,13 +1187,6 @@
       <button class="opt" onclick="setRole('partnerB',this)">Partner B<small>Co-owner · same as Boss</small></button>
     </div>
     <div class="divider"></div>
-    <div class="grp">
-      <div class="lbl">Assigned sales (the share link)</div>
-      <button class="opt on" onclick="setSales('kwame',this)">Kwame A. · Accra<small>wa.me/233200000001</small></button>
-      <button class="opt" onclick="setSales('ama',this)">Ama K. · Tema<small>wa.me/233200000002</small></button>
-      <button class="opt" onclick="setSales('kwasi',this)">Kwasi O. · Kumasi<small>wa.me/233200000003</small></button>
-    </div>
-    <div class="divider"></div>
     <p class="hint" id="demoState"></p>
   </div>
 </div>
@@ -1205,14 +1198,6 @@
   <div class="sheet-title" data-i18n="pvTitle">👤 My Account</div>
   <p class="sheet-hint" data-i18n="pvHint">Your shared links are bound to your account — customers who open them can only reach you. Edit your WhatsApp below.</p>
   <div id="pvTopOnly">
-    <div class="grp grp-login"><div class="lbl" data-i18n="pvLogin">Login as (admin only)</div>
-      <button class="opt" data-login="boss" onclick="loginAs('boss',this)"><span data-i18n="pvL_boss">Boss / Owner</span></button>
-      <button class="opt" data-login="partnerA" onclick="loginAs('partnerA',this)"><span data-i18n="pvL_partnerA">Partner A</span></button>
-      <button class="opt" data-login="partnerB" onclick="loginAs('partnerB',this)"><span data-i18n="pvL_partnerB">Partner B</span></button>
-      <button class="opt" data-login="kwame" onclick="loginAs('kwame',this)"><span data-i18n="pvS_kwame">Kwame A. · Accra</span></button>
-      <button class="opt" data-login="ama" onclick="loginAs('ama',this)"><span data-i18n="pvS_ama">Ama K. · Tema</span></button>
-      <button class="opt" data-login="kwasi" onclick="loginAs('kwasi',this)"><span data-i18n="pvS_kwasi">Kwasi O. · Kumasi</span></button>
-    </div>
     <div class="grp" data-grp="role"><div class="lbl" data-i18n="pvWho">Who is viewing?</div>
       <button class="opt" data-role="customer" onclick="setRole('customer',this)"><span data-i18n="pvR_customer">Customer</span><small data-i18n="pvR_customer_sub">Sees the selling quote</small></button>
       <button class="opt" data-role="manager" onclick="setRole('manager',this)"><span data-i18n="pvR_manager">Manager · Branch</span><small data-i18n="pvR_manager_sub">Sees all floors, edits cars &amp; photos</small></button>
@@ -1223,9 +1208,7 @@
       <button class="opt" data-role="partnerB" onclick="setRole('partnerB',this)"><span data-i18n="pvR_partnerB">Partner B</span><small data-i18n="pvR_partnerB_sub">Co-owner · same as Boss</small></button>
     </div>
     <div class="grp" data-grp="sales"><div class="lbl" data-i18n="pvSales">Assigned sales (share link)</div>
-      <button class="opt" data-sales="kwame" onclick="setSales('kwame',this)"><span data-i18n="pvS_kwame">Kwame A. · Accra</span><small>wa.me/233200000001</small></button>
-      <button class="opt" data-sales="ama" onclick="setSales('ama',this)"><span data-i18n="pvS_ama">Ama K. · Tema</span><small>wa.me/233200000002</small></button>
-      <button class="opt" data-sales="kwasi" onclick="setSales('kwasi',this)"><span data-i18n="pvS_kwasi">Kwasi O. · Kumasi</span><small>wa.me/233200000003</small></button>
+      <p class="sub">分享链接会自动归属到你自己的账号。</p>
     </div>
   </div>
   <div id="pvLocked" style="display:none;">
@@ -1689,7 +1672,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.18';
+const APP_VER='1.2.19';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2853,7 +2836,8 @@ function renderStaff(){
   Object.keys(ALL_EMP).forEach(id=>{
     const e=ALL_EMP[id];
     const sel='<select onchange="assignTier(\''+id+'\',this.value)">'+tiers.map(t=>'<option value="'+t[0]+'"'+(e.tier===t[0]?' selected':'')+'>'+t[1]+'</option>').join('')+'</select>';
-    box.innerHTML+='<div class="staff-row"><span>'+e.name+' · '+e.branch+'</span>'+sel+'</div>';
+    const canDel = (id!==curEmployee);
+    box.innerHTML+='<div class="staff-row"><span>'+e.name+' · '+e.branch+'</span>'+sel+(canDel?'<button class="staff-del" onclick="deleteEmployee(\''+id+'\')">'+T('del','Delete')+'</button>':'')+'</div>';
   });
   if(isTopEmployee()){
     const add=document.createElement('div'); add.className='staff-add';
@@ -2891,6 +2875,16 @@ function addEmployee(){
   })();
 }
 function assignTier(id,tier){ const e=ALL_EMP[id]; if(e){ e.tier=tier; markEmpDirty(id); toast(T('tierAssigned','Assigned ')+e.name+' → '+tier); } }
+async function deleteEmployee(id){
+  const e=ALL_EMP[id]; if(!e) return;
+  if(id===curEmployee){ toast(T('delSelf','You cannot remove your own account')); return; }
+  if(!confirm(T('delConfirm','Remove')+' '+e.name+'?')) return;
+  try{
+    await api('/api/employees',{method:'DELETE',body:{id}});
+    toast('🗑 '+T('delDone','Removed')+': '+e.name);
+    await syncNow(true); if(document.getElementById('staffList')) renderStaff();
+  }catch(err){ toast('⚠ '+(err.message||'delete failed')); }
+}
 function shareCar(){
   const u=location.origin+'/?c='+curCar+'&ref='+shareRefVal();
   if(navigator.share){ navigator.share({title:brandName()+' · '+carName(CARS[curCar]), text:'Check this car on '+brandName(), url:u}).catch(()=>{}); return; }
@@ -3598,9 +3592,7 @@ async function registerAccount(){
     const code=(document.getElementById('regCode').value||'').trim().toUpperCase();
     if(!code){ toast(T('regCode','Invitation code')+': '+T('reqField','required')); return; }
     body.companyCode=code;
-    const jt=(document.getElementById('regJoinTier')||{}).value||'';
     const jb=(document.getElementById('regJoinBranch')||{}).value||'';
-    if(jt) body.tier=jt;
     if(jb) body.branch=jb;
   }
   try{
