@@ -647,7 +647,7 @@
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v98</span></div>
+        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span style="display:block;font-size:9px;color:var(--gold);opacity:.6;">v99</span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -1652,7 +1652,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.1.9';
+const APP_VER='1.2.0';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3925,6 +3925,12 @@ function openEditCar(key){
   ADMIN_PHOTOS = CAR_PHOTOS[key] ? CAR_PHOTOS[key].slice() : [];
   ADMIN_VIDEOS = CAR_VIDEOS[key] ? CAR_VIDEOS[key].slice() : [];
   renderAfThumbs(); renderAfVideoThumbs();
+  // Preserve the prefilled bilingual values: mark non-empty preview fields as "touched"
+  // so liveZh()/revExtract() won't auto-clobber them while editing this car.
+  ['pvNameEn','pvNameZh','pvSubEn','pvSubZh','pvSpecEn','pvSpecZh','pvHlEn','pvHlZh'].forEach(id=>{
+    const el=document.getElementById(id); if(!el) return;
+    if(el.value.trim()) el.dataset.touched='1'; else delete el.dataset.touched;
+  });
   document.getElementById('afZhPreview').style.display='block';
   const banner=document.getElementById('afEditBanner'); if(banner){ banner.style.display='flex'; document.getElementById('afEditName').textContent=carName(c); }
   const btn=document.getElementById('afSaveBtn'); if(btn) btn.textContent=T('updateCar','Update Car');
@@ -4035,19 +4041,21 @@ function liveZh(){
   const zspec=specs?specs.split(/[,，]/).map(s=>{ const t=s.trim(); return ZH.specVal[t]?ZH.specVal[t]:t.replace(/(\d[\d,]*)\s*km/g,'$1 公里').replace(/(\d[\d.]*)\s*L\b/g,'$1 升'); }).join('，'):'';
   const zh=highlights?highlights.split(/[,，]/).map(s=>{ const t=s.trim(); return ZH.hl[t]||t; }).join('，'):'';
   box.style.display='block';
-  const pe=document.getElementById('pvNameEn'); if(pe) pe.value=(brand+' '+model+' '+year).trim();
+  const pe=document.getElementById('pvNameEn'); if(pe && !pe.dataset.touched) pe.value=(brand+' '+model+' '+year).trim();
   const pz=document.getElementById('pvNameZh'); if(pz && !pz.dataset.touched) pz.value=zn;
-  const se=document.getElementById('pvSubEn'); if(se) se.value=[year,cond,body].filter(Boolean).join(' · ');
+  const se=document.getElementById('pvSubEn'); if(se && !se.dataset.touched) se.value=[year,cond,body].filter(Boolean).join(' · ');
   const sz=document.getElementById('pvSubZh'); if(sz && !sz.dataset.touched) sz.value=zs;
-  const spe=document.getElementById('pvSpecEn'); if(spe) spe.value=specs;
+  const spe=document.getElementById('pvSpecEn'); if(spe && !spe.dataset.touched) spe.value=specs;
   const spz=document.getElementById('pvSpecZh'); if(spz && !spz.dataset.touched) spz.value=zspec;
-  const hle=document.getElementById('pvHlEn'); if(hle) hle.value=highlights;
+  const hle=document.getElementById('pvHlEn'); if(hle && !hle.dataset.touched) hle.value=highlights;
   const hlz=document.getElementById('pvHlZh'); if(hlz && !hlz.dataset.touched) hlz.value=zh;
 }
-/* When the user types the Chinese side, auto-extract the English side by reverse dictionary */
+/* When the user types the Chinese side, auto-extract the English side by reverse dictionary.
+   Only fills the English when it is empty / not yet manually set, so editing the Chinese never clobbers an existing English value. */
 function revExtract(srcId, tgtId, type){
   const s=document.getElementById(srcId), t=document.getElementById(tgtId); if(!s||!t) return;
   const v=s.value.trim(); if(!v) return;
+  if(t.dataset.touched || t.value.trim()) return;
   t.value = cnToEn(v, type);
 }
 /* Smart paste: parse a free-text vehicle description into the structured fields.
