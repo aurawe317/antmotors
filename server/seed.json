@@ -483,20 +483,6 @@
     "navara": "Black",
     "elantra": "Silver"
   },
-  "employees": {
-    "boss": {
-      "name": "Owner (You)",
-      "av": "B",
-      "tier": "boss",
-      "role": "Boss / Owner",
-      "roleZh": "老板 / 业主",
-      "wa": "233200000099",
-      "phone": "+233 20 000 0099",
-      "branch": ""
-    }
-  },
-  "pins": {
-    "boss": "8888",
-    "kwasi": "1003"
-  }
+  "employees": {},
+  "pins": {}
 }
