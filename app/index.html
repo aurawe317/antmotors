@@ -1672,7 +1672,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.19';
+const APP_VER='1.2.20';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2270,7 +2270,7 @@ function canEditPrices(){ return isTopRole(); }
    "Kwame" flash and the Me-tab staying on Kwame.) */
 function updateAttrBanner(){
   const b=document.getElementById('attrBanner'), t=document.getElementById('attrText'); if(!b||!t) return;
-  const loggedIn=!!(SYNC&&SYNC.token);
+  const loggedIn=isSignedIn();
   if(!loggedIn){
     // Public / customer view: show who they are shopping with.
     if(curRole==='customer' && curSales && empOf(curSales)){
@@ -2728,7 +2728,7 @@ function openSettings(){
 /* ---------- ME tab (profile + account + company) ---------- */
 function renderMe(){
   const sec=document.getElementById('scr-me'); if(!sec) return;
-  const loggedIn=!!(typeof SYNC!=='undefined' && SYNC.token);
+  const loggedIn=isSignedIn();
   const e=(typeof empOf==='function'? (empOf(curEmployee)||{}) : {});
   const co=(typeof loadCompany==='function')?loadCompany():null;
   let en=e; if(en&&!['boss','partnerA','partnerB'].includes(en.tier)){ for(const id of Object.keys(ALL_EMP)){ const x=empOf(id); if(x&&['boss','partnerA','partnerB'].includes(x.tier)){ en=x; break; } } }
@@ -3095,6 +3095,36 @@ function upsertEmp(id,data){
 function markCarDirty(id){ SYNC.cars[id]=Date.now(); jsave('am_dirty_cars',SYNC.cars); saveCars(); saveListed(); scheduleSync(); }
 function markEmpDirty(id){ SYNC.emps[id]=Date.now(); jsave('am_dirty_emps',SYNC.emps); saveEmps(); scheduleSync(); }
 
+/* ---- resilient session cache -------------------------------------------------
+ * The signed-in identity is cached locally (am_session) so a page refresh can
+ * rebuild the account + role IMMEDIATELY, before any network pull. Previously the
+ * role was only derived from the employee roster returned by the startup sync; if
+ * that single pull was slow or failed, empOf() fell back to the literal "customer"
+ * tier and the whole app dropped to a guest view (lost permissions, blank account
+ * name, "tap to sync"). Now the identity survives a refresh regardless of network. */
+function saveSession(emp, company, token){
+  try{
+    const s={ id:emp.id, name:emp.name, tier:emp.tier, role:emp.role, roleZh:emp.roleZh, branch:emp.branch||'', wa:emp.wa||'', phone:emp.phone||'' };
+    if(company) s.company=company;
+    if(token) s.token=token;
+    localStorage.setItem('am_session', JSON.stringify(s));
+  }catch(e){}
+}
+function loadSession(){ try{ return JSON.parse(localStorage.getItem('am_session')||'null'); }catch(e){ return null; } }
+function isSignedIn(){ return !!(SYNC.token || loadSession()); }
+function restoreSession(){
+  const s=loadSession();
+  if(!s||!s.id) return false;
+  upsertEmp(s.id, s);
+  curEmployee=s.id; curRole=s.tier||'customer';
+  return true;
+}
+function clearSession(){ try{ localStorage.removeItem('am_session'); }catch(e){} SYNC.token=''; try{ localStorage.removeItem('am_token'); }catch(e){} }
+function onSessionExpired(){
+  clearSession();
+  try{ toast(T('syncExpired','Session expired — please sign in again')); }catch(e){}
+  try{ renderSyncUI(); updateAuthCTA(); renderMe(); updateRoleUI(); }catch(e){}
+}
 async function api(p,o){
   o=o||{};
   const h={'Content-Type':'application/json'};
@@ -3126,7 +3156,7 @@ async function apiPublic(p,o){
 async function bootstrap(){
   let loaded=false, error=null;
   // 1) local cache first (instant UI)
-  loadCars(); loadListed(); loadEmps(); loadShowrooms(); loadCarVideos(); loadCarPhotos(); loadShowroomPhotos(); loadMembership();
+  loadCars(); loadListed(); loadEmps(); restoreSession(); loadShowrooms(); loadCarVideos(); loadCarPhotos(); loadShowroomPhotos(); loadMembership();
   // Drop any stale demo showrooms (Accra/Tema/Kumasi Branch) lingering in the local
   // cache from older builds. Showrooms are kept only in localStorage — the client never
   // syncs them to the server — so these seeded defaults would otherwise never clear.
@@ -3178,7 +3208,7 @@ async function bootstrap(){
       await syncNow(true);
       loaded=true;
     }
-    catch(e){ error=e; console.error('auth pull failed', e); }
+    catch(e){ if(e.status===401) onSessionExpired(); error=e; console.error('auth pull failed', e); }
     // Membership refresh must NEVER block the car load / account resolution above.
     try{ await refreshMembership(); }catch(e){ console.error('membership refresh failed', e); }
   }
@@ -3228,7 +3258,9 @@ async function bootstrap(){
         // Evict any local car the server did NOT return for this company. Without this,
         // sample cars cleared server-side keep lingering in the browser cache and
         // re-appear on the shared-link homepage (the long-standing "复活" bug).
-        for(const id of Object.keys(CARS)){ if(!serverIds.has(id)) delete CARS[id]; }
+        // Don't evict the local inventory if we have a cached session (even if the
+        // token just expired) — keep the owner's cars visible and let them re-auth.
+        if(!loadSession()){ for(const id of Object.keys(CARS)){ if(!serverIds.has(id)) delete CARS[id]; } }
         if(rooms.showrooms && rooms.showrooms.length){
           const serverNames=new Set(rooms.showrooms.map(x=>x.name));
           const localOnly=SHOWROOMS.filter(s=>!serverNames.has(s.name)); // keep user-added locations not yet on server
@@ -3299,14 +3331,14 @@ async function bootstrap(){
     let savedRole=null, ownerOptIn=false;
     try{ savedRole=localStorage.getItem('am_role'); ownerOptIn=localStorage.getItem('am_owner')==='1'; }catch(e){}
     const VALID=['customer','manager','salesA','salesB','boss','partnerA','partnerB'];
-    if(SYNC.token && curEmployee){
+    if(isSignedIn() && curEmployee){
       const realTier=empOf(curEmployee).tier;
       if(ownerOptIn && savedRole && VALID.includes(savedRole) && savedRole!==realTier){
         curRole=savedRole;            // owner previewing as a sub-role on this device
       } else {
         curRole=realTier;             // FIX: boss no longer reloads as customer
       }
-    } else if(loaded && !SYNC.token){
+    } else if(loaded && !isSignedIn()){
       if(ownerOptIn && savedRole && VALID.includes(savedRole)){
         curRole=savedRole;
       } else {
@@ -3367,7 +3399,7 @@ function isSharedView(){
   return false;
 }
 function updateAuthCTA(){
-  const loggedIn=!!SYNC.token;
+  const loggedIn=isSignedIn();
   const shared=isSharedView(); // customer opened a shared car link -> never show a register prompt
   const wb=document.getElementById('welcomeBar'); if(wb) wb.style.display=(loggedIn||shared)?'none':'block';
   // refresh welcome bar language
@@ -3462,6 +3494,7 @@ async function syncLogin(){
     SYNC.token=r.token;
     const remember=document.getElementById('rememberMe');
     localStorage.setItem('am_token',r.token); localStorage.setItem('am_me',r.employee.id);
+    saveSession(r.employee, r.company, r.token);
     localStorage.setItem('am_remember',(!remember||remember.checked)?'1':'0');
     if(!remember||remember.checked) localStorage.setItem('am_last_account',id); else localStorage.removeItem('am_last_account');
     if(r.company){ localStorage.setItem('am_company',JSON.stringify(r.company)); applyCompanyLogo(); }
@@ -3537,6 +3570,7 @@ async function submitReset(){
   try{
     const r=await api('/api/password/reset',{method:'POST',body:{account:acct,code:code,password:pw}});
     SYNC.token=r.token; localStorage.setItem('am_token',r.token); localStorage.setItem('am_me',r.employee.id);
+    saveSession(r.employee, r.company, r.token);
     if(r.company){ localStorage.setItem('am_company',JSON.stringify(r.company)); applyCompanyLogo(); }
     upsertEmp(r.employee.id,r.employee); curEmployee=r.employee.id; applyEmployeeScope(); curRole=empOf(curEmployee).tier;
     document.getElementById('fgPw').value=''; document.getElementById('fgPw2').value=''; document.getElementById('fgCode').value='';
@@ -3599,6 +3633,7 @@ async function registerAccount(){
     setSyncState('pending',T('regCreating','Creating…')); renderSyncUI();
     const r=await api('/api/register',{method:'POST',body});
     SYNC.token=r.token; localStorage.setItem('am_token',r.token); localStorage.setItem('am_me',r.employee.id);
+    saveSession(r.employee, r.company, r.token);
     if(r.company){ localStorage.setItem('am_company',JSON.stringify(r.company)); applyCompanyLogo(); }
     upsertEmp(r.employee.id,r.employee); curEmployee=r.employee.id; applyEmployeeScope(); curRole=empOf(curEmployee).tier;
     document.getElementById('setEmpId').value=id;
@@ -3810,6 +3845,8 @@ async function syncNow(silent){
     // missed the deletion event if the sync cursor predated it.
     SAMPLE_CAR_IDS.forEach(function(id){ if(CARS[id]){ delete CARS[id]; delete LISTED_AT[id]; delete CAR_PHOTOS[id]; delete CAR_VIDEOS[id]; } });
     (p.employees||[]).forEach(e=>{ if(e.deleted){ delete SALES[e.id]; delete OWNERS[e.id]; delete ALL_EMP[e.id]; } else { upsertEmp(e.id,e.data); n++; } });
+    // keep the cached session record in sync with the server's latest employee data
+    if(p.employees){ for(const e of p.employees){ if(!e.deleted && e.id===curEmployee){ saveSession(Object.assign({id:e.id}, e.data), loadCompany(), SYNC.token); break; } } }
     SYNC.since=p.now; localStorage.setItem('am_since',String(p.now));
     saveCars(); saveListed(); saveEmps();
     if(n){ recomputeFacets(); renderHome(); renderStock(); if(isTopEmployee()&&document.getElementById('staffList')) renderStaff(); }
@@ -3827,8 +3864,9 @@ async function syncNow(silent){
     try{ localStorage.setItem('am_last_sync', String(Date.now())); }catch(e){}
     if(!silent){ toast(T('syncDone','Sync complete')+' · '+n+' '+T('syncItems','item(s)')); pushNotif(T('synced','Synced'), n+' '+T('syncItems','item(s)')+' · '+new Date().toLocaleTimeString(), '🔄'); }
   }catch(e){
-    setSyncState('err', (navigator.onLine===false)?T('syncQueued','Offline — changes queued'):e.message);
-    if(!silent) toast('⚠ '+SYNC.msg);
+    if(e.status===401) onSessionExpired();
+    setSyncState('err', (navigator.onLine===false)?T('syncQueued','Offline — changes queued'):(e.message||T('syncErr','Sync error')));
+    if(!silent && e.status!==401) toast('⚠ '+SYNC.msg);
   }finally{ SYNC.busy=false; renderSyncUI(); }
 }
 window.addEventListener('online',()=>syncNow(true));
