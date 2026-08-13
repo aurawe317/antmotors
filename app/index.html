@@ -1366,7 +1366,7 @@ function empOf(id){
 }
 const ALL_EMP = Object.assign({}, SALES, OWNERS);
 
-let curTheme="dark", curLang=(typeof localStorage!=='undefined'&&localStorage.getItem('am_lang'))||"en", curRole="customer", curSales="kwame", curCar="lc", curEmployee="boss";
+let curTheme="dark", curLang=(typeof localStorage!=='undefined'&&localStorage.getItem('am_lang'))||"zh", curRole="customer", curSales="kwame", curCar="lc", curEmployee="boss";
 function isTopEmployee(){ return ["boss","partnerA","partnerB"].includes(empOf(curEmployee).tier); }
 function applyEmployeeScope(){ const tier=empOf(curEmployee).tier; curRole=tier; if(!isTopEmployee()){ curSales=curEmployee; } }
 let FILTER={section:"all", q:"", sort:"default",
@@ -1427,7 +1427,7 @@ const I18N = {
       favSavedToast:"Saved! Tap ♡ in top bar to view",favRemoved:"Removed from saved",msgPlaceholder:"I'd like to see the car and discuss the deal.",
       photoUp:"Photo uploaded for",noPermPhoto:"Your role cannot upload photos.",dirTo:"Directions to",
       moreCars:"More cars",
-      markSold:"Mark as sold",markAvail:"Mark as available",deleteCar:"Delete this car",delConfirm:"Delete this car? This cannot be undone and syncs to all devices.",markedSold:"Marked as sold",markedAvail:"Marked as available",carDeleted:"Car deleted",sold:"SOLD",goneTitle:"This vehicle is no longer available",goneSoldTitle:"This vehicle has been sold",goneSeeOthers:"See other cars",
+      markSold:"Mark as sold",markAvail:"Mark as available",deleteCar:"Delete this car",delConfirm:"Delete this car? This cannot be undone and syncs to all devices.",markedSold:"Marked as sold",markedAvail:"Marked as available",carDeleted:"Car deleted",sold:"SOLD",goneTitle:"This vehicle is no longer available",goneSoldTitle:"This vehicle has been sold",goneSeeOthers:"See other cars",del:"Delete",delSelf:"You cannot remove your own account",delDone:"Removed",delEmpConfirm:"Remove employee {n}? This cannot be undone and syncs to all devices.",delNotFound:"That employee is not in this company or was already removed",
       pvTitle:"🎛 Preview Role · Share Link",pvHint:"Switch the viewer role and the assigned sales — the same car updates its price and contact. Boss, Partner A & Partner B see cost + full edit; Manager & Sales A can upload photos on the detail page; the share link carries the sales ref so customers reach the right person.",
       pvWho:"Who is viewing?",pvSales:"Assigned sales (share link)",pvCopy:"Copy",
       pvR_customer:"Customer",pvR_customer_sub:"Sees the selling quote",
@@ -1475,7 +1475,7 @@ const I18N = {
       favSavedToast:"已收藏！点击顶部 ♡ 查看",favRemoved:"已取消收藏",msgPlaceholder:"我想看车并谈谈价格。",
       photoUp:"已上传照片：",noPermPhoto:"您的角色不能上传照片。",dirTo:"导航至",
       moreCars:"更多车辆",
-      markSold:"标记为已售",markAvail:"标记为在售",deleteCar:"删除此车辆",delConfirm:"确定删除这辆车吗？此操作不可撤销，并将同步到所有设备。",markedSold:"已标记为已售",markedAvail:"已标记为在售",carDeleted:"车辆已删除",sold:"已售",goneTitle:"该车辆已不再提供",goneSoldTitle:"该车辆已售出",goneSeeOthers:"查看其它车辆",
+      markSold:"标记为已售",markAvail:"标记为在售",deleteCar:"删除此车辆",delConfirm:"确定删除这辆车吗？此操作不可撤销，并将同步到所有设备。",markedSold:"已标记为已售",markedAvail:"已标记为在售",carDeleted:"车辆已删除",sold:"已售",goneTitle:"该车辆已不再提供",goneSoldTitle:"该车辆已售出",goneSeeOthers:"查看其它车辆",del:"删除",delSelf:"不能删除你自己的账号",delDone:"已删除",delEmpConfirm:"确定删除该员工 {n} 吗？此操作不可撤销，并将同步到所有设备。",delNotFound:"该员工不在当前公司，或已被删除",
       pvTitle:"🎛 预览身份 · 分享链接",pvHint:"切换查看角色与指派销售——同一辆车会按角色显示不同价格与联系方式。老板、合伙人A、合伙人B 可见成本与全部编辑权限；店长与销售A 可在详情页上传照片；分享链接携带销售 ref，客户由此联系到对应销售。",
       pvWho:"谁在查看？",pvSales:"指派销售（分享链接）",pvCopy:"复制",
       pvR_customer:"客户",pvR_customer_sub:"看到对外售价",
@@ -1672,7 +1672,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.20';
+const APP_VER='1.2.21';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2876,14 +2876,22 @@ function addEmployee(){
 }
 function assignTier(id,tier){ const e=ALL_EMP[id]; if(e){ e.tier=tier; markEmpDirty(id); toast(T('tierAssigned','Assigned ')+e.name+' → '+tier); } }
 async function deleteEmployee(id){
-  const e=ALL_EMP[id]; if(!e) return;
+  const e=ALL_EMP[id]; if(!e){ return; }
   if(id===curEmployee){ toast(T('delSelf','You cannot remove your own account')); return; }
-  if(!confirm(T('delConfirm','Remove')+' '+e.name+'?')) return;
+  if(!confirm(T('delEmpConfirm','Remove employee {n}? This cannot be undone and syncs to all devices.').replace('{n}', (e.name||id)))) return;
   try{
     await api('/api/employees',{method:'DELETE',body:{id}});
-    toast('🗑 '+T('delDone','Removed')+': '+e.name);
+    toast('🗑 '+T('delDone','Removed')+': '+(e.name||id));
     await syncNow(true); if(document.getElementById('staffList')) renderStaff();
-  }catch(err){ toast('⚠ '+(err.message||'delete failed')); }
+  }catch(err){
+    if(err.message==='not_found'){
+      // Stale local record that is no longer on the server (e.g. a demo/sample entry
+      // that was never in this company). Drop it and refresh the roster from the server.
+      delete ALL_EMP[id]; saveEmps(); if(document.getElementById('staffList')) renderStaff();
+      try{ await syncNow(true); }catch(_){}
+      toast('⚠ '+T('delNotFound','That employee is not in this company or was already removed'));
+    } else { toast('⚠ '+(err.message||'delete failed')); }
+  }
 }
 function shareCar(){
   const u=location.origin+'/?c='+curCar+'&ref='+shareRefVal();
@@ -3121,7 +3129,12 @@ function restoreSession(){
 }
 function clearSession(){ try{ localStorage.removeItem('am_session'); }catch(e){} SYNC.token=''; try{ localStorage.removeItem('am_token'); }catch(e){} }
 function onSessionExpired(){
-  clearSession();
+  // Clear the auth token (so we stop pushing/pulling) but KEEP the cached session
+  // (am_session) so the owner's identity + local inventory stay visible on a refresh
+  // and don't get mass-wiped by the public-branch eviction. The user simply re-signs
+  // in to resume syncing.
+  try{ localStorage.removeItem('am_token'); }catch(e){}
+  SYNC.token='';
   try{ toast(T('syncExpired','Session expired — please sign in again')); }catch(e){}
   try{ renderSyncUI(); updateAuthCTA(); renderMe(); updateRoleUI(); }catch(e){}
 }
@@ -3260,7 +3273,12 @@ async function bootstrap(){
         // re-appear on the shared-link homepage (the long-standing "复活" bug).
         // Don't evict the local inventory if we have a cached session (even if the
         // token just expired) — keep the owner's cars visible and let them re-auth.
-        if(!loadSession()){ for(const id of Object.keys(CARS)){ if(!serverIds.has(id)) delete CARS[id]; } }
+        // Never wipe local inventory just because the public list for a company
+        // happens to be empty (e.g. the owner's own company, or a hiccup during the
+        // startup pull). Only evict when we are genuinely signed out AND have no
+        // cached session AND nothing locally — otherwise a transient failure would
+        // mass-delete the owner's cars and force a manual re-sync every refresh.
+        if(!SYNC.token && !loadSession() && Object.keys(CARS).length===0){ for(const id of Object.keys(CARS)){ if(!serverIds.has(id)) delete CARS[id]; } }
         if(rooms.showrooms && rooms.showrooms.length){
           const serverNames=new Set(rooms.showrooms.map(x=>x.name));
           const localOnly=SHOWROOMS.filter(s=>!serverNames.has(s.name)); // keep user-added locations not yet on server
@@ -3580,7 +3598,7 @@ async function submitReset(){
   }catch(e){ toast(pwErrText(e)); }
 }
 function syncLogout(){
-  SYNC.token=''; localStorage.removeItem('am_token'); localStorage.removeItem('am_me');
+  SYNC.token=''; localStorage.removeItem('am_token'); localStorage.removeItem('am_me'); localStorage.removeItem('am_session');
   setSyncState('err',T('syncNeedLogin','Sign in to sync')); renderSyncUI();
   updateAuthCTA();
   toast(T('syncSignedOut','Signed out'));
