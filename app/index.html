@@ -1672,7 +1672,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.27';
+const APP_VER='1.2.28';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2338,10 +2338,16 @@ let CAR_VIDEOS={};
 let CAR_DELETED=jload('am_car_deleted',{})||{};
 let SHOWROOM_PHOTOS={};
 
-function saveCarVideos(){ jsave('am_car_videos',CAR_VIDEOS); }
-function loadCarVideos(){ const o=jload('am_car_videos',null); if(o) Object.assign(CAR_VIDEOS,o); }
-function saveCarPhotos(){ jsave('am_car_photos',CAR_PHOTOS); }
-function loadCarPhotos(){ const o=jload('am_car_photos',null); if(o) Object.assign(CAR_PHOTOS,o); }
+// Photos are large base64 blobs. Persisting all of them to localStorage used to blow the
+// ~5MB per-origin quota, and the silent setItem failure ALSO broke the metadata cache
+// (cars/account), which is exactly the "empty page → wait ~1min for a full re-download"
+// bug. Photos are now kept in memory only and re-fetched lazily per card via
+// /api/car/:id/photos (see lazyPhotoFetch), so we never bloat localStorage. Saving is a
+// no-op; loaders are kept as harmless no-ops so call sites don't need touch-ups.
+function saveCarVideos(){}
+function loadCarVideos(){}
+function saveCarPhotos(){}
+function loadCarPhotos(){}
 function saveShowroomPhotos(){ jsave('am_showroom_photos',SHOWROOM_PHOTOS); }
 function loadShowroomPhotos(){ const o=jload('am_showroom_photos',null); if(o) Object.assign(SHOWROOM_PHOTOS,o); }
 
@@ -3180,6 +3186,11 @@ async function bootstrap(){
   let loaded=false, error=null;
   // 1) local cache first (instant UI)
   loadCars(); loadListed(); loadEmps(); restoreSession(); loadShowrooms(); loadCarVideos(); loadCarPhotos(); loadShowroomPhotos(); loadMembership();
+  // Clear any legacy base64 photo cache that old builds wrote into localStorage. Those
+  // blobs used to blow the ~5MB quota and silently broke the metadata cache (cars/account),
+  // which is the root cause of "empty page → wait ~1min on every refresh". Photos are no
+  // longer persisted (see saveCarPhotos/saveCarVideos), so drop the old keys to free quota.
+  try{ localStorage.removeItem('am_car_photos'); localStorage.removeItem('am_car_videos'); }catch(e){}
   // Clean up legacy "boss" placeholder keys that some old devices still carry in
   // localStorage — they caused the account banner to render as the fake "boss" on every refresh.
   try{ const _m=localStorage.getItem('am_me'); if(_m){ const _id=(function(){try{return JSON.parse(_m).id}catch(e){return _m}}()); if(_id==='boss') localStorage.removeItem('am_me'); } }catch(e){}
@@ -3222,6 +3233,11 @@ async function bootstrap(){
     recomputeFacets();
     renderHome(); renderStock(); renderPerm(); renderFilterBranch(); renderShowroomList(); initAdminBranch();
     applyEmployeeScope(); updateRoleUI(); renderSyncUI(); applyCompanyLogo(); renderMembershipUI();
+    // Paint cached inventory instantly above; now stream each car's photo as its card is
+    // visible — WITHOUT waiting for the full network sync (which can be slow on a cold
+    // server). This is what removes the "empty page for ~1 minute" wait: the list appears
+    // now, photos fill in as you look at them.
+    lazyPhotoObserve();
   }catch(e){ console.error('early render failed', e); }
   // capture the ?ref= from a shared link so public list/showroom fetches resolve to the right company
   let shrRef=null; try{ shrRef=new URL(location.href).searchParams.get('ref'); }catch(e){}
@@ -3975,22 +3991,11 @@ function applyLazyPhoto(id, el){
   const im=document.createElement('img'); im.className='car-cover'; im.src=ph; im.alt='';
   el.appendChild(im);
 }
-async function refreshPhotosBackground(silent){
-  if(!SYNC.base || !SYNC.token) return;
-  // Skip the full photo pull entirely when every car already has its photos cached
-  // locally — previously this re-downloaded ALL base64 photos on every refresh.
-  const need=Object.keys(CARS).some(id=> !CAR_PHOTOS[id] || CAR_PHOTOS[id].length===0);
-  if(!need) return;
-  try{
-    const p=await api('/api/pull?photos=1&since=0');
-    (p.cars||[]).forEach(c=>{
-      // only fill photos/videos we don't already have locally
-      if(c.photos && c.photos.length && !CAR_PHOTOS[c.id]) CAR_PHOTOS[c.id]=c.photos.filter(isPhotoOK);
-      if(c.videos && c.videos.length && !CAR_VIDEOS[c.id]) CAR_VIDEOS[c.id]=c.videos;
-    });
-    saveCarPhotos(); saveCarVideos(); recomputeFacets(); renderHome(); renderStock();
-  }catch(e){ console.error('background photo refresh failed', e); }
-}
+// Photos are no longer pulled in one big blob on refresh — they stream in per card via
+// lazyPhotoObserve()/lazyPhotoFetch() (which calls /api/car/:id/photos). Doing a full
+// photos=1 pull here used to re-download every car's base64 and caused the ~1-minute
+// blank wait. Keep this as a no-op so call sites stay valid but nothing heavy runs.
+async function refreshPhotosBackground(silent){ /* lazy photo loading replaced this */ }
 window.addEventListener('online',()=>syncNow(true));
 setInterval(()=>{ if(SYNC.base&&SYNC.token&&!document.hidden) syncNow(true); },60000);
 /* ---- full data backup / restore (JSON file) ---- */
