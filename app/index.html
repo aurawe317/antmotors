@@ -1672,7 +1672,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.25';
+const APP_VER='1.2.26';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2732,8 +2732,13 @@ function renderMe(){
   const e=(typeof empOf==='function'? (empOf(curEmployee)||{}) : {});
   const co=(typeof loadCompany==='function')?loadCompany():null;
   let en=e; if(en&&!['boss','partnerA','partnerB'].includes(en.tier)){ for(const id of Object.keys(ALL_EMP)){ const x=empOf(id); if(x&&['boss','partnerA','partnerB'].includes(x.tier)){ en=x; break; } } }
-  let nick = loggedIn ? (en.name || (typeof localStorage!=='undefined'&&localStorage.getItem('am_me')) || curEmployee || '') : '';
-  if(!nick) nick = loggedIn ? 'ANT' : T('meGuest','Guest');
+  // Never paint the literal "Boss" placeholder as the account name. Prefer the signed-in
+  // employee's real name; fall back to the cached session name; never to the fake "Boss".
+  const sess=loadSession();
+  let nick;
+  if(curEmployee && e && e.name && e.name!=='Boss'){ nick=e.name; }
+  else if(sess && sess.name && sess.name!=='Boss'){ nick=sess.name; }
+  else { nick = loggedIn ? T('meAccount','Account') : T('meGuest','Guest'); }
   const nm=document.getElementById('meName'); if(nm) nm.textContent=nick;
   const sb=document.getElementById('meSub');
   if(sb){
@@ -3122,7 +3127,9 @@ function loadSession(){ try{ return JSON.parse(localStorage.getItem('am_session'
 function isSignedIn(){ return !!(SYNC.token || loadSession()); }
 function restoreSession(){
   const s=loadSession();
-  if(!s||!s.id) return false;
+  // A legacy build stored the literal "boss" placeholder as the signed-in id; treat
+  // that as "no cached session" so we never resolve the account banner to the fake "Boss".
+  if(!s||!s.id||s.id==='boss') return false;
   upsertEmp(s.id, s);
   curEmployee=s.id; curRole=s.tier||'customer';
   return true;
@@ -3174,6 +3181,10 @@ async function bootstrap(){
   // localStorage — they caused the account banner to render as the fake "boss" on every refresh.
   try{ const _m=localStorage.getItem('am_me'); if(_m){ const _id=(function(){try{return JSON.parse(_m).id}catch(e){return _m}}()); if(_id==='boss') localStorage.removeItem('am_me'); } }catch(e){}
   try{ const _s=loadSession(); if(_s&&_s.id==='boss') clearSession(); }catch(e){}
+  // the cleanup above removed the stored key but restoreSession() may already have
+  // copied the literal "boss" into the in-memory curEmployee — drop it so the banner
+  // never paints the fake "Boss" on a refresh.
+  if(curEmployee==='boss') curEmployee='';
   // Drop any stale demo showrooms (Accra/Tema/Kumasi Branch) lingering in the local
   // cache from older builds. Showrooms are kept only in localStorage — the client never
   // syncs them to the server — so these seeded defaults would otherwise never clear.
@@ -3840,13 +3851,13 @@ async function syncNow(silent, withPhotos){
     // pictures still reach the server and appear on shared links.
     const pushIds=new Set();
     for(const id in SYNC.cars) pushIds.add(id);
-    for(const id in CAR_PHOTOS) if(CAR_PHOTOS[id]&&CAR_PHOTOS[id].length) pushIds.add(id);
-    for(const id in CAR_VIDEOS) if(CAR_VIDEOS[id]&&CAR_VIDEOS[id].length) pushIds.add(id);
     for(const id of pushIds){
       if(CAR_DELETED[id]){ payload.cars.push({id:id,updatedAt:CAR_DELETED[id],deleted:true}); continue; }
       if(!CARS[id]) continue;
-      const dirty=SYNC.cars[id]!=null;
-      if(!dirty && !(CAR_PHOTOS[id]&&CAR_PHOTOS[id].length) && !(CAR_VIDEOS[id]&&CAR_VIDEOS[id].length)) continue;
+      // Only push cars that are actually dirty (edited / photo-added). An earlier build
+      // re-uploaded EVERY car that merely had local photos on every sync — re-sending all
+      // base64 photos each refresh, which cost ~1 min on mobile links. markCarDirty() runs
+      // on every photo add/edit, so photos still reach the server.
       const _ph=CAR_PHOTOS[id]?CAR_PHOTOS[id].filter(isPhotoOK):[]; const _vd=CAR_VIDEOS[id]?CAR_VIDEOS[id].filter(isPhotoOK):[];
       payload.cars.push({id:id,updatedAt:SYNC.cars[id]||Date.now(),listedAt:LISTED_AT[id]||null,data:CARS[id],photos:_ph.length?_ph:undefined,videos:_vd.length?_vd:undefined}); }
     for(const id in SYNC.emps){ const e=ALL_EMP[id]; if(!e) continue;
@@ -3903,11 +3914,16 @@ async function syncNow(silent, withPhotos){
 }
 async function refreshPhotosBackground(silent){
   if(!SYNC.base || !SYNC.token) return;
+  // Skip the full photo pull entirely when every car already has its photos cached
+  // locally — previously this re-downloaded ALL base64 photos on every refresh.
+  const need=Object.keys(CARS).some(id=> !CAR_PHOTOS[id] || CAR_PHOTOS[id].length===0);
+  if(!need) return;
   try{
     const p=await api('/api/pull?photos=1&since=0');
     (p.cars||[]).forEach(c=>{
-      if(c.photos && c.photos.length){ CAR_PHOTOS[c.id]=c.photos.filter(isPhotoOK); }
-      if(c.videos && c.videos.length){ CAR_VIDEOS[c.id]=c.videos; }
+      // only fill photos/videos we don't already have locally
+      if(c.photos && c.photos.length && !CAR_PHOTOS[c.id]) CAR_PHOTOS[c.id]=c.photos.filter(isPhotoOK);
+      if(c.videos && c.videos.length && !CAR_VIDEOS[c.id]) CAR_VIDEOS[c.id]=c.videos;
     });
     saveCarPhotos(); saveCarVideos(); recomputeFacets(); renderHome(); renderStock();
   }catch(e){ console.error('background photo refresh failed', e); }
