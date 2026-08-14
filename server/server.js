@@ -393,6 +393,20 @@ function seed() {
   console.log(`[seed] ${Object.keys(s.cars || {}).length} cars, ${Object.keys(s.employees || {}).length} employees, ${(s.showrooms || []).length} showrooms → company ${DEFAULT_COMPANY}`);
 }
 
+/* One-time cleanup: the demo company (co_default) used to ship with a placeholder
+ * "boss" employee ("Owner (You)", pin 8888). It confuses owners/visitors and must
+ * never masquerade as a real person, so remove it once. Idempotent via a meta flag. */
+function purgePlaceholderBoss() {
+  if (getMeta('purged_placeholder_boss') === '1') return;
+  try {
+    q('DELETE FROM employees WHERE company_id=? AND id=? AND deleted=0').run(DEFAULT_COMPANY, 'boss');
+    q("DELETE FROM employees WHERE company_id=? AND json_extract(data,'$.name')='Owner (You)' AND deleted=0").run(DEFAULT_COMPANY);
+    q('UPDATE companies SET owner_id=NULL WHERE id=? AND owner_id=?').run(DEFAULT_COMPANY, 'boss');
+    setMeta('purged_placeholder_boss', '1');
+    console.log('[migrate] removed placeholder boss from demo company');
+  } catch (e) { console.error('[migrate] purge placeholder boss failed', e.message); }
+}
+
 /* ---------------------------------------------------------------- auth */
 function authOf(req) {
   const h = req.headers.authorization || '';
@@ -1202,6 +1216,7 @@ const server = http.createServer(async (req, res) => {
 
 seed();
 ensureDefaultCompany();
+purgePlaceholderBoss();
 server.listen(PORT, () => {
   console.log(`Ant Motors sync server → http://localhost:${PORT}`);
   console.log(`  db: ${DB_PATH}`);

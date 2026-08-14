@@ -1366,7 +1366,7 @@ function empOf(id){
 }
 const ALL_EMP = Object.assign({}, SALES, OWNERS);
 
-let curTheme="dark", curLang=(typeof localStorage!=='undefined'&&localStorage.getItem('am_lang'))||"en", curRole="customer", curSales="kwame", curCar="lc", curEmployee="boss";
+let curTheme="dark", curLang=(typeof localStorage!=='undefined'&&localStorage.getItem('am_lang'))||"en", curRole="customer", curSales="kwame", curCar="lc", curEmployee="";
 function isTopEmployee(){ return ["boss","partnerA","partnerB"].includes(empOf(curEmployee).tier); }
 function applyEmployeeScope(){ const tier=empOf(curEmployee).tier; curRole=tier; if(!isTopEmployee()){ curSales=curEmployee; } }
 let FILTER={section:"all", q:"", sort:"default",
@@ -1672,7 +1672,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.23';
+const APP_VER='1.2.24';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3191,7 +3191,16 @@ async function bootstrap(){
   saveCars(); saveCarPhotos(); saveCarVideos(); saveListed();
   // restore which account is signed in (so a page reload keeps the boss/owner view
   // instead of resetting to the "boss" placeholder and dropping to a customer view)
-  try{ const raw=localStorage.getItem('am_me'); if(raw){ let id=raw; try{ const m=JSON.parse(raw); if(m&&m.id) id=m.id; }catch(e){} curEmployee=id; /* keep the real signed-in id; the full pull below loads the roster and the role resolver at the end of bootstrap derives the correct tier. (Previously this downgraded to the literal 'boss' when the roster wasn't cached yet, which stuck and broke the session on refresh.) */ } }catch(e){ curEmployee='boss'; }
+  try{ const raw=localStorage.getItem('am_me'); if(raw){ let id=raw; try{ const m=JSON.parse(raw); if(m&&m.id) id=m.id; }catch(e){} curEmployee=id; /* keep the real signed-in id; the full pull below loads the roster and the role resolver at the end of bootstrap derives the correct tier. (Previously this downgraded to the literal 'boss' when the roster wasn't cached yet, which stuck and broke the session on refresh.) */ }   }catch(e){ curEmployee=''; }
+  // EARLY RENDER: paint the cached inventory + account from localStorage IMMEDIATELY,
+  // before any network pull. Previously the homepage stayed blank until the full server
+  // sync finished (or the user tapped Sync) — bad on slow links. The pulls below then
+  // re-render with fresh data.
+  try{
+    recomputeFacets();
+    renderHome(); renderStock(); renderPerm(); renderFilterBranch(); renderShowroomList(); initAdminBranch();
+    applyEmployeeScope(); updateRoleUI(); renderSyncUI(); applyCompanyLogo(); renderMembershipUI();
+  }catch(e){ console.error('early render failed', e); }
   // capture the ?ref= from a shared link so public list/showroom fetches resolve to the right company
   let shrRef=null; try{ shrRef=new URL(location.href).searchParams.get('ref'); }catch(e){}
 
