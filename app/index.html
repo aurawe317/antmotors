@@ -616,9 +616,7 @@
   .crop-box{position:absolute; z-index:2; box-shadow:0 0 0 100vmax rgba(0,0,0,.74), inset 0 0 0 2px rgba(255,255,255,.55), inset 0 0 16px rgba(255,255,255,.22); border:2px solid var(--gold); border-radius:2px; box-sizing:border-box;}
   .crop-box::before{content:''; position:absolute; left:33.33%; right:33.33%; top:0; bottom:0; border-left:1px solid rgba(232,194,104,.4); border-right:1px solid rgba(232,194,104,.4); z-index:3;}
   .crop-box::after{content:''; position:absolute; top:33.33%; bottom:33.33%; left:0; right:0; border-top:1px solid rgba(232,194,104,.4); border-bottom:1px solid rgba(232,194,104,.4); z-index:3;}
-  .crop-ctrl{display:flex; align-items:center; gap:10px; padding:12px 14px 4px;}
-  .crop-ctrl span{font-size:11px; color:var(--text-dim); white-space:nowrap;}
-  .crop-ctrl input[type=range]{flex:1; accent-color:var(--gold);}
+  .crop-ctrl{display:flex; align-items:center; justify-content:flex-end; gap:10px; padding:12px 14px 4px;}
   .crop-reset{background:var(--surface-2); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:6px 10px; font-size:11px; cursor:pointer;}
   .crop-hint{font-size:10px; color:var(--text-faint); text-align:center; padding:6px 14px 0;}
   .crop-actions{display:flex; gap:10px; padding:12px 14px 16px;}
@@ -1562,7 +1560,7 @@ I18N.en.syncEmpId="Account / e-mail"; I18N.en.syncPw="Password"; I18N.en.remembe
 I18N.en.syncNeedCreds="Enter your account and password"; I18N.en.syncBadCreds="Wrong account or password";
 I18N.en.pwRule="At least 8 characters with upper & lower case, a number and a symbol."; I18N.en.pwStrong="Strong password ✓";
 I18N.en.pwTooShort="At least 8 characters"; I18N.en.pwTooLong="64 characters max"; I18N.en.pwNeedLower="Add a lower-case letter"; I18N.en.pwNeedUpper="Add a CAPITAL letter"; I18N.en.pwNeedDigit="Add a number"; I18N.en.pwNeedSymbol="Add a symbol (!@#$…)"; I18N.en.pwTooSimple="Too simple";
-I18N.en.cancel="Cancel"; I18N.en.cropZoom="Zoom"; I18N.en.cropReset="Reset"; I18N.en.cropHint="Drag to reposition · the box keeps the display ratio"; I18N.en.cropApply="Apply crop"; I18N.en.cropTitle="Adjust photo"; I18N.en.uploadMedia="Upload car media"; I18N.en.addPhoto="+ Photo"; I18N.en.addVideo="+ Video"; I18N.en.from="From"; I18N.en.editCar="Edit"; I18N.en.updateCar="Update Car"; I18N.en.clearData="Clear demo data"; I18N.en.clearConfirm="Clear demo sample cars, leads, share links and booking alerts? This cannot be undone."; I18N.en.dataCleared="Demo data cleared";
+I18N.en.cancel="Cancel"; I18N.en.cropZoom="Zoom"; I18N.en.cropReset="Reset"; I18N.en.cropHint="Drag to reposition · auto-locked inside the photo, no black bars"; I18N.en.cropApply="Apply crop"; I18N.en.cropTitle="Adjust photo"; I18N.en.uploadMedia="Upload car media"; I18N.en.addPhoto="+ Photo"; I18N.en.addVideo="+ Video"; I18N.en.from="From"; I18N.en.editCar="Edit"; I18N.en.updateCar="Update Car"; I18N.en.clearData="Clear demo data"; I18N.en.clearConfirm="Clear demo sample cars, leads, share links and booking alerts? This cannot be undone."; I18N.en.dataCleared="Demo data cleared";
 I18N.en.pwMismatch="The two passwords do not match"; I18N.en.pwSame="New password must differ from the current one";
 I18N.en.pwLocked="Too many attempts — account locked, try again in"; I18N.en.pwMinutes="min";
 I18N.en.pwUpgradeHint="Your account still uses an old PIN — set a real password via “Forgot password?”";
@@ -1574,7 +1572,7 @@ I18N.zh.syncEmpId="账号 / 邮箱"; I18N.zh.syncPw="密码"; I18N.zh.rememberMe
 I18N.zh.syncNeedCreds="请输入账号和密码"; I18N.zh.syncBadCreds="账号或密码错误";
 I18N.zh.pwRule="至少 8 位，需包含大写、小写、数字和符号。"; I18N.zh.pwStrong="密码强度：强 ✓";
 I18N.zh.pwTooShort="至少 8 位字符"; I18N.zh.pwTooLong="最多 64 位字符"; I18N.zh.pwNeedLower="需要包含小写字母"; I18N.zh.pwNeedUpper="需要包含大写字母"; I18N.zh.pwNeedDigit="需要包含数字"; I18N.zh.pwNeedSymbol="需要包含符号（!@#$…）"; I18N.zh.pwTooSimple="密码过于简单";
-I18N.zh.cancel="取消"; I18N.zh.cropZoom="缩放"; I18N.zh.cropReset="重置"; I18N.zh.cropHint="拖动调整位置 · 裁剪框锁定展示比例"; I18N.zh.cropApply="应用裁剪"; I18N.zh.cropTitle="调整照片"; I18N.zh.uploadMedia="上传车辆媒体"; I18N.zh.addPhoto="+ 照片"; I18N.zh.addVideo="+ 视频"; I18N.zh.from="起"; I18N.zh.editCar="编辑"; I18N.zh.updateCar="更新车辆"; I18N.zh.clearData="清空演示数据"; I18N.zh.clearConfirm="清空示例车辆、客户线索、分享链接和预约提醒？此操作不可撤销。"; I18N.zh.dataCleared="演示数据已清空";
+I18N.zh.cancel="取消"; I18N.zh.cropZoom="缩放"; I18N.zh.cropReset="重置"; I18N.zh.cropHint="拖动调整照片位置 · 自动锁定在照片内，不会裁出黑边"; I18N.zh.cropApply="应用裁剪"; I18N.zh.cropTitle="调整照片"; I18N.zh.uploadMedia="上传车辆媒体"; I18N.zh.addPhoto="+ 照片"; I18N.zh.addVideo="+ 视频"; I18N.zh.from="起"; I18N.zh.editCar="编辑"; I18N.zh.updateCar="更新车辆"; I18N.zh.clearData="清空演示数据"; I18N.zh.clearConfirm="清空示例车辆、客户线索、分享链接和预约提醒？此操作不可撤销。"; I18N.zh.dataCleared="演示数据已清空";
 I18N.zh.pwMismatch="两次输入的密码不一致"; I18N.zh.pwSame="新密码不能与当前密码相同";
 I18N.zh.pwLocked="尝试次数过多——账号已锁定，请稍后再试："; I18N.zh.pwMinutes="分钟";
 I18N.zh.pwUpgradeHint="你的账号仍在使用旧的 PIN——请通过“忘记密码？”设置正式密码";
@@ -1675,7 +1673,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.30';
+const APP_VER='1.2.31';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2382,9 +2380,10 @@ function openCropper(file, aspect, callback){
         box.style.left=bx+'px'; box.style.top=by+'px'; box.style.width=bw+'px'; box.style.height=bh+'px';
         // initial "cover" scale so image fully fills the box at zoom=1
         const cover=Math.max(bw/img.naturalWidth, bh/img.naturalHeight);
-        _cropState={img, im, stage, box, sr, sh, bw, bh, bx, by, aspect, cover, scale:1, x:(sr-bw)/2, y:(sh-bh)/2, callback, dragging:false, lx:0, ly:0};
+        // centre the photo inside the frame at zoom=1 (box stays inside the photo → no black bars)
+        const _sw0=img.naturalWidth*cover, _sh0=img.naturalHeight*cover;
+        _cropState={img, im, stage, box, sr, sh, bw, bh, bx, by, aspect, cover, scale:1, x:bx+(bw-_sw0)/2, y:by+(bh-_sh0)/2, callback, dragging:false, lx:0, ly:0};
         applyCropTransform();
-        const z=document.getElementById('cropZoom'); if(z) z.value=1;
       });
     };
     img.src=ev.target.result;
@@ -2393,13 +2392,23 @@ function openCropper(file, aspect, callback){
 }
 function applyCropTransform(){
   const s=_cropState; if(!s) return;
-  s.im.style.transform=`translate(${s.x}px,${s.y}px) scale(${s.cover*s.scale})`;
+  const disp=s.cover*s.scale;                       // effective displayed scale
+  const sw=s.img.naturalWidth*disp, shh=s.img.naturalHeight*disp; // displayed photo size
+  // Keep the crop box strictly inside the photo so we never export black bars.
+  // Photo's top-left is (s.x,s.y); the box sits at (s.bx,s.by), sized (s.bw,s.bh).
+  const xMin=s.bx+s.bw-sw, xMax=s.bx;               // photo's right edge must stay right of the box's right edge
+  const yMin=s.by+s.bh-shh, yMax=s.by;              // photo's bottom edge must stay below the box's bottom edge
+  s.x=Math.min(xMax, Math.max(xMin, s.x));
+  s.y=Math.min(yMax, Math.max(yMin, s.y));
+  s.im.style.transform=`translate(${s.x}px,${s.y}px) scale(${disp})`;
   s.im.style.width=s.img.naturalWidth+'px'; s.im.style.height=s.img.naturalHeight+'px';
 }
 function cropReset(){
   const s=_cropState; if(!s) return;
-  s.scale=1; s.x=(s.sr-s.bw)/2; s.y=(s.sh-s.bh)/2;
-  applyCropTransform(); document.getElementById('cropZoom').value=1;
+  s.scale=1;                                          // back to "cover" (minimum zoom — photo exactly fills the frame)
+  const sw=s.img.naturalWidth*s.cover, shh=s.img.naturalHeight*s.cover;
+  s.x=s.bx+(s.bw-sw)/2; s.y=s.by+(s.bh-shh)/2;        // re-centre the photo in the frame
+  applyCropTransform();
 }
 function closeCropper(apply){
   const s=_cropState; if(!s){ return; }
@@ -2422,15 +2431,13 @@ function closeCropper(apply){
 }
 function wireCrop(){
   const stage=document.getElementById('cropStage');
-  const zoom=document.getElementById('cropZoom');
-  if(!stage||!zoom) return;   // modal markup may not be parsed yet — guarded
-  zoom.addEventListener('input',()=>{ if(_cropState){ _cropState.scale=parseFloat(zoom.value); applyCropTransform(); } });
-  // Mouse / trackpad (pointer) — drag to pan
+  if(!stage) return;   // modal markup may not be parsed yet — guarded
+  // Mouse / trackpad (pointer) — drag to pan (clamped by applyCropTransform → box stays inside photo)
   stage.addEventListener('pointerdown',e=>{ if(!_cropState) return; _cropState.dragging=true; _cropState.lx=e.clientX; _cropState.ly=e.clientY; moved=false; stage.setPointerCapture(e.pointerId); });
   stage.addEventListener('pointermove',e=>{ if(!_cropState||!_cropState.dragging) return; const dx=e.clientX-_cropState.lx, dy=e.clientY-_cropState.ly; if(Math.abs(dx)+Math.abs(dy)>3) moved=true; _cropState.x+=dx; _cropState.y+=dy; _cropState.lx=e.clientX; _cropState.ly=e.clientY; applyCropTransform(); });
   stage.addEventListener('pointerup',()=>{ if(_cropState) _cropState.dragging=false; });
-  // Desktop wheel zoom
-  stage.addEventListener('wheel',e=>{ if(!_cropState) return; e.preventDefault(); const z=Math.min(4,Math.max(1,_cropState.scale - (e.deltaY>0?0.08:-0.08))); _cropState.scale=z; document.getElementById('cropZoom').value=z; applyCropTransform(); },{passive:false});
+  // Desktop wheel zoom (zoom IN only; minimum is "cover" so the photo never shrinks below the frame → no black bars)
+  stage.addEventListener('wheel',e=>{ if(!_cropState) return; e.preventDefault(); const z=Math.min(4,Math.max(1,_cropState.scale - (e.deltaY>0?0.08:-0.08))); _cropState.scale=z; applyCropTransform(); },{passive:false});
   // Touch (album-style): one finger pans, two fingers pinch-zoom
   let touched=null;
   stage.addEventListener('touchstart',e=>{
@@ -2446,7 +2453,7 @@ function wireCrop(){
     } else if(touched.mode==='pinch' && e.touches.length===2){
       const dx=e.touches[0].clientX-e.touches[1].clientX, dy=e.touches[0].clientY-e.touches[1].clientY;
       const dist=Math.hypot(dx,dy);
-      if(touched.dist){ const z=Math.min(4,Math.max(1, touched.scale*(dist/touched.dist))); _cropState.scale=z; const z2=document.getElementById('cropZoom'); if(z2) z2.value=z; applyCropTransform(); }
+      if(touched.dist){ const z=Math.min(4,Math.max(1, touched.scale*(dist/touched.dist))); _cropState.scale=z; applyCropTransform(); }
     }
   },{passive:false});
   stage.addEventListener('touchend',e=>{
@@ -4745,8 +4752,6 @@ if('serviceWorker' in navigator){
         <div class="crop-box" id="cropBox"></div>
       </div>
       <div class="crop-ctrl">
-        <span data-i18n="cropZoom">Zoom</span>
-        <input type="range" id="cropZoom" min="1" max="3" step="0.01" value="1" />
         <button class="crop-reset" onclick="cropReset()" data-i18n="cropReset">Reset</button>
       </div>
       <div class="crop-hint" data-i18n="cropHint">Drag to reposition · the box keeps the display ratio</div>
