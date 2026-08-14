@@ -1353,9 +1353,12 @@ function carMileage(c){ const s=(c.specs||[]).find(x=>x[0]==="Mileage"); if(!s) 
 function stockBadge(k){ if(curRole==='customer') return ''; const d=daysInStock(k); if(d===null) return ''; const over=d>90; return ' <span class="stock-days'+(over?' over':'')+'">'+T('inStockDays','In stock')+' '+d+' '+T('days','days')+(over?(' · '+T('overstock','overstock')):'')+'</span>'; }
 const SHOWROOMS = [];
 const SALES = {};
-const OWNERS = {
-  boss:{name:'Boss', av:'B', tier:'boss', role:'Boss / Owner', roleZh:'老板 / 业主', wa:'', phone:'', branch:''}
-};
+// Tier-classification maps. NOTE: there is intentionally NO 'boss' key here. A literal
+// 'boss' employee id is a legacy demo phantom that some old builds seeded; it must never be
+// (re)injected into the employee roster. upsertEmp() and loadEmps() skip id==='boss' so the
+// phantom can't resurrect on refresh. The real owner has tier 'boss' but a normal (registered)
+// id, so removing this key does not affect real accounts.
+const OWNERS = {};
 function empOf(id){
   const e=SALES[id] || OWNERS[id];
   if(e) return e;
@@ -1672,7 +1675,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.29';
+const APP_VER='1.2.30';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3103,11 +3106,12 @@ async function simulatePay(){
 function saveListed(){ jsave('am_listed',LISTED_AT); }
 function loadListed(){ const o=jload('am_listed',null); if(o) Object.assign(LISTED_AT,o); }
 function saveEmps(){ jsave('am_emps',ALL_EMP); }
-function loadEmps(){ const o=jload('am_emps',null); if(o) for(const id in o) upsertEmp(id,o[id]); }
+function loadEmps(){ const o=jload('am_emps',null); if(o){ delete o.boss; for(const id in o) upsertEmp(id,o[id]); } }
 function saveShowrooms(){ jsave('am_showrooms',SHOWROOMS); }
 function loadShowrooms(){ const arr=jload('am_showrooms',null); if(arr){ SHOWROOMS.length=0; arr.forEach(x=>SHOWROOMS.push(x)); } }
 /* keep SALES/OWNERS/ALL_EMP pointing at the SAME object so empOf() sees updates */
 function upsertEmp(id,data){
+  if(id==='boss') return null; // legacy phantom — never store as a real employee
   const cur=SALES[id]||OWNERS[id];
   if(cur){ Object.assign(cur,data); ALL_EMP[id]=cur; return cur; }
   const tgt=["boss","partnerA","partnerB"].includes(data.tier)?OWNERS:SALES;
