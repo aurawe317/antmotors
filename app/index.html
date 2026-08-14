@@ -1672,7 +1672,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.26';
+const APP_VER='1.2.27';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2018,6 +2018,7 @@ function renderStock(){
   else if(s==='oldest') ks.sort((a,b)=>new Date(LISTED_AT[a])-new Date(LISTED_AT[b]));
   if(ks.length===0){ g.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--text-dim);font-size:13px;padding:34px 0;">'+T('noMatch','No cars match your filters.')+'</div>'; return; }
   ks.forEach(k=>g.appendChild(carCard(k)));
+  lazyPhotoObserve(); // stream each visible car's photo in on demand
 }
 
 function renderHome(){
@@ -2039,6 +2040,7 @@ function renderHome(){
       hs.appendChild(c);
     });
   }
+  lazyPhotoObserve(); // stream each visible car's photo in on demand
 }
 /* Build the homepage hero as a swipeable carousel of featured cars (falls back to all cars). */
 let heroTimer=null; let heroResetTO=null;
@@ -2055,7 +2057,7 @@ function renderHeroCarousel(){
     const c=CARS[k]; const cover=carCover(k);
     const ribbon=c.sold?'<span class="cond sold">SOLD</span>':`<span class="cond ${c.cond==='NEW'?'new':'used'}">${condLabel(c)}</span>`;
     const isFeat=CARS[k].featured && !CARS[k].sold;
-    return `<div class="hero-slide"><div class="ph">${cover?`<img class="car-cover" src="${cover}" alt="" />`:carSVG(c.grad)}${ribbon}</div><div class="scrim"></div>${isFeat?`<div class="tag">${T('featured','FEATURED')}</div>`:''}<div class="info"><h3>${carName(c)}</h3><div class="sub">${carSub(c)}</div><div class="price">${rolePrice(c.price)}</div></div><button class="go" onclick="openDetail('${k}')">${T('viewDetails','View details')}</button></div>`;
+    return `<div class="hero-slide"><div class="ph" data-k="${k}">${cover?`<img class="car-cover" src="${cover}" alt="" />`:carSVG(c.grad)}${ribbon}</div><div class="scrim"></div>${isFeat?`<div class="tag">${T('featured','FEATURED')}</div>`:''}<div class="info"><h3>${carName(c)}</h3><div class="sub">${carSub(c)}</div><div class="price">${rolePrice(c.price)}</div></div><button class="go" onclick="openDetail('${k}')">${T('viewDetails','View details')}</button></div>`;
   }).join('');
   if(dots){ dots.innerHTML=''; if(keys.length>1) keys.forEach((_,i)=>{ const d=document.createElement('span'); if(i===0) d.className='on'; dots.appendChild(d); }); }
   const updateDots=()=>{ if(!dots||!dots.children.length) return; const i=Math.round(track.scrollLeft/(track.clientWidth||1)); [...dots.children].forEach((d,k)=>d.classList.toggle('on',k===i)); };
@@ -2089,7 +2091,7 @@ function carCard(k){
   const saved=SAVED_CARS.has(k);
   const cover=carCover(k);
   const ribbon=c.sold?'<span class="cond sold">SOLD</span>':`<span class="cond ${c.cond==='NEW'?'new':'used'}">${condLabel(c)}</span>`;
-  d.innerHTML=`<div class="ph ${c.grad}">${cover?`<img class="car-cover" src="${cover}" alt="" />`:carSVG(c.grad)}${ribbon}
+  d.innerHTML=`<div class="ph ${c.grad}" data-k="${k}">${cover?`<img class="car-cover" src="${cover}" alt="" />`:carSVG(c.grad)}${ribbon}
       <div class="fav-toggle ${saved?'on':''}" onclick="event.stopPropagation();toggleFav(null,'${k}')">${saved?'♥':'♡'}</div></div>
     <div class="body"><h4>${carName(c)}</h4><div class="meta">${carSub(c).split('·').slice(0,2).join('·')}</div><div class="pr">${rolePrice(c.price)}</div>${stockBadge(k)}</div>`;
   return d;
@@ -2104,6 +2106,7 @@ function renderStockFiltered(){
   else if(s==='oldest') ks.sort((a,b)=>new Date(LISTED_AT[a])-new Date(LISTED_AT[b]));
   if(ks.length===0){ g.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--text-dim);font-size:13px;padding:34px 0;">'+T('noMatch','No cars match your filters.')+'</div>'; return; }
   ks.forEach(k=>g.appendChild(carCard(k)));
+  lazyPhotoObserve(); // stream each visible car's photo in on demand
 }
 
 function rolePrice(p){
@@ -2139,7 +2142,7 @@ function renderDetail(){
   if(mc){
     const others=Object.keys(CARS).filter(k=>k!==curCar);
     mc.innerHTML=`<h4 style="font-size:13px;font-weight:800;margin:22px 0 10px;">${T('moreCars','More cars')}</h4><div class="more-grid">`+
-      others.map(k=>{ const o=CARS[k]; const oc=carCover(k); const orb=o.sold?'<span class="cond sold">SOLD</span>':`<span class="cond ${o.cond==='NEW'?'new':'used'}">${condLabel(o)}</span>`; return `<div class="more-card${o.sold?' sold':''}" onclick="openDetail('${k}')"><div class="ph ${o.grad}">${oc?`<img class="car-cover" src="${oc}" alt="" />`:carSVG(o.grad)}${orb}</div><div class="more-name">${carName(o)}</div><div class="more-price">${rolePrice(o.price)}</div></div>`; }).join('')+
+      others.map(k=>{ const o=CARS[k]; const oc=carCover(k); const orb=o.sold?'<span class="cond sold">SOLD</span>':`<span class="cond ${o.cond==='NEW'?'new':'used'}">${condLabel(o)}</span>`; return `<div class="more-card${o.sold?' sold':''}" onclick="openDetail('${k}')"><div class="ph ${o.grad}" data-k="${k}">${oc?`<img class="car-cover" src="${oc}" alt="" />`:carSVG(o.grad)}${orb}</div><div class="more-name">${carName(o)}</div><div class="more-price">${rolePrice(o.price)}</div></div>`; }).join('')+
       `</div>`;
   }
   const ds=document.getElementById('dStock'); if(ds) ds.innerHTML=stockBadge(curCar);
@@ -3240,18 +3243,31 @@ async function bootstrap(){
 
   // 2) authenticated pull if we are signed in
   if(SYNC.base && SYNC.token){
+    // 2a) Instant identity recovery: even if the local session cache was wiped
+    // (e.g. the PWA was reinstalled), the auth token is enough to re-derive who you
+    // are from the server in ~100ms — so the account banner never flashes "boss"/blank
+    // on refresh. This runs BEFORE the inventory pull so the name is correct immediately.
+    try{
+      const me=await api('/api/me');
+      if(me && me.employee && me.employee.id && me.employee.id!=='boss'){
+        upsertEmp(me.employee.id, me.employee);
+        curEmployee=me.employee.id;
+        saveSession(me.employee, me.company, SYNC.token);
+        recomputeFacets(); applyEmployeeScope(); updateRoleUI(); renderMe(); renderSyncUI();
+      }
+    }catch(e){ /* fall back to cached session / network pull below */ }
     try{
       // Always do a FULL pull on app start (since=0). The server /api/pull is incremental
       // (updated_at > since), so a normal refresh with an up-to-date cursor returns nothing —
       // leaving the homepage empty until the user manually clicks sync. A full pull guarantees
       // the complete inventory + staff roster load every time. (cheap at a dealership's scale)
       // We boot with a LIGHT pull (metadata only, photos=0) so the inventory + account appear in
-      // SECONDS instead of blocking ~1 min for every base64 photo to download; photos then stream
-      // in via the non-blocking background refresh below.
+      // SECONDS instead of blocking ~1 min for every base64 photo to download. Photos are then
+      // lazy-loaded per card (see lazyPhotoObserve) as they scroll into view.
       SYNC.since=0; try{ localStorage.setItem('am_since','0'); }catch(e){}
       await syncNow(true, false);
       loaded=true;
-      refreshPhotosBackground(true); // fire-and-forget: fill photos/videos without freezing the UI
+      lazyPhotoObserve(); // fire-and-forget: stream in each car's photos as cards become visible
     }
     catch(e){ if(e.status===401) onSessionExpired(); error=e; console.error('auth pull failed', e); }
     // Membership refresh must NEVER block the car load / account resolution above.
@@ -3912,6 +3928,53 @@ async function syncNow(silent, withPhotos){
     if(!silent && e.status!==401) toast('⚠ '+SYNC.msg);
   }finally{ SYNC.busy=false; renderSyncUI(); }
 }
+/* ---------- lazy car-photo loading ----------
+ * Instead of re-downloading every car's base64 photos in one multi-MB pull on every
+ * refresh (the old ~1-minute wait), each card's photo is fetched on demand when it
+ * scrolls into view. Cached photos render instantly; missing ones stream in per-card,
+ * so the homepage is usable in seconds and the heavy download is spread out / skipped. */
+let _lazyPhotoObserver=null;
+function lazyPhotoInit(){
+  if(_lazyPhotoObserver) return;
+  if(typeof IntersectionObserver==='undefined'){
+    // no IntersectionObserver support: backfill the first screenful so something shows
+    Object.keys(CARS).slice(0,8).forEach(id=>lazyPhotoFetch(id,null));
+    return;
+  }
+  _lazyPhotoObserver=new IntersectionObserver((entries)=>{
+    entries.forEach(en=>{
+      if(en.isIntersecting){
+        const el=en.target, id=el.getAttribute('data-k');
+        if(id){ _lazyPhotoObserver.unobserve(el); lazyPhotoFetch(id, el); }
+      }
+    });
+  }, {root:null, rootMargin:'300px', threshold:0.01});
+}
+function lazyPhotoObserve(){
+  lazyPhotoInit();
+  document.querySelectorAll('.ph[data-k]').forEach(el=>{
+    const id=el.getAttribute('data-k');
+    if(CAR_PHOTOS[id] && CAR_PHOTOS[id].length){ applyLazyPhoto(id, el); return; }
+    if(_lazyPhotoObserver) _lazyPhotoObserver.observe(el);
+    else lazyPhotoFetch(id, el);
+  });
+}
+function lazyPhotoFetch(id, el){
+  if(CAR_PHOTOS[id] && CAR_PHOTOS[id].length){ if(el) applyLazyPhoto(id, el); return; }
+  if(!SYNC.base || !SYNC.token) return; // only signed-in devices fetch from the server
+  if(el) el.setAttribute('data-loading','1');
+  api('/api/car/'+encodeURIComponent(id)+'/photos').then(r=>{
+    if(r && r.photos && r.photos.length){ CAR_PHOTOS[id]=r.photos.filter(isPhotoOK); saveCarPhotos(); }
+    if(r && r.videos && r.videos.length){ CAR_VIDEOS[id]=r.videos; saveCarVideos(); }
+    if(el) applyLazyPhoto(id, el);
+  }).catch(()=>{ if(el) el.removeAttribute('data-loading'); });
+}
+function applyLazyPhoto(id, el){
+  const ph=CAR_PHOTOS[id]&&CAR_PHOTOS[id][0]; if(!ph||!el) return;
+  if(el.querySelector('img.car-cover')) return; // already has its image
+  const im=document.createElement('img'); im.className='car-cover'; im.src=ph; im.alt='';
+  el.appendChild(im);
+}
 async function refreshPhotosBackground(silent){
   if(!SYNC.base || !SYNC.token) return;
   // Skip the full photo pull entirely when every car already has its photos cached
@@ -3989,11 +4052,12 @@ function renderFav(){
     const car=CARS[k]; if(!car) return;
     const d=document.createElement('div');
     d.className='card'; d.onclick=()=>openDetail(k);
-    d.innerHTML=`<div class="ph ${car.grad}">${carSVG(car.grad)}<span class="cond ${car.cond==='NEW'?'new':'used'}">${condLabel(car)}</span>
+    d.innerHTML=`<div class="ph ${car.grad}" data-k="${k}">${carSVG(car.grad)}<span class="cond ${car.cond==='NEW'?'new':'used'}">${condLabel(car)}</span>
       <div class="fav-toggle ${SAVED_CARS.has(k)?'on':''}" onclick="event.stopPropagation();toggleFav(null,'${k}')">${SAVED_CARS.has(k)?'♥':'♡'}</div></div>
       <div class="body"><h4>${carName(car)}</h4><div class="meta">${carSub(car).split('·').slice(0,2).join('·')}</div><div class="pr">${rolePrice(car.price)}</div></div>`;
     grid.appendChild(d);
   });
+  lazyPhotoObserve(); // stream each visible car's photo in on demand
 }
 
 /* ---- sales workbench ---- */
@@ -4065,7 +4129,7 @@ function renderWorkbench(){
     const c=CARS[k];
     const d=document.createElement('div'); d.className='card'; d.onclick=()=>openDetail(k);
     const dot = canEditCar() ? `<button class="card-dot" title="${T('editCar','Edit')}" onclick="event.stopPropagation();curCar='${k}';openCarActions()">⋯</button>` : '';
-    d.innerHTML=`${dot}<div class="ph ${c.grad}">${carSVG(c.grad)}<span class="cond ${c.cond==='NEW'?'new':'used'}">${condLabel(c)}</span></div>
+    d.innerHTML=`${dot}<div class="ph ${c.grad}" data-k="${k}">${carSVG(c.grad)}<span class="cond ${c.cond==='NEW'?'new':'used'}">${condLabel(c)}</span></div>
       <div class="body"><h4>${carName(c)}</h4><div class="meta">${carSub(c).split('·').slice(0,2).join('·')}</div><div class="pr">${rolePrice(c.price)}</div></div>`;
     mc.appendChild(d);
   }); }
@@ -4073,6 +4137,7 @@ function renderWorkbench(){
   const fw=document.getElementById('wbFeatWrap'); if(fw) fw.style.display = isTopRole() ? 'block' : 'none';
   const aa=document.getElementById('wbAdminActions');
   if(aa) aa.style.display = canEditPrices() ? 'block' : 'none';
+  lazyPhotoObserve(); // stream each visible car's photo in on demand
 }
 function renderFeaturedOrder(){
   const box=document.getElementById('wbFeatOrder'); if(!box) return;

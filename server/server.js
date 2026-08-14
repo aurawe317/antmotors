@@ -1147,6 +1147,28 @@ const server = http.createServer(async (req, res) => {
       return send(res, 200, { ok: true, email });
     }
 
+    /* ---- who am I? Token-resolved identity so the client can recover the signed-in
+       account on every refresh WITHOUT depending on a cached am_session. This kills the
+       "boss / blank account" flash that appeared when localStorage was wiped. ---- */
+    if (p === '/api/me') {
+      const d = JSON.parse(emp.data || '{}');
+      const co = companyById(emp.companyId);
+      return send(res, 200, {
+        employee: Object.assign({ id: emp.id, companyId: emp.companyId, email: emp.email || '' }, d),
+        company: co ? publicCompany(co) : null
+      });
+    }
+
+    /* ---- one car's photos/videos on demand — lets the client lazy-load each card's
+       image as it scrolls into view instead of downloading every car's base64 photos
+       in a single multi-MB pull on every refresh (the old ~1-min wait). ---- */
+    if (p.startsWith('/api/car/') && p.endsWith('/photos')) {
+      const cid = decodeURIComponent(p.slice('/api/car/'.length, -'/photos'.length));
+      const row = q('SELECT id FROM cars WHERE id=? AND company_id=? AND deleted=0').get(cid, emp.companyId);
+      if (!row) return send(res, 404, { error: 'not_found' });
+      return send(res, 200, { id: cid, photos: photosOf(cid), videos: videosOf(cid) });
+    }
+
     if (p === '/api/pull') {
       const out = pull(u.searchParams.get('since'), u.searchParams.get('photos') === '1', emp.companyId);
       return send(res, 200, out);
