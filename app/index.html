@@ -1672,7 +1672,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.24';
+const APP_VER='1.2.25';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3170,6 +3170,10 @@ async function bootstrap(){
   let loaded=false, error=null;
   // 1) local cache first (instant UI)
   loadCars(); loadListed(); loadEmps(); restoreSession(); loadShowrooms(); loadCarVideos(); loadCarPhotos(); loadShowroomPhotos(); loadMembership();
+  // Clean up legacy "boss" placeholder keys that some old devices still carry in
+  // localStorage — they caused the account banner to render as the fake "boss" on every refresh.
+  try{ const _m=localStorage.getItem('am_me'); if(_m){ const _id=(function(){try{return JSON.parse(_m).id}catch(e){return _m}}()); if(_id==='boss') localStorage.removeItem('am_me'); } }catch(e){}
+  try{ const _s=loadSession(); if(_s&&_s.id==='boss') clearSession(); }catch(e){}
   // Drop any stale demo showrooms (Accra/Tema/Kumasi Branch) lingering in the local
   // cache from older builds. Showrooms are kept only in localStorage — the client never
   // syncs them to the server — so these seeded defaults would otherwise never clear.
@@ -3189,9 +3193,13 @@ async function bootstrap(){
     delete SYNC.cars[id]; delete CAR_DELETED[id];
   });
   saveCars(); saveCarPhotos(); saveCarVideos(); saveListed();
-  // restore which account is signed in (so a page reload keeps the boss/owner view
-  // instead of resetting to the "boss" placeholder and dropping to a customer view)
-  try{ const raw=localStorage.getItem('am_me'); if(raw){ let id=raw; try{ const m=JSON.parse(raw); if(m&&m.id) id=m.id; }catch(e){} curEmployee=id; /* keep the real signed-in id; the full pull below loads the roster and the role resolver at the end of bootstrap derives the correct tier. (Previously this downgraded to the literal 'boss' when the roster wasn't cached yet, which stuck and broke the session on refresh.) */ }   }catch(e){ curEmployee=''; }
+  // The signed-in id is already restored from am_session by restoreSession() above — that is the
+  // authoritative cache and must NOT be clobbered. am_me is a legacy key that can still hold the stale
+  // literal "boss" on old devices; only fall back to it when there is no cached session AND it is a
+  // real (non-"boss") id. This stops the fake "boss" banner from appearing on refresh.
+  if(!loadSession()){
+    try{ const raw=localStorage.getItem('am_me'); if(raw){ let id=raw; try{ const m=JSON.parse(raw); if(m&&m.id) id=m.id; }catch(e){} if(id && id!=='boss'){ curEmployee=id; } } }catch(e){}
+  }
   // EARLY RENDER: paint the cached inventory + account from localStorage IMMEDIATELY,
   // before any network pull. Previously the homepage stayed blank until the full server
   // sync finished (or the user tapped Sync) — bad on slow links. The pulls below then
@@ -3226,9 +3234,13 @@ async function bootstrap(){
       // (updated_at > since), so a normal refresh with an up-to-date cursor returns nothing —
       // leaving the homepage empty until the user manually clicks sync. A full pull guarantees
       // the complete inventory + staff roster load every time. (cheap at a dealership's scale)
+      // We boot with a LIGHT pull (metadata only, photos=0) so the inventory + account appear in
+      // SECONDS instead of blocking ~1 min for every base64 photo to download; photos then stream
+      // in via the non-blocking background refresh below.
       SYNC.since=0; try{ localStorage.setItem('am_since','0'); }catch(e){}
-      await syncNow(true);
+      await syncNow(true, false);
       loaded=true;
+      refreshPhotosBackground(true); // fire-and-forget: fill photos/videos without freezing the UI
     }
     catch(e){ if(e.status===401) onSessionExpired(); error=e; console.error('auth pull failed', e); }
     // Membership refresh must NEVER block the car load / account resolution above.
@@ -3325,17 +3337,10 @@ async function bootstrap(){
     }
   }catch(e){ console.error('deeplink car load failed', e); }
 
-  // Re-resolve the signed-in account now that the staff roster is loaded. am_me only
-  // stores the employee id; the real record (name/tier) arrives from the sync pull.
-  // Without this the homepage would keep showing the hardcoded "Boss" placeholder.
-  try{
-    const raw=localStorage.getItem('am_me');
-    if(raw){
-      let id=raw; try{ const m=JSON.parse(raw); if(m&&m.id) id=m.id; }catch(e){}
-      const e=empOf(id);
-      if(e) curEmployee=id;
-    }
-  }catch(e){}
+  // The signed-in id was restored from am_session (authoritative) before the pull, so there is
+  // nothing to re-resolve from the legacy am_me key here — reading it again would re-inject the
+  // stale "boss" placeholder into the banner. The roster pulled below already refreshed the cached
+  // session record via saveSession() inside syncNow().
 
   recomputeFacets();
   renderHome(); renderStock(); renderPerm(); renderFilterBranch(); renderShowroomList(); initAdminBranch();
@@ -3822,7 +3827,7 @@ async function startScan(){
   tick();
 }
 function stopScan(){ if(scanRAF) cancelAnimationFrame(scanRAF); scanRAF=null; if(scanStream){ scanStream.getTracks().forEach(t=>t.stop()); scanStream=null; } const v=document.getElementById('scanVideo'); if(v){ v.srcObject=null; v.style.display='none'; } }
-async function syncNow(silent){
+async function syncNow(silent, withPhotos){
   if(!SYNC.base){ setSyncState('local',''); renderSyncUI(); if(!silent) toast(T('syncOffline','Offline mode — this device only')); return; }
   if(!SYNC.token){ setSyncState('err',T('syncNeedLogin','Sign in to sync')); renderSyncUI(); return; }
   if(SYNC.busy) return;
@@ -3855,7 +3860,7 @@ async function syncNow(silent){
       localStorage.removeItem('am_dirty_cars'); localStorage.removeItem('am_dirty_emps');
     }
     /* 2 — pull everything changed since our cursor */
-    const p=await api('/api/pull?photos=1&since='+SYNC.since);
+    const p=await api('/api/pull?photos='+(withPhotos!==false?1:0)+'&since='+SYNC.since);
     let n=0;
     (p.cars||[]).forEach(c=>{
       if(c.deleted){ delete CARS[c.id]; delete LISTED_AT[c.id]; delete CAR_PHOTOS[c.id]; delete CAR_VIDEOS[c.id]; }
@@ -3895,6 +3900,17 @@ async function syncNow(silent){
     setSyncState('err', (navigator.onLine===false)?T('syncQueued','Offline — changes queued'):(e.message||T('syncErr','Sync error')));
     if(!silent && e.status!==401) toast('⚠ '+SYNC.msg);
   }finally{ SYNC.busy=false; renderSyncUI(); }
+}
+async function refreshPhotosBackground(silent){
+  if(!SYNC.base || !SYNC.token) return;
+  try{
+    const p=await api('/api/pull?photos=1&since=0');
+    (p.cars||[]).forEach(c=>{
+      if(c.photos && c.photos.length){ CAR_PHOTOS[c.id]=c.photos.filter(isPhotoOK); }
+      if(c.videos && c.videos.length){ CAR_VIDEOS[c.id]=c.videos; }
+    });
+    saveCarPhotos(); saveCarVideos(); recomputeFacets(); renderHome(); renderStock();
+  }catch(e){ console.error('background photo refresh failed', e); }
 }
 window.addEventListener('online',()=>syncNow(true));
 setInterval(()=>{ if(SYNC.base&&SYNC.token&&!document.hidden) syncNow(true); },60000);
