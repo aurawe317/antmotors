@@ -1680,7 +1680,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.33';
+const APP_VER='1.2.34';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2150,7 +2150,7 @@ function renderDetail(){
   if(mc){
     const others=Object.keys(CARS).filter(k=>k!==curCar);
     mc.innerHTML=`<h4 style="font-size:13px;font-weight:800;margin:22px 0 10px;">${T('moreCars','More cars')}</h4><div class="more-grid">`+
-      others.map(k=>{ const o=CARS[k]; const oc=carCover(k); const orb=o.sold?'<span class="cond sold">SOLD</span>':`<span class="cond ${o.cond==='NEW'?'new':'used'}">${condLabel(o)}</span>`; return `<div class="more-card${o.sold?' sold':''}" onclick="openDetail('${k}')"><div class="ph ${o.grad}" data-k="${k}">${oc?`<img class="car-cover zoomable" src="${oc}" alt="" />`:carSVG(o.grad)}${orb}</div><div class="more-name">${carName(o)}</div><div class="more-price">${rolePrice(o.price)}</div></div>`; }).join('')+
+      others.map(k=>{ const o=CARS[k]; const oc=carCover(k); const orb=o.sold?'<span class="cond sold">SOLD</span>':`<span class="cond ${o.cond==='NEW'?'new':'used'}">${condLabel(o)}</span>`; return `<div class="more-card${o.sold?' sold':''}" onclick="openDetail('${k}')"><div class="ph ${o.grad}" data-k="${k}">${oc?`<img class="car-cover" src="${oc}" alt="" />`:carSVG(o.grad)}${orb}</div><div class="more-name">${carName(o)}</div><div class="more-price">${rolePrice(o.price)}</div></div>`; }).join('')+
       `</div>`;
   }
   const ds=document.getElementById('dStock'); if(ds) ds.innerHTML=stockBadge(curCar);
@@ -2510,27 +2510,38 @@ function pvApply(){
 }
 function wirePhotoViewer(){
   const stage=document.getElementById('pvStage'); if(!stage||stage.dataset.wired) return; stage.dataset.wired='1';
-  const pts=new Map();
-  stage.addEventListener('pointerdown',e=>{
-    pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
-    if(pts.size===2){ const p=[...pts.values()]; _pvState.lastDist=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y); }
-  });
-  stage.addEventListener('pointermove',e=>{
-    if(!_pvState||!pts.has(e.pointerId)) return;
-    const prev=pts.get(e.pointerId); const dx=e.clientX-prev.x, dy=e.clientY-prev.y;
-    pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
-    if(pts.size===1){ _pvState.tx+=dx; _pvState.ty+=dy; }
-    else if(pts.size===2){
-      const p=[...pts.values()]; const dist=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);
-      if(_pvState.lastDist){ const ratio=dist/_pvState.lastDist; _pvState.scale=Math.min(6,Math.max(1,_pvState.scale*ratio)); }
-      _pvState.lastDist=dist;
+  // ---- Touch: one finger pans, two fingers pinch-zoom (reliable across mobile browsers) ----
+  let pinch=null;            // {dist, scale} captured at gesture start
+  let panId=null, lastX=0, lastY=0;
+  stage.addEventListener('touchstart',e=>{
+    if(!_pvState) return;
+    if(e.touches.length===1){ const t=e.touches[0]; panId=t.identifier; lastX=t.clientX; lastY=t.clientY; }
+    else if(e.touches.length===2){ panId=null; const a=e.touches[0], b=e.touches[1]; pinch={dist:Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY), scale:_pvState.scale}; }
+  },{passive:false});
+  stage.addEventListener('touchmove',e=>{
+    if(!_pvState) return;
+    e.preventDefault(); // stop the browser's native pinch/scroll so ours runs
+    if(e.touches.length===1 && panId!==null){
+      const t=e.touches[0]; _pvState.tx+=t.clientX-lastX; _pvState.ty+=t.clientY-lastY; lastX=t.clientX; lastY=t.clientY; pvApply();
+    } else if(e.touches.length===2 && pinch){
+      const a=e.touches[0], b=e.touches[1]; const dist=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
+      const ratio=dist/pinch.dist; _pvState.scale=Math.min(6,Math.max(1,pinch.scale*ratio)); pvApply();
     }
-    pvApply();
+  },{passive:false});
+  stage.addEventListener('touchend',e=>{
+    if(!_pvState) return;
+    if(e.touches.length===0){ panId=null; pinch=null; }
+    else if(e.touches.length===1){ const t=e.touches[0]; panId=t.identifier; lastX=t.clientX; lastY=t.clientY; pinch=null; }
   });
-  const end=e=>{ pts.delete(e.pointerId); if(pts.size<2 && _pvState) _pvState.lastDist=0; };
-  stage.addEventListener('pointerup',end); stage.addEventListener('pointercancel',end);
+  stage.addEventListener('touchcancel',()=>{ panId=null; pinch=null; });
+  // ---- Desktop: wheel zoom + drag pan + double-click reset ----
   stage.addEventListener('wheel',e=>{ if(!_pvState) return; e.preventDefault(); const z=Math.min(6,Math.max(1,_pvState.scale-(e.deltaY>0?0.12:-0.12))); _pvState.scale=z; pvApply(); },{passive:false});
+  let mDown=false, mX=0, mY=0;
+  stage.addEventListener('mousedown',e=>{ if(!_pvState) return; mDown=true; mX=e.clientX; mY=e.clientY; });
+  window.addEventListener('mousemove',e=>{ if(!_pvState||!mDown) return; _pvState.tx+=e.clientX-mX; _pvState.ty+=e.clientY-mY; mX=e.clientX; mY=e.clientY; pvApply(); });
+  window.addEventListener('mouseup',()=>{ mDown=false; });
   stage.addEventListener('dblclick',e=>{ if(!_pvState) return; _pvState.scale=_pvState.scale>1?1:2.5; _pvState.tx=0; _pvState.ty=0; pvApply(); });
+  // ---- Tap the dark backdrop to close (taps on the image are ignored) ----
   stage.addEventListener('click',e=>{ if(e.target===stage) closePhotoViewer(); });
 }
 function wirePhotoViewerClicks(){
@@ -4082,7 +4093,7 @@ function lazyPhotoFetch(id, el){
 function applyLazyPhoto(id, el){
   const ph=CAR_PHOTOS[id]&&CAR_PHOTOS[id][0]; if(!ph||!el) return;
   if(el.querySelector('img.car-cover')) return; // already has its image
-  const im=document.createElement('img'); im.className='car-cover zoomable'; im.src=ph; im.alt='';
+  const im=document.createElement('img'); im.className='car-cover'; im.src=ph; im.alt='';
   el.appendChild(im);
 }
 // Photos are no longer pulled in one big blob on refresh — they stream in per card via
