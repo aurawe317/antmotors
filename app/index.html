@@ -483,6 +483,13 @@
   .photo-slot.add.video{font-size:14px;color:var(--gold);}
   .photo-slot.add:hover{border-color:var(--gold-line);color:var(--gold);}
   .photo-slot .rm{position:absolute;top:2px;right:2px;width:16px;height:16px;border-radius:50%;background:var(--scrim);color:#fff;font-size:10px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  /* ---- Photo viewer (pinch-zoom / pan / download) ---- */
+  .photo-viewer{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.94);display:none;flex-direction:column;align-items:center;justify-content:center;touch-action:none;-webkit-tap-highlight-color:transparent;}
+  .photo-viewer .pv-stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none;}
+  .photo-viewer #pvImg{max-width:100%;max-height:100%;transform-origin:center center;will-change:transform;user-select:none;-webkit-user-drag:none;touch-action:none;}
+  .photo-viewer .pv-bar{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:12px 14px;z-index:2;background:linear-gradient(180deg,rgba(0,0,0,.5),transparent);}
+  .photo-viewer .pv-bar button{background:rgba(255,255,255,.16);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:14px;cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
+  .photo-viewer .pv-bar .pv-dl{font-weight:600;}
   .upload-banner{margin:8px 16px 0;padding:10px 13px;border-radius:10px;background:var(--gold-soft);border:1px solid var(--gold-line);display:flex;align-items:center;gap:9px;font-size:12px;color:var(--gold);font-weight:600;}
   .upload-banner .lbl{flex:1;}
   .upload-actions{display:flex;gap:6px;}
@@ -1673,7 +1680,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.32';
+const APP_VER='1.2.33';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2143,7 +2150,7 @@ function renderDetail(){
   if(mc){
     const others=Object.keys(CARS).filter(k=>k!==curCar);
     mc.innerHTML=`<h4 style="font-size:13px;font-weight:800;margin:22px 0 10px;">${T('moreCars','More cars')}</h4><div class="more-grid">`+
-      others.map(k=>{ const o=CARS[k]; const oc=carCover(k); const orb=o.sold?'<span class="cond sold">SOLD</span>':`<span class="cond ${o.cond==='NEW'?'new':'used'}">${condLabel(o)}</span>`; return `<div class="more-card${o.sold?' sold':''}" onclick="openDetail('${k}')"><div class="ph ${o.grad}" data-k="${k}">${oc?`<img class="car-cover" src="${oc}" alt="" />`:carSVG(o.grad)}${orb}</div><div class="more-name">${carName(o)}</div><div class="more-price">${rolePrice(o.price)}</div></div>`; }).join('')+
+      others.map(k=>{ const o=CARS[k]; const oc=carCover(k); const orb=o.sold?'<span class="cond sold">SOLD</span>':`<span class="cond ${o.cond==='NEW'?'new':'used'}">${condLabel(o)}</span>`; return `<div class="more-card${o.sold?' sold':''}" onclick="openDetail('${k}')"><div class="ph ${o.grad}" data-k="${k}">${oc?`<img class="car-cover zoomable" src="${oc}" alt="" />`:carSVG(o.grad)}${orb}</div><div class="more-name">${carName(o)}</div><div class="more-price">${rolePrice(o.price)}</div></div>`; }).join('')+
       `</div>`;
   }
   const ds=document.getElementById('dStock'); if(ds) ds.innerHTML=stockBadge(curCar);
@@ -2175,7 +2182,7 @@ function buildGallery(c){
   let slides;
   if(photos.length||videos.length){
     slides = [
-      ...photos.map(p=>`<img src="${p}" alt="" />`),
+      ...photos.map(p=>`<img class="zoomable" src="${p}" alt="" data-name="${(c.name||'photo').replace(/[^\w\u4e00-\u9fa5\- ]/g,'')}.jpg" />`),
       ...videos.map(v=>`<video src="${v}" controls playsinline preload="metadata"></video>`)
     ];
   } else { slides = [
@@ -2414,15 +2421,21 @@ function closeCropper(apply){
   const s=_cropState; if(!s){ return; }
   document.getElementById('cropOverlay').style.display='none';
   if(apply){
-    const cv=document.createElement('canvas');
-    const outW=Math.round(s.bw), outH=Math.round(s.bh);
-    cv.width=outW; cv.height=outH;
-    const ctx=cv.getContext('2d');
-    ctx.fillStyle='#000'; ctx.fillRect(0,0,outW,outH);
     const dispScale=s.cover*s.scale;
     const sx=(s.bx - s.x)/dispScale;
     const sy=(s.by - s.y)/dispScale;
-    const sw=s.bw/dispScale, sh=s.bh/dispScale;
+    const sw=s.bw/dispScale, sh=s.bh/dispScale;            // crop region in SOURCE natural pixels
+    // Export at the photo's true resolution (cap the long edge so payloads stay sane). This fixes
+    // the previous blur, where the canvas was sized to the ~330px on-screen crop box and then upscaled.
+    const MAXE=2400;
+    let outW=Math.max(1,Math.round(sw)), outH=Math.max(1,Math.round(sh));
+    const longer=Math.max(outW,outH);
+    if(longer>MAXE){ const r=MAXE/longer; outW=Math.round(outW*r); outH=Math.round(outH*r); }
+    const cv=document.createElement('canvas');
+    cv.width=outW; cv.height=outH;
+    const ctx=cv.getContext('2d');
+    ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+    ctx.fillStyle='#000'; ctx.fillRect(0,0,outW,outH);
     try{ ctx.drawImage(s.img, sx, sy, sw, sh, 0, 0, outW, outH); }catch(e){}
     const url=cv.toDataURL('image/jpeg',0.9);
     s.callback(url);
@@ -2466,6 +2479,71 @@ function wireCrop(){
 }
 if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', wireCrop);
 else wireCrop();
+
+/* ===== Photo viewer: tap a photo → pinch-zoom / pan / double-tap / download ===== */
+let _pvState=null;
+function openPhotoViewer(src, name){
+  const img=document.getElementById('pvImg');
+  img.style.transform=''; img.src=src;
+  _pvState={scale:1, tx:0, ty:0, lastDist:0, src:src, name:name||'photo.jpg'};
+  document.getElementById('photoViewer').style.display='flex';
+}
+function closePhotoViewer(){
+  const v=document.getElementById('photoViewer'); if(v) v.style.display='none';
+  _pvState=null;
+}
+function downloadPhoto(){
+  if(!_pvState) return;
+  const a=document.createElement('a');
+  a.href=_pvState.src; a.download=_pvState.name||'photo.jpg';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+function pvApply(){
+  if(!_pvState) return;
+  const img=document.getElementById('pvImg'), stage=document.getElementById('pvStage');
+  // keep the image from being panned completely out of view
+  const maxX=(stage.clientWidth*(_pvState.scale-1))/2+60;
+  const maxY=(stage.clientHeight*(_pvState.scale-1))/2+60;
+  _pvState.tx=Math.max(-maxX,Math.min(maxX,_pvState.tx));
+  _pvState.ty=Math.max(-maxY,Math.min(maxY,_pvState.ty));
+  img.style.transform=`translate(${_pvState.tx}px,${_pvState.ty}px) scale(${_pvState.scale})`;
+}
+function wirePhotoViewer(){
+  const stage=document.getElementById('pvStage'); if(!stage||stage.dataset.wired) return; stage.dataset.wired='1';
+  const pts=new Map();
+  stage.addEventListener('pointerdown',e=>{
+    pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pts.size===2){ const p=[...pts.values()]; _pvState.lastDist=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y); }
+  });
+  stage.addEventListener('pointermove',e=>{
+    if(!_pvState||!pts.has(e.pointerId)) return;
+    const prev=pts.get(e.pointerId); const dx=e.clientX-prev.x, dy=e.clientY-prev.y;
+    pts.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if(pts.size===1){ _pvState.tx+=dx; _pvState.ty+=dy; }
+    else if(pts.size===2){
+      const p=[...pts.values()]; const dist=Math.hypot(p[0].x-p[1].x,p[0].y-p[1].y);
+      if(_pvState.lastDist){ const ratio=dist/_pvState.lastDist; _pvState.scale=Math.min(6,Math.max(1,_pvState.scale*ratio)); }
+      _pvState.lastDist=dist;
+    }
+    pvApply();
+  });
+  const end=e=>{ pts.delete(e.pointerId); if(pts.size<2 && _pvState) _pvState.lastDist=0; };
+  stage.addEventListener('pointerup',end); stage.addEventListener('pointercancel',end);
+  stage.addEventListener('wheel',e=>{ if(!_pvState) return; e.preventDefault(); const z=Math.min(6,Math.max(1,_pvState.scale-(e.deltaY>0?0.12:-0.12))); _pvState.scale=z; pvApply(); },{passive:false});
+  stage.addEventListener('dblclick',e=>{ if(!_pvState) return; _pvState.scale=_pvState.scale>1?1:2.5; _pvState.tx=0; _pvState.ty=0; pvApply(); });
+  stage.addEventListener('click',e=>{ if(e.target===stage) closePhotoViewer(); });
+}
+function wirePhotoViewerClicks(){
+  // Capture-phase so a tap on a photo opens the viewer and stops the card's openDetail from firing.
+  document.addEventListener('click',e=>{
+    const img=e.target.closest && e.target.closest('img.zoomable');
+    if(!img) return;
+    if(e.target.closest('.rm')) return;            // don't hijack the ✕ remove control
+    e.stopPropagation(); e.preventDefault();
+    openPhotoViewer(img.currentSrc||img.src, img.getAttribute('data-name')||'antmotors.jpg');
+  }, true);
+}
+wirePhotoViewer(); wirePhotoViewerClicks();
 function frameRatio(sel, fallback){
   const el=document.querySelector(sel);
   if(el && el.clientWidth>0 && el.clientHeight>0) return el.clientWidth/el.clientHeight;
@@ -2522,7 +2600,7 @@ function renderDetailThumbs(){
   const photos=CAR_PHOTOS[curCar]||[];
   photos.filter(isPhotoOK).forEach((src,i)=>{
     const t=document.createElement('div'); t.className='photo-slot';
-    t.innerHTML=`<img src="${src}" /><${'div'} class="rm" onclick="event.stopPropagation();removeCarPhoto(${i})">✕</div>`;
+    t.innerHTML=`<img class="zoomable" src="${src}" data-name="${(CARS[curCar]&&CARS[curCar].name||'photo').replace(/[^\w\u4e00-\u9fa5\- ]/g,'')}.jpg" /><${'div'} class="rm" onclick="event.stopPropagation();removeCarPhoto(${i})">✕</div>`;
     t.onclick=()=>toast(T('viewingPhoto','Viewing photo')+' '+(i+1));
     th.appendChild(t);
   });
@@ -4004,7 +4082,7 @@ function lazyPhotoFetch(id, el){
 function applyLazyPhoto(id, el){
   const ph=CAR_PHOTOS[id]&&CAR_PHOTOS[id][0]; if(!ph||!el) return;
   if(el.querySelector('img.car-cover')) return; // already has its image
-  const im=document.createElement('img'); im.className='car-cover'; im.src=ph; im.alt='';
+  const im=document.createElement('img'); im.className='car-cover zoomable'; im.src=ph; im.alt='';
   el.appendChild(im);
 }
 // Photos are no longer pulled in one big blob on refresh — they stream in per card via
@@ -4766,5 +4844,17 @@ if('serviceWorker' in navigator){
       </div>
     </div>
   </div>
+
+  <!-- PHOTO VIEWER: tap a photo to pinch-zoom / pan / download -->
+  <div class="photo-viewer" id="photoViewer" style="display:none">
+    <div class="pv-bar">
+      <button class="pv-close" onclick="closePhotoViewer()">✕</button>
+      <button class="pv-dl" onclick="downloadPhoto()">⤓ <span data-i18n="download">Download</span></button>
+    </div>
+    <div class="pv-stage" id="pvStage">
+      <img id="pvImg" alt="" />
+    </div>
+  </div>
+
 </body>
 </html>
