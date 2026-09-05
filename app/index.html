@@ -1680,7 +1680,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.34';
+const APP_VER='1.2.35';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2510,30 +2510,28 @@ function pvApply(){
 }
 function wirePhotoViewer(){
   const stage=document.getElementById('pvStage'); if(!stage||stage.dataset.wired) return; stage.dataset.wired='1';
-  // ---- Touch: one finger pans, two fingers pinch-zoom (reliable across mobile browsers) ----
-  let pinch=null;            // {dist, scale} captured at gesture start
+  const supportsGesture = ('GestureEvent' in window); // iOS Safari exposes native pinch via GestureEvent
+  // ---- Two-finger pinch zoom ----
+  if(supportsGesture){
+    // iOS: native gesture events give a clean relative scale (e.scale from 1). Most reliable.
+    let gStart=1;
+    stage.addEventListener('gesturestart',e=>{ if(!_pvState) return; e.preventDefault(); gStart=_pvState.scale; });
+    stage.addEventListener('gesturechange',e=>{ if(!_pvState) return; e.preventDefault(); _pvState.scale=Math.min(6,Math.max(1,gStart*e.scale)); pvApply(); });
+    stage.addEventListener('gestureend',e=>{ if(!_pvState) return; e.preventDefault(); });
+  } else {
+    // Other platforms: derive scale from the distance between the two touch points.
+    let pinch=null; // {dist, scale} captured at gesture start
+    stage.addEventListener('touchstart',e=>{ if(!_pvState) return; if(e.touches.length===2){ const a=e.touches[0], b=e.touches[1]; pinch={dist:Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY), scale:_pvState.scale}; } },{passive:false});
+    stage.addEventListener('touchmove',e=>{ if(!_pvState||!pinch) return; e.preventDefault(); const a=e.touches[0], b=e.touches[1]; const dist=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY); const ratio=dist/pinch.dist; _pvState.scale=Math.min(6,Math.max(1,pinch.scale*ratio)); pvApply(); },{passive:false});
+    stage.addEventListener('touchend',()=>{ pinch=null; });
+    stage.addEventListener('touchcancel',()=>{ pinch=null; });
+  }
+  // ---- Single-finger pan (both platforms) ----
   let panId=null, lastX=0, lastY=0;
-  stage.addEventListener('touchstart',e=>{
-    if(!_pvState) return;
-    if(e.touches.length===1){ const t=e.touches[0]; panId=t.identifier; lastX=t.clientX; lastY=t.clientY; }
-    else if(e.touches.length===2){ panId=null; const a=e.touches[0], b=e.touches[1]; pinch={dist:Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY), scale:_pvState.scale}; }
-  },{passive:false});
-  stage.addEventListener('touchmove',e=>{
-    if(!_pvState) return;
-    e.preventDefault(); // stop the browser's native pinch/scroll so ours runs
-    if(e.touches.length===1 && panId!==null){
-      const t=e.touches[0]; _pvState.tx+=t.clientX-lastX; _pvState.ty+=t.clientY-lastY; lastX=t.clientX; lastY=t.clientY; pvApply();
-    } else if(e.touches.length===2 && pinch){
-      const a=e.touches[0], b=e.touches[1]; const dist=Math.hypot(a.clientX-b.clientX,a.clientY-b.clientY);
-      const ratio=dist/pinch.dist; _pvState.scale=Math.min(6,Math.max(1,pinch.scale*ratio)); pvApply();
-    }
-  },{passive:false});
-  stage.addEventListener('touchend',e=>{
-    if(!_pvState) return;
-    if(e.touches.length===0){ panId=null; pinch=null; }
-    else if(e.touches.length===1){ const t=e.touches[0]; panId=t.identifier; lastX=t.clientX; lastY=t.clientY; pinch=null; }
-  });
-  stage.addEventListener('touchcancel',()=>{ panId=null; pinch=null; });
+  stage.addEventListener('touchstart',e=>{ if(!_pvState) return; if(e.touches.length===1){ const t=e.touches[0]; panId=t.identifier; lastX=t.clientX; lastY=t.clientY; } else { panId=null; } },{passive:false});
+  stage.addEventListener('touchmove',e=>{ if(!_pvState||panId===null) return; e.preventDefault(); if(e.touches.length===1){ const t=e.touches[0]; _pvState.tx+=t.clientX-lastX; _pvState.ty+=t.clientY-lastY; lastX=t.clientX; lastY=t.clientY; pvApply(); } },{passive:false});
+  stage.addEventListener('touchend',e=>{ if(e.touches.length===0) panId=null; });
+  stage.addEventListener('touchcancel',()=>{ panId=null; });
   // ---- Desktop: wheel zoom + drag pan + double-click reset ----
   stage.addEventListener('wheel',e=>{ if(!_pvState) return; e.preventDefault(); const z=Math.min(6,Math.max(1,_pvState.scale-(e.deltaY>0?0.12:-0.12))); _pvState.scale=z; pvApply(); },{passive:false});
   let mDown=false, mX=0, mY=0;
