@@ -1680,7 +1680,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.35';
+const APP_VER='1.2.36';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2354,8 +2354,11 @@ let SHOWROOM_PHOTOS={};
 // no-op; loaders are kept as harmless no-ops so call sites don't need touch-ups.
 function saveCarVideos(){}
 function loadCarVideos(){}
-function saveCarPhotos(){}
-function loadCarPhotos(){}
+// Persist car photos to localStorage so they survive a refresh WITHOUT depending on a
+// successful server sync. Capped (~3.6MB) to stay under the 5MB per-origin quota — if the
+// user has many/large photos the overflow silently falls back to server-only sync.
+function saveCarPhotos(){ try{ const json=JSON.stringify(CAR_PHOTOS); if(json.length>3600000) return; localStorage.setItem('am_car_photos', json); }catch(e){ /* quota — ignore, server sync remains source of truth */ } }
+function loadCarPhotos(){ try{ const o=JSON.parse(localStorage.getItem('am_car_photos')||'null'); if(o) Object.assign(CAR_PHOTOS,o); }catch(e){} }
 function saveShowroomPhotos(){ jsave('am_showroom_photos',SHOWROOM_PHOTOS); }
 function loadShowroomPhotos(){ const o=jload('am_showroom_photos',null); if(o) Object.assign(SHOWROOM_PHOTOS,o); }
 
@@ -2483,6 +2486,8 @@ else wireCrop();
 /* ===== Photo viewer: tap a photo → pinch-zoom / pan / double-tap / download ===== */
 let _pvState=null;
 function openPhotoViewer(src, name){
+  wirePhotoViewer(); // idempotent: wire handlers now that #pvStage exists in the DOM (the early
+                     // module-load call found it null because the overlay is parsed later)
   const img=document.getElementById('pvImg');
   img.style.transform=''; img.src=src;
   _pvState={scale:1, tx:0, ty:0, lastDist:0, src:src, name:name||'photo.jpg'};
@@ -2492,11 +2497,18 @@ function closePhotoViewer(){
   const v=document.getElementById('photoViewer'); if(v) v.style.display='none';
   _pvState=null;
 }
-function downloadPhoto(){
+async function downloadPhoto(){
   if(!_pvState) return;
-  const a=document.createElement('a');
-  a.href=_pvState.src; a.download=_pvState.name||'photo.jpg';
-  document.body.appendChild(a); a.click(); a.remove();
+  try{
+    const res=await fetch(_pvState.src); const blob=await res.blob();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a'); a.href=url; a.download=_pvState.name||'photo.jpg';
+    document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>{ try{ URL.revokeObjectURL(url); }catch(e){} },4000);
+  }catch(e){
+    // fallback: data: URLs / restrictive browsers
+    const a=document.createElement('a'); a.href=_pvState.src; a.download=_pvState.name||'photo.jpg'; a.click();
+  }
 }
 function pvApply(){
   if(!_pvState) return;
@@ -3284,11 +3296,9 @@ async function bootstrap(){
   let loaded=false, error=null;
   // 1) local cache first (instant UI)
   loadCars(); loadListed(); loadEmps(); restoreSession(); loadShowrooms(); loadCarVideos(); loadCarPhotos(); loadShowroomPhotos(); loadMembership();
-  // Clear any legacy base64 photo cache that old builds wrote into localStorage. Those
-  // blobs used to blow the ~5MB quota and silently broke the metadata cache (cars/account),
-  // which is the root cause of "empty page → wait ~1min on every refresh". Photos are no
-  // longer persisted (see saveCarPhotos/saveCarVideos), so drop the old keys to free quota.
-  try{ localStorage.removeItem('am_car_photos'); localStorage.removeItem('am_car_videos'); }catch(e){}
+  // Clear any legacy base64 video cache old builds wrote into localStorage. Photos are now
+  // persisted to am_car_photos (see saveCarPhotos), so we must NOT wipe that key on boot.
+  try{ localStorage.removeItem('am_car_videos'); }catch(e){}
   // Clean up legacy "boss" placeholder keys that some old devices still carry in
   // localStorage — they caused the account banner to render as the fake "boss" on every refresh.
   try{ const _m=localStorage.getItem('am_me'); if(_m){ const _id=(function(){try{return JSON.parse(_m).id}catch(e){return _m}}()); if(_id==='boss') localStorage.removeItem('am_me'); } }catch(e){}
