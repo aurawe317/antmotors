@@ -3650,6 +3650,8 @@ function updatePwMeter(inputId,meterId,tipId){
 function pwErrText(err){
   const d=(err&&err.data)||{};
   if(err&&err.message==='weak_password') return pwIssueText(d.detail);
+  /* surface the real upstream reason so the user can copy it back to us */
+  if(err&&err.message==='auth_create_failed') return 'Account creation failed: '+(d.detail||'check Supabase service_role key and project status');
   const m={locked:T('pwLocked','Too many attempts — account locked, try again in')+' '+Math.ceil((d.retryAfter||900)/60)+' '+T('pwMinutes','min'),
     bad_credentials:T('syncBadCreds','Wrong account or password'),
     bad_code:T('fgBadCode','Wrong verification code'),
@@ -3665,7 +3667,7 @@ function pwErrText(err){
     not_found:T('fgNoAccount','Account not found'),
     unauthorized:T('syncBadCreds','Wrong account or password'),
     bad_code_company:T('joinBadCode','Invitation code does not match')};
-  return m[err&&err.message]||(err&&err.message)||'error';
+  return m[err&&err.message]||(d.detail?('['+(err&&err.message)+'] '+d.detail):(err&&err.message))||'error';
 }
 
 async function syncLogin(){
