@@ -283,23 +283,26 @@ export async function onRequest(context) {
   if (!p.startsWith('/api/')) return send(404, { error: 'no_route' });
 
   try {
-    /* health — now honestly reports Supabase connectivity */
+    /* health — now honestly reports Supabase connectivity. `build` identifies the deploy. */
     if (p === '/api/health') {
       const dbCheck = await sb.from('cars').select('*', { count: 'exact', head: true }).eq('deleted', 0);
       const coCheck = await sb.from('companies').select('*', { count: 'exact', head: true });
-      const authCheck = await sb.auth.admin.listUsers({ page: 1, perPage: 1 });
+      let authErr = null;
+      try {
+        const authCheck = await sb.auth.admin.listUsers({ page: 1, perPage: 1 });
+        authErr = (authCheck.error && authCheck.error.message) || null;
+      } catch (e) { authErr = String((e && e.message) || e); }
       const dbErr = (dbCheck.error && dbCheck.error.message) || (coCheck.error && coCheck.error.message) || null;
-      const authErr = (authCheck.error && authCheck.error.message) || null;
+      const base = { build: 'honest-health-2', now: now(), version: 2, backend: APP_VER };
       if (dbErr || authErr) {
-        return send(503, {
-          ok: false,
-          dbError: dbErr,
-          authError: authErr,
-          hint: authErr && /530/i.test(authErr) ? 'Supabase Auth returned HTTP 530. Try restarting the project in Supabase Dashboard.' : 'supabase_unreachable',
-          now: now(), version: 2, backend: APP_VER
-        });
+        return send(503, Object.assign({
+          ok: false, dbError: dbErr, authError: authErr,
+          hint: (authErr && /53\d|unreachable|fetch failed|network/i.test(authErr))
+            ? 'Supabase unreachable. Open Supabase Dashboard → project → Settings → General → Restart project, wait 60s, retry.'
+            : 'supabase_unreachable'
+        }, base));
       }
-      return send(200, { ok: true, cars: dbCheck.count || 0, companies: coCheck.count || 0, now: now(), version: 2, backend: APP_VER });
+      return send(200, Object.assign({ ok: true, cars: dbCheck.count || 0, companies: coCheck.count || 0 }, base));
     }
 
     /* login (Supabase Auth) */
@@ -350,10 +353,12 @@ export async function onRequest(context) {
       let authUserId = null;
       if (email) {
         let authUser = null, authErr = null;
-        const created = await sb.auth.admin.createUser({
-          email, password: pw, email_confirm: true, user_metadata: { emp_id: id }
-        });
-        authUser = created.data; authErr = created.error;
+        try {
+          const created = await sb.auth.admin.createUser({
+            email, password: pw, email_confirm: true, user_metadata: { emp_id: id }
+          });
+          authUser = created.data; authErr = created.error;
+        } catch (e) { authErr = { message: String((e && e.message) || e) }; }
         // If the Auth user already exists (e.g. a prior attempt created it but registration
         // didn't finish), reuse it instead of hard-failing — verify the password matches.
         if (authErr && /already|registered|exists/i.test(authErr.message || '')) {
@@ -362,8 +367,8 @@ export async function onRequest(context) {
         }
         if (authErr) {
           const msg = authErr.message || String(authErr);
-          if (/530/i.test(msg)) {
-            return send(503, { error: 'auth_create_failed', detail: 'Supabase Auth returned HTTP 530 (origin unreachable). Please open Supabase Dashboard → ant motors → Restart project, wait 30s, then try again.', retryAfter: 30 });
+          if (/53\d|unreachable|fetch failed|network/i.test(msg)) {
+            return send(503, { error: 'auth_upstream_unreachable', source: 'supabase_auth', detail: msg, hint: 'Supabase Auth is unreachable. Open Supabase Dashboard → project → Settings → General → Restart project, wait 60s, then try again.', retryAfter: 60 });
           }
           return send(400, { error: 'auth_create_failed', detail: msg });
         }
