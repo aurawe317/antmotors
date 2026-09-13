@@ -4127,13 +4127,18 @@ function importData(e){
   const r=new FileReader();
   r.onload=ev=>{ try{
     const d=JSON.parse(ev.target.result);
-    if(d.cars) for(const k in d.cars) CARS[k]=d.cars[k];
+    let nCars=0,nEmp=0;
+    // Mark every restored record dirty so the next sync PUSHES it to the server.
+    // (Import used to only write localStorage, so restored data never reached the backend.)
+    if(d.cars) for(const k in d.cars){ CARS[k]=d.cars[k]; SYNC.cars[k]=Date.now(); nCars++; }
     if(d.saved) SAVED_CARS=new Set(d.saved);
     if(d.recent) RECENT_CARS=d.recent;
-    if(d.employees) for(const k in d.employees) if(ALL_EMP[k]) Object.assign(ALL_EMP[k],d.employees[k]);
-    saveCars(); saveSet(); saveRecent();
+    if(d.employees) for(const k in d.employees){ if(ALL_EMP[k]){ Object.assign(ALL_EMP[k],d.employees[k]); SYNC.emps[k]=Date.now(); nEmp++; } }
+    saveCars(); saveSet(); saveRecent(); saveEmps();
+    jsave('am_dirty_cars',SYNC.cars); jsave('am_dirty_emps',SYNC.emps);
     renderHome(); renderStock(); updateRoleUI();
     toast(T('backupRestored','Backup restored'));
+    if(nCars||nEmp) scheduleSync();   // upload the restored data to the server
   }catch(err){ toast(T('invalidBackup','Invalid backup file')); } };
   r.readAsText(f); e.target.value='';
 }
