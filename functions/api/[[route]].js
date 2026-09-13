@@ -18,7 +18,7 @@ let SUPABASE_KEY = '';
 let sb = null;
 function getSb(env) {
   if (!sb) {
-    SUPABASE_URL = env.SUPABASE_URL || '';
+    SUPABASE_URL = env.SUPABASE_URL || 'https://mcjvlohnyfkvmftrvxeq.supabase.co';
     SUPABASE_KEY = env.SUPABASE_SERVICE_ROLE_KEY || '';
     sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false }
@@ -262,11 +262,11 @@ async function pull(since, withPhotos, companyId) {
 export async function onRequest(context) {
   const { request } = context;
   const env = context.env || {};
-  // Cloudflare Git-deployed Pages Functions do NOT inject [vars] from wrangler.toml,
-  // so both vars must be set via the Dashboard. Fail loudly (readable JSON) instead of
-  // letting createClient() throw and Cloudflare surface a bare 530.
-  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
-    return send(500, { error: 'config_missing', detail: 'Cloudflare env vars not set: need SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (Settings → Environment variables).' });
+  // SUPABASE_URL falls back to the known project URL (it is public). The service_role
+  // key is required and must come from Cloudflare Dashboard → Settings → Environment variables
+  // (Type: Secret), added to BOTH Production and Preview environments, then redeploy.
+  if (!env.SUPABASE_SERVICE_ROLE_KEY) {
+    return send(500, { error: 'config_missing', detail: 'SUPABASE_SERVICE_ROLE_KEY 未设置。请到 Cloudflare 项目 → Settings → Environment variables → + Add：Name 填 SUPABASE_SERVICE_ROLE_KEY，Type 选 Secret，值填 Supabase 后台 Settings→API 里的 service_role 密钥。务必同时加到 Production 和 Preview 两个环境，保存后 Redeploy。' });
   }
   let sb;
   try {

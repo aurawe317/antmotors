@@ -20,18 +20,15 @@
   - Framework preset: `None`
   - Build command: **留空**（或填 `npm install`，效果一样）
   - Build output directory: **`app`**
-- 创建后，进入 **Settings → Variables and secrets**，把下面 **两个变量都加进去**（Cloudflare 的 Git 连接部署**不会**注入 `wrangler.toml` 的 `[vars]`，所以 `SUPABASE_URL` 也必须在这里加，不能只靠文件）：
-  - **变量 1（Secret / 加密）**
-    - Name: `SUPABASE_SERVICE_ROLE_KEY`
-    - Value: Supabase 里的 `service_role` key
-    - Type: **Secret / Encrypt**（务必选 Secret）
-  - **变量 2（普通文本 / Plain text）**
-    - Name: `SUPABASE_URL`
-    - Value: `https://mcjvlohnyfkvmftrvxeq.supabase.co`
-    - Type: **Plain text**
-- 两个都加好后，保存并触发一次部署（Retry deployment）。
+- 创建后，进入 **Settings → Variables and secrets**，添加下面 **这一个 Secret**（Cloudflare 的 Git 连接部署**不会**注入 `wrangler.toml` 的 `[vars]`，变量必须在这里加）：
+  - **Name**: `SUPABASE_SERVICE_ROLE_KEY`
+  - **Value**: Supabase 后台 → Settings → API → `service_role` 那一行（点眼睛复制，**不是** anon）
+  - **Type**: **Secret / Encrypt**（务必选 Secret）
 
-> 说明：之前 `SUPABASE_URL` 写在 `wrangler.toml` 的 `[vars]`，但 Cloudflare Pages 的 Git 部署不会把 `[vars]` 注入到 Functions 运行时，导致函数启动即因缺 `SUPABASE_URL` 而崩溃（HTTP 530）。现已从文件移除、改为在 Dashboard 设置，彻底消除歧义。
+  > `SUPABASE_URL` 已内置硬编码兜底（公开地址 `https://mcjvlohnyfkvmftrvxeq.supabase.co`），无需再设置；如需改区域可仍用同名 Plain text 变量覆盖。
+
+- ⚠️ **关键坑：必须同时加到 Production 与 Preview 两个环境。** 在 Environment variables 页面顶部有 `Production` / `Preview` 切换，**两个环境都要各加一次**这个 Secret，否则你访问的线上域名可能落在没配置变量的那个环境，仍报 `config_missing`。
+- 加好后保存，并触发一次部署（**Deployments → Retry deployment**）。如果之前加变量时控制台弹出红色 `API Request Failed`，说明没保存成功——重试直到列表里能看到这条变量为止。
 
 ### 2. 拿到新域名
 部署完成后 Cloudflare 会给你一个 `*.pages.dev` 域名（也可绑定自定义域名）。**请使用这个新域名**——
