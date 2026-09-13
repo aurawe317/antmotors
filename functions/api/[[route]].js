@@ -42,6 +42,40 @@ const now = () => Date.now();
 const clampTs = (t) => { const n = now(); const v = +t; return (!v || v > n) ? n : v; };
 const isTop = (emp) => !!emp && TOP_TIERS.includes(emp.tier);
 
+/* --------------------------------------------------------------------- local password auth
+ * The app already issues and validates its OWN session tokens (tokens table), so Supabase Auth
+ * is only used for password verification + user creation. When the Supabase Auth service is
+ * unreachable (HTTP 530 from the project's edge), we fall back to a PBKDF2 hash kept in the
+ * employee record (data._pw). This keeps registration/login working no matter what Auth does.
+ * authDown: once an Auth call fails in a connectivity way, skip Auth for this worker instance.
+ */
+let authDown = false;
+const te = new TextEncoder();
+function b64(buf) { const b = new Uint8Array(buf); let s = ''; for (let i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s); }
+function unb64(str) { const bin = atob(str); const o = new Uint8Array(bin.length); for (let i = 0; i < bin.length; i++) o[i] = bin.charCodeAt(i); return o; }
+async function pbkdf2(password, salt, iterations) {
+  const key = await crypto.subtle.importKey('raw', te.encode(String(password)), { name: 'PBKDF2' }, false, ['deriveBits']);
+  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', salt, iterations, hash: 'SHA-256' }, key, 256);
+  return b64(bits);
+}
+async function makePwRecord(password) {
+  const iterations = 100000;
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  return { alg: 'pbkdf2-sha256', it: iterations, s: b64(salt), h: await pbkdf2(password, salt, iterations) };
+}
+async function checkPwRecord(password, rec) {
+  if (!rec || typeof rec !== 'object' || !rec.s || !rec.h) return false;
+  try { return (await pbkdf2(password, unb64(rec.s), rec.it || 100000)) === rec.h; } catch (e) { return false; }
+}
+const isAuthUnreachable = (msg) => /53\d|unreachable|fetch failed|network|timeout/i.test(String(msg || ''));
+/* strip the password record before employee data ever leaves the server */
+function stripPw(d) {
+  if (!d || typeof d !== 'object') return d || {};
+  const out = Object.assign({}, d);
+  delete out._pw;
+  return out;
+}
+
 /* --------------------------------------------------------------------- response */
 function send(code, obj, extra) {
   const body = JSON.stringify(obj);
@@ -121,12 +155,18 @@ async function resolveEmployee(account) {
   const { data } = await sb.from('employees').select('*').ilike('id', a).eq('deleted', 0).maybeSingle();
   return data;
 }
-/* verify password via Supabase Auth using the employee's e-mail */
+/* verify password via Supabase Auth using the employee's e-mail (best-effort, never fatal) */
 async function verifyViaSupabase(email, password) {
-  if (!email) return null;
-  const { data, error } = await sb.auth.signInWithPassword({ email, password });
-  if (error || !data.user) return null;
-  return data.user; // {id, email}
+  if (!email || authDown) return null;
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) { if (isAuthUnreachable(error.message)) authDown = true; return null; }
+    if (!data || !data.user) return null;
+    return data.user; // {id, email}
+  } catch (e) {
+    if (isAuthUnreachable(e && e.message)) authDown = true;
+    return null;
+  }
 }
 async function issueToken(empId, companyId) {
   const token = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '');
@@ -142,7 +182,7 @@ async function authOf(req) {
   if (tk.expires_at && tk.expires_at < now()) { await sb.from('tokens').delete().eq('token', m[1]); return null; }
   const { data: e } = await sb.from('employees').select('*').eq('id', tk.emp_id).eq('company_id', tk.company_id).eq('deleted', 0).maybeSingle();
   if (!e) return null;
-  const emp = e.data || {};
+  const emp = stripPw(e.data || {});
   emp.id = e.id; emp.companyId = e.company_id; emp.email = e.email || '';
   return emp;
 }
@@ -234,7 +274,8 @@ async function applyPush(emp, payload) {
     if (cur.deleted && DEMO_EMP_IDS.has(e.id)) { rejected.push({ id: e.id, reason: 'sample_cleared' }); continue; }
     if (cur.updated_at > ts) { rejected.push({ id: e.id, reason: 'stale' }); continue; }
     const old = cur.data || {};
-    const inc = e.data || {};
+    const inc = Object.assign({}, e.data || {});
+    delete inc._pw; // never accept a password hash from a client
     let next;
     if (top) next = Object.assign({}, old, inc);
     else if (e.id === emp.id) next = Object.assign({}, old, { wa: inc.wa != null ? String(inc.wa) : old.wa, phone: inc.phone != null ? String(inc.phone) : old.phone });
@@ -254,7 +295,7 @@ async function pull(since, withPhotos, companyId) {
     videos: withPhotos ? await videosOf(r.id, companyId) : undefined
   })));
   const { data: emps } = await sb.from('employees').select('*').eq('company_id', companyId).gt('updated_at', s).order('updated_at', { ascending: true });
-  const empList = (emps || []).map(r => ({ id: r.id, companyId: r.company_id, data: r.data, updatedAt: r.updated_at, deleted: !!r.deleted }));
+  const empList = (emps || []).map(r => ({ id: r.id, companyId: r.company_id, data: stripPw(r.data), updatedAt: r.updated_at, deleted: !!r.deleted }));
   return { now: now(), cars: carList, employees: empList };
 }
 
@@ -305,6 +346,41 @@ export async function onRequest(context) {
       return send(200, Object.assign({ ok: true, cars: dbCheck.count || 0, companies: coCheck.count || 0 }, base));
     }
 
+    /* ---- temporary diagnostic: raw fetch probes, no secrets leaked ---- */
+    if (p === '/api/_diag') {
+      const url = SUPABASE_URL || 'https://mcjvlohnyfkvmftrvxeq.supabase.co';
+      const key = SUPABASE_KEY || '';
+      const probe = async (path, headers, method, body) => {
+        const t0 = Date.now();
+        try {
+          const r = await fetch(url + path, { method: method || 'GET', headers, body, cache: 'no-store' });
+          const txt = await r.text();
+          return { path, status: r.status, statusText: r.statusText, ms: Date.now() - t0,
+                   cfRay: r.headers.get('cf-ray') || null, ctype: r.headers.get('content-type') || null,
+                   body: txt.slice(0, 240) };
+        } catch (e) { return { path, thrown: String((e && e.message) || e), ms: Date.now() - t0 }; }
+      };
+      const authH = { apikey: key, Authorization: 'Bearer ' + key };
+      const anonH = { apikey: key };
+      const stamp = Date.now();
+      const probes = [];
+      probes.push(await probe('/auth/v1/settings', anonH));
+      probes.push(await probe('/rest/v1/cars?select=id&limit=1&cb=' + stamp, authH));
+      probes.push(await probe('/auth/v1/admin/users?page=1&per_page=1', authH));
+      const km = { present: !!key, length: key.length, prefix: key.slice(0, 8), isNewSecret: key.startsWith('sb_secret_') };
+      try {
+        const seg = key.split('.');
+        if (seg.length === 3) {
+          km.isLegacyJwt = true;
+          let pad = seg[1].replace(/-/g, '+').replace(/_/g, '/');
+          pad += '='.repeat((4 - (pad.length % 4)) % 4);
+          const payload = JSON.parse(atob(pad));
+          km.role = payload.role || null; km.ref = payload.ref || null; km.iss = payload.iss || null;
+        }
+      } catch (e) { km.decodeError = String((e && e.message) || e); }
+      return send(200, { url, keyMeta: km, probes });
+    }
+
     /* login (Supabase Auth) */
     if (p === '/api/login' && method === 'POST') {
       const b = await readBody(req);
@@ -314,20 +390,25 @@ export async function onRequest(context) {
       let emp = null;
       if (account.includes('@')) email = account.toLowerCase();
       else { emp = await resolveEmployee(account); if (emp) email = (emp.email || (emp.data && emp.data.email) || '').toLowerCase(); }
-      if (!email) return send(401, { error: 'bad_credentials' });
-      const authUser = await verifyViaSupabase(email, password);
-      if (!authUser) return send(401, { error: 'bad_credentials' });
+      // resolve by e-mail too, so the local-hash fallback below can find the record
+      if (!emp && email) emp = await resolveEmployee(email);
+      const localOk = emp ? await checkPwRecord(password, (emp.data || {})._pw) : false;
+      const authUser = email ? await verifyViaSupabase(email, password) : null;
+      if (!authUser && !localOk) return send(401, { error: 'bad_credentials' });
+      if (!email && !emp) return send(401, { error: 'bad_credentials' });
       // find company: from employee's company, or from company_members of this auth user
       let companyId = emp ? emp.company_id : null;
-      if (!companyId) {
+      if (!companyId && authUser) {
         const { data: cm } = await sb.from('company_members').select('company_id').eq('user_id', authUser.id).limit(1).maybeSingle();
         companyId = cm ? cm.company_id : null;
       }
       if (!companyId) return send(401, { error: 'no_company' });
-      const fullEmp = await ensureEmployeeForUser(authUser, companyId, 'boss');
+      const fullEmp = authUser
+        ? await ensureEmployeeForUser(authUser, companyId, 'boss')
+        : { id: emp.id, company_id: companyId, email: emp.email, data: emp.data };
       const token = await issueToken(fullEmp.id, companyId);
       const co = await companyById(companyId);
-      const eObj = fullEmp.data || {}; eObj.id = fullEmp.id; eObj.companyId = companyId; eObj.email = fullEmp.email || email;
+      const eObj = stripPw(fullEmp.data || {}); eObj.id = fullEmp.id; eObj.companyId = companyId; eObj.email = fullEmp.email || email;
       return send(200, { token, employee: eObj, company: co ? publicCompany(co) : null, mustChangePassword: false });
     }
 
@@ -348,10 +429,12 @@ export async function onRequest(context) {
       const wa = String(b.wa || '').replace(/[^0-9]/g, '').slice(0, 20);
       const phone = String(b.phone || '').slice(0, 40);
 
-      // create Supabase Auth user (only when an e-mail is provided; otherwise the
-      // account is local-only until an e-mail + password are set later)
+      // Supabase Auth user creation is BEST-EFFORT. The app has its own session tokens (tokens
+      // table) and now also stores a local PBKDF2 hash, so registration must never fail just
+      // because the Supabase Auth service is unreachable.
       let authUserId = null;
-      if (email) {
+      let authWarn = null;
+      if (email && !authDown) {
         let authUser = null, authErr = null;
         try {
           const created = await sb.auth.admin.createUser({
@@ -366,13 +449,9 @@ export async function onRequest(context) {
           if (sign.data && sign.data.user) { authUser = sign.data.user; authErr = null; }
         }
         if (authErr) {
-          const msg = authErr.message || String(authErr);
-          if (/53\d|unreachable|fetch failed|network/i.test(msg)) {
-            return send(503, { error: 'auth_upstream_unreachable', source: 'supabase_auth', detail: msg, hint: 'Supabase Auth is unreachable. Open Supabase Dashboard → project → Settings → General → Restart project, wait 60s, then try again.', retryAfter: 60 });
-          }
-          return send(400, { error: 'auth_create_failed', detail: msg });
-        }
-        authUserId = authUser.id;
+          authWarn = authErr.message || String(authErr);
+          if (isAuthUnreachable(authWarn)) authDown = true;
+        } else if (authUser) { authUserId = authUser.id; }
       }
 
       let companyId, company, tier, role, roleZh, joinBranch = '';
@@ -381,23 +460,25 @@ export async function onRequest(context) {
         const code = await genCompanyCode();
         let logo = null;
         if (b.companyLogo && typeof b.companyLogo === 'string' && b.companyLogo.startsWith('data:image') && b.companyLogo.length < 2_000_000) logo = b.companyLogo;
-        const { data: co } = await sb.from('companies').insert({ id: companyId, name: String(b.companyName).trim().slice(0, 80), logo, owner_id: authUserId, code, plan: 'trial', status: 'active', permanent: 0, trial_ends_at: now() + TRIAL_DAYS * 864e5, created_at: now() }).select().single();
-        await sb.from('company_members').insert({ user_id: authUserId, company_id: companyId, role: 'owner', created_at: now() });
+        const { data: co, error: coErr } = await sb.from('companies').insert({ id: companyId, name: String(b.companyName).trim().slice(0, 80), logo, owner_id: authUserId, code, plan: 'trial', status: 'active', permanent: 0, trial_ends_at: now() + TRIAL_DAYS * 864e5, created_at: now() }).select().single();
+        if (coErr) return send(500, { error: 'company_create_failed', detail: coErr.message });
+        if (authUserId) await sb.from('company_members').insert({ user_id: authUserId, company_id: companyId, role: 'owner', created_at: now() });
         company = co; tier = 'boss'; role = 'Boss / Owner'; roleZh = '老板 / 所有者';
       } else if (b.companyCode && String(b.companyCode).trim()) {
         const { data: co } = await sb.from('companies').select('*').eq('code', String(b.companyCode).trim().toUpperCase()).eq('status', 'active').maybeSingle();
         if (!co) return send(400, { error: 'bad_code', detail: 'invitation code does not match' });
         companyId = co.id; company = co; joinBranch = String(b.branch || '').trim().slice(0, 60);
         tier = 'salesA'; role = 'Senior Sales'; roleZh = '高级销售';
-        await sb.from('company_members').insert({ user_id: authUserId, company_id: companyId, role: 'member', created_at: now() });
+        if (authUserId) await sb.from('company_members').insert({ user_id: authUserId, company_id: companyId, role: 'member', created_at: now() });
       } else {
         return send(400, { error: 'need_company', detail: 'provide companyName to create, or companyCode to join' });
       }
 
-      const data = { name, av: name.charAt(0).toUpperCase(), tier, role, roleZh, wa, phone, branch: joinBranch };
-      await sb.from('employees').upsert({ id, company_id: companyId, user_id: authUserId, data, email: email || null, updated_at: now(), deleted: 0 }, { onConflict: 'id,company_id' });
+      const data = { name, av: name.charAt(0).toUpperCase(), tier, role, roleZh, wa, phone, branch: joinBranch, _pw: await makePwRecord(pw) };
+      const { error: empErr } = await sb.from('employees').upsert({ id, company_id: companyId, user_id: authUserId, data, email: email || null, updated_at: now(), deleted: 0 }, { onConflict: 'id,company_id' });
+      if (empErr) return send(500, { error: 'employee_create_failed', detail: empErr.message });
       const token = await issueToken(id, companyId);
-      return send(200, { token, employee: Object.assign({ id, companyId, email }, data), company: company ? publicCompany(company) : null });
+      return send(200, { token, employee: Object.assign({ id, companyId, email }, stripPw(data)), company: company ? publicCompany(company) : null, authWarn });
     }
 
     /* public (no auth, company-scoped) */
@@ -426,7 +507,7 @@ export async function onRequest(context) {
       const gone = !!row.deleted || !!cd.sold;
       if (gone) return send(200, { gone: true, reason: row.deleted ? 'deleted' : 'sold', company: companyInfo, carName: cd.name || '' });
       const ref = u.searchParams.get('ref');
-      const empData = async (eid) => { const { data } = await sb.from('employees').select('data').eq('id', eid).eq('company_id', cid).eq('deleted', 0).maybeSingle(); return data ? data.data : null; };
+      const empData = async (eid) => { const { data } = await sb.from('employees').select('data').eq('id', eid).eq('company_id', cid).eq('deleted', 0).maybeSingle(); return data ? stripPw(data.data) : null; };
       let agent = null;
       if (ref) agent = await empData(ref);
       if (!agent && cd.sales) agent = await empData(cd.sales);
@@ -494,7 +575,7 @@ export async function onRequest(context) {
       d.role = ROLE[tier] + (branch ? ' · ' + branch : '');
       d.roleZh = ROLE_ZH[tier] + (branch ? ' · ' + branch : '');
       await sb.from('employees').update({ data: d, updated_at: now() }).eq('id', emp.id).eq('company_id', emp.companyId);
-      return send(200, { employee: Object.assign({ id: emp.id, companyId: emp.companyId }, d) });
+      return send(200, { employee: Object.assign({ id: emp.id, companyId: emp.companyId }, stripPw(d)) });
     }
     if (p === '/api/membership' && method === 'GET') {
       const co = await companyById(emp.companyId);
@@ -541,11 +622,16 @@ export async function onRequest(context) {
       const phone = String(b.phone || '').slice(0, 40);
       const ROLE = { boss: 'Boss / Owner', partnerA: 'Co-owner', partnerB: 'Co-owner', manager: 'Manager', salesA: 'Senior Sales', salesB: 'Sales' };
       const ROLE_ZH = { boss: '老板 / 所有者', partnerA: '合伙人', partnerB: '合伙人', manager: '经理', salesA: '高级销售', salesB: '销售' };
-      const data = { name, av: (name || id).charAt(0).toUpperCase(), tier, role: ROLE[tier] + (branch ? ' · ' + branch : ''), roleZh: ROLE_ZH[tier] + (branch ? ' · ' + branch : ''), wa, phone, branch };
+      const data = { name, av: (name || id).charAt(0).toUpperCase(), tier, role: ROLE[tier] + (branch ? ' · ' + branch : ''), roleZh: ROLE_ZH[tier] + (branch ? ' · ' + branch : ''), wa, phone, branch, _pw: await makePwRecord(staffPw) };
       const { error } = await sb.from('employees').insert({ id, company_id: emp.companyId, data, email: staffEmail || null, updated_at: now(), deleted: 0 });
       if (error) return send(400, { error: error.message });
-      // also provision a Supabase Auth account so they can log in
-      if (staffEmail) { await sb.auth.admin.createUser({ email: staffEmail, password: staffPw, email_confirm: true, user_metadata: { emp_id: id } }).catch(() => {}); }
+      // best-effort: also provision a Supabase Auth account (ignored when Auth is unreachable)
+      if (staffEmail && !authDown) {
+        try {
+          const r = await sb.auth.admin.createUser({ email: staffEmail, password: staffPw, email_confirm: true, user_metadata: { emp_id: id } });
+          if (r && r.error && isAuthUnreachable(r.error.message)) authDown = true;
+        } catch (e) { /* ignore — local hash already stored */ }
+      }
       return send(200, { ok: true, id, name: data.name });
     }
     if (p === '/api/employees' && method === 'DELETE') {
@@ -563,14 +649,26 @@ export async function onRequest(context) {
     }
     if (p === '/api/password/change' && method === 'POST') {
       const b = await readBody(req);
+      const npw = String(b.password != null ? b.password : (b.pin || ''));
+      if (npw.length < 8) return send(400, { error: 'weak_password', detail: 'password >= 8 chars' });
       const { data: row } = await sb.from('employees').select('*').eq('id', emp.id).eq('company_id', emp.companyId).eq('deleted', 0).maybeSingle();
       if (!row) return send(404, { error: 'not_found' });
-      const email = row.email || (row.data && row.data.email);
-      if (!email) return send(400, { error: 'no_email', detail: 'set a recovery e-mail first' });
-      if (b.password && b.password.length >= 8) {
-        const { error } = await sb.auth.admin.updateUserById(row.user_id || (await sb.auth.admin.listUsers()).data.users.find(u => u.email === email)?.id || '', { password: b.password });
-        if (error) return send(400, { error: error.message });
-      }
+      const d = row.data || {};
+      d._pw = await makePwRecord(npw);
+      const { error: upErr } = await sb.from('employees').update({ data: d, updated_at: now() }).eq('id', emp.id).eq('company_id', emp.companyId);
+      if (upErr) return send(500, { error: 'update_failed', detail: upErr.message });
+      // best-effort sync with Supabase Auth (ignored when Auth is unreachable)
+      try {
+        const email = row.email || d.email;
+        if (email && !authDown) {
+          if (row.user_id) await sb.auth.admin.updateUserById(row.user_id, { password: npw });
+          else {
+            const list = await sb.auth.admin.listUsers({ page: 1, perPage: 200 });
+            const u = ((list.data && list.data.users) || []).find(x => (x.email || '').toLowerCase() === String(email).toLowerCase());
+            if (u) await sb.auth.admin.updateUserById(u.id, { password: npw });
+          }
+        }
+      } catch (e) { /* ignore — the local hash is already updated */ }
       return send(200, { ok: true });
     }
     if (p === '/api/account/email' && method === 'POST') {

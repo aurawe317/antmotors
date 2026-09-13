@@ -4,7 +4,8 @@
 - `app/`            前端静态站点（index.html 等），原样部署，无需改动
 - `functions/api/[[route]].js`  后端 API（替代原 server.js），直连 Supabase
 - `package.json`    声明 `@supabase/supabase-js`（Cloudflare 构建时会打包）
-- `supabase-schema.sql`   已在 Supabase SQL Editor 执行的多租户 schema + RLS
+- `supabase-schema.sql`   多租户 schema + RLS（基础表结构）
+- `supabase-schema-patch.sql`  **补丁 1：补齐代码用到但基础 schema 缺的列**（必须执行，见步骤 0）
 - `migrate-to-supabase.html` / `migrate-console.js`   浏览器数据 → Supabase 迁移工具
 - `native/`         Capacitor iOS/Android 壳（本地构建，已配置加载线上 URL）
 
@@ -14,6 +15,15 @@
 3. GitHub 仓库已推送到远程（本机可连 GitHub）。
 
 ## 步骤
+### 0. 补齐 Schema（必做，一次性）
+打开 Supabase → SQL Editor → 粘贴 `supabase-schema-patch.sql` 全部内容 → Run。
+它用 `add column if not exists` 补齐后端代码依赖但基础 schema 没有的列：
+- `companies`: `bio / trial_ends_at / plan_started_at / current_period_end / alipay_trade_no / subscription_id / last_paid_at`
+- `employees`: `email`
+- `tokens`: `expires_at`
+
+**不做这一步，注册会在建公司那一步失败**（`column companies.trial_ends_at does not exist`）。脚本幂等，可重复执行。
+
 ### 1. 设置 Cloudflare Pages
 - 登录 Cloudflare Dashboard → Workers & Pages → Create → Pages → 连接 Git 仓库。
 - 构建配置：
@@ -45,10 +55,11 @@ Railway 已死，浏览器 localStorage 是目前唯一一份客户数据。用�
 - 兜底（数据被困在已安装的 PWA / 旧域名）：在 App 页面 F12 控制台粘贴 `migrate-console.js` 内容执行（同源，绕过域名限制）。
 - 迁移完成后，到 Supabase → Settings → API **轮换**那把 anon key（迁移工具里硬编码过）。
 
-### 4. 登录 / 账号
-- 登录走 Supabase Auth（邮箱+密码）。曾做迁移的人已有 Supabase Auth 账号 → 用当时注册的邮箱+密码登录，首次登录自动按"老板"建档并关联公司。
-- 新同事：在 App 内注册（填邮箱+密码+公司邀请码）→ 自动建 Supabase Auth 账号，可直接登录。
-- 旧 PIN 已无法使用（存在已死的 Railway 库里，没带过来）。
+### 4. 登录 / 账号（v1.2.36 起改为自包含鉴权）
+- **注册与登录不再依赖 Supabase Auth。**会话 token 由后端自己签发（`tokens` 表），密码以 PBKDF2-SHA256（10 万次迭代 + 随机 salt）哈希后存在员工记录的 `data._pw` 字段里（服务端专有，任何 API 响应都会剔除）。
+- 原因：部分 Supabase 项目的 Auth 服务会持续返回 `HTTP 530` 且重启无效；应用因此改为「Supabase Auth 尽力而为（best-effort）+ 本地哈希兜底」，Auth 挂了也不影响注册登录。
+- 若 Supabase Auth 恢复正常，注册时仍会顺带创建 Auth 账号（用于以后接邮件找回），失败则静默跳过并继续。
+- 旧 PIN 已失效（存在已死的 Railway 库里）。新账号直接用 App 内注册的邮箱+密码登录。
 
 ### 5. 冒烟测试（部署后必做）
 沙箱无法连 Supabase，以下需你这边验证：
