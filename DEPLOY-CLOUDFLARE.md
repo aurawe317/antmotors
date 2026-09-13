@@ -20,14 +20,18 @@
   - Framework preset: `None`
   - Build command: **留空**（或填 `npm install`，效果一样）
   - Build output directory: **`app`**
-- 创建后，进入 **Settings → Variables and secrets** 添加 **Secret**：
-  - Name: `SUPABASE_SERVICE_ROLE_KEY`
-  - Value: Supabase 里的 `service_role` key
-  - Type: **Secret / Encrypt**
-- `SUPABASE_URL` 已写在 `wrangler.toml` 的 `[vars]` 里，不用在 Dashboard 再加。
-- 保存，触发一次部署。
+- 创建后，进入 **Settings → Variables and secrets**，把下面 **两个变量都加进去**（Cloudflare 的 Git 连接部署**不会**注入 `wrangler.toml` 的 `[vars]`，所以 `SUPABASE_URL` 也必须在这里加，不能只靠文件）：
+  - **变量 1（Secret / 加密）**
+    - Name: `SUPABASE_SERVICE_ROLE_KEY`
+    - Value: Supabase 里的 `service_role` key
+    - Type: **Secret / Encrypt**（务必选 Secret）
+  - **变量 2（普通文本 / Plain text）**
+    - Name: `SUPABASE_URL`
+    - Value: `https://mcjvlohnyfkvmftrvxeq.supabase.co`
+    - Type: **Plain text**
+- 两个都加好后，保存并触发一次部署（Retry deployment）。
 
-> 如果 Dashboard 提示 "Environment variables are being managed through wrangler.toml"，只证明 `SUPABASE_URL` 已由文件管理，不影响；`SUPABASE_SERVICE_ROLE_KEY` 仍要在这里加 Secret。
+> 说明：之前 `SUPABASE_URL` 写在 `wrangler.toml` 的 `[vars]`，但 Cloudflare Pages 的 Git 部署不会把 `[vars]` 注入到 Functions 运行时，导致函数启动即因缺 `SUPABASE_URL` 而崩溃（HTTP 530）。现已从文件移除、改为在 Dashboard 设置，彻底消除歧义。
 
 ### 2. 拿到新域名
 部署完成后 Cloudflare 会给你一个 `*.pages.dev` 域名（也可绑定自定义域名）。**请使用这个新域名**——

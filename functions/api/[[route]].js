@@ -261,8 +261,19 @@ async function pull(since, withPhotos, companyId) {
 /* --------------------------------------------------------------------- router */
 export async function onRequest(context) {
   const { request } = context;
-  const env = context.env;
-  getSb(env);
+  const env = context.env || {};
+  // Cloudflare Git-deployed Pages Functions do NOT inject [vars] from wrangler.toml,
+  // so both vars must be set via the Dashboard. Fail loudly (readable JSON) instead of
+  // letting createClient() throw and Cloudflare surface a bare 530.
+  if (!env.SUPABASE_URL || !env.SUPABASE_SERVICE_ROLE_KEY) {
+    return send(500, { error: 'config_missing', detail: 'Cloudflare env vars not set: need SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (Settings → Environment variables).' });
+  }
+  let sb;
+  try {
+    sb = getSb(env);
+  } catch (e) {
+    return send(500, { error: 'sb_init_failed', detail: String(e && e.message || e) });
+  }
   const req = request;
   const u = new URL(req.url);
   const p = u.pathname;
@@ -590,6 +601,6 @@ export async function onRequest(context) {
     return send(404, { error: 'no_route' });
   } catch (e) {
     console.error('[err]', e && e.message, e && e.stack);
-    return send(400, { error: e && e.message ? e.message : 'error' });
+    return send(500, { error: 'server_error', detail: String(e && e.message ? e.message : e) });
   }
 }
