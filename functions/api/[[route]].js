@@ -326,11 +326,19 @@ export async function onRequest(context) {
       // account is local-only until an e-mail + password are set later)
       let authUserId = null;
       if (email) {
-        const { data: authUser, error: authErr } = await sb.auth.admin.createUser({
+        let authUser = null, authErr = null;
+        const created = await sb.auth.admin.createUser({
           email, password: pw, email_confirm: true, user_metadata: { emp_id: id }
         });
+        authUser = created.data; authErr = created.error;
+        // If the Auth user already exists (e.g. a prior attempt created it but registration
+        // didn't finish), reuse it instead of hard-failing — verify the password matches.
+        if (authErr && /already|registered|exists/i.test(authErr.message || '')) {
+          const sign = await sb.auth.signInWithPassword({ email, password: pw });
+          if (sign.data && sign.data.user) { authUser = sign.data.user; authErr = null; }
+        }
         if (authErr) return send(400, { error: 'auth_create_failed', detail: authErr.message });
-        authUserId = authUserId;
+        authUserId = authUser.id;
       }
 
       let companyId, company, tier, role, roleZh, joinBranch = '';
