@@ -35,7 +35,7 @@
   - **Value**: Supabase 后台 → Settings → API → `service_role` 那一行（点眼睛复制，**不是** anon）
   - **Type**: **Secret / Encrypt**（务必选 Secret）
 
-  > `SUPABASE_URL` 已内置硬编码兜底（公开地址 `https://mcjvlohnyfkvmftrvxeq.supabase.co`），无需再设置；如需改区域可仍用同名 Plain text 变量覆盖。
+  > **项目 URL 已写死在代码里**（`functions/api/[[route]].js` 的 `SUPABASE_URL_FIXED = https://mcjvlohnyfkvkftrvxeq.supabase.co`），**代码不再读取 `SUPABASE_URL` 环境变量**。这是刻意的：历史上曾因一个拼错的 ref（`…fkvm…` 而非 `…fkvk…`）指向**不存在的主机**，导致所有请求被 Cloudflare 回 `error 1016 / HTTP 530`，排查了很久。换项目时改这一行常量即可。**另请确认 Cloudflare 里没有残留旧的 `SUPABASE_URL` 变量**（有则删掉）。
 
 - ⚠️ **关键坑：必须同时加到 Production 与 Preview 两个环境。** 在 Environment variables 页面顶部有 `Production` / `Preview` 切换，**两个环境都要各加一次**这个 Secret，否则你访问的线上域名可能落在没配置变量的那个环境，仍报 `config_missing`。
 - 加好后保存，并触发一次部署（**Deployments → Retry deployment**）。如果之前加变量时控制台弹出红色 `API Request Failed`，说明没保存成功——重试直到列表里能看到这条变量为止。

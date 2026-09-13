@@ -1,6 +1,6 @@
 -- ============================================================
 -- Ant Motors — Schema 补丁 1（补齐后端代码用到、但原 schema 缺失的列）
--- 项目 ref：mcjvlohnyfkvmftrvxeq (antmotors)
+-- 项目 ref：mcjvlohnyfkvkftrvxeq (antmotors)
 -- 执行：Supabase Dashboard → SQL Editor → 粘贴全部 → Run
 -- 幂等：全部用 add column if not exists，可安全重复执行
 -- ============================================================

@@ -4,21 +4,27 @@
  *
  * 部署：Cloudflare Pages，构建输出目录 = app，本文件提供 /api/*。
  * 环境变量（在 Cloudflare Pages → Settings → Environment variables 设置，service_role 用 Secret）：
- *   SUPABASE_URL                   = https://<ref>.supabase.co
  *   SUPABASE_SERVICE_ROLE_KEY      = <service_role key>  （仅服务端用，切勿暴露给浏览器）
  *
- * 鉴权：登录/注册/改密 均走 Supabase Auth（邮箱+密码）。登录成功后签发本应用的
- * 会话 token（存 tokens 表），前端无需改动。首登无员工档案时按老板自动建档。
+ * ⚠️ 项目 URL 固定在下面 SUPABASE_URL_FIXED，故意不读 env.SUPABASE_URL：
+ *    历史上这里曾被一个拼错的 ref（…fkvm… 而不是 …fkvk…）指向**不存在的主机**，
+ *    导致每次请求都被 Cloudflare 回 error 1016 / HTTP 530。写死 + 单一来源可杜绝复发。
+ *
+ * 鉴权：自包含（PBKDF2 本地哈希 + 自签发会话 token 存 tokens 表）。
+ *      Supabase Auth 仅作 best-effort 增强，不可用也不影响注册/登录。
  */
 import { createClient } from '@supabase/supabase-js';
 
+// Supabase 项目 URL（公开信息，写死以避免拼写类事故）
+const SUPABASE_URL_FIXED = 'https://mcjvlohnyfkvkftrvxeq.supabase.co';
+
 // Supabase 客户端在首个请求时用 context.env 初始化（Cloudflare Workers 无 process.env）
-let SUPABASE_URL = '';
+let SUPABASE_URL = SUPABASE_URL_FIXED;
 let SUPABASE_KEY = '';
 let sb = null;
 function getSb(env) {
   if (!sb) {
-    SUPABASE_URL = env.SUPABASE_URL || 'https://mcjvlohnyfkvmftrvxeq.supabase.co';
+    SUPABASE_URL = SUPABASE_URL_FIXED;
     SUPABASE_KEY = env.SUPABASE_SERVICE_ROLE_KEY || '';
     sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
       auth: { autoRefreshToken: false, persistSession: false }
@@ -303,7 +309,7 @@ async function pull(since, withPhotos, companyId) {
 export async function onRequest(context) {
   const { request } = context;
   const env = context.env || {};
-  // SUPABASE_URL falls back to the known project URL (it is public). The service_role
+  // The Supabase project URL is public and fixed (see SUPABASE_URL_FIXED). The service_role
   // key is required and must come from Cloudflare Dashboard → Settings → Environment variables
   // (Type: Secret), added to BOTH Production and Preview environments, then redeploy.
   if (!env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -334,51 +340,16 @@ export async function onRequest(context) {
         authErr = (authCheck.error && authCheck.error.message) || null;
       } catch (e) { authErr = String((e && e.message) || e); }
       const dbErr = (dbCheck.error && dbCheck.error.message) || (coCheck.error && coCheck.error.message) || null;
-      const base = { build: 'honest-health-2', now: now(), version: 2, backend: APP_VER };
+      const base = { build: 'ref-fixed-1', now: now(), version: 2, backend: APP_VER };
       if (dbErr || authErr) {
         return send(503, Object.assign({
           ok: false, dbError: dbErr, authError: authErr,
-          hint: (authErr && /53\d|unreachable|fetch failed|network/i.test(authErr))
-            ? 'Supabase unreachable. Open Supabase Dashboard → project → Settings → General → Restart project, wait 60s, retry.'
+          hint: (authErr && /53\d|1016|unreachable|fetch failed|network/i.test(authErr))
+            ? 'Supabase endpoint unreachable from Cloudflare (DNS/origin error). Check the project URL/ref and that the Supabase project is running.'
             : 'supabase_unreachable'
         }, base));
       }
       return send(200, Object.assign({ ok: true, cars: dbCheck.count || 0, companies: coCheck.count || 0 }, base));
-    }
-
-    /* ---- temporary diagnostic: raw fetch probes, no secrets leaked ---- */
-    if (p === '/api/_diag') {
-      const url = SUPABASE_URL || 'https://mcjvlohnyfkvmftrvxeq.supabase.co';
-      const key = SUPABASE_KEY || '';
-      const probe = async (path, headers, method, body) => {
-        const t0 = Date.now();
-        try {
-          const r = await fetch(url + path, { method: method || 'GET', headers, body, cache: 'no-store' });
-          const txt = await r.text();
-          return { path, status: r.status, statusText: r.statusText, ms: Date.now() - t0,
-                   cfRay: r.headers.get('cf-ray') || null, ctype: r.headers.get('content-type') || null,
-                   body: txt.slice(0, 240) };
-        } catch (e) { return { path, thrown: String((e && e.message) || e), ms: Date.now() - t0 }; }
-      };
-      const authH = { apikey: key, Authorization: 'Bearer ' + key };
-      const anonH = { apikey: key };
-      const stamp = Date.now();
-      const probes = [];
-      probes.push(await probe('/auth/v1/settings', anonH));
-      probes.push(await probe('/rest/v1/cars?select=id&limit=1&cb=' + stamp, authH));
-      probes.push(await probe('/auth/v1/admin/users?page=1&per_page=1', authH));
-      const km = { present: !!key, length: key.length, prefix: key.slice(0, 8), isNewSecret: key.startsWith('sb_secret_') };
-      try {
-        const seg = key.split('.');
-        if (seg.length === 3) {
-          km.isLegacyJwt = true;
-          let pad = seg[1].replace(/-/g, '+').replace(/_/g, '/');
-          pad += '='.repeat((4 - (pad.length % 4)) % 4);
-          const payload = JSON.parse(atob(pad));
-          km.role = payload.role || null; km.ref = payload.ref || null; km.iss = payload.iss || null;
-        }
-      } catch (e) { km.decodeError = String((e && e.message) || e); }
-      return send(200, { url, keyMeta: km, probes });
     }
 
     /* login (Supabase Auth) */

@@ -15,7 +15,7 @@
  * 说明：使用 Supabase anon key，仅本地运行，数据直传你的项目。
  */
 (async () => {
-  const SUPABASE_URL = 'https://mcjvlohnyfkvmftrvxeq.supabase.co';
+  const SUPABASE_URL = 'https://mcjvlohnyfkvkftrvxeq.supabase.co';
   const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1janZsb2hueWZrdmtmdHJ2eGVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyOTExNTcsImV4cCI6MjEwNDg2NzE1N30.a55h-eJPWQPF0kMlx-PGeeecwSIzdEVoZ4y5dIGWbV8';
 
   // 1) 加载 supabase-js

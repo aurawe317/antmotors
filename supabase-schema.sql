@@ -1,7 +1,7 @@
 -- ============================================================
 -- Ant Motors — Supabase 多租户 Schema + RLS
 -- 登录模型：Supabase Auth（选项 A，用户已确认）
--- 项目 ref：mcjvlohnyfkvmftrvxeq  (antmotors)
+-- 项目 ref：mcjvlohnyfkvkftrvxeq  (antmotors)
 -- 执行：Supabase Dashboard → SQL Editor → 粘贴全部 → Run
 -- ============================================================
 
