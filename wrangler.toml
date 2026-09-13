@@ -1,6 +1,7 @@
 name = "antmotors"
 pages_build_output_dir = "app"
 compatibility_date = "2024-09-23"
+compatibility_flags = ["nodejs_compat"]
 
 # 环境变量请在 Cloudflare Pages 控制台 → Settings → Environment variables 设置：
 #   SUPABASE_URL              = https://<your-ref>.supabase.co

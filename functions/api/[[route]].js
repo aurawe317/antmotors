@@ -12,11 +12,20 @@
  */
 import { createClient } from '@supabase/supabase-js';
 
-const SUPABASE_URL = process.env.SUPABASE_URL;
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
-  auth: { autoRefreshToken: false, persistSession: false }
-});
+// Supabase 客户端在首个请求时用 context.env 初始化（Cloudflare Workers 无 process.env）
+let SUPABASE_URL = '';
+let SUPABASE_KEY = '';
+let sb = null;
+function getSb(env) {
+  if (!sb) {
+    SUPABASE_URL = env.SUPABASE_URL || '';
+    SUPABASE_KEY = env.SUPABASE_SERVICE_ROLE_KEY || '';
+    sb = createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { autoRefreshToken: false, persistSession: false }
+    });
+  }
+  return sb;
+}
 
 const TOP_TIERS = ['boss', 'partnerA', 'partnerB'];
 const TOKEN_TTL_MS = 30 * 24 * 3600 * 1000;
@@ -252,6 +261,8 @@ async function pull(since, withPhotos, companyId) {
 /* --------------------------------------------------------------------- router */
 export async function onRequest(context) {
   const { request } = context;
+  const env = context.env;
+  getSb(env);
   const req = request;
   const u = new URL(req.url);
   const p = u.pathname;
