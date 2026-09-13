@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Ant Motors · 浏览器数据 → Supabase 迁移</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{ --bg:#0f1115; --card:#171a21; --card2:#1e222b; --line:#2a2f3a; --txt:#e8eaed; --mut:#9aa3b2; --acc:#3b82f6; --ok:#22c55e; --warn:#f59e0b; --err:#ef4444; }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg);color:var(--txt);padding:24px;line-height:1.5}
+  .wrap{max-width:720px;margin:0 auto}
+  h1{font-size:20px;margin:0 0 4px}
+  .sub{color:var(--mut);font-size:13px;margin-bottom:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:14px}
+  .step{display:flex;gap:10px;align-items:center;color:var(--mut);font-size:13px;margin-bottom:12px}
+  .step b{color:var(--txt)}
+  label{display:block;font-size:13px;color:var(--mut);margin:10px 0 4px}
+  input{width:100%;padding:10px 12px;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--txt);font-size:14px}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  button{margin-top:14px;padding:11px 16px;border:0;border-radius:8px;background:var(--acc);color:#fff;font-size:14px;font-weight:600;cursor:pointer}
+  button.ghost{background:var(--card2);border:1px solid var(--line);color:var(--txt)}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .log{background:#0b0d11;border:1px solid var(--line);border-radius:8px;padding:12px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;max-height:240px;overflow:auto;white-space:pre-wrap;margin-top:12px}
+  .ok{color:var(--ok)} .warn{color:var(--warn)} .err{color:var(--err)} .mut{color:var(--mut)}
+  .pill{display:inline-block;padding:2px 8px;border-radius:999px;font-size:12px;background:var(--card2);border:1px solid var(--line);margin:2px}
+  .hidden{display:none}
+  a{color:var(--acc)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Ant Motors · 数据迁移工具</h1>
+  <div class="sub">把本机浏览器里仅存的那份客户数据（车辆 / 照片 / 展厅 / 员工）推送到你的 Supabase 新库。在本机用 <b>已装过该 App 的浏览器</b> 打开本页才有效。</div>
+
+  <!-- STEP 1: AUTH -->
+  <div class="card" id="cardAuth">
+    <div class="step"><span>①</span><b>登录你的 Supabase 账号</b>（用于身份与权限）</div>
+    <label>邮箱 Email</label>
+    <input id="email" type="email" placeholder="you@company.com" autocomplete="username" />
+    <label>密码 Password（≥8 位，含大小写+数字+符号）</label>
+    <input id="pw" type="password" placeholder="********" autocomplete="current-password" />
+    <div class="row">
+      <button id="btnSignup">注册新账号</button>
+      <button id="btnSignin" class="ghost">登录已有账号</button>
+    </div>
+    <div id="authMsg" class="mut" style="margin-top:10px;font-size:12px"></div>
+  </div>
+
+  <!-- STEP 2: COMPANY -->
+  <div class="card hidden" id="cardCompany">
+    <div class="step"><span>②</span><b>选择 / 新建公司</b></div>
+    <div id="companyArea"></div>
+  </div>
+
+  <!-- STEP 3: MIGRATE -->
+  <div class="card hidden" id="cardMigrate">
+    <div class="step"><span>③</span><b>扫描并迁移浏览器数据</b></div>
+    <div id="scanArea" class="mut" style="font-size:13px"></div>
+    <button id="btnMigrate">开始迁移 → Supabase</button>
+    <div id="migrateLog" class="log hidden"></div>
+  </div>
+
+  <div class="card mut" style="font-size:12px">
+    安全提示：本页使用 Supabase <b>anon key</b> 且仅在本地浏览器运行，数据直传你的 Supabase 项目。迁移完成后建议到 Supabase → Settings → API 轮换这把 key。
+    员工账户因采用 Supabase Auth，旧 PIN 员工会被导入为"无登录态的资料行"，需各自用邮箱重新注册加入。
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://mcjvlohnyfkvmftrvxeq.supabase.co';
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1janZsb2hueWZrdmtmdHJ2eGVxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkyOTExNTcsImV4cCI6MjEwNDg2NzE1N30.a55h-eJPWQPF0kMlx-PGeeecwSIzdEVoZ4y5dIGWbV8';
+
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false }
+});
+
+const $ = (id) => document.getElementById(id);
+const log = (msg, cls) => {
+  const el = $('migrateLog'); el.classList.remove('hidden');
+  const line = document.createElement('div'); if (cls) line.className = cls;
+  line.textContent = msg; el.appendChild(line); el.scrollTop = el.scrollHeight;
+};
+const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+const randHex = (n) => Array.from({length:n}, () => Math.floor(Math.random()*16).toString(16)).join('');
+const randCode = () => { const a='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; return Array.from({length:6}, () => a[Math.floor(Math.random()*a.length)]).join(''); };
+
+let CURRENT_COMPANY = null;
+
+/* ---------- STEP 1: AUTH ---------- */
+async function uid() { const { data } = await sb.auth.getUser(); return data.user && data.user.id; }
+
+async function doSignup() {
+  const email = $('email').value.trim(), pw = $('pw').value;
+  if (!email || pw.length < 8) { $('authMsg').textContent = '请填写邮箱，密码至少 8 位。'; return; }
+  $('authMsg').textContent = '注册中…';
+  const { data, error } = await sb.auth.signUp({ email, password: pw });
+  if (error) { $('authMsg').textContent = '注册失败：' + error.message; return; }
+  if (!data.session) {
+    $('authMsg').innerHTML = '<span class="warn">账号已创建，但需验证邮箱：请查收确认邮件并点击链接，然后回到本页点"登录已有账号"。</span>（或到 Supabase → Authentication → Providers 关闭 Email confirm 后重试）';
+    return;
+  }
+  onAuthed();
+}
+async function doSignin() {
+  const email = $('email').value.trim(), pw = $('pw').value;
+  if (!email || !pw) { $('authMsg').textContent = '请填写邮箱和密码。'; return; }
+  $('authMsg').textContent = '登录中…';
+  const { data, error } = await sb.auth.signInWithPassword({ email, password: pw });
+  if (error) { $('authMsg').textContent = '登录失败：' + error.message; return; }
+  onAuthed();
+}
+async function onAuthed() {
+  $('cardAuth').classList.add('hidden');
+  $('cardCompany').classList.remove('hidden');
+  await renderCompanyStep();
+}
+
+/* ---------- STEP 2: COMPANY ---------- */
+async function renderCompanyStep() {
+  const me = await uid();
+  const { data, error } = await sb.from('companies').select('*');
+  const mine = (data || []).filter(c => c.owner_id === me);
+  const area = $('companyArea');
+  if (mine.length === 0) {
+    area.innerHTML = `
+      <div class="mut" style="font-size:13px;margin-bottom:8px">你还没有公司，新建一个（默认永久会员，不会过期）：</div>
+      <label>公司名称</label>
+      <input id="coName" value="Ant Motors" />
+      <button id="btnCreateCo">创建公司并继续</button>`;
+    $('btnCreateCo').onclick = createCompany;
+  } else {
+    const opts = mine.map(c => `<option value="${c.id}">${c.name} (${c.code})</option>`).join('');
+    area.innerHTML = `
+      <div class="mut" style="font-size:13px;margin-bottom:8px">选择要把数据迁入的公司：</div>
+      <select id="coSelect" style="width:100%;padding:10px;background:var(--card2);border:1px solid var(--line);border-radius:8px;color:var(--txt)">${opts}</select>
+      <div class="row">
+        <button id="btnUseCo">使用选中公司</button>
+        <button id="btnNewCo" class="ghost">或新建另一家</button>
+      </div>`;
+    $('btnUseCo').onclick = () => { CURRENT_COMPANY = $('coSelect').value; goMigrate(); };
+    $('btnNewCo').onclick = () => { area.innerHTML = `
+      <label>公司名称</label><input id="coName" value="Ant Motors" />
+      <button id="btnCreateCo">创建公司并继续</button>`; $('btnCreateCo').onclick = createCompany; };
+  }
+}
+async function createCompany() {
+  const me = await uid();
+  const name = ($('coName').value || 'Ant Motors').trim().slice(0, 80);
+  const id = 'co_' + randHex(6);
+  const code = 'ANT-' + randCode();
+  const { error } = await sb.from('companies').insert({
+    id, name, owner_id: me, code, plan: 'trial', status: 'active',
+    permanent: 1, created_at: Date.now()
+  });
+  if (error) { alert('创建公司失败：' + error.message); return; }
+  await sb.from('company_members').insert({ user_id: me, company_id: id, role: 'owner' });
+  CURRENT_COMPANY = id;
+  goMigrate();
+}
+function goMigrate() {
+  $('cardCompany').classList.add('hidden');
+  $('cardMigrate').classList.remove('hidden');
+  scanLocal();
+}
+
+/* ---------- STEP 3: SCAN + MIGRATE ---------- */
+function readLS(k) { try { return JSON.parse(localStorage.getItem(k) || (k.endsWith(']') ? '[]' : '{}')); } catch (e) { return null; } }
+function scanLocal() {
+  const cars = readLS('am_cars') || {};
+  const photos = readLS('am_car_photos') || {};
+  const emps = readLS('am_emps') || {};
+  const srs = readLS('am_showrooms') || [];
+  const nPh = Object.values(photos).reduce((a, v) => a + (Array.isArray(v) ? v.length : 0), 0);
+  const empIds = Object.keys(emps).filter(id => id !== 'boss');
+  $('scanArea').innerHTML =
+    `检测到本机缓存：<br>` +
+    `<span class="pill">车辆 ${Object.keys(cars).length}</span>` +
+    `<span class="pill">照片 ${nPh}</span>` +
+    `<span class="pill">员工 ${empIds.length}</span>` +
+    `<span class="pill">展厅 ${Array.isArray(srs) ? srs.length : 0}</span><br><br>` +
+    `<span class="mut">点"开始迁移"将以上数据写入公司 <b>${CURRENT_COMPANY}</b>。可重复运行（幂等，不会重复建数据）。</span>`;
+}
+function normCar(id, entry) {
+  let data = {}, listedAt = null, updatedAt = Date.now(), deleted = 0;
+  if (entry && typeof entry === 'object') {
+    if (entry.data && typeof entry.data === 'object') {
+      data = Object.assign({}, entry.data);
+      listedAt = entry.listedAt || null; updatedAt = entry.updatedAt || Date.now(); deleted = entry.deleted ? 1 : 0;
+    } else {
+      data = Object.assign({}, entry);
+      delete data.listedAt; delete data.updatedAt; delete data.deleted; delete data.companyId; delete data.company_id;
+    }
+  }
+  delete data.id;
+  return { data, listedAt, updatedAt, deleted };
+}
+async function migrate() {
+  $('btnMigrate').disabled = true;
+  log('开始迁移 → 公司 ' + CURRENT_COMPANY, 'ok');
+  const cid = CURRENT_COMPANY;
+  const cars = readLS('am_cars') || {};
+  const photos = readLS('am_car_photos') || {};
+  let carN = 0, phN = 0, srN = 0, empN = 0, fail = 0;
+
+  for (const id of Object.keys(cars)) {
+    try {
+      const n = normCar(id, cars[id]);
+      const { error } = await sb.from('cars').upsert({
+        id, company_id: cid, data: n.data, listed_at: n.listedAt, updated_at: n.updatedAt, deleted: n.deleted
+      });
+      if (error) { log('✗ 车 ' + id + ': ' + error.message, 'err'); fail++; }
+      else { carN++; }
+    } catch (e) { log('✗ 车 ' + id + ': ' + e.message, 'err'); fail++; }
+    const arr = photos[id];
+    if (Array.isArray(arr)) {
+      for (let i = 0; i < Math.min(arr.length, 12); i++) {
+        try {
+          const { error } = await sb.from('photos').upsert({ car_id: id, company_id: cid, idx: i, data: arr[i] });
+          if (!error) phN++;
+        } catch (e) { /* skip oversized */ }
+      }
+    }
+  }
+
+  const srs = readLS('am_showrooms') || [];
+  if (Array.isArray(srs)) {
+    for (let i = 0; i < srs.length; i++) {
+      const s = srs[i]; const sid = s.id || s.name || ('sr_' + i);
+      try {
+        const { error } = await sb.from('showrooms').upsert({ id: sid, company_id: cid, data: s, updated_at: Date.now() });
+        if (!error) srN++;
+      } catch (e) {}
+    }
+  }
+
+  const emps = readLS('am_emps') || {};
+  for (const id of Object.keys(emps)) {
+    if (id === 'boss') continue;
+    try {
+      const { error } = await sb.from('employees').upsert({
+        id, company_id: cid, user_id: null, data: emps[id], updated_at: Date.now(), deleted: 0
+      });
+      if (!error) empN++;
+    } catch (e) {}
+  }
+
+  log(`\n完成 ✓  车辆 ${carN} · 照片 ${phN} · 展厅 ${srN} · 员工 ${empN} · 失败 ${fail}`, fail ? 'warn' : 'ok');
+  if (fail) log('部分失败通常是 RLS/字段问题，可重试或把上方日志发我。', 'mut');
+  else log('全部成功。下一步：部署前端连接到这个 Supabase 项目。', 'ok');
+  $('btnMigrate').disabled = false;
+}
+
+$('btnSignup').onclick = doSignup;
+$('btnSignin').onclick = doSignin;
+$('btnMigrate').onclick = migrate;
+</script>
+</body>
+</html>

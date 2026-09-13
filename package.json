@@ -1,8 +1,8 @@
 {
-  "name": "antmotors-sync",
+  "name": "antmotors",
   "version": "1.0.0",
   "private": true,
-  "description": "ANT MOTORS PWA + multi-tenant sync server (serves frontend and API from one port)",
+  "description": "ANT MOTORS PWA + multi-tenant sync server / Cloudflare Pages Functions backend (Supabase)",
   "main": "server/server.js",
   "scripts": {
     "start": "node --experimental-sqlite server/server.js",
@@ -11,5 +11,8 @@
   },
   "engines": {
     "node": ">=22.13.0"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0"
   }
 }
