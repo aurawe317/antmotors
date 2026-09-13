@@ -238,12 +238,12 @@ async function applyPush(emp, payload) {
 async function pull(since, withPhotos, companyId) {
   const s = +since || 0;
   const { data: cars } = await sb.from('cars').select('*').eq('company_id', companyId).gt('updated_at', s).order('updated_at', { ascending: true });
-  const carList = (cars || []).map(r => ({
+  const carList = await Promise.all((cars || []).map(async (r) => ({
     id: r.id, companyId: r.company_id, data: r.data, listedAt: r.listed_at,
     updatedAt: r.updated_at, updatedBy: r.updated_by, deleted: !!r.deleted,
     photos: withPhotos ? await photosOf(r.id, companyId) : undefined,
     videos: withPhotos ? await videosOf(r.id, companyId) : undefined
-  }));
+  })));
   const { data: emps } = await sb.from('employees').select('*').eq('company_id', companyId).gt('updated_at', s).order('updated_at', { ascending: true });
   const empList = (emps || []).map(r => ({ id: r.id, companyId: r.company_id, data: r.data, updatedAt: r.updated_at, deleted: !!r.deleted }));
   return { now: now(), cars: carList, employees: empList };
