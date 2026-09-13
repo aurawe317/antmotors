@@ -6,6 +6,7 @@
 - `package.json`    声明 `@supabase/supabase-js`（Cloudflare 构建时会打包）
 - `supabase-schema.sql`   多租户 schema + RLS（基础表结构）
 - `supabase-schema-patch.sql`  **补丁 1：补齐代码用到但基础 schema 缺的列**（必须执行，见步骤 0）
+- `supabase-grants.sql`        **补丁 2：表级 GRANT 授权**（必须执行，见步骤 0）
 - `migrate-to-supabase.html` / `migrate-console.js`   浏览器数据 → Supabase 迁移工具
 - `native/`         Capacitor iOS/Android 壳（本地构建，已配置加载线上 URL）
 
@@ -23,6 +24,11 @@
 - `tokens`: `expires_at`
 
 **不做这一步，注册会在建公司那一步失败**（`column companies.trial_ends_at does not exist`）。脚本幂等，可重复执行。
+
+### 0b. 表级授权 GRANT（必做，一次性）
+同一个 SQL Editor，再粘贴 `supabase-grants.sql` 全部内容 → Run。
+**不做这一步，注册会报 `permission denied for table companies`（42501）。**
+注意：`service_role` 有 `BYPASSRLS` 不等于有表级权限——GRANT 缺失时连 service_role 也会被拒；RLS 已启用，授权本身是安全的。脚本幂等（末尾会 `notify pgrst, 'reload schema'` 让 PostgREST 立刻刷新缓存）。
 
 ### 1. 设置 Cloudflare Pages
 - 登录 Cloudflare Dashboard → Workers & Pages → Create → Pages → 连接 Git 仓库。

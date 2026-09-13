@@ -330,26 +330,58 @@ export async function onRequest(context) {
   if (!p.startsWith('/api/')) return send(404, { error: 'no_route' });
 
   try {
-    /* health — now honestly reports Supabase connectivity. `build` identifies the deploy. */
+    /* health — honestly reports Supabase DB + Auth + key sanity. `build` identifies the deploy.
+     * NOTE: use body-carrying GETs (not head:true) and a real error extractor — a HEAD request
+     * has no response body, so err.message came back empty and `|| null` masked real failures. */
     if (p === '/api/health') {
-      const dbCheck = await sb.from('cars').select('*', { count: 'exact', head: true }).eq('deleted', 0);
-      const coCheck = await sb.from('companies').select('*', { count: 'exact', head: true });
-      let authErr = null;
+      const errText = (r) => {
+        if (!r || !r.error) return null;
+        const e = r.error;
+        return e.message || e.hint || e.code || e.details || JSON.stringify(e);
+      };
+      let dbErr = null, authErr = null, cars = 0, companies = 0, keyWarn = null;
       try {
-        const authCheck = await sb.auth.admin.listUsers({ page: 1, perPage: 1 });
-        authErr = (authCheck.error && authCheck.error.message) || null;
+        const c = await sb.from('cars').select('id', { count: 'exact' }).eq('deleted', 0).limit(1);
+        dbErr = errText(c); cars = c.count || 0;
+      } catch (e) { dbErr = String((e && e.message) || e); }
+      if (!dbErr) {
+        try {
+          const c2 = await sb.from('companies').select('id', { count: 'exact' }).limit(1);
+          dbErr = errText(c2); companies = c2.count || 0;
+        } catch (e) { dbErr = String((e && e.message) || e); }
+      }
+      try {
+        const a = await sb.auth.admin.listUsers({ page: 1, perPage: 1 });
+        authErr = errText(a);
       } catch (e) { authErr = String((e && e.message) || e); }
-      const dbErr = (dbCheck.error && dbCheck.error.message) || (coCheck.error && coCheck.error.message) || null;
-      const base = { build: 'ref-fixed-1', now: now(), version: 2, backend: APP_VER };
-      if (dbErr || authErr) {
+      // key sanity: is the configured key really a service_role key?
+      try {
+        const k = SUPABASE_KEY || '';
+        if (!k) keyWarn = 'key_missing';
+        else if (!k.startsWith('sb_secret_')) {
+          const seg = k.split('.');
+          if (seg.length !== 3) keyWarn = 'key_not_jwt_unrecognised_format';
+          else {
+            let pad = seg[1].replace(/-/g, '+').replace(/_/g, '/');
+            pad += '='.repeat((4 - (pad.length % 4)) % 4);
+            const role = (JSON.parse(atob(pad)) || {}).role;
+            if (role !== 'service_role') keyWarn = 'configured_key_role_is_' + role;
+          }
+        }
+      } catch (e) { keyWarn = 'key_decode_failed'; }
+      const base = { build: 'grants-fixed-2', now: now(), version: 2, backend: APP_VER };
+      if (dbErr || authErr || keyWarn) {
         return send(503, Object.assign({
-          ok: false, dbError: dbErr, authError: authErr,
-          hint: (authErr && /53\d|1016|unreachable|fetch failed|network/i.test(authErr))
-            ? 'Supabase endpoint unreachable from Cloudflare (DNS/origin error). Check the project URL/ref and that the Supabase project is running.'
-            : 'supabase_unreachable'
+          ok: false, dbError: dbErr, authError: authErr, keyWarn,
+          hint: dbErr && /permission denied/i.test(dbErr)
+            ? 'Table privileges missing (42501). Run supabase-grants.sql in the Supabase SQL Editor.'
+            : (keyWarn ? 'The Cloudflare secret SUPABASE_SERVICE_ROLE_KEY does not look like a service_role key. Re-copy it from Supabase → Settings → API.'
+              : (authErr && /53\d|1016|unreachable|fetch failed|network/i.test(authErr)
+                ? 'Supabase endpoint unreachable from Cloudflare (DNS/origin error). Check the project URL/ref.'
+                : 'supabase_unreachable'))
         }, base));
       }
-      return send(200, Object.assign({ ok: true, cars: dbCheck.count || 0, companies: coCheck.count || 0 }, base));
+      return send(200, Object.assign({ ok: true, cars, companies }, base));
     }
 
     /* login (Supabase Auth) */
