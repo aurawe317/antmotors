@@ -3,8 +3,10 @@ pages_build_output_dir = "app"
 compatibility_date = "2024-09-23"
 compatibility_flags = ["nodejs_compat"]
 
-# 环境变量请在 Cloudflare Pages 控制台 → Settings → Environment variables 设置：
-#   SUPABASE_URL              = https://<your-ref>.supabase.co
-#   SUPABASE_SERVICE_ROLE_KEY = <service_role key>   ← 用「Secret / 加密变量」形式存放，切勿提交到代码库
+[vars]
+SUPABASE_URL = "https://mcjvlohnyfkvmftrvxeq.supabase.co"
+
+# 敏感密钥请在 Cloudflare Pages 控制台 → Settings → Environment variables 里以「Secret / 加密变量」形式存放：
+#   SUPABASE_SERVICE_ROLE_KEY = <service_role key>   ← 切勿提交到代码库
 #
-# 本地预览：wrangler pages dev --binding SUPABASE_URL=... --binding SUPABASE_SERVICE_ROLE_KEY=...
+# 本地预览：wrangler pages dev --binding SUPABASE_SERVICE_ROLE_KEY=...
