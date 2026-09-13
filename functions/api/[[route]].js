@@ -283,11 +283,23 @@ export async function onRequest(context) {
   if (!p.startsWith('/api/')) return send(404, { error: 'no_route' });
 
   try {
-    /* health */
+    /* health — now honestly reports Supabase connectivity */
     if (p === '/api/health') {
-      const { count } = await sb.from('cars').select('*', { count: 'exact', head: true }).eq('deleted', 0);
-      const { count: cos } = await sb.from('companies').select('*', { count: 'exact', head: true });
-      return send(200, { ok: true, cars: count || 0, companies: cos || 0, now: now(), version: 2, backend: APP_VER });
+      const dbCheck = await sb.from('cars').select('*', { count: 'exact', head: true }).eq('deleted', 0);
+      const coCheck = await sb.from('companies').select('*', { count: 'exact', head: true });
+      const authCheck = await sb.auth.admin.listUsers({ page: 1, perPage: 1 });
+      const dbErr = (dbCheck.error && dbCheck.error.message) || (coCheck.error && coCheck.error.message) || null;
+      const authErr = (authCheck.error && authCheck.error.message) || null;
+      if (dbErr || authErr) {
+        return send(503, {
+          ok: false,
+          dbError: dbErr,
+          authError: authErr,
+          hint: authErr && /530/i.test(authErr) ? 'Supabase Auth returned HTTP 530. Try restarting the project in Supabase Dashboard.' : 'supabase_unreachable',
+          now: now(), version: 2, backend: APP_VER
+        });
+      }
+      return send(200, { ok: true, cars: dbCheck.count || 0, companies: coCheck.count || 0, now: now(), version: 2, backend: APP_VER });
     }
 
     /* login (Supabase Auth) */
@@ -348,7 +360,13 @@ export async function onRequest(context) {
           const sign = await sb.auth.signInWithPassword({ email, password: pw });
           if (sign.data && sign.data.user) { authUser = sign.data.user; authErr = null; }
         }
-        if (authErr) return send(400, { error: 'auth_create_failed', detail: authErr.message });
+        if (authErr) {
+          const msg = authErr.message || String(authErr);
+          if (/530/i.test(msg)) {
+            return send(503, { error: 'auth_create_failed', detail: 'Supabase Auth returned HTTP 530 (origin unreachable). Please open Supabase Dashboard → ant motors → Restart project, wait 30s, then try again.', retryAfter: 30 });
+          }
+          return send(400, { error: 'auth_create_failed', detail: msg });
+        }
         authUserId = authUser.id;
       }
 
