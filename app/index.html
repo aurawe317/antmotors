@@ -4115,7 +4115,10 @@ window.addEventListener('online',()=>syncNow(true));
 setInterval(()=>{ if(SYNC.base&&SYNC.token&&!document.hidden) syncNow(true); },60000);
 /* ---- full data backup / restore (JSON file) ---- */
 function exportData(){
-  const data={ v:1, cars:CARS, saved:[...SAVED_CARS], recent:RECENT_CARS, employees:ALL_EMP };
+  // v2 also carries photos / videos / listed-at. They used to be left out, so restoring a
+  // backup silently lost every car photo. Keep them in so a backup is truly complete.
+  const data={ v:2, cars:CARS, saved:[...SAVED_CARS], recent:RECENT_CARS, employees:ALL_EMP,
+               photos:CAR_PHOTOS, videos:CAR_VIDEOS, listed:LISTED_AT };
   const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   a.download='antmotors-backup-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
@@ -4134,7 +4137,10 @@ function importData(e){
     if(d.saved) SAVED_CARS=new Set(d.saved);
     if(d.recent) RECENT_CARS=d.recent;
     if(d.employees) for(const k in d.employees){ if(ALL_EMP[k]){ Object.assign(ALL_EMP[k],d.employees[k]); SYNC.emps[k]=Date.now(); nEmp++; } }
-    saveCars(); saveSet(); saveRecent(); saveEmps();
+    if(d.photos) for(const k in d.photos) CAR_PHOTOS[k]=d.photos[k];
+    if(d.videos) for(const k in d.videos) CAR_VIDEOS[k]=d.videos[k];
+    if(d.listed) for(const k in d.listed) LISTED_AT[k]=d.listed[k];
+    saveCars(); saveSet(); saveRecent(); saveEmps(); saveCarPhotos(); saveCarVideos(); saveListed();
     jsave('am_dirty_cars',SYNC.cars); jsave('am_dirty_emps',SYNC.emps);
     renderHome(); renderStock(); updateRoleUI();
     toast(T('backupRestored','Backup restored'));
