@@ -21,6 +21,12 @@ create index if not exists idx_employees_email on public.employees(lower(email))
 -- ---- tokens：会话过期时间（代码里在写、在读）----
 alter table public.tokens add column if not exists expires_at bigint;
 
+-- ---- cars：updated_by 从 uuid 改为 text，与 employees.id 一致 ----
+-- 修复：后端 applyPush 写入 cars.updated_by 时用的是 employees.id（text 类型，
+--      如 'Marina'），但原 schema 中 cars.updated_by 是 uuid，导致 upsert 失败。
+--      该列无外键约束，可安全改类型。
+alter table public.cars alter column updated_by type text;
+
 -- ============================================================
 -- 完成。回到 Cloudflare 重新部署一次即可。
 -- ============================================================

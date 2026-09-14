@@ -213,20 +213,28 @@ async function photosOf(id, cid) {
   return (data || []).map(r => r.data);
 }
 async function writePhotos(id, arr, cid) {
-  await sb.from('photos').delete().eq('car_id', id).eq('company_id', cid);
+  const { error: delErr } = await sb.from('photos').delete().eq('car_id', id).eq('company_id', cid);
+  if (delErr) throw new Error('photos_delete_failed: ' + delErr.message);
   if (!Array.isArray(arr)) return;
   const rows = arr.slice(0, 12).filter(d => typeof d === 'string' && d.length < 6e6).map((d, i) => ({ car_id: id, company_id: cid, idx: i, data: d }));
-  if (rows.length) await sb.from('photos').insert(rows);
+  if (rows.length) {
+    const { error } = await sb.from('photos').insert(rows);
+    if (error) throw new Error('photos_insert_failed: ' + error.message);
+  }
 }
 async function videosOf(id, cid) {
   const { data } = await sb.from('videos').select('data').eq('car_id', id).eq('company_id', cid).order('idx', { ascending: true });
   return (data || []).map(r => r.data);
 }
 async function writeVideos(id, arr, cid) {
-  await sb.from('videos').delete().eq('car_id', id).eq('company_id', cid);
+  const { error: delErr } = await sb.from('videos').delete().eq('car_id', id).eq('company_id', cid);
+  if (delErr) throw new Error('videos_delete_failed: ' + delErr.message);
   if (!Array.isArray(arr)) return;
   const rows = arr.slice(0, 3).filter(d => typeof d === 'string' && d.length < 25e6).map((d, i) => ({ car_id: id, company_id: cid, idx: i, data: d }));
-  if (rows.length) await sb.from('videos').insert(rows);
+  if (rows.length) {
+    const { error } = await sb.from('videos').insert(rows);
+    if (error) throw new Error('videos_insert_failed: ' + error.message);
+  }
 }
 
 /* --------------------------------------------------------------------- sync */
@@ -267,7 +275,8 @@ async function applyPush(emp, payload) {
         else { rejected.push({ id: c.id, reason: 'price_forbidden' }); continue; }
       }
     }
-    await sb.from('cars').upsert({ id: c.id, company_id: cid, data: incoming, listed_at: c.listedAt || null, updated_at: ts, updated_by: emp.id, deleted: c.deleted ? 1 : 0 }, { onConflict: 'id,company_id' });
+    const { error: carErr } = await sb.from('cars').upsert({ id: c.id, company_id: cid, data: incoming, listed_at: c.listedAt || null, updated_at: ts, updated_by: emp.id, deleted: c.deleted ? 1 : 0 }, { onConflict: 'id,company_id' });
+    if (carErr) { rejected.push({ id: c.id, reason: carErr.message || 'upsert_failed' }); continue; }
     if (c.photos) await writePhotos(c.id, c.photos, cid);
     if (c.videos) await writeVideos(c.id, c.videos, cid);
     applied.push(c.id);
@@ -369,7 +378,7 @@ export async function onRequest(context) {
           }
         }
       } catch (e) { keyWarn = 'key_decode_failed'; }
-      const base = { build: 'grants-fixed-2', now: now(), version: 2, backend: APP_VER };
+      const base = { build: 'cars-updated_by-text', now: now(), version: 2, backend: APP_VER };
       if (dbErr || authErr || keyWarn) {
         return send(503, Object.assign({
           ok: false, dbError: dbErr, authError: authErr, keyWarn,
