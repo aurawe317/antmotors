@@ -450,7 +450,7 @@ export async function onRequest(context) {
           }
         }
       } catch (e) { keyWarn = 'key_decode_failed'; }
-      const base = { build: 'photomig-paged', now: now(), version: 2, backend: APP_VER };
+      const base = { build: 'photomig-cpk', now: now(), version: 2, backend: APP_VER };
       if (dbErr || authErr || keyWarn) {
         return send(503, Object.assign({
           ok: false, dbError: dbErr, authError: authErr, keyWarn,
@@ -639,13 +639,24 @@ export async function onRequest(context) {
       async function migrateTable(table, kind) {
         let start = 0;
         while (true) {
+          // photos/videos have a composite PK (car_id, idx, company_id) — no `id`
+          // column. Select the real columns and update by the composite key.
           const { data: rows, error } = await sb.from(table)
-            .select('id,car_id,company_id,data').range(start, start + 4);
+            .select('car_id,company_id,idx,data')
+            .order('company_id').order('car_id').order('idx')
+            .range(start, start + 4);
           if (error) { lastError = (lastError ? lastError + ' | ' : '') + table + ': ' + (error.message || error); errors++; break; }
           if (!rows || !rows.length) break;
           for (const r of rows) {
             if (!r.data || /^https?:\/\//.test(r.data)) { skipped++; continue; }
-            try { const url = await uploadToStorage(r.data, r.company_id, r.car_id, kind); await sb.from(table).update({ data: url }).eq('id', r.id); migrated++; }
+            try {
+              const url = await uploadToStorage(r.data, r.company_id, r.car_id, kind);
+              const { error: ue } = await sb.from(table)
+                .update({ data: url })
+                .eq('car_id', r.car_id).eq('company_id', r.company_id).eq('idx', r.idx);
+              if (ue) throw new Error(ue.message || ue);
+              migrated++;
+            }
             catch (e) { errors++; }
           }
           if (rows.length < 5) break;
