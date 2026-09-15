@@ -268,7 +268,7 @@ async function writePhotos(id, arr, cid) {
     seen.add(value);
     rows.push({ car_id: id, company_id: cid, idx: nextIdx, data: value });
     nextIdx++;
-    if (rows.length >= 12) break;
+    if (rows.length >= 30) break;
   }
   if (!rows.length) return;
   const { error } = await sb.from('photos').insert(rows);
@@ -295,7 +295,7 @@ async function writeVideos(id, arr, cid) {
     seen.add(value);
     rows.push({ car_id: id, company_id: cid, idx: nextIdx, data: value });
     nextIdx++;
-    if (rows.length >= 3) break;
+    if (rows.length >= 8) break;
   }
   if (!rows.length) return;
   const { error } = await sb.from('videos').insert(rows);
@@ -450,7 +450,7 @@ export async function onRequest(context) {
           }
         }
       } catch (e) { keyWarn = 'key_decode_failed'; }
-      const base = { build: 'photopub-fix', now: now(), version: 2, backend: APP_VER };
+      const base = { build: 'photofix2-sav', now: now(), version: 2, backend: APP_VER };
       if (dbErr || authErr || keyWarn) {
         return send(503, Object.assign({
           ok: false, dbError: dbErr, authError: authErr, keyWarn,

@@ -2373,7 +2373,7 @@ function loadCarVideos(){}
 // Persist car photos to localStorage so they survive a refresh WITHOUT depending on a
 // successful server sync. Photos are now short Storage URLs (not base64 blobs), so the
 // payload is tiny and there is no longer any per-origin quota risk.
-function saveCarPhotos(){ try{ localStorage.setItem('am_car_photos', JSON.stringify(CAR_PHOTOS)); }catch(e){ /* quota — ignore */ } }
+function saveCarPhotos(){ try{ const o={}; for(const k in CAR_PHOTOS){ const arr=(CAR_PHOTOS[k]||[]).filter(p=>typeof p==='string' && p.startsWith('http')); if(arr.length) o[k]=arr; } localStorage.setItem('am_car_photos', JSON.stringify(o)); }catch(e){ /* quota — ignore */ } }
 function loadCarPhotos(){ try{ const o=JSON.parse(localStorage.getItem('am_car_photos')||'null'); if(o) Object.assign(CAR_PHOTOS,o); }catch(e){} }
 function saveShowroomPhotos(){ jsave('am_showroom_photos',SHOWROOM_PHOTOS); }
 function loadShowroomPhotos(){ const o=jload('am_showroom_photos',null); if(o) Object.assign(SHOWROOM_PHOTOS,o); }
@@ -3490,13 +3490,14 @@ async function bootstrap(){
       // (updated_at > since), so a normal refresh with an up-to-date cursor returns nothing —
       // leaving the homepage empty until the user manually clicks sync. A full pull guarantees
       // the complete inventory + staff roster load every time. (cheap at a dealership's scale)
-      // We boot with a LIGHT pull (metadata only, photos=0) so the inventory + account appear in
-      // SECONDS instead of blocking ~1 min for every base64 photo to download. Photos are then
-      // lazy-loaded per card (see lazyPhotoObserve) as they scroll into view.
+      // Photos used to be multi-MB base64 blobs, so we booted with photos=0 and lazy-loaded them
+      // per card. Since the B-plan migration, every photo is a tiny Storage URL, so pulling photos
+      // on boot is now cheap AND makes refreshes restore the gallery from the server directly
+      // (instead of depending on localStorage, which used to overflow and silently drop photos).
       SYNC.since=0; try{ localStorage.setItem('am_since','0'); }catch(e){}
-      await syncNow(true, false);
+      await syncNow(true, true);
       loaded=true;
-      lazyPhotoObserve(); // fire-and-forget: stream in each car's photos as cards become visible
+      lazyPhotoObserve(); // fire-and-forget: stream in any remaining photos as cards become visible
     }
     catch(e){ if(e.status===401) onSessionExpired(); error=e; console.error('auth pull failed', e); }
     // Membership refresh must NEVER block the car load / account resolution above.
