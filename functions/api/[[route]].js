@@ -208,56 +208,91 @@ async function ensureEmployeeForUser(authUser, companyId, role) {
 }
 
 /* --------------------------------------------------------------------- photos/videos */
+// B-plan: photos/videos are stored as Supabase Storage URLs (NOT base64 in the DB).
+// Uploads go through /api/upload (service_role) so the client never touches a key.
+// Legacy clients still send base64 in their push payload — writePhotos/writeVideos
+// auto-upload those to Storage and converge on URL-only storage.
+let _bucketReady = false;
+async function ensureBucket(sb) {
+  if (_bucketReady) return;
+  try { await sb.storage.createBucket('car-photos', { public: true }); } catch (e) { /* exists / noop */ }
+  _bucketReady = true;
+}
+async function uploadToStorage(dataUrl, cid, carId, kind) {
+  const m = /^data:([^;]+);base64,(.*)$/.exec(dataUrl || '');
+  if (!m) throw new Error('bad_dataurl');
+  const contentType = m[1] || 'application/octet-stream';
+  const ext = (contentType.split('/')[1] || 'bin').replace(/[^a-z0-9]/gi, '');
+  const bin = atob(m[2]);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  const path = `${cid}/${carId || 'unknown'}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  await ensureBucket(sb);
+  const { data, error } = await sb.storage.from('car-photos').upload(path, bytes, { contentType, upsert: true });
+  if (error) throw new Error('storage_upload_failed: ' + (error.message || error));
+  return `${SUPABASE_URL_FIXED}/storage/v1/object/public/car-photos/${path}`;
+}
 async function photosOf(id, cid) {
-  const { data } = await sb.from('photos').select('data').eq('car_id', id).eq('company_id', cid).order('idx', { ascending: true });
-  return (data || []).map(r => r.data);
+  const { data } = await sb.from('photos').select('*').eq('car_id', id).eq('company_id', cid).order('idx', { ascending: true });
+  return (data || []).map(r => r.url || r.data).filter(Boolean);
 }
 async function writePhotos(id, arr, cid) {
-  // Additive merge (NOT delete+replace): photos are lazy-loaded per device, so a client
-  // only holds its own photos. The old DELETE-ALL + re-INSERT wiped every teammate's photos
-  // for the car the moment anyone pushed — that's why uploads "disappeared". Now we keep
-  // whatever is already on the server and only INSERT new, de-duplicated photos (capped at 12).
   if (!Array.isArray(arr)) return;
-  const { data: existing } = await sb.from('photos').select('data, idx').eq('car_id', id).eq('company_id', cid);
-  const have = new Set((existing || []).map(r => r.data));
+  const { data: existing } = await sb.from('photos').select('*').eq('car_id', id).eq('company_id', cid);
+  const have = new Set((existing || []).map(r => r.url || r.data));
   let nextIdx = (existing || []).reduce((m, r) => Math.max(m, (r.idx || 0) + 1), 0);
   const seen = new Set();
-  const rows = [];
+  const rows = []; const rawRows = [];
   for (const d of arr) {
     if (typeof d !== 'string' || d.length >= 6e6) continue;
-    if (have.has(d) || seen.has(d)) continue;   // already on server, or duplicate within this batch
+    if (have.has(d) || seen.has(d)) continue;
     seen.add(d);
-    rows.push({ car_id: id, company_id: cid, idx: nextIdx++, data: d });
+    let url = d, raw = d;
+    if (!/^https?:\/\//.test(d)) { try { url = await uploadToStorage(d, cid, id, 'photo'); } catch (e) { url = null; } }
+    if (!url) continue;
+    rows.push({ car_id: id, company_id: cid, idx: nextIdx, url });
+    rawRows.push({ car_id: id, company_id: cid, idx: nextIdx, data: raw });
+    nextIdx++;
     if (rows.length >= 12) break;
   }
-  if (rows.length) {
-    const { error } = await sb.from('photos').insert(rows);
-    if (error) throw new Error('photos_insert_failed: ' + error.message);
-  }
+  if (!rows.length) return;
+  const { error } = await sb.from('photos').insert(rows);
+  if (error && /url/i.test(error.message || '')) {
+    // url column not migrated yet → fall back to legacy data column so the deploy
+    // doesn't break before supabase-add-url-columns.sql is run.
+    const { error: e2 } = await sb.from('photos').insert(rawRows);
+    if (e2) throw new Error('photos_insert_failed: ' + e2.message);
+  } else if (error) throw new Error('photos_insert_failed: ' + error.message);
 }
 async function videosOf(id, cid) {
-  const { data } = await sb.from('videos').select('data').eq('car_id', id).eq('company_id', cid).order('idx', { ascending: true });
-  return (data || []).map(r => r.data);
+  const { data } = await sb.from('videos').select('*').eq('car_id', id).eq('company_id', cid).order('idx', { ascending: true });
+  return (data || []).map(r => r.url || r.data).filter(Boolean);
 }
 async function writeVideos(id, arr, cid) {
-  // Additive merge — same rationale as writePhotos (never wipe a teammate's videos).
   if (!Array.isArray(arr)) return;
-  const { data: existing } = await sb.from('videos').select('data, idx').eq('car_id', id).eq('company_id', cid);
-  const have = new Set((existing || []).map(r => r.data));
+  const { data: existing } = await sb.from('videos').select('*').eq('car_id', id).eq('company_id', cid);
+  const have = new Set((existing || []).map(r => r.url || r.data));
   let nextIdx = (existing || []).reduce((m, r) => Math.max(m, (r.idx || 0) + 1), 0);
   const seen = new Set();
-  const rows = [];
+  const rows = []; const rawRows = [];
   for (const d of arr) {
     if (typeof d !== 'string' || d.length >= 25e6) continue;
     if (have.has(d) || seen.has(d)) continue;
     seen.add(d);
-    rows.push({ car_id: id, company_id: cid, idx: nextIdx++, data: d });
+    let url = d, raw = d;
+    if (!/^https?:\/\//.test(d)) { try { url = await uploadToStorage(d, cid, id, 'video'); } catch (e) { url = null; } }
+    if (!url) continue;
+    rows.push({ car_id: id, company_id: cid, idx: nextIdx, url });
+    rawRows.push({ car_id: id, company_id: cid, idx: nextIdx, data: raw });
+    nextIdx++;
     if (rows.length >= 3) break;
   }
-  if (rows.length) {
-    const { error } = await sb.from('videos').insert(rows);
-    if (error) throw new Error('videos_insert_failed: ' + error.message);
-  }
+  if (!rows.length) return;
+  const { error } = await sb.from('videos').insert(rows);
+  if (error && /url/i.test(error.message || '')) {
+    const { error: e2 } = await sb.from('videos').insert(rawRows);
+    if (e2) throw new Error('videos_insert_failed: ' + e2.message);
+  } else if (error) throw new Error('videos_insert_failed: ' + error.message);
 }
 
 /* --------------------------------------------------------------------- sync */
@@ -741,6 +776,16 @@ export async function onRequest(context) {
       if (!row) return send(404, { error: 'not_found' });
       return send(200, { id: cid, photos: await photosOf(cid, emp.companyId), videos: await videosOf(cid, emp.companyId) });
     }
+    if (p === '/api/upload' && method === 'POST') {
+      const b = await readBody(req);
+      const dataUrl = b && b.dataUrl;
+      const carId = b && b.carId;
+      if (!dataUrl || typeof dataUrl !== 'string' || !/^data:/.test(dataUrl)) return send(400, { error: 'bad_dataurl' });
+      try {
+        const url = await uploadToStorage(dataUrl, emp.companyId, carId || 'unknown', 'photo');
+        return send(200, { ok: true, url });
+      } catch (e) { return send(500, { error: 'upload_failed', detail: String((e && e.message) || e) }); }
+    }
     if (p === '/api/pull') {
       const out = await pull(u.searchParams.get('since'), u.searchParams.get('photos') === '1', emp.companyId);
       return send(200, out);
@@ -776,6 +821,25 @@ export async function onRequest(context) {
       return send(200, { rows: data || [] });
     }
 
+    if (p === '/api/migrate-photos' && method === 'POST') {
+      const secret = u.searchParams.get('secret') || ((await readBody(req)).secret);
+      const EXP = env.MIGRATE_SECRET || 'am-migrate-2026';
+      if (secret !== EXP) return send(403, { error: 'forbidden' });
+      let migrated = 0, errors = 0;
+      const { data: prows } = await sb.from('photos').select('id,car_id,company_id,data');
+      for (const r of (prows || [])) {
+        if (!r.data || r.url) continue;
+        try { const url = await uploadToStorage(r.data, r.company_id, r.car_id, 'photo'); await sb.from('photos').update({ url }).eq('id', r.id); migrated++; }
+        catch (e) { errors++; }
+      }
+      const { data: vrows } = await sb.from('videos').select('id,car_id,company_id,data');
+      for (const r of (vrows || [])) {
+        if (!r.data || r.url) continue;
+        try { const url = await uploadToStorage(r.data, r.company_id, r.car_id, 'video'); await sb.from('videos').update({ url }).eq('id', r.id); migrated++; }
+        catch (e) { errors++; }
+      }
+      return send(200, { ok: true, migrated, errors });
+    }
     return send(404, { error: 'no_route' });
   } catch (e) {
     console.error('[err]', e && e.message, e && e.stack);

@@ -2089,7 +2089,18 @@ function renderHeroCarousel(){
 function carCover(k){ const p=CAR_PHOTOS[k]; return (p&&p.length)?p[0]:null; }
 // A valid stored photo is a real base64 image blob — rejects empty "data:," strings
 // (the broken-image "?" case) and any non-image data URL.
-function isPhotoOK(p){ return typeof p==='string' && /^data:image\/(jpeg|jpg|png|webp|gif);base64,/.test(p) && p.length>40; }
+function isPhotoOK(p){ return typeof p==='string' && p.length>4 && (/^data:image\/(jpeg|jpg|png|webp|gif);base64,/.test(p) || /^https?:\/\//.test(p)); }
+// Upload a cropped base64 media (image or video) to our /api/upload proxy, which stores it
+// in Supabase Storage and returns a CDN URL. Keeps the DB + sync payload tiny and lets the
+// browser cache images — no more base64 blobs in localStorage, no more flicker on slow nets.
+async function uploadMedia(dataUrl){
+  if(/^https?:\/\//.test(dataUrl)) return dataUrl; // already a URL — nothing to do
+  try{
+    const r=await api('/api/upload',{method:'POST',body:{dataUrl, carId:curCar}});
+    if(r && r.ok && r.url) return r.url;
+  }catch(e){ console.error('upload failed', e); }
+  return null;
+}
 function toggleFeatured(){
   const c=CARS[curCar]; if(!c) return;
   c.featured=!c.featured;
@@ -2360,9 +2371,9 @@ let SHOWROOM_PHOTOS={};
 function saveCarVideos(){}
 function loadCarVideos(){}
 // Persist car photos to localStorage so they survive a refresh WITHOUT depending on a
-// successful server sync. Capped (~3.6MB) to stay under the 5MB per-origin quota — if the
-// user has many/large photos the overflow silently falls back to server-only sync.
-function saveCarPhotos(){ try{ const json=JSON.stringify(CAR_PHOTOS); if(json.length>3600000) return; localStorage.setItem('am_car_photos', json); }catch(e){ /* quota — ignore, server sync remains source of truth */ } }
+// successful server sync. Photos are now short Storage URLs (not base64 blobs), so the
+// payload is tiny and there is no longer any per-origin quota risk.
+function saveCarPhotos(){ try{ localStorage.setItem('am_car_photos', JSON.stringify(CAR_PHOTOS)); }catch(e){ /* quota — ignore */ } }
 function loadCarPhotos(){ try{ const o=JSON.parse(localStorage.getItem('am_car_photos')||'null'); if(o) Object.assign(CAR_PHOTOS,o); }catch(e){} }
 function saveShowroomPhotos(){ jsave('am_showroom_photos',SHOWROOM_PHOTOS); }
 function loadShowroomPhotos(){ const o=jload('am_showroom_photos',null); if(o) Object.assign(SHOWROOM_PHOTOS,o); }
@@ -2577,16 +2588,18 @@ function frameRatio(sel, fallback){
 }
 
 /* ---- multi-photo: crop & adjust each selected image at full resolution ---- */
-function appendCarPhotoSingle(dataUrl){
+async function appendCarPhotoSingle(dataUrl){
+  const url=await uploadMedia(dataUrl);
+  if(!url){ toast(T('uploadFail','Upload failed — please retry')); return; }
   if(!CAR_PHOTOS[curCar]) CAR_PHOTOS[curCar]=[];
-  CAR_PHOTOS[curCar].push(dataUrl);
-  saveCarPhotos(); renderDetailThumbs(); markCarDirty(curCar);   // push to server so shared links show it
+  CAR_PHOTOS[curCar].push(url);
+  saveCarPhotos(); renderDetailThumbs(); markCarDirty(curCar);   // push URL to server so shared links show it
   toast(T('photoUp','Photo uploaded for')+' <b>'+(CARS[curCar]&&CARS[curCar].name)+'</b>');
 }
 // Crop each file one-by-one through the same 4:3 cropper so every photo is
 // individually adjusted. Export keeps source resolution (cap 2400px long edge),
-// so clarity is unchanged from a single add. Deferred via rAF so closeCropper()'s
-// _cropState=null doesn't clobber the next cropper we open from the callback.
+// so clarity is unchanged from a single add. Each cropped image is uploaded to
+// Storage (→ URL) before moving to the next — keeps the sync payload tiny.
 function cropCarPhotosSequential(files){
   const arr=Array.from(files||[]).filter(f=>f && f.type && f.type.indexOf('image/')===0);
   if(!arr.length){ toast(T('noPermPhoto','No valid image selected.')); return; }
@@ -2600,7 +2613,7 @@ function cropCarPhotosSequential(files){
     }
     const f=arr[i++];
     openCropper(f, 4/3,
-      dataUrl=>{ if(dataUrl && isPhotoOK(dataUrl)){ if(!CAR_PHOTOS[curCar]) CAR_PHOTOS[curCar]=[]; CAR_PHOTOS[curCar].push(dataUrl); added++; } requestAnimationFrame(advance); },
+      async (dataUrl)=>{ if(dataUrl && isPhotoOK(dataUrl)){ const url=await uploadMedia(dataUrl); if(url){ if(!CAR_PHOTOS[curCar]) CAR_PHOTOS[curCar]=[]; CAR_PHOTOS[curCar].push(url); added++; } } requestAnimationFrame(advance); },
       ()=>{ requestAnimationFrame(advance); }   // cancel one photo → skip to the next
     );
   };
