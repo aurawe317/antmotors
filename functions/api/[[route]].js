@@ -450,7 +450,7 @@ export async function onRequest(context) {
           }
         }
       } catch (e) { keyWarn = 'key_decode_failed'; }
-      const base = { build: 'photomig-cpk', now: now(), version: 2, backend: APP_VER };
+      const base = { build: 'photopub-fix', now: now(), version: 2, backend: APP_VER };
       if (dbErr || authErr || keyWarn) {
         return send(503, Object.assign({
           ok: false, dbError: dbErr, authError: authErr, keyWarn,
@@ -595,7 +595,7 @@ export async function onRequest(context) {
       const { data } = await sb.from('showrooms').select('data').eq('company_id', cid);
       return send(200, { company: cid, showrooms: (data || []).map(r => r.data) });
     }
-    if (p.startsWith('/api/public/car/')) {
+    if (p.startsWith('/api/public/car/') && !p.endsWith('/photos')) {
       const id = decodeURIComponent(p.slice('/api/public/car/'.length));
       const { data: row } = await sb.from('cars').select('*').eq('id', id).maybeSingle();
       if (!row) return send(404, { error: 'not_found' });
