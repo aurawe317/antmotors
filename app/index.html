@@ -2370,7 +2370,7 @@ function loadShowroomPhotos(){ const o=jload('am_showroom_photos',null); if(o) O
 /* ---------- reusable photo cropper ---------- */
 /* aspect: crop-box ratio (w/h). callback receives a cropped DataURL. */
 let _cropState=null;
-function openCropper(file, aspect, callback){
+function openCropper(file, aspect, callback, onCancel){
   const reader=new FileReader();
   reader.onload=ev=>{
     const img=new Image();
@@ -2397,7 +2397,7 @@ function openCropper(file, aspect, callback){
         const cover=Math.max(bw/img.naturalWidth, bh/img.naturalHeight);
         // centre the photo inside the frame at zoom=1 (box stays inside the photo → no black bars)
         const _sw0=img.naturalWidth*cover, _sh0=img.naturalHeight*cover;
-        _cropState={img, im, stage, box, sr, sh, bw, bh, bx, by, aspect, cover, scale:1, x:bx+(bw-_sw0)/2, y:by+(bh-_sh0)/2, callback, dragging:false, lx:0, ly:0};
+        _cropState={img, im, stage, box, sr, sh, bw, bh, bx, by, aspect, cover, scale:1, x:bx+(bw-_sw0)/2, y:by+(bh-_sh0)/2, callback, onCancel, dragging:false, lx:0, ly:0};
         applyCropTransform();
       });
     };
@@ -2447,7 +2447,7 @@ function closeCropper(apply){
     try{ ctx.drawImage(s.img, sx, sy, sw, sh, 0, 0, outW, outH); }catch(e){}
     const url=cv.toDataURL('image/jpeg',0.9);
     s.callback(url);
-  }
+  } else if(s.onCancel){ s.onCancel(); }
   _cropState=null;
 }
 function wireCrop(){
@@ -2576,52 +2576,43 @@ function frameRatio(sel, fallback){
   return fallback;
 }
 
-/* ---- bulk photo helpers: add many photos to a car in one go ---- */
+/* ---- multi-photo: crop & adjust each selected image at full resolution ---- */
 function appendCarPhotoSingle(dataUrl){
   if(!CAR_PHOTOS[curCar]) CAR_PHOTOS[curCar]=[];
   CAR_PHOTOS[curCar].push(dataUrl);
   saveCarPhotos(); renderDetailThumbs(); markCarDirty(curCar);   // push to server so shared links show it
   toast(T('photoUp','Photo uploaded for')+' <b>'+(CARS[curCar]&&CARS[curCar].name)+'</b>');
 }
-// downscale (longest edge ≤1600) so bulk adds don't bloat storage / sync payload
-function addCarPhotoBulk(file, cb){
-  const reader=new FileReader();
-  reader.onload=()=>{
-    const im=new Image();
-    im.onload=()=>{
-      let w=im.naturalWidth, h=im.naturalHeight; const max=1600;
-      if(w>max||h>max){ const r=max/Math.max(w,h); w=Math.round(w*r); h=Math.round(h*r); }
-      const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
-      cv.getContext('2d').drawImage(im,0,0,w,h);
-      cb(cv.toDataURL('image/jpeg',0.85));
-    };
-    im.onerror=()=>cb(null);
-    im.src=reader.result;
+// Crop each file one-by-one through the same 4:3 cropper so every photo is
+// individually adjusted. Export keeps source resolution (cap 2400px long edge),
+// so clarity is unchanged from a single add. Deferred via rAF so closeCropper()'s
+// _cropState=null doesn't clobber the next cropper we open from the callback.
+function cropCarPhotosSequential(files){
+  const arr=Array.from(files||[]).filter(f=>f && f.type && f.type.indexOf('image/')===0);
+  if(!arr.length){ toast(T('noPermPhoto','No valid image selected.')); return; }
+  let i=0, added=0;
+  const advance=()=>{
+    if(i>=arr.length){
+      if(added>0){ saveCarPhotos(); renderDetailThumbs(); markCarDirty(curCar);
+        toast(T('photosUp','Photos added')+' ('+added+') · <b>'+(CARS[curCar]&&CARS[curCar].name)+'</b>'); }
+      else if(arr.length) toast(T('noPermPhoto','No photo was added.'));
+      return;
+    }
+    const f=arr[i++];
+    openCropper(f, 4/3,
+      dataUrl=>{ if(dataUrl && isPhotoOK(dataUrl)){ if(!CAR_PHOTOS[curCar]) CAR_PHOTOS[curCar]=[]; CAR_PHOTOS[curCar].push(dataUrl); added++; } requestAnimationFrame(advance); },
+      ()=>{ requestAnimationFrame(advance); }   // cancel one photo → skip to the next
+    );
   };
-  reader.onerror=()=>cb(null);
-  reader.readAsDataURL(file);
-}
-function appendCarPhotosBulk(urls){
-  if(!urls || !urls.length) return;
-  if(!CAR_PHOTOS[curCar]) CAR_PHOTOS[curCar]=[];
-  let ok=0;
-  urls.forEach(u=>{ if(u && isPhotoOK(u)){ CAR_PHOTOS[curCar].push(u); ok++; } });
-  if(ok>0){ saveCarPhotos(); renderDetailThumbs(); markCarDirty(curCar);
-    toast(T('photosUp','Photos added')+' ('+ok+') · <b>'+(CARS[curCar]&&CARS[curCar].name)+'</b>'); }
-  else toast(T('noPermPhoto','Could not read the selected photos.'));
+  advance();
 }
 function handleCarPhoto(e){
   if(!canUploadCarPhotos()){ toast(T('noPermPhoto','Your role cannot upload photos.')); e.target.value=''; return; }
   const files=Array.from(e.target.files||[]).filter(f=>f && f.type && f.type.indexOf('image/')===0);
   e.target.value='';
   if(!files.length) return;
-  if(files.length===1){
-    openCropper(files[0], 4/3, appendCarPhotoSingle);   // single → 4:3 crop as before
-    return;
-  }
-  // multiple selected → add all at once, cover-cropped on display (no per-photo crop modal)
-  const urls=[]; let pending=files.length;
-  files.forEach(f=>addCarPhotoBulk(f, u=>{ if(u) urls.push(u); if(--pending===0) appendCarPhotosBulk(urls); }));
+  if(files.length===1) openCropper(files[0], 4/3, appendCarPhotoSingle);   // single → 4:3 crop as before
+  else cropCarPhotosSequential(files);                                     // many → crop & adjust each in turn
 }
 // ── Native camera bridge (iOS App) ─────────────────────────────
 // Uses @capacitor/camera when running inside the native app; otherwise
@@ -2641,7 +2632,7 @@ async function pickCarPhotoNative(){
       // iOS 14+ multi-image picker when available
       if(Cam.pickImages){
         const r=await Cam.pickImages({ quality:80, limit:20, width:1600, height:1200, presentationStyle:'popover' });
-        if(r && r.photos && r.photos.length){ appendCarPhotosBulk(r.photos.map(p=>p.dataUrl).filter(Boolean)); return; }
+        if(r && r.photos && r.photos.length){ cropCarPhotosSequential(r.photos.map(p=>dataURLtoFile(p.dataUrl,'photo.jpg')).filter(Boolean)); return; }
       }
       const p=await Cam.getPhoto({
         quality:80, allowEditing:false, resultType:'dataUrl',
