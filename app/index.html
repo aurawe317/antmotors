@@ -6,7 +6,7 @@
 <meta name="theme-color" id="themeColorMeta" content="#0F0E0E" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" id="statusBarMeta" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="Ant Motors" />
+<meta name="apple-mobile-web-app-title" content="AutoStock" />
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="apple-touch-icon" href="icon-192.png" />
 <link rel="icon" href="favicon.ico" sizes="any" />
@@ -790,7 +790,7 @@
       <div class="upload-banner" id="uploadBanner" style="display:none;">
         <span class="lbl" id="uploadLabel" data-i18n="uploadMedia">Upload car media</span>
         <div class="upload-actions">
-          <button class="upload-btn" onclick="document.getElementById('carPhotoInput').click()" data-i18n="addPhoto">+ Photo</button>
+          <button class="upload-btn" onclick="pickCarPhotoNative()" data-i18n="addPhoto">+ Photo</button>
           <button class="upload-btn video" onclick="document.getElementById('carVideoInput').click()" data-i18n="addVideo">+ Video</button>
         </div>
         <input type="file" id="carPhotoInput" accept="image/*" style="display:none;" onchange="handleCarPhoto(event)" />
@@ -2585,6 +2585,38 @@ function handleCarPhoto(e){
   });
   e.target.value='';
 }
+// ── Native camera bridge (iOS App) ─────────────────────────────
+// Uses @capacitor/camera when running inside the native app; otherwise
+// falls back to the hidden <input type=file> so the web/PWA build is unchanged.
+function dataURLtoFile(dataurl, filename){
+  const arr=dataurl.split(','), mime=arr[0].match(/:(.*?);/)[1];
+  const bstr=atob(arr[1]); let n=bstr.length; const u8=new Uint8Array(n);
+  while(n--) u8[n]=bstr.charCodeAt(n);
+  return new File([u8], filename, {type:mime});
+}
+async function pickCarPhotoNative(){
+  if(!canUploadCarPhotos()){ toast(T('noPermPhoto','Your role cannot upload photos.')); return; }
+  try{
+    const Cap=window.Capacitor;
+    if(Cap && Cap.isNativePlatform && Cap.isNativePlatform() && Cap.Plugins && Cap.Plugins.Camera){
+      const p=await Cap.Plugins.Camera.getPhoto({
+        quality:80, allowEditing:false, resultType:'dataUrl',
+        source:'PROMPT', width:1600, height:1200, presentationStyle:'popover'
+      });
+      if(p && p.dataUrl){
+        openCropper(dataURLtoFile(p.dataUrl,'photo.jpg'), 4/3, dataUrl=>{
+          if(!CAR_PHOTOS[curCar]) CAR_PHOTOS[curCar]=[];
+          CAR_PHOTOS[curCar].push(dataUrl);
+          saveCarPhotos(); renderDetailThumbs(); markCarDirty(curCar);
+          toast(T('photoUp','Photo uploaded for')+' <b>'+(CARS[curCar]&&CARS[curCar].name)+'</b>');
+        });
+        return;
+      }
+    }
+  }catch(e){ /* permission denied / cancelled → fall through to file input */ }
+  document.getElementById('carPhotoInput').click();
+}
+
 function handleCarVideo(e){
   const file=e.target.files[0]; if(!file) return;
   if(!canUploadCarPhotos()){ toast(T('noPermPhoto','Your role cannot upload photos.')); return; }
@@ -2635,7 +2667,7 @@ function renderDetailThumbs(){
     const add=document.createElement('div');
     add.className='photo-slot add';
     add.textContent='+';
-    add.onclick=()=>document.getElementById('carPhotoInput').click();
+    add.onclick=()=>pickCarPhotoNative();
     th.appendChild(add);
     const addV=document.createElement('div');
     addV.className='photo-slot add video';
@@ -3034,6 +3066,23 @@ function saveRecent(){ try{ localStorage.setItem('am_recent',JSON.stringify(RECE
 /* ---- inventory persistence: added cars survive reload (in native app this lives in the app sandbox, not a browser cache) ---- */
 function saveCars(){ try{ localStorage.setItem('am_cars', JSON.stringify(CARS)); }catch(e){} }
 function loadCars(){ try{ const raw=localStorage.getItem('am_cars'); if(raw){ const o=JSON.parse(raw); for(const k in o) CARS[k]=o[k]; } }catch(e){} }
+/* Is the page opened via a shared car/company deep link? (customer preview mode) */
+function hasSharedLink(){
+  try{ const u=new URL(location.href); return !!(u.searchParams.get('ref')||u.searchParams.get('c')||u.searchParams.get('car')||u.searchParams.get('company')); }catch(e){ return false; }
+}
+/* Wipe every cached company artifact (in memory + localStorage) so a signed-out user never
+ * sees another account's inventory, employees or showrooms. Used on guest boot + explicit logout. */
+function clearLocalInventory(){
+  for(const k in CARS) delete CARS[k];
+  for(const k in LISTED_AT) delete LISTED_AT[k];
+  for(const k in CAR_PHOTOS) delete CAR_PHOTOS[k];
+  for(const k in CAR_VIDEOS) delete CAR_VIDEOS[k];
+  for(const k in SALES) delete SALES[k];
+  for(const k in OWNERS) delete OWNERS[k];
+  for(const k in ALL_EMP) delete ALL_EMP[k];
+  SHOWROOMS.length=0;
+  ['am_cars','am_listed','am_car_photos','am_car_videos','am_emps','am_showrooms','am_dirty_cars','am_dirty_emps','am_car_deleted'].forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
+}
 
 /* ================== cloud sync: one inventory across all devices ==================
  * Offline-first. Every local change is stamped and queued; the server merges with
@@ -3333,6 +3382,11 @@ async function bootstrap(){
   if(!loadSession()){
     try{ const raw=localStorage.getItem('am_me'); if(raw){ let id=raw; try{ const m=JSON.parse(raw); if(m&&m.id) id=m.id; }catch(e){} if(id && id!=='boss'){ curEmployee=id; } } }catch(e){}
   }
+  // GUEST CLEANUP: a signed-out user must never see a previous account's cached inventory.
+  // Clear it so a guest gets a clean welcome/home; a shared-link customer is refilled by the
+  // public branch below with the correct company's cars. (isSignedIn() stays true when a cached
+  // session exists, so an expired-but-cached owner keeps their cars — that is intentional.)
+  if(!isSignedIn()){ clearLocalInventory(); }
   // EARLY RENDER: paint the cached inventory + account from localStorage IMMEDIATELY,
   // before any network pull. Previously the homepage stayed blank until the full server
   // sync finished (or the user tapped Sync) — bad on slow links. The pulls below then
@@ -3771,6 +3825,8 @@ async function submitReset(){
 }
 function syncLogout(){
   SYNC.token=''; localStorage.removeItem('am_token'); localStorage.removeItem('am_me'); localStorage.removeItem('am_session');
+  // also drop the cached company inventory/employees/showrooms so the next open starts clean
+  clearLocalInventory();
   setSyncState('err',T('syncNeedLogin','Sign in to sync')); renderSyncUI();
   updateAuthCTA();
   toast(T('syncSignedOut','Signed out'));
@@ -4034,7 +4090,20 @@ async function syncNow(silent, withPhotos){
     // the local cache after a sync — it was cleared on the server but may have
     // missed the deletion event if the sync cursor predated it.
     SAMPLE_CAR_IDS.forEach(function(id){ if(CARS[id]){ delete CARS[id]; delete LISTED_AT[id]; delete CAR_PHOTOS[id]; delete CAR_VIDEOS[id]; } });
-    (p.employees||[]).forEach(e=>{ if(e.deleted){ delete SALES[e.id]; delete OWNERS[e.id]; delete ALL_EMP[e.id]; } else { upsertEmp(e.id,e.data); n++; } });
+    // Detect team members who joined since the last sync so the owner/partners get a
+    // visible signal (otherwise a new hire is silently absent until they happen to refresh).
+    const hadRoster = Object.keys(ALL_EMP).length > 0;
+    const newJoiners = [];
+    (p.employees||[]).forEach(e=>{
+      if(e.deleted){ delete SALES[e.id]; delete OWNERS[e.id]; delete ALL_EMP[e.id]; }
+      else {
+        if(hadRoster && !ALL_EMP[e.id] && e.id!==curEmployee) newJoiners.push((e.data && (e.data.name||e.id))||e.id);
+        upsertEmp(e.id,e.data); n++;
+      }
+    });
+    if(newJoiners.length && isTopEmployee() && !silent){
+      toast('👋 '+(newJoiners.length===1 ? (newJoiners[0]+' joined your team') : (newJoiners.length+' new team members joined')));
+    }
     // keep the cached session record in sync with the server's latest employee data
     if(p.employees){ for(const e of p.employees){ if(!e.deleted && e.id===curEmployee){ saveSession(Object.assign({id:e.id}, e.data), loadCompany(), SYNC.token); break; } } }
     SYNC.since=p.now; localStorage.setItem('am_since',String(p.now));
