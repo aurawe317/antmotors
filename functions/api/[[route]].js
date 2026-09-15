@@ -408,7 +408,7 @@ export async function onRequest(context) {
           }
         }
       } catch (e) { keyWarn = 'key_decode_failed'; }
-      const base = { build: 'cars-updated_by-text', now: now(), version: 2, backend: APP_VER };
+      const base = { build: 'syncfix-7cd29b5', now: now(), version: 2, backend: APP_VER };
       if (dbErr || authErr || keyWarn) {
         return send(503, Object.assign({
           ok: false, dbError: dbErr, authError: authErr, keyWarn,
