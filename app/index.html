@@ -798,7 +798,7 @@
           <button class="upload-btn" onclick="pickCarPhotoNative()" data-i18n="addPhoto">+ Photo</button>
           <button class="upload-btn video" onclick="document.getElementById('carVideoInput').click()" data-i18n="addVideo">+ Video</button>
         </div>
-        <input type="file" id="carPhotoInput" accept="image/*" style="display:none;" onchange="handleCarPhoto(event)" />
+        <input type="file" id="carPhotoInput" accept="image/*" multiple style="display:none;" onchange="handleCarPhoto(event)" />
         <input type="file" id="carVideoInput" accept="video/*" style="display:none;" onchange="handleCarVideo(event)" />
       </div>
       <div class="thumbs" id="detailThumbs"></div>
@@ -1438,7 +1438,7 @@ const I18N = {
       addPhoto:"+ Photo",directions:"Directions",inStock:"in stock",cond_NEW:"New",cond_USED:"Used",
       bookSent:"🔔 Booking sent to {n} · they'll WhatsApp you at {p}",atLbl:"at",shoppingWith:"You're shopping with",shareAttr:"Share link now attributes to",
       favSavedToast:"Saved! Tap ♡ in top bar to view",favRemoved:"Removed from saved",msgPlaceholder:"I'd like to see the car and discuss the deal.",
-      photoUp:"Photo uploaded for",noPermPhoto:"Your role cannot upload photos.",dirTo:"Directions to",
+      photoUp:"Photo uploaded for",photosUp:"Photos added",noPermPhoto:"Your role cannot upload photos.",dirTo:"Directions to",
       moreCars:"More cars",
       markSold:"Mark as sold",markAvail:"Mark as available",deleteCar:"Delete this car",delConfirm:"Delete this car? This cannot be undone and syncs to all devices.",markedSold:"Marked as sold",markedAvail:"Marked as available",carDeleted:"Car deleted",sold:"SOLD",goneTitle:"This vehicle is no longer available",goneSoldTitle:"This vehicle has been sold",goneSeeOthers:"See other cars",del:"Delete",delSelf:"You cannot remove your own account",delDone:"Removed",delEmpConfirm:"Remove employee {n}? This cannot be undone and syncs to all devices.",delNotFound:"That employee is not in this company or was already removed",
       pvTitle:"🎛 Preview Role · Share Link",pvHint:"Switch the viewer role and the assigned sales — the same car updates its price and contact. Boss, Partner A & Partner B see cost + full edit; Manager & Sales A can upload photos on the detail page; the share link carries the sales ref so customers reach the right person.",
@@ -1486,7 +1486,7 @@ const I18N = {
       addPhoto:"+ 照片",directions:"导航",inStock:"在库",cond_NEW:"新车",cond_USED:"二手车",
       bookSent:"🔔 预约已发给 {n} · 将通过 WhatsApp 联系您：{p}",atLbl:"于",shoppingWith:"您正在与",shareAttr:"分享链接现归属于",
       favSavedToast:"已收藏！点击顶部 ♡ 查看",favRemoved:"已取消收藏",msgPlaceholder:"我想看车并谈谈价格。",
-      photoUp:"已上传照片：",noPermPhoto:"您的角色不能上传照片。",dirTo:"导航至",
+      photoUp:"已上传照片：",photosUp:"已添加照片",noPermPhoto:"您的角色不能上传照片。",dirTo:"导航至",
       moreCars:"更多车辆",
       markSold:"标记为已售",markAvail:"标记为在售",deleteCar:"删除此车辆",delConfirm:"确定删除这辆车吗？此操作不可撤销，并将同步到所有设备。",markedSold:"已标记为已售",markedAvail:"已标记为在售",carDeleted:"车辆已删除",sold:"已售",goneTitle:"该车辆已不再提供",goneSoldTitle:"该车辆已售出",goneSeeOthers:"查看其它车辆",del:"删除",delSelf:"不能删除你自己的账号",delDone:"已删除",delEmpConfirm:"确定删除该员工 {n} 吗？此操作不可撤销，并将同步到所有设备。",delNotFound:"该员工不在当前公司，或已被删除",
       pvTitle:"🎛 预览身份 · 分享链接",pvHint:"切换查看角色与指派销售——同一辆车会按角色显示不同价格与联系方式。老板、合伙人A、合伙人B 可见成本与全部编辑权限；店长与销售A 可在详情页上传照片；分享链接携带销售 ref，客户由此联系到对应销售。",
@@ -2576,19 +2576,52 @@ function frameRatio(sel, fallback){
   return fallback;
 }
 
+/* ---- bulk photo helpers: add many photos to a car in one go ---- */
+function appendCarPhotoSingle(dataUrl){
+  if(!CAR_PHOTOS[curCar]) CAR_PHOTOS[curCar]=[];
+  CAR_PHOTOS[curCar].push(dataUrl);
+  saveCarPhotos(); renderDetailThumbs(); markCarDirty(curCar);   // push to server so shared links show it
+  toast(T('photoUp','Photo uploaded for')+' <b>'+(CARS[curCar]&&CARS[curCar].name)+'</b>');
+}
+// downscale (longest edge ≤1600) so bulk adds don't bloat storage / sync payload
+function addCarPhotoBulk(file, cb){
+  const reader=new FileReader();
+  reader.onload=()=>{
+    const im=new Image();
+    im.onload=()=>{
+      let w=im.naturalWidth, h=im.naturalHeight; const max=1600;
+      if(w>max||h>max){ const r=max/Math.max(w,h); w=Math.round(w*r); h=Math.round(h*r); }
+      const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+      cv.getContext('2d').drawImage(im,0,0,w,h);
+      cb(cv.toDataURL('image/jpeg',0.85));
+    };
+    im.onerror=()=>cb(null);
+    im.src=reader.result;
+  };
+  reader.onerror=()=>cb(null);
+  reader.readAsDataURL(file);
+}
+function appendCarPhotosBulk(urls){
+  if(!urls || !urls.length) return;
+  if(!CAR_PHOTOS[curCar]) CAR_PHOTOS[curCar]=[];
+  let ok=0;
+  urls.forEach(u=>{ if(u && isPhotoOK(u)){ CAR_PHOTOS[curCar].push(u); ok++; } });
+  if(ok>0){ saveCarPhotos(); renderDetailThumbs(); markCarDirty(curCar);
+    toast(T('photosUp','Photos added')+' ('+ok+') · <b>'+(CARS[curCar]&&CARS[curCar].name)+'</b>'); }
+  else toast(T('noPermPhoto','Could not read the selected photos.'));
+}
 function handleCarPhoto(e){
-  const file=e.target.files[0]; if(!file) return;
-  if(!canUploadCarPhotos()){ toast(T('noPermPhoto','Your role cannot upload photos.')); return; }
-  const ratio=4/3;   // fixed 4:3 cover per user request
-  openCropper(file, ratio, dataUrl=>{
-    if(!CAR_PHOTOS[curCar]) CAR_PHOTOS[curCar]=[];
-    CAR_PHOTOS[curCar].push(dataUrl);
-    saveCarPhotos();
-    renderDetailThumbs();
-    markCarDirty(curCar);   // FIX: push the new photo to the server so shared links show it
-    toast(T('photoUp','Photo uploaded for')+' <b>'+CARS[curCar].name+'</b>');
-  });
+  if(!canUploadCarPhotos()){ toast(T('noPermPhoto','Your role cannot upload photos.')); e.target.value=''; return; }
+  const files=Array.from(e.target.files||[]).filter(f=>f && f.type && f.type.indexOf('image/')===0);
   e.target.value='';
+  if(!files.length) return;
+  if(files.length===1){
+    openCropper(files[0], 4/3, appendCarPhotoSingle);   // single → 4:3 crop as before
+    return;
+  }
+  // multiple selected → add all at once, cover-cropped on display (no per-photo crop modal)
+  const urls=[]; let pending=files.length;
+  files.forEach(f=>addCarPhotoBulk(f, u=>{ if(u) urls.push(u); if(--pending===0) appendCarPhotosBulk(urls); }));
 }
 // ── Native camera bridge (iOS App) ─────────────────────────────
 // Uses @capacitor/camera when running inside the native app; otherwise
@@ -2604,17 +2637,18 @@ async function pickCarPhotoNative(){
   try{
     const Cap=window.Capacitor;
     if(Cap && Cap.isNativePlatform && Cap.isNativePlatform() && Cap.Plugins && Cap.Plugins.Camera){
-      const p=await Cap.Plugins.Camera.getPhoto({
+      const Cam=Cap.Plugins.Camera;
+      // iOS 14+ multi-image picker when available
+      if(Cam.pickImages){
+        const r=await Cam.pickImages({ quality:80, limit:20, width:1600, height:1200, presentationStyle:'popover' });
+        if(r && r.photos && r.photos.length){ appendCarPhotosBulk(r.photos.map(p=>p.dataUrl).filter(Boolean)); return; }
+      }
+      const p=await Cam.getPhoto({
         quality:80, allowEditing:false, resultType:'dataUrl',
         source:'PROMPT', width:1600, height:1200, presentationStyle:'popover'
       });
       if(p && p.dataUrl){
-        openCropper(dataURLtoFile(p.dataUrl,'photo.jpg'), 4/3, dataUrl=>{
-          if(!CAR_PHOTOS[curCar]) CAR_PHOTOS[curCar]=[];
-          CAR_PHOTOS[curCar].push(dataUrl);
-          saveCarPhotos(); renderDetailThumbs(); markCarDirty(curCar);
-          toast(T('photoUp','Photo uploaded for')+' <b>'+(CARS[curCar]&&CARS[curCar].name)+'</b>');
-        });
+        openCropper(dataURLtoFile(p.dataUrl,'photo.jpg'), 4/3, appendCarPhotoSingle);
         return;
       }
     }
