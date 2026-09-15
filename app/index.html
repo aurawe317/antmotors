@@ -420,6 +420,11 @@
   .collapsible[open] > summary::after{transform:rotate(-90deg);}
   .collapsible > summary ~ *{margin-top:12px;}
   .collapsible > summary ~ #staffList{margin-top:12px;}
+  .staff-refresh{width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:var(--surface-2);color:var(--gold);font-size:15px;line-height:1;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;margin-left:8px;flex:0 0 auto;}
+  .staff-refresh:hover{background:var(--gold);color:#0F0E0E;}
+  .staff-refresh:active{transform:scale(.92);}
+  .staff-refresh.spin{animation:spin .6s linear infinite; pointer-events:none; opacity:.7;}
+  @keyframes spin{to{transform:rotate(360deg);}}
   .staff-row{display:flex; align-items:center; gap:8px; padding:6px 0; border-bottom:1px solid rgba(255,255,255,.06);}
   .staff-row > span{flex:1; font-size:13px;}
   .staff-row select{max-width:130px;}
@@ -1135,8 +1140,8 @@
     <div class="form-row"><label data-i18n="joinBranch">Branch</label><input type="text" id="bindBranch" list="afBranchList" placeholder="Select or type" autocomplete="off" /></div>
     <button class="submit" onclick="bindCompany()" data-i18n="joinBind">Bind &amp; activate</button>
   </div>
-  <details class="grp collapsible" id="staffGroup" style="display:none;">
-    <summary class="lbl" data-i18n="staffMgmt">Staff &amp; roles (admin)</summary>
+  <details class="grp collapsible" id="staffGroup" style="display:none;" ontoggle="if(this.open){ try{ staffRefresh(); }catch(e){} }">
+    <summary class="lbl"><span data-i18n="staffMgmt">Staff &amp; roles (admin)</span><button class="staff-refresh" type="button" title="Refresh roster" onclick="event.stopPropagation();staffRefresh(this)">↻</button></summary>
     <div id="staffList"></div>
     <div id="codeCard" style="margin-top:14px;border:1px solid var(--border);border-radius:12px;padding:12px;">
       <div class="lbl" data-i18n="codeTitle">Company invitation code</div>
@@ -3011,6 +3016,14 @@ function renderStaff(){
   }
 }
 function toggleStaffForm(){ const f=document.getElementById('staffForm'); if(f) f.style.display = (f.style.display==='none'?'block':'none'); }
+// Pull the latest roster + cars immediately (no heavy photo blob — photos lazy-load per card)
+// so a freshly-registered employee shows up the moment the boss opens / refreshes the staff list.
+async function staffRefresh(btn){
+  if(btn){ btn.classList.add('spin'); }
+  try{ await syncNow(true, false); if(document.getElementById('staffList')) renderStaff(); }
+  catch(e){ /* ignore network errors; roster stays as-is */ }
+  finally{ if(btn){ setTimeout(()=>btn.classList.remove('spin'),300); } }
+}
 function addEmployee(){
   const id=(document.getElementById('nfId').value||'').trim();
   const name=(document.getElementById('nfName').value||'').trim();
@@ -4181,7 +4194,7 @@ function applyLazyPhoto(id, el){
 // blank wait. Keep this as a no-op so call sites stay valid but nothing heavy runs.
 async function refreshPhotosBackground(silent){ /* lazy photo loading replaced this */ }
 window.addEventListener('online',()=>syncNow(true));
-setInterval(()=>{ if(SYNC.base&&SYNC.token&&!document.hidden) syncNow(true); },60000);
+setInterval(()=>{ if(SYNC.base&&SYNC.token&&!document.hidden) syncNow(true, false); },20000);
 /* ---- full data backup / restore (JSON file) ---- */
 function exportData(){
   // v2 also carries photos / videos / listed-at. They used to be left out, so restoring a
