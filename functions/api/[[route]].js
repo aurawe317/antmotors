@@ -420,7 +420,22 @@ export async function onRequest(context) {
                 : 'supabase_unreachable'))
         }, base));
       }
-      return send(200, Object.assign({ ok: true, cars, companies }, base));
+      // TEMP diagnostic: when ?diag=1, list each company with its car/employee counts.
+      // Lets us confirm whether the 2nd company is a stray empty row or holds teammates' cars.
+      let companiesDetail = null;
+      if (u.searchParams.get('diag')) {
+        try {
+          const { data: cos } = await sb.from('companies').select('id,name,code,status,created_at,owner_id');
+          if (cos && cos.length) {
+            companiesDetail = await Promise.all(cos.map(async (co) => {
+              const cars = await sb.from('cars').select('id', { count: 'exact', head: true }).eq('company_id', co.id).eq('deleted', 0);
+              const emps = await sb.from('employees').select('id', { count: 'exact', head: true }).eq('company_id', co.id).eq('deleted', 0);
+              return { id: co.id, name: co.name, code: co.code, status: co.status, created_at: co.created_at, cars: cars.count || 0, employees: emps.count || 0 };
+            }));
+          }
+        } catch (e) { companiesDetail = { error: String((e && e.message) || e) }; }
+      }
+      return send(200, Object.assign({ ok: true, cars, companies, companiesDetail }, base));
     }
 
     /* login (Supabase Auth) */
