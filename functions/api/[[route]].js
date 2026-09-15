@@ -450,7 +450,7 @@ export async function onRequest(context) {
           }
         }
       } catch (e) { keyWarn = 'key_decode_failed'; }
-      const base = { build: 'photodata-2a1b9c4', now: now(), version: 2, backend: APP_VER };
+      const base = { build: 'photomig-paged', now: now(), version: 2, backend: APP_VER };
       if (dbErr || authErr || keyWarn) {
         return send(503, Object.assign({
           ok: false, dbError: dbErr, authError: authErr, keyWarn,
@@ -630,23 +630,31 @@ export async function onRequest(context) {
       const secret = u.searchParams.get('secret') || ((await readBody(req)).secret);
       const EXP = env.MIGRATE_SECRET || 'am-migrate-2026';
       if (secret !== EXP) return send(403, { error: 'forbidden' });
-      let migrated = 0, errors = 0, skipped = 0;
+      let migrated = 0, errors = 0, skipped = 0; let lastError = null;
       // Photos & videos both live in `data`; convert any legacy base64 blob into a
       // Storage URL written back into `data`. Rows that are already URLs are skipped
-      // (idempotent — safe to re-run if a previous attempt was interrupted).
-      const { data: prows } = await sb.from('photos').select('id,car_id,company_id,data');
-      for (const r of (prows || [])) {
-        if (!r.data || /^https?:\/\//.test(r.data)) { skipped++; continue; }
-        try { const url = await uploadToStorage(r.data, r.company_id, r.car_id, 'photo'); await sb.from('photos').update({ data: url }).eq('id', r.id); migrated++; }
-        catch (e) { errors++; }
+      // (idempotent — safe to re-run). We paginate in small batches because the
+      // base64 `data` column is huge; one unfiltered select would blow the response
+      // size / Worker memory limit.
+      async function migrateTable(table, kind) {
+        let start = 0;
+        while (true) {
+          const { data: rows, error } = await sb.from(table)
+            .select('id,car_id,company_id,data').range(start, start + 4);
+          if (error) { lastError = (lastError ? lastError + ' | ' : '') + table + ': ' + (error.message || error); errors++; break; }
+          if (!rows || !rows.length) break;
+          for (const r of rows) {
+            if (!r.data || /^https?:\/\//.test(r.data)) { skipped++; continue; }
+            try { const url = await uploadToStorage(r.data, r.company_id, r.car_id, kind); await sb.from(table).update({ data: url }).eq('id', r.id); migrated++; }
+            catch (e) { errors++; }
+          }
+          if (rows.length < 5) break;
+          start += 5;
+        }
       }
-      const { data: vrows } = await sb.from('videos').select('id,car_id,company_id,data');
-      for (const r of (vrows || [])) {
-        if (!r.data || /^https?:\/\//.test(r.data)) { skipped++; continue; }
-        try { const url = await uploadToStorage(r.data, r.company_id, r.car_id, 'video'); await sb.from('videos').update({ data: url }).eq('id', r.id); migrated++; }
-        catch (e) { errors++; }
-      }
-      return send(200, { ok: true, migrated, errors, skipped });
+      await migrateTable('photos', 'photo');
+      await migrateTable('videos', 'video');
+      return send(200, { ok: true, migrated, errors, skipped, lastError });
     }
 
     /* ---- authenticated below ---- */
