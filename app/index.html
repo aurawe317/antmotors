@@ -4119,7 +4119,7 @@ async function syncNow(silent, withPhotos){
       else{
         CARS[c.id]=c.data;
         if(c.listedAt) LISTED_AT[c.id]=c.listedAt;
-        if(c.photos && c.photos.length && (!CAR_PHOTOS[c.id] || CAR_PHOTOS[c.id].length===0)) CAR_PHOTOS[c.id]=c.photos.filter(isPhotoOK);
+        if(c.photos && c.photos.length){ const _s=new Set(CAR_PHOTOS[c.id]||[]); c.photos.filter(isPhotoOK).forEach(p=>_s.add(p)); CAR_PHOTOS[c.id]=Array.from(_s); }
         if(c.videos && c.videos.length) CAR_VIDEOS[c.id]=c.videos;
       }
       n++;
@@ -4202,7 +4202,7 @@ function lazyPhotoFetch(id, el){
   if(!SYNC.base || !SYNC.token) return; // only signed-in devices fetch from the server
   if(el) el.setAttribute('data-loading','1');
   api('/api/car/'+encodeURIComponent(id)+'/photos').then(r=>{
-    if(r && r.photos && r.photos.length){ CAR_PHOTOS[id]=r.photos.filter(isPhotoOK); saveCarPhotos(); }
+    if(r && r.photos && r.photos.length){ const _s=new Set(CAR_PHOTOS[id]||[]); r.photos.filter(isPhotoOK).forEach(p=>_s.add(p)); CAR_PHOTOS[id]=Array.from(_s); saveCarPhotos(); }
     if(r && r.videos && r.videos.length){ CAR_VIDEOS[id]=r.videos; saveCarVideos(); }
     if(el) applyLazyPhoto(id, el);
   }).catch(()=>{ if(el) el.removeAttribute('data-loading'); });
@@ -4219,6 +4219,10 @@ function applyLazyPhoto(id, el){
 // blank wait. Keep this as a no-op so call sites stay valid but nothing heavy runs.
 async function refreshPhotosBackground(silent){ /* lazy photo loading replaced this */ }
 window.addEventListener('online',()=>syncNow(true));
+// When the tab regains focus, do a FULL company refresh (since=0). This makes server-clock
+// fix land on long-open sessions without a logout, and guarantees you pick up teammates' cars
+// even if your incremental cursor had drifted ahead of their (client-clock-based) writes.
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden && SYNC.base && SYNC.token){ SYNC.since=0; try{ localStorage.setItem('am_since','0'); }catch(e){} syncNow(true); } });
 setInterval(()=>{ if(SYNC.base&&SYNC.token&&!document.hidden) syncNow(true, false); },20000);
 /* ---- full data backup / restore (JSON file) ---- */
 function exportData(){

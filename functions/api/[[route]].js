@@ -213,10 +213,23 @@ async function photosOf(id, cid) {
   return (data || []).map(r => r.data);
 }
 async function writePhotos(id, arr, cid) {
-  const { error: delErr } = await sb.from('photos').delete().eq('car_id', id).eq('company_id', cid);
-  if (delErr) throw new Error('photos_delete_failed: ' + delErr.message);
+  // Additive merge (NOT delete+replace): photos are lazy-loaded per device, so a client
+  // only holds its own photos. The old DELETE-ALL + re-INSERT wiped every teammate's photos
+  // for the car the moment anyone pushed — that's why uploads "disappeared". Now we keep
+  // whatever is already on the server and only INSERT new, de-duplicated photos (capped at 12).
   if (!Array.isArray(arr)) return;
-  const rows = arr.slice(0, 12).filter(d => typeof d === 'string' && d.length < 6e6).map((d, i) => ({ car_id: id, company_id: cid, idx: i, data: d }));
+  const { data: existing } = await sb.from('photos').select('data, idx').eq('car_id', id).eq('company_id', cid);
+  const have = new Set((existing || []).map(r => r.data));
+  let nextIdx = (existing || []).reduce((m, r) => Math.max(m, (r.idx || 0) + 1), 0);
+  const seen = new Set();
+  const rows = [];
+  for (const d of arr) {
+    if (typeof d !== 'string' || d.length >= 6e6) continue;
+    if (have.has(d) || seen.has(d)) continue;   // already on server, or duplicate within this batch
+    seen.add(d);
+    rows.push({ car_id: id, company_id: cid, idx: nextIdx++, data: d });
+    if (rows.length >= 12) break;
+  }
   if (rows.length) {
     const { error } = await sb.from('photos').insert(rows);
     if (error) throw new Error('photos_insert_failed: ' + error.message);
@@ -227,10 +240,20 @@ async function videosOf(id, cid) {
   return (data || []).map(r => r.data);
 }
 async function writeVideos(id, arr, cid) {
-  const { error: delErr } = await sb.from('videos').delete().eq('car_id', id).eq('company_id', cid);
-  if (delErr) throw new Error('videos_delete_failed: ' + delErr.message);
+  // Additive merge — same rationale as writePhotos (never wipe a teammate's videos).
   if (!Array.isArray(arr)) return;
-  const rows = arr.slice(0, 3).filter(d => typeof d === 'string' && d.length < 25e6).map((d, i) => ({ car_id: id, company_id: cid, idx: i, data: d }));
+  const { data: existing } = await sb.from('videos').select('data, idx').eq('car_id', id).eq('company_id', cid);
+  const have = new Set((existing || []).map(r => r.data));
+  let nextIdx = (existing || []).reduce((m, r) => Math.max(m, (r.idx || 0) + 1), 0);
+  const seen = new Set();
+  const rows = [];
+  for (const d of arr) {
+    if (typeof d !== 'string' || d.length >= 25e6) continue;
+    if (have.has(d) || seen.has(d)) continue;
+    seen.add(d);
+    rows.push({ car_id: id, company_id: cid, idx: nextIdx++, data: d });
+    if (rows.length >= 3) break;
+  }
   if (rows.length) {
     const { error } = await sb.from('videos').insert(rows);
     if (error) throw new Error('videos_insert_failed: ' + error.message);
@@ -264,8 +287,15 @@ async function applyPush(emp, payload) {
     if (!c || !c.id) continue;
     const { data: cur } = await sb.from('cars').select('*').eq('id', c.id).eq('company_id', cid).maybeSingle();
     if (cur && cur.deleted && SEED_CAR_IDS.has(c.id)) { rejected.push({ id: c.id, reason: 'sample_cleared' }); continue; }
-    const ts = clampTs(c.updatedAt);
-    if (cur && cur.updated_at > ts) { rejected.push({ id: c.id, reason: 'stale' }); continue; }
+    // IMPORTANT: stamp the row with the SERVER's receive time, not the client-supplied
+    // updatedAt. Client device clocks (phones with auto-time off) often run behind the
+    // server, which made updated_at land in the past and the teammate's pull cursor
+    // (server now) skip it forever — so other people's cars never synced. Using server
+    // time for both updated_at and the pull cursor keeps incremental sync reliable.
+    const ts = now();
+    // With server-stamped ts, a row can't legitimately be "in the future", so the stale
+    // guard below is effectively a no-op (it only rejects updated_at strictly > server now).
+    if (cur && cur.updated_at > ts + 1000) { rejected.push({ id: c.id, reason: 'stale' }); continue; }
     const incoming = c.data || {};
     if (!top) {
       const oldPrice = cur ? (cur.data || {}).price : null;
@@ -284,10 +314,10 @@ async function applyPush(emp, payload) {
   for (const e of (payload.employees || [])) {
     if (!e || !e.id) continue;
     const { data: cur } = await sb.from('employees').select('*').eq('id', e.id).eq('company_id', cid).maybeSingle();
-    const ts = clampTs(e.updatedAt);
+    const ts = now();
     if (!cur) { rejected.push({ id: e.id, reason: 'unknown_employee' }); continue; }
     if (cur.deleted && DEMO_EMP_IDS.has(e.id)) { rejected.push({ id: e.id, reason: 'sample_cleared' }); continue; }
-    if (cur.updated_at > ts) { rejected.push({ id: e.id, reason: 'stale' }); continue; }
+    if (cur.updated_at > ts + 1000) { rejected.push({ id: e.id, reason: 'stale' }); continue; }
     const old = cur.data || {};
     const inc = Object.assign({}, e.data || {});
     delete inc._pw; // never accept a password hash from a client
