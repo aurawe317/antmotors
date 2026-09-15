@@ -236,6 +236,14 @@ async function photosOf(id, cid) {
   const { data } = await sb.from('photos').select('*').eq('car_id', id).eq('company_id', cid).order('idx', { ascending: true });
   return (data || []).map(r => r.url || r.data).filter(Boolean);
 }
+// Lightweight single-cover lookup for the public car list — returns just the first
+// photo URL so the browse grid can paint covers in one request (no full photo blob).
+// Returns null (never base64) so the list never balloons before the URL migration runs.
+async function coverOf(id, cid) {
+  const { data } = await sb.from('photos').select('url').eq('car_id', id).eq('company_id', cid).order('idx', { ascending: true }).limit(1);
+  if (!data || !data.length) return null;
+  return data[0].url || null;
+}
 async function writePhotos(id, arr, cid) {
   if (!Array.isArray(arr)) return;
   const { data: existing } = await sb.from('photos').select('*').eq('car_id', id).eq('company_id', cid);
@@ -578,7 +586,8 @@ export async function onRequest(context) {
       const cid = await resolveCompanyId(u, null);
       if (!cid) return send(200, { company: null, cars: [] });
       const { data } = await sb.from('cars').select('*').eq('company_id', cid).eq('deleted', 0).order('updated_at', { ascending: false });
-      const cars = (data || []).filter(r => !((r.data || {}).sold)).map(publicCar);
+      const rows = (data || []).filter(r => !((r.data || {}).sold));
+      const cars = await Promise.all(rows.map(async (r) => { const c = publicCar(r); c.cover = await coverOf(r.id, cid); return c; }));
       return send(200, { company: cid, cars });
     }
     if (p === '/api/showrooms') {
@@ -605,10 +614,37 @@ export async function onRequest(context) {
       if (!agent && cd.sales) agent = await empData(cd.sales);
       return send(200, { car: publicCar(row), photos: await photosOf(id, cid), videos: await videosOf(id, cid), agent, company: companyInfo });
     }
+    if (p.startsWith('/api/public/car/') && p.endsWith('/photos')) {
+      const id = decodeURIComponent(p.slice('/api/public/car/'.length, -'/photos'.length));
+      const { data: row } = await sb.from('cars').select('id,company_id,deleted').eq('id', id).maybeSingle();
+      if (!row || row.deleted) return send(404, { error: 'not_found' });
+      return send(200, { id, photos: await photosOf(id, row.company_id), videos: await videosOf(id, row.company_id) });
+    }
 
     /* plans */
     if (p === '/api/plans' && method === 'GET') {
       return send(200, { plans: Object.values(PLANS).map(p => ({ id: p.id, name: p.name, nameEn: p.nameEn, price: p.price, days: p.days, currency: p.currency })), simulate: true, live: false });
+    }
+
+    /* ---- public, secret-protected one-shot admin ---- */
+    if (p === '/api/migrate-photos' && method === 'POST') {
+      const secret = u.searchParams.get('secret') || ((await readBody(req)).secret);
+      const EXP = env.MIGRATE_SECRET || 'am-migrate-2026';
+      if (secret !== EXP) return send(403, { error: 'forbidden' });
+      let migrated = 0, errors = 0;
+      const { data: prows } = await sb.from('photos').select('id,car_id,company_id,data');
+      for (const r of (prows || [])) {
+        if (!r.data || r.url) continue;
+        try { const url = await uploadToStorage(r.data, r.company_id, r.car_id, 'photo'); await sb.from('photos').update({ url }).eq('id', r.id); migrated++; }
+        catch (e) { errors++; }
+      }
+      const { data: vrows } = await sb.from('videos').select('id,car_id,company_id,data');
+      for (const r of (vrows || [])) {
+        if (!r.data || r.url) continue;
+        try { const url = await uploadToStorage(r.data, r.company_id, r.car_id, 'video'); await sb.from('videos').update({ url }).eq('id', r.id); migrated++; }
+        catch (e) { errors++; }
+      }
+      return send(200, { ok: true, migrated, errors });
     }
 
     /* ---- authenticated below ---- */
@@ -821,25 +857,6 @@ export async function onRequest(context) {
       return send(200, { rows: data || [] });
     }
 
-    if (p === '/api/migrate-photos' && method === 'POST') {
-      const secret = u.searchParams.get('secret') || ((await readBody(req)).secret);
-      const EXP = env.MIGRATE_SECRET || 'am-migrate-2026';
-      if (secret !== EXP) return send(403, { error: 'forbidden' });
-      let migrated = 0, errors = 0;
-      const { data: prows } = await sb.from('photos').select('id,car_id,company_id,data');
-      for (const r of (prows || [])) {
-        if (!r.data || r.url) continue;
-        try { const url = await uploadToStorage(r.data, r.company_id, r.car_id, 'photo'); await sb.from('photos').update({ url }).eq('id', r.id); migrated++; }
-        catch (e) { errors++; }
-      }
-      const { data: vrows } = await sb.from('videos').select('id,car_id,company_id,data');
-      for (const r of (vrows || [])) {
-        if (!r.data || r.url) continue;
-        try { const url = await uploadToStorage(r.data, r.company_id, r.car_id, 'video'); await sb.from('videos').update({ url }).eq('id', r.id); migrated++; }
-        catch (e) { errors++; }
-      }
-      return send(200, { ok: true, migrated, errors });
-    }
     return send(404, { error: 'no_route' });
   } catch (e) {
     console.error('[err]', e && e.message, e && e.stack);

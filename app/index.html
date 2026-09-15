@@ -3549,7 +3549,7 @@ async function bootstrap(){
         ]);
         const listCars=list.cars||[];
         const serverIds=new Set(listCars.map(c=>c.id));
-        listCars.forEach(c=>{ const id=c.id; delete c.id; CARS[id]=c; if(c.listedAt) LISTED_AT[id]=c.listedAt; });
+        listCars.forEach(c=>{ const id=c.id; delete c.id; CARS[id]=c; if(c.listedAt) LISTED_AT[id]=c.listedAt; if(c.cover && isPhotoOK(c.cover) && !(CAR_PHOTOS[id]&&CAR_PHOTOS[id].length)) CAR_PHOTOS[id]=[c.cover]; });
         // Evict any local car the server did NOT return for this company. Without this,
         // sample cars cleared server-side keep lingering in the browser cache and
         // re-appear on the shared-link homepage (the long-standing "复活" bug).
@@ -3570,7 +3570,7 @@ async function bootstrap(){
         }
         if(!cid && list.company) cid=list.company;
         sharedCompany=cid;
-        saveCars(); saveListed(); saveEmps(); saveShowrooms();
+        saveCars(); saveListed(); saveEmps(); saveShowrooms(); saveCarPhotos();
         loaded=true;
       }
     }catch(e){ error=e; console.error('public load failed', e); }
@@ -4158,7 +4158,7 @@ async function syncNow(silent, withPhotos){
     // keep the cached session record in sync with the server's latest employee data
     if(p.employees){ for(const e of p.employees){ if(!e.deleted && e.id===curEmployee){ saveSession(Object.assign({id:e.id}, e.data), loadCompany(), SYNC.token); break; } } }
     SYNC.since=p.now; localStorage.setItem('am_since',String(p.now));
-    saveCars(); saveListed(); saveEmps();
+    saveCars(); saveListed(); saveEmps(); saveCarPhotos(); saveCarVideos();
     if(n){ recomputeFacets(); renderHome(); renderStock(); if(isTopEmployee()&&document.getElementById('staffList')) renderStaff(); }
     /* 3 — surface anything the server refused */
     const bad=(rejected||[]).filter(r=>r.reason!=='stale');
@@ -4212,9 +4212,12 @@ function lazyPhotoObserve(){
 }
 function lazyPhotoFetch(id, el){
   if(CAR_PHOTOS[id] && CAR_PHOTOS[id].length){ if(el) applyLazyPhoto(id, el); return; }
-  if(!SYNC.base || !SYNC.token) return; // only signed-in devices fetch from the server
+  if(!SYNC.base) return; // need a server base; guests (no token) use the public photos endpoint
+  const useAuth = !!SYNC.token;
+  const ep = useAuth ? ('/api/car/'+encodeURIComponent(id)+'/photos') : ('/api/public/car/'+encodeURIComponent(id)+'/photos');
+  const caller = useAuth ? api : apiPublic;
   if(el) el.setAttribute('data-loading','1');
-  api('/api/car/'+encodeURIComponent(id)+'/photos').then(r=>{
+  caller(ep).then(r=>{
     if(r && r.photos && r.photos.length){ const _s=new Set(CAR_PHOTOS[id]||[]); r.photos.filter(isPhotoOK).forEach(p=>_s.add(p)); CAR_PHOTOS[id]=Array.from(_s); saveCarPhotos(); }
     if(r && r.videos && r.videos.length){ CAR_VIDEOS[id]=r.videos; saveCarVideos(); }
     if(el) applyLazyPhoto(id, el);
