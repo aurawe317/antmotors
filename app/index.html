@@ -75,6 +75,7 @@
   .attr b{color:var(--gold);}
   .attr .grow{flex:1; color:var(--text-dim);}
   .attr .wa-mini{display:flex; align-items:center; gap:5px; color:var(--wa); font-weight:700;}
+  .attr .share-mini{color:var(--gold);}
   /* Sub-page mode: hide chrome bars, show fixed back bar */
   .phone.subpage-mode .appbar,
   .phone.subpage-mode .attr,
@@ -702,7 +703,7 @@
     <div class="attr" id="attrBanner" style="display:none;">
       <span class="dot"></span>
       <div class="grow" id="attrText"></div>
-      <div class="wa-mini" onclick="waTap('general')">↗ WhatsApp</div>
+      <div class="wa-mini share-mini" onclick="shareCurrentScreen()" title="Share link">↗ Share</div>
     </div>
 
     <!-- sub-page fixed back bar (workbench / admin / favorites / perm / settings / detail) -->
