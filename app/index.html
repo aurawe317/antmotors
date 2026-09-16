@@ -2093,12 +2093,17 @@ function isPhotoOK(p){ return typeof p==='string' && p.length>4 && (/^data:image
 // Upload a cropped base64 media (image or video) to our /api/upload proxy, which stores it
 // in Supabase Storage and returns a CDN URL. Keeps the DB + sync payload tiny and lets the
 // browser cache images — no more base64 blobs in localStorage, no more flicker on slow nets.
-async function uploadMedia(dataUrl){
+async function uploadMedia(dataUrl, carId){
   if(/^https?:\/\//.test(dataUrl)) return dataUrl; // already a URL — nothing to do
-  try{
-    const r=await api('/api/upload',{method:'POST',body:{dataUrl, carId:curCar}});
-    if(r && r.ok && r.url) return r.url;
-  }catch(e){ console.error('upload failed', e); }
+  let lastErr;
+  for(let attempt=0; attempt<3; attempt++){
+    try{
+      const r=await api('/api/upload',{method:'POST',body:{dataUrl, carId: carId||curCar}});
+      if(r && r.ok && r.url) return r.url;
+    }catch(e){ lastErr=e; }
+    if(attempt<2) await new Promise(res=>setTimeout(res, 600*(attempt+1)));
+  }
+  console.error('uploadMedia failed after retries', lastErr);
   return null;
 }
 function toggleFeatured(){
@@ -2371,10 +2376,60 @@ let SHOWROOM_PHOTOS={};
 function saveCarVideos(){}
 function loadCarVideos(){}
 // Persist car photos to localStorage so they survive a refresh WITHOUT depending on a
-// successful server sync. Photos are now short Storage URLs (not base64 blobs), so the
-// payload is tiny and there is no longer any per-origin quota risk.
-function saveCarPhotos(){ try{ const o={}; for(const k in CAR_PHOTOS){ const arr=(CAR_PHOTOS[k]||[]).filter(p=>typeof p==='string' && p.startsWith('http')); if(arr.length) o[k]=arr; } localStorage.setItem('am_car_photos', JSON.stringify(o)); }catch(e){ /* quota — ignore */ } }
-function loadCarPhotos(){ try{ const o=JSON.parse(localStorage.getItem('am_car_photos')||'null'); if(o) Object.assign(CAR_PHOTOS,o); }catch(e){} }
+// successful server sync. Photos are short Storage URLs (tiny, persist fine). Any base64
+// that couldn't be uploaded yet is kept in a SEPARATE 'raw' key with quota-safe trimming,
+// so a failed upload is never silently lost — reconcileLocalPhotos() converts it to a URL
+// once the network is available.
+function saveCarPhotos(){ try{
+  const o={}, raw={};
+  for(const k in CAR_PHOTOS){
+    const arr=CAR_PHOTOS[k]||[];
+    const urls=[], base=[];
+    for(const p of arr){ if(typeof p==='string' && p.startsWith('http')) urls.push(p); else if(typeof p==='string' && p.startsWith('data:')) base.push(p); }
+    if(urls.length) o[k]=urls;
+    if(base.length) raw[k]=base;
+  }
+  localStorage.setItem('am_car_photos', JSON.stringify(o));
+  if(Object.keys(raw).length){
+    try{ localStorage.setItem('am_car_photos_raw', JSON.stringify(raw)); }
+    catch(e){
+      // Quota: drop the largest ~1/3 of base64 blobs and retry once.
+      const flat=[]; for(const k in raw) for(const p of raw[k]) flat.push({k,p,len:p.length});
+      flat.sort((a,b)=>b.len-a.len);
+      const drop=new Set(flat.slice(0,Math.max(1,Math.ceil(flat.length/3))).map(x=>x.k+' '+x.p));
+      const trimmed={}; for(const k in raw){ const kept=raw[k].filter(p=>!drop.has(k+' '+p)); if(kept.length) trimmed[k]=kept; }
+      try{ localStorage.setItem('am_car_photos_raw', JSON.stringify(trimmed)); }catch(e2){ try{ localStorage.removeItem('am_car_photos_raw'); }catch(e3){} }
+    }
+  } else { try{ localStorage.removeItem('am_car_photos_raw'); }catch(e){} }
+}catch(e){ /* ignore */ } }
+function loadCarPhotos(){ try{
+  const o=JSON.parse(localStorage.getItem('am_car_photos')||'null'); if(o) Object.assign(CAR_PHOTOS,o);
+  // Merge any base64 backups; reconcileLocalPhotos() will turn them into URLs on boot.
+  const raw=JSON.parse(localStorage.getItem('am_car_photos_raw')||'null');
+  if(raw){ for(const k in raw){ const cur=CAR_PHOTOS[k]||[]; const set=new Set(cur); for(const p of (raw[k]||[])) if(!set.has(p)){ cur.push(p); set.add(p); } if(cur.length) CAR_PHOTOS[k]=cur; } }
+}catch(e){} }
+// Convert any local base64 photo into a Storage URL (uploading it) so it becomes tiny,
+// persistable, and pushable to the server. Runs in the background at boot; photos keep
+// rendering as base64 until converted, then reconcile to URLs automatically.
+async function reconcileLocalPhotos(){
+  if(!SYNC.base || !SYNC.token) return false;
+  let changed=false;
+  for(const id in CAR_PHOTOS){
+    const arr=CAR_PHOTOS[id]||[];
+    if(!arr.some(p=>typeof p==='string' && p.startsWith('data:'))) continue;
+    const out=[];
+    for(const p of arr){
+      if(typeof p==='string' && p.startsWith('data:')){
+        try{ const url=await uploadMedia(p, id); if(url){ out.push(url); changed=true; continue; } }catch(e){}
+      }
+      out.push(p);
+    }
+    CAR_PHOTOS[id]=out;
+    if(changed) markCarDirty(id);
+  }
+  if(changed){ saveCarPhotos(); try{ renderHome(); renderStock(); }catch(e){} }
+  return changed;
+}
 function saveShowroomPhotos(){ jsave('am_showroom_photos',SHOWROOM_PHOTOS); }
 function loadShowroomPhotos(){ const o=jload('am_showroom_photos',null); if(o) Object.assign(SHOWROOM_PHOTOS,o); }
 
@@ -2589,12 +2644,14 @@ function frameRatio(sel, fallback){
 
 /* ---- multi-photo: crop & adjust each selected image at full resolution ---- */
 async function appendCarPhotoSingle(dataUrl){
-  const url=await uploadMedia(dataUrl);
-  if(!url){ toast(T('uploadFail','Upload failed — please retry')); return; }
+  const url=await uploadMedia(dataUrl, curCar);
   if(!CAR_PHOTOS[curCar]) CAR_PHOTOS[curCar]=[];
-  CAR_PHOTOS[curCar].push(url);
-  saveCarPhotos(); renderDetailThumbs(); markCarDirty(curCar);   // push URL to server so shared links show it
-  toast(T('photoUp','Photo uploaded for')+' <b>'+(CARS[curCar]&&CARS[curCar].name)+'</b>');
+  // On upload failure, keep the original (base64) locally so the photo is NOT silently lost;
+  // reconcileLocalPhotos() will convert it to a URL (and upload it) once the network recovers.
+  CAR_PHOTOS[curCar].push(url || dataUrl);
+  saveCarPhotos(); renderDetailThumbs(); markCarDirty(curCar);   // push to server so shared links show it
+  toast(url ? (T('photoUp','Photo uploaded for')+' <b>'+(CARS[curCar]&&CARS[curCar].name)+'</b>')
+            : T('photoPending','Saved locally — will upload when back online'));
 }
 // Crop each file one-by-one through the same 4:3 cropper so every photo is
 // individually adjusted. Export keeps source resolution (cap 2400px long edge),
@@ -2613,7 +2670,7 @@ function cropCarPhotosSequential(files){
     }
     const f=arr[i++];
     openCropper(f, 4/3,
-      async (dataUrl)=>{ if(dataUrl && isPhotoOK(dataUrl)){ const url=await uploadMedia(dataUrl); if(url){ if(!CAR_PHOTOS[curCar]) CAR_PHOTOS[curCar]=[]; CAR_PHOTOS[curCar].push(url); added++; } } requestAnimationFrame(advance); },
+      async (dataUrl)=>{ if(dataUrl && isPhotoOK(dataUrl)){ const url=await uploadMedia(dataUrl, curCar); if(!CAR_PHOTOS[curCar]) CAR_PHOTOS[curCar]=[]; CAR_PHOTOS[curCar].push(url || dataUrl); added++; } requestAnimationFrame(advance); },
       ()=>{ requestAnimationFrame(advance); }   // cancel one photo → skip to the next
     );
   };
@@ -3495,6 +3552,7 @@ async function bootstrap(){
       // on boot is now cheap AND makes refreshes restore the gallery from the server directly
       // (instead of depending on localStorage, which used to overflow and silently drop photos).
       SYNC.since=0; try{ localStorage.setItem('am_since','0'); }catch(e){}
+      await reconcileLocalPhotos(); // turn any local base64 into URLs (uploads + persists) before the pull
       await syncNow(true, true);
       loaded=true;
       lazyPhotoObserve(); // fire-and-forget: stream in any remaining photos as cards become visible
@@ -4239,7 +4297,7 @@ window.addEventListener('online',()=>syncNow(true));
 // When the tab regains focus, do a FULL company refresh (since=0). This makes server-clock
 // fix land on long-open sessions without a logout, and guarantees you pick up teammates' cars
 // even if your incremental cursor had drifted ahead of their (client-clock-based) writes.
-document.addEventListener('visibilitychange',()=>{ if(!document.hidden && SYNC.base && SYNC.token){ SYNC.since=0; try{ localStorage.setItem('am_since','0'); }catch(e){} syncNow(true); } });
+document.addEventListener('visibilitychange',()=>{ if(!document.hidden && SYNC.base && SYNC.token){ SYNC.since=0; try{ localStorage.setItem('am_since','0'); }catch(e){} syncNow(true, false); } });
 setInterval(()=>{ if(SYNC.base&&SYNC.token&&!document.hidden) syncNow(true, false); },20000);
 /* ---- full data backup / restore (JSON file) ---- */
 function exportData(){
