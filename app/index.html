@@ -225,6 +225,8 @@
   .gv-shop{flex-direction:column; gap:8px; text-align:center;}
   .gv-cap{color:var(--gold); font-weight:800; font-size:13px; line-height:1.4;}
   .gdots{position:absolute; bottom:8px; left:0; right:0; display:flex; gap:5px; justify-content:center; z-index:6; pointer-events:none;}
+  .hero-pill{position:absolute; left:14px; bottom:34px; z-index:6; display:flex; align-items:center; gap:6px; max-width:calc(100% - 28px); padding:6px 12px; border-radius:999px; background:rgba(15,14,14,.55); color:#F5F3EF; font-size:11px; font-weight:600; line-height:1; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);}
+  .hero-pill b{color:var(--gold); font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .gdot{width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.45); transition:.2s;}
   .gdot.on{background:var(--gold); width:16px; border-radius:3px;}
   .thumbs{display:flex; gap:8px; padding:12px 16px; overflow-x:auto; scrollbar-width:none;}
@@ -799,6 +801,7 @@
       <div class="detail-hero">
         <div class="gal" id="detailGal"><div class="gtrack" id="detailTrack"></div></div>
         <div class="gdots" id="detailDots"></div>
+        <div class="hero-pill" id="heroShopPill" style="display:none;"></div>
       </div>
       <div class="upload-banner" id="uploadBanner" style="display:none;">
         <span class="lbl" id="uploadLabel" data-i18n="uploadMedia">Upload car media</span>
@@ -2183,6 +2186,14 @@ function renderDetail(){
       `</div>`;
   }
   const ds=document.getElementById('dStock'); if(ds) ds.innerHTML=stockBadge(curCar);
+  const hp=document.getElementById('heroShopPill');
+  if(hp){
+    if(curRole==='customer' && curSales && empOf(curSales)){
+      const s=empOf(curSales);
+      hp.innerHTML=T('shoppingWith',"You're shopping with")+' <b>'+(s.name||curSales)+'</b>';
+      hp.style.display='flex';
+    } else { hp.style.display='none'; }
+  }
   const saveTx=document.querySelector('#subMoreMenu .mi-tx[data-i18n="save"]');
   if(saveTx){ const sv=SAVED_CARS.has(curCar); saveTx.textContent=sv?T('saved','Saved'):T('save','Save'); saveTx.style.color=sv?'var(--gold)':''; }
   renderRolePrices();
