@@ -12,6 +12,11 @@
 <link rel="icon" href="favicon.ico" sizes="any" />
 <link rel="icon" href="icon.svg" type="image/svg+xml" />
 <title>Ant Motors — Ghana Car Export</title>
+<meta property="og:title" content="Ant Motors — Ghana Car Export" />
+<meta property="og:description" content="Quality used cars for export from Ghana. Toyota, Honda, Hyundai and more." />
+<meta property="og:image" content="https://antmotors.pages.dev/icon-512.png" />
+<meta property="og:type" content="website" />
+<meta name="twitter:card" content="summary_large_image" />
 <style>
   :root{
     --r-card:8px; --r-btn:4px; --r-pill:999px; --gap:4px;
@@ -3161,12 +3166,13 @@ async function deleteEmployee(id){
 }
 function copyText(s){ try{ if(navigator.clipboard) navigator.clipboard.writeText(s); else { const ta=document.createElement('textarea'); ta.value=s; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); } }catch(e){} }
 
-// Build the share URL. A specific car => /?c=<id>&ref=<emp> (opens that car).
-// Otherwise (showroom/home) => /?ref=<emp> only (opens the showroom, not a car).
+// Build the share URL. A specific car => /share?c=<id>&ref=<emp> (opens that car,
+// and the /share landing page serves WeChat/OG share-card metadata for it).
+// Otherwise (showroom/home) => /share?ref=<emp> only (opens the showroom, not a car).
 function shareUrlFor(carId){
   const ref=shareRefVal();
-  const base=location.origin+'/';
-  return carId ? (base+'?c='+carId+'&ref='+ref) : (ref ? (base+'?ref='+ref) : base);
+  const base=location.origin+'/share';
+  return carId ? (base+'?c='+encodeURIComponent(carId)+'&ref='+encodeURIComponent(ref)) : (ref ? (base+'?ref='+encodeURIComponent(ref)) : location.origin+'/');
 }
 // Unified share: native multi-app picker (WhatsApp / WeChat / Messages / Copy…) when
 // available; custom sheet otherwise. The URL is ALSO embedded in the text — WeChat (and
@@ -3197,14 +3203,21 @@ function activeScreenId(){ const a=document.querySelector('.screen.active'); ret
 function shareCurrentScreen(){
   if(activeScreenId()==='scr-detail') shareCar(); else shareHome();
 }
-// Fallback share sheet when navigator.share is unavailable (desktop / older browsers).
+// Fallback share sheet (shown when navigator.share is unavailable, or when a native
+// share call errors out). Includes a scannable QR code + copy-link + WhatsApp so the
+// customer can still open the page reliably — e.g. when a native share sheet silently
+// drops the url (the WeChat "opened but no page" case) or the device has no share sheet.
 function showShareSheet(url, title){
   let sheet=document.getElementById('amShareSheet');
   if(!sheet){
     const style=document.createElement('style');
     style.textContent='.am-ss-back{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99998;display:flex;align-items:flex-end;justify-content:center;}'+
       '.am-ss{width:100%;max-width:480px;background:#151312;border-top-left-radius:16px;border-top-right-radius:16px;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));color:#F5F3EF;font-family:inherit;box-sizing:border-box;}'+
-      '.am-ss h4{margin:0 0 10px;font-size:14px;font-weight:800;color:#E8C268;}'+
+      '.am-ss h4{margin:0 0 8px;font-size:14px;font-weight:800;color:#E8C268;}'+
+      '.am-ss .qrbox{display:flex;justify-content:center;margin:2px 0 12px;}'+
+      '.am-ss .qr{background:#fff;border-radius:10px;padding:10px;width:172px;height:172px;display:flex;align-items:center;justify-content:center;}'+
+      '.am-ss .qr svg{width:152px;height:152px;display:block;}'+
+      '.am-ss .qr span{font-size:11px;color:#888;}'+
       '.am-ss .url{font-size:11px;color:#A9A39A;word-break:break-all;background:#0F0E0E;padding:8px 10px;border-radius:8px;margin-bottom:12px;line-height:1.5;}'+
       '.am-ss .row{display:flex;gap:10px;}'+
       '.am-ss button{flex:1;border:none;border-radius:999px;padding:12px;font-weight:800;font-size:14px;cursor:pointer;}'+
@@ -3213,7 +3226,7 @@ function showShareSheet(url, title){
       '.am-ss .cancel{margin-top:10px;width:100%;background:transparent;color:#A9A39A;font-weight:600;}';
     document.head.appendChild(style);
     sheet=document.createElement('div'); sheet.id='amShareSheet'; sheet.className='am-ss-back';
-    sheet.innerHTML='<div class="am-ss"><h4>'+T('shareLink','Share link')+'</h4><div class="url"></div><div class="row"><button class="wa">WhatsApp</button><button class="copy">'+T('copyLink','Copy link')+'</button></div><button class="cancel">'+T('cancel','Cancel')+'</button></div>';
+    sheet.innerHTML='<div class="am-ss"><h4>'+T('shareLink','Share link')+'</h4><div class="qrbox"><div class="qr" id="amQr"></div></div><div class="url"></div><div class="row"><button class="wa">WhatsApp</button><button class="copy">'+T('copyLink','Copy link')+'</button></div><button class="cancel">'+T('cancel','Cancel')+'</button></div>';
     document.body.appendChild(sheet);
     sheet.addEventListener('click',e=>{ if(e.target===sheet) sheet.remove(); });
     sheet.querySelector('.cancel').onclick=()=>sheet.remove();
@@ -3221,7 +3234,24 @@ function showShareSheet(url, title){
   sheet.querySelector('.url').textContent=url;
   sheet.querySelector('.copy').onclick=()=>{ copyText(url); toast((T('linkCopied','Link copied')||'Link copied')+': '+url); sheet.remove(); };
   sheet.querySelector('.wa').onclick=()=>{ const t=encodeURIComponent(title+'\n'+url); const w=window.open('https://wa.me/?text='+t,'_blank'); if(!w) location.href='https://wa.me/?text='+t; sheet.remove(); };
+  renderQr(sheet.querySelector('.qr'), url);
   document.body.appendChild(sheet);
+}
+// Render a QR code for `url` into `box`. Uses the lightweight qrcode-generator lib,
+// lazily loaded from CDN so the base bundle stays small; falls back to a text hint if
+// the network is unavailable. Once loaded, any visible QR box is (re)drawn.
+function renderQr(box, url){
+  if(!box) return;
+  box.__qrUrl = url;
+  const draw=()=>{ try{ const qr=window.qrcode(0,'M'); qr.addData(url); qr.make(); box.innerHTML=qr.createSvgTag(4,1); }catch(e){ box.innerHTML='<span>QR unavailable</span>'; } };
+  if(window.qrcode){ draw(); return; }
+  if(window.__qrLoading) return; // already fetching; onload will redraw all boxes
+  window.__qrLoading=true;
+  const s=document.createElement('script');
+  s.src='https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';
+  s.onload=()=>{ window.__qrLoading=false; document.querySelectorAll('.am-ss .qr').forEach(b=>{ const u=b.__qrUrl||url; try{ const qr=window.qrcode(0,'M'); qr.addData(u); qr.make(); b.innerHTML=qr.createSvgTag(4,1); }catch(e){ b.innerHTML='<span>QR unavailable</span>'; } }); };
+  s.onerror=()=>{ window.__qrLoading=false; box.innerHTML='<span>QR unavailable</span>'; };
+  document.head.appendChild(s);
 }
 
 /* ---- favorites & history (persisted to localStorage) ---- */
