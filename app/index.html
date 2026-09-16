@@ -3183,7 +3183,11 @@ function copyText(s){ try{ if(navigator.clipboard) navigator.clipboard.writeText
 function shareUrlFor(carId){
   const ref=shareRefVal();
   const base=location.origin+'/share';
-  return carId ? (base+'?c='+encodeURIComponent(carId)+'&ref='+encodeURIComponent(ref)) : (ref ? (base+'?ref='+encodeURIComponent(ref)) : location.origin+'/');
+  // `_` is a per-share nonce so WeChat (and other crawlers) re-fetch OG metadata
+  // every time instead of serving a cached "no cover" result. The /share route
+  // strips it before redirecting the human visitor to the clean SPA URL.
+  const nonce='&_='+Date.now();
+  return carId ? (base+'?c='+encodeURIComponent(carId)+'&ref='+encodeURIComponent(ref)+nonce) : (ref ? (base+'?ref='+encodeURIComponent(ref)+nonce) : location.origin+'/');
 }
 // Unified share: native multi-app picker (WhatsApp / WeChat / Messages / Copy…) when
 // available; custom sheet otherwise. The URL is ALSO embedded in the text — WeChat (and
