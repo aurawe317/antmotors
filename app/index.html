@@ -2050,7 +2050,7 @@ function renderHome(){
   populateFilterSelects();
   const grid=document.getElementById('homeGrid'); grid.innerHTML="";
   const homeKeys=Object.keys(CARS).filter(matchCar);
-  if(homeKeys.length===0){ grid.innerHTML='<div class="empty" style="margin:40px 16px;text-align:center;color:var(--text-dim)">'+T('needServer','Please enter your server address in Settings to load inventory.')+'</div>'; }
+  if(homeKeys.length===0){ const emptyMsg=isSharedView()?T('emptyShared','Our showroom is being updated — tap the WhatsApp button below to ask about available vehicles.'):T('needServer','Please enter your server address in Settings to load inventory.'); grid.innerHTML='<div class="empty" style="margin:40px 16px;text-align:center;color:var(--text-dim)">'+emptyMsg+'</div>'; }
   homeKeys.forEach(k=>{ grid.appendChild(carCard(k)); });
   // Featured cars now live in the big hero carousel (see renderHeroCarousel) — no separate section below.
   renderHeroCarousel();
@@ -2948,14 +2948,21 @@ function openPricingInfo(){
 // Best ref to embed in a share link: prefer the current "view as" salesperson
 // if it's a real known employee, else fall back to the logged-in user. Avoids
 // embedding the stale default "kwame" when the real company has different staff.
-function shareRefVal(){ return (ALL_EMP[curSales]) ? curSales : (ALL_EMP[curEmployee] ? curEmployee : curSales); }
+function shareRefVal(){
+  // Only return an employee id the backend can actually resolve. The demo default
+  // "kwame" (or any id not in the loaded roster) maps to NO company on the server,
+  // so a link carrying it lands the recipient on an EMPTY showroom.
+  if(ALL_EMP[curSales]) return curSales;
+  if(ALL_EMP[curEmployee]) return curEmployee;
+  return '';
+}
 function syncSheet(){
   document.querySelectorAll('#previewSheet [data-role]').forEach(b=>b.classList.toggle('on',b.dataset.role===curRole));
   document.querySelectorAll('#previewSheet [data-sales]').forEach(b=>b.classList.toggle('on',b.dataset.sales===curSales));
   document.querySelectorAll('#previewSheet [data-login]').forEach(b=>b.classList.toggle('on',b.dataset.login===curEmployee));
-  document.getElementById('shareUrl').textContent=location.origin+'/?c='+curCar+'&ref='+shareRefVal();
+  document.getElementById('shareUrl').textContent=shareUrlFor(curCar);
 }
-function copyShare(){ const u=location.origin+'/?c='+curCar+'&ref='+shareRefVal(); if(navigator.clipboard) navigator.clipboard.writeText(u); toast(T('shareLinkCopied','Share link copied')+':<br><b>'+u+'</b>'); }
+function copyShare(){ const u=shareUrlFor(curCar); if(navigator.clipboard) navigator.clipboard.writeText(u); toast(T('shareLinkCopied','Share link copied')+':<br><b>'+u+'</b>'); }
 function syncPreviewAccess(){
   const top=isTopEmployee();
   const topOnly=document.getElementById('pvTopOnly');
@@ -3182,13 +3189,22 @@ function copyText(s){ try{ if(navigator.clipboard) navigator.clipboard.writeText
 // and the /share landing page serves WeChat/OG share-card metadata for it).
 // Otherwise (showroom/home) => /share?ref=<emp> only (opens the showroom, not a car).
 function shareUrlFor(carId){
+  // Scope the link to something the backend can resolve: a real employee ref
+  // first, otherwise the company id. A link with an unresolvable ref makes
+  // /api/public return zero cars and the recipient lands on an empty showroom.
+  let scope='';
   const ref=shareRefVal();
+  if(ref){ scope='ref='+encodeURIComponent(ref); }
+  else{
+    try{ const co=loadCompany(); if(co&&co.id) scope='company='+encodeURIComponent(co.id); }catch(e){}
+    if(!scope && typeof sharedCompany!=='undefined' && sharedCompany) scope='company='+encodeURIComponent(sharedCompany);
+  }
   const base=location.origin+'/share';
   // `_` is a per-share nonce so WeChat (and other crawlers) re-fetch OG metadata
   // every time instead of serving a cached "no cover" result. The /share route
   // strips it before redirecting the human visitor to the clean SPA URL.
   const nonce='&_='+Date.now();
-  return carId ? (base+'?c='+encodeURIComponent(carId)+'&ref='+encodeURIComponent(ref)+nonce) : (ref ? (base+'?ref='+encodeURIComponent(ref)+nonce) : location.origin+'/');
+  return carId ? (base+'?c='+encodeURIComponent(carId)+(scope?'&'+scope:'')+nonce) : (scope ? (base+'?'+scope+nonce) : location.origin+'/');
 }
 // Unified share: native multi-app picker (WhatsApp / WeChat / Messages / Copy…) when
 // available; custom sheet otherwise. The URL is ALSO embedded in the text — WeChat (and
@@ -3685,6 +3701,7 @@ async function bootstrap(){
         const url=new URL(location.href);
         const carId=url.searchParams.get('c')||url.searchParams.get('car');
         const ref=url.searchParams.get('ref');
+        const coParam=url.searchParams.get('company')||'';
 
         // If a specific car is shared, load IT first. By its own id the backend
         // returns the car's REAL company, plus its photos & videos — which the
@@ -3708,7 +3725,8 @@ async function bootstrap(){
         }
 
         const listQ = cid ? ('?company='+encodeURIComponent(cid))
-                          : (ref?'?ref='+encodeURIComponent(ref):'');
+                          : (coParam ? ('?company='+encodeURIComponent(coParam))
+                            : (ref?'?ref='+encodeURIComponent(ref):''));
         const [list, rooms] = await Promise.all([
           apiPublic('/api/public/cars'+listQ),
           apiPublic('/api/showrooms'+listQ)
@@ -3808,9 +3826,11 @@ async function bootstrap(){
   }
 
   // 4) if nothing worked and we have zero inventory, tell the user to configure a server
+  // (shared-link customers get a customer-friendly message instead — they have no Settings)
   if(!loaded && Object.keys(CARS).length===0 && !SYNC.base){
     const home=document.getElementById('homeGrid');
-    if(home) home.innerHTML='<div class="empty" style="margin:40px 16px;text-align:center;color:var(--text-dim)">'+T('needServer','Please enter your server address in Settings to load inventory.')+'</div>';
+    const emptyMsg=isSharedView()?T('emptyShared','Our showroom is being updated — tap the WhatsApp button below to ask about available vehicles.'):T('needServer','Please enter your server address in Settings to load inventory.');
+    if(home) home.innerHTML='<div class="empty" style="margin:40px 16px;text-align:center;color:var(--text-dim)">'+emptyMsg+'</div>';
   }
   if(error && !loaded){
     setSyncState('err', (navigator.onLine===false)?T('syncQueued','Offline — changes queued'):error.message);
@@ -5095,7 +5115,13 @@ function goGoneHome(){
   go('scr-home');
 }
 parseDeepLink();
-if(isSharedView()){ curLang='en'; }   // shared car pages always open in English; never follow the viewer's saved/device language
+// A customer arriving via a shared link must NEVER see the desktop demo role
+// switcher (Boss/Owner, cost prices…) — it makes the shared page look like a
+// prototype and leaks staff tiers. Hide it for any shared view.
+if(isSharedView()){
+  try{ const dm=document.querySelector('.demo'); if(dm) dm.style.display='none'; }catch(e){}
+  curLang='en';   // shared car pages always open in English; never follow the viewer's saved/device language
+}
 applyTheme(); syncLangUI(); applyI18n(); renderSyncUI(); updateAuthCTA();
 applyDefSales(); renderNotifs(); genDeviceId();
 bootstrap().then(()=>{

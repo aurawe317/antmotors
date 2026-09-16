@@ -74,13 +74,17 @@ export async function onRequest(context) {
   const { request, env } = context;
   const u = new URL(request.url);
   const c = u.searchParams.get('c') || u.searchParams.get('car') || '';
-  const ref = u.searchParams.get('ref') || u.searchParams.get('company') || '';
+  const ref = u.searchParams.get('ref') || '';
+  const cp = u.searchParams.get('company') || '';
   const origin = u.origin;
 
-  // 真实用户最终落点：SPA 详情页（带 c）或展厅首页（只带 ref）
+  // 真实用户最终落点：SPA 详情页（带 c）或展厅首页（带 ref 或 company）。
+  // company 必须一并透传 —— 否则只带 company 的展厅分享在重定向时会丢掉公司
+  // 作用域，接收者就会落到一个空展厅。
   const target = c
-    ? `${origin}/?c=${encodeURIComponent(c)}${ref ? `&ref=${encodeURIComponent(ref)}` : ''}`
-    : (ref ? `${origin}/?ref=${encodeURIComponent(ref)}` : `${origin}/`);
+    ? `${origin}/?c=${encodeURIComponent(c)}${ref ? `&ref=${encodeURIComponent(ref)}` : ''}${cp ? `&company=${encodeURIComponent(cp)}` : ''}`
+    : (ref ? `${origin}/?ref=${encodeURIComponent(ref)}`
+           : (cp ? `${origin}/?company=${encodeURIComponent(cp)}` : `${origin}/`));
 
   // 首页 / 展厅分享：无具体车，给品牌级 OG 即可
   if (!c) {
