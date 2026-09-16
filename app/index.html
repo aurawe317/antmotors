@@ -686,6 +686,9 @@
         <div class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Theme">
           <span id="themeIcon"></span>
         </div>
+        <div class="icon-btn" id="shareBtnTop" onclick="shareCurrentScreen()" title="Share">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="18" cy="5" r="3" stroke="var(--gold)" stroke-width="1.6"/><circle cx="6" cy="12" r="3" stroke="var(--gold)" stroke-width="1.6"/><circle cx="18" cy="19" r="3" stroke="var(--gold)" stroke-width="1.6"/><line x1="8.6" y1="10.7" x2="15.4" y2="6.3" stroke="var(--gold)" stroke-width="1.6"/><line x1="8.6" y1="13.3" x2="15.4" y2="17.7" stroke="var(--gold)" stroke-width="1.6"/></svg>
+        </div>
       </div>
     </div>
 
@@ -3156,11 +3159,69 @@ async function deleteEmployee(id){
     } else { toast('⚠ '+(err.message||'delete failed')); }
   }
 }
+function copyText(s){ try{ if(navigator.clipboard) navigator.clipboard.writeText(s); else { const ta=document.createElement('textarea'); ta.value=s; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); } }catch(e){} }
+
+// Build the share URL. A specific car => /?c=<id>&ref=<emp> (opens that car).
+// Otherwise (showroom/home) => /?ref=<emp> only (opens the showroom, not a car).
+function shareUrlFor(carId){
+  const ref=shareRefVal();
+  const base=location.origin+'/';
+  return carId ? (base+'?c='+carId+'&ref='+ref) : (ref ? (base+'?ref='+ref) : base);
+}
+// Unified share: native multi-app picker (WhatsApp / WeChat / Messages / Copy…) when
+// available; custom sheet otherwise. The URL is ALSO embedded in the text — WeChat (and
+// some Android share targets) drop navigator.share's `url` field, so a recipient may
+// otherwise receive text with no tappable link.
+function shareLink(url, title, text){
+  const shareText=(text?text+' ':'')+url;
+  if(navigator.share){
+    navigator.share({title:title, text:shareText, url:url}).then(()=>{}).catch(err=>{
+      if(err && err.name==='AbortError') return; // user cancelled
+      showShareSheet(url, title);
+    });
+    return;
+  }
+  showShareSheet(url, title);
+}
 function shareCar(){
-  const u=location.origin+'/?c='+curCar+'&ref='+shareRefVal();
-  if(navigator.share){ navigator.share({title:brandName()+' · '+carName(CARS[curCar]), text:'Check this car on '+brandName(), url:u}).catch(()=>{}); return; }
-  if(navigator.clipboard) navigator.clipboard.writeText(u).catch(()=>{});
-  toast(T('linkCopiedRef','Link copied · ref')+' <b>'+curSales+'</b><br><span style="font-size:10px;word-break:break-all;">'+u+'</span>');
+  const u=shareUrlFor(curCar);
+  const title=brandName()+' · '+(CARS[curCar]?carName(CARS[curCar]):'');
+  shareLink(u, title, 'Check this car on '+brandName());
+}
+function shareHome(){
+  const u=shareUrlFor(null);
+  shareLink(u, brandName()+' — Ghana car export', 'Browse our showroom on '+brandName());
+}
+function activeScreenId(){ const a=document.querySelector('.screen.active'); return a?a.id:null; }
+// Top-right share button: share THIS car on the detail page, else the showroom/home.
+function shareCurrentScreen(){
+  if(activeScreenId()==='scr-detail') shareCar(); else shareHome();
+}
+// Fallback share sheet when navigator.share is unavailable (desktop / older browsers).
+function showShareSheet(url, title){
+  let sheet=document.getElementById('amShareSheet');
+  if(!sheet){
+    const style=document.createElement('style');
+    style.textContent='.am-ss-back{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:99998;display:flex;align-items:flex-end;justify-content:center;}'+
+      '.am-ss{width:100%;max-width:480px;background:#151312;border-top-left-radius:16px;border-top-right-radius:16px;padding:18px 16px calc(18px + env(safe-area-inset-bottom,0px));color:#F5F3EF;font-family:inherit;box-sizing:border-box;}'+
+      '.am-ss h4{margin:0 0 10px;font-size:14px;font-weight:800;color:#E8C268;}'+
+      '.am-ss .url{font-size:11px;color:#A9A39A;word-break:break-all;background:#0F0E0E;padding:8px 10px;border-radius:8px;margin-bottom:12px;line-height:1.5;}'+
+      '.am-ss .row{display:flex;gap:10px;}'+
+      '.am-ss button{flex:1;border:none;border-radius:999px;padding:12px;font-weight:800;font-size:14px;cursor:pointer;}'+
+      '.am-ss .copy{background:#E8C268;color:#0F0E0E;}'+
+      '.am-ss .wa{background:#25D366;color:#fff;}'+
+      '.am-ss .cancel{margin-top:10px;width:100%;background:transparent;color:#A9A39A;font-weight:600;}';
+    document.head.appendChild(style);
+    sheet=document.createElement('div'); sheet.id='amShareSheet'; sheet.className='am-ss-back';
+    sheet.innerHTML='<div class="am-ss"><h4>'+T('shareLink','Share link')+'</h4><div class="url"></div><div class="row"><button class="wa">WhatsApp</button><button class="copy">'+T('copyLink','Copy link')+'</button></div><button class="cancel">'+T('cancel','Cancel')+'</button></div>';
+    document.body.appendChild(sheet);
+    sheet.addEventListener('click',e=>{ if(e.target===sheet) sheet.remove(); });
+    sheet.querySelector('.cancel').onclick=()=>sheet.remove();
+  }
+  sheet.querySelector('.url').textContent=url;
+  sheet.querySelector('.copy').onclick=()=>{ copyText(url); toast((T('linkCopied','Link copied')||'Link copied')+': '+url); sheet.remove(); };
+  sheet.querySelector('.wa').onclick=()=>{ const t=encodeURIComponent(title+'\n'+url); const w=window.open('https://wa.me/?text='+t,'_blank'); if(!w) location.href='https://wa.me/?text='+t; sheet.remove(); };
+  document.body.appendChild(sheet);
 }
 
 /* ---- favorites & history (persisted to localStorage) ---- */
@@ -4948,11 +5009,19 @@ function resolveDeepLink(){
       if(!['boss','partnerA','partnerB'].includes(rt)){ curEmployee=_dlRef; curRole=rt; }
       hit=true;
     }
-    if(_dlCar && CARS[_dlCar]){ curCar=_dlCar; hit=true; }
-    if(hit){
+    // Shared directly to a SPECIFIC car -> open that car's detail page.
+    if(_dlCar && CARS[_dlCar]){
+      curCar=_dlCar;
       curRole='customer'; window.__deeplink=true;
       if(sharedGone){ renderCarGone(); return; }
       openDetail(curCar);
+      return;
+    }
+    // Shared showroom / home link (?ref only, no ?c=) -> land on the showroom home,
+    // NOT a random car. Company cars are already loaded by bootstrap().
+    if(hit){
+      curRole='customer'; window.__deeplink=true;
+      if(sharedGone){ renderCarGone(); return; }
     }
   }catch(e){}
 }
