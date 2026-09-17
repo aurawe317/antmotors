@@ -1352,6 +1352,7 @@
   <div class="grp">
     <div class="lbl" data-i18n="privacyTitle">Privacy &amp; cache</div>
     <div id="deviceInfo" class="sheet-hint"></div>
+    <button class="submit" style="margin-top:8px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="openSyncDiag()" data-i18n="syncDiag">Sync diagnostics</button>
     <button class="submit" style="margin-top:8px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="clearLocalData()" data-i18n="clearCache">Clear local offline data</button>
   </div>
   <div class="grp" id="signOutGroup" style="display:none;text-align:center;">
@@ -1476,7 +1477,7 @@ const I18N = {
       noLeads:"No leads yet",noBookings:"No new bookings",st_new:"new",st_contacted:"contacted",st_closed:"closed",clicksLbl:"clicks",leadsLbl:"leads",
       upBoss:"Boss: upload car photos (full access)",upPartnerA:"Partner A: upload car photos (full access)",upPartnerB:"Partner B: upload car photos (full access)",upManager:"Manager: upload car photos (this branch)",upSalesA:"Sales A: upload car photos (your cars)",
       rl_customer:"Customer (quote)",rl_manager:"Manager (all floors)",rl_salesA:"Sales A (floor A)",rl_salesB:"Sales B (floor B)",rl_boss:"Boss (cost)",rl_partnerA:"Partner A (cost)",rl_partnerB:"Partner B (cost)",
-      addPhoto:"+ Photo",directions:"Directions",inStock:"in stock",cond_NEW:"New",cond_USED:"Used",
+      addPhoto:"+ Photo",directions:"Directions",inStock:"in stock",cond_NEW:"New",cond_USED:"Used",syncDiag:"Sync diagnostics",
       bookSent:"🔔 Booking sent to {n} · they'll WhatsApp you at {p}",atLbl:"at",shoppingWith:"You're shopping with",shareAttr:"Share link now attributes to",
       favSavedToast:"Saved! Tap ♡ in top bar to view",favRemoved:"Removed from saved",msgPlaceholder:"I'd like to see the car and discuss the deal.",
       photoUp:"Photo uploaded for",photosUp:"Photos added",noPermPhoto:"Your role cannot upload photos.",dirTo:"Directions to",
@@ -1524,7 +1525,7 @@ const I18N = {
       noLeads:"暂无线索",noBookings:"暂无新预约",st_new:"新",st_contacted:"已联系",st_closed:"已成交",clicksLbl:"次点击",leadsLbl:"条线索",
       upBoss:"老板：可上传车辆照片（全部权限）",upPartnerA:"合伙人A：可上传车辆照片（全部权限）",upPartnerB:"合伙人B：可上传车辆照片（全部权限）",upManager:"店长：可上传车辆照片（本店）",upSalesA:"销售A：可上传车辆照片（您的车）",
       rl_customer:"客户（报价）",rl_manager:"店长（全部底价）",rl_salesA:"销售A（底价A）",rl_salesB:"销售B（底价B）",rl_boss:"老板（成本）",rl_partnerA:"合伙人A（成本）",rl_partnerB:"合伙人B（成本）",
-      addPhoto:"+ 照片",directions:"导航",inStock:"在库",cond_NEW:"新车",cond_USED:"二手车",
+      addPhoto:"+ 照片",directions:"导航",inStock:"在库",cond_NEW:"新车",cond_USED:"二手车",syncDiag:"同步诊断",
       bookSent:"🔔 预约已发给 {n} · 将通过 WhatsApp 联系您：{p}",atLbl:"于",shoppingWith:"您正在与",shareAttr:"分享链接现归属于",
       favSavedToast:"已收藏！点击顶部 ♡ 查看",favRemoved:"已取消收藏",msgPlaceholder:"我想看车并谈谈价格。",
       photoUp:"已上传照片：",photosUp:"已添加照片",noPermPhoto:"您的角色不能上传照片。",dirTo:"导航至",
@@ -1726,7 +1727,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.43';
+const APP_VER='1.2.44';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -1851,9 +1852,49 @@ function showDevices(){
   const last=localStorage.getItem('am_last_sync')? new Date(parseInt(localStorage.getItem('am_last_sync'))).toLocaleString() : T('never','never');
   box.innerHTML=`📱 ${T('deviceId','Device')}: <b>${dId}</b><br>🗓 ${T('lastSync','Last sync')}: ${last}<br>⏱ ${T('appVer','App version')}: ${APP_VER}`;
 }
+/* ---------- sync diagnostics: 5-second triage for "I changed it but nothing happened" ---------- */
+function openSyncDiag(){
+  const prev=document.getElementById('syncDiagOverlay'); if(prev) prev.remove();
+  const swState=('serviceWorker' in navigator)?(navigator.serviceWorker.controller?'active':'none'):'n/a';
+  const last=localStorage.getItem('am_last_sync')?new Date(parseInt(localStorage.getItem('am_last_sync'))).toLocaleString():'—';
+  let photoCount=0; for(const k in CAR_PHOTOS) photoCount+=(CAR_PHOTOS[k]||[]).length;
+  const R=function(k,v){ return '<div style="display:flex;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid var(--border);font-size:13px;"><span style="color:var(--text-dim);white-space:nowrap;">'+k+'</span><b style="text-align:right;word-break:break-all;font-weight:500;">'+v+'</b></div>'; };
+  const ov=document.createElement('div');
+  ov.id='syncDiagOverlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;';
+  ov.innerHTML='<div style="background:var(--surface);color:var(--text);border:1px solid var(--border);border-radius:16px;max-width:520px;width:100%;max-height:86vh;overflow:auto;padding:16px;">'
+   +'<div style="font-size:15px;font-weight:500;margin-bottom:6px;">'+T('diagTitle','Sync diagnostics')+'</div>'
+   +R(T('diagVer','App version'),APP_VER)
+   +R('Service worker',swState)
+   +R('API',SYNC.base||'—')
+   +R(T('diagAcct','Signed in'),SYNC.token?('yes · '+(curEmployee||'')):'no')
+   +R(T('diagCarsLocal','Cars (local)'),Object.keys(CARS).length)
+   +R(T('diagPhotosLocal','Photos (local)'),photoCount)
+   +R(T('diagDirty','Pending push'),Object.keys(SYNC.cars||{}).length+' car · '+Object.keys(SYNC.emps||{}).length+' staff')
+   +R(T('diagState','Sync state'),(SYNC.state||'—')+(SYNC.msg?(' · '+SYNC.msg):''))
+   +R(T('diagLast','Last sync'),last)
+   +R('since',String(SYNC.since||0))
+   +R(T('diagPurged','Ghosts purged'),String(SYNC.purged||0))
+   +R(T('diagServer','Server (live)'),'<span id="syncDiagServer">…</span>')
+   +'<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">'
+   +'<button class="submit" style="flex:1;min-width:132px;background:var(--gold);color:#111;border:none;" onclick="syncDiagFullSync()">'+T('diagFullSync','Force full sync')+'</button>'
+   +'<button class="share-copy" style="flex:1;min-width:132px;" onclick="document.getElementById(&quot;syncDiagOverlay&quot;).remove()">'+T('diagClose','Close')+'</button>'
+   +'</div></div>';
+  ov.onclick=function(e){ if(e.target===ov) ov.remove(); };
+  document.body.appendChild(ov);
+  fetch((SYNC.base||'')+'/api/health?cb='+Date.now()).then(function(r){ return r.json(); }).then(function(h){
+    const el=document.getElementById('syncDiagServer'); if(el) el.textContent='build '+h.build+' · cars '+h.cars+' · companies '+h.companies;
+  }).catch(function(){ const el=document.getElementById('syncDiagServer'); if(el) el.textContent='unreachable'; });
+}
+function syncDiagFullSync(){
+  SYNC.since=0; try{ localStorage.setItem('am_since','0'); }catch(e){}
+  const ov=document.getElementById('syncDiagOverlay'); if(ov) ov.remove();
+  toast(T('diagSyncing','Full re-sync started…'));
+  try{ syncNow(false,true); }catch(e){}
+}
 function clearLocalData(){
   if(typeof confirm==='function' && !confirm(T('clearCacheConfirm','Clear all local offline data? You can re-sync after signing in.'))) return;
-  ['am_dirty_cars','am_dirty_emps','am_notifs'].forEach(k=>{ try{localStorage.removeItem(k);}catch(e){} });
+  ['am_dirty_cars','am_dirty_emps','am_notifs','am_car_photo_ids','am_server_cars'].forEach(k=>{ try{localStorage.removeItem(k);}catch(e){} });
   try{ if('caches' in window) caches.keys().then(ks=>ks.forEach(k=>caches.delete(k))); }catch(e){}
   toast(T('cacheCleared','Local data cleared'));
 }
@@ -2419,9 +2460,17 @@ function updateRoleUI(){
 }
 
 let CAR_PHOTOS={};
+// Stable server photo id per URL: { carId: { "<photoUrl>": <idx> } }. Keyed by VALUE, so it
+// can never go "out of alignment" the way a parallel array would — a URL we don't have an id
+// for simply syncs as a new photo (id=null), which is always safe.
+let CAR_PHOTO_IDS={};
 let CAR_VIDEOS={};
 let CAR_DELETED=jload('am_car_deleted',{})||{};
 let SHOWROOM_PHOTOS={};
+// Ids of cars we know originate from the server (persisted). The full-pull reconciliation
+// uses this to tell a server car that has since vanished (a ghost) apart from a car created
+// locally that simply hasn't synced yet — only the former is ever purged.
+let SERVER_CAR_IDS=new Set(jload('am_server_cars',[])||[]);
 
 // Photos are large base64 blobs. Persisting all of them to localStorage used to blow the
 // ~5MB per-origin quota, and the silent setItem failure ALSO broke the metadata cache
@@ -2446,6 +2495,7 @@ function saveCarPhotos(){ try{
     if(base.length) raw[k]=base;
   }
   localStorage.setItem('am_car_photos', JSON.stringify(o));
+  try{ localStorage.setItem('am_car_photo_ids', JSON.stringify(CAR_PHOTO_IDS||{})); }catch(e){}
   if(Object.keys(raw).length){
     try{ localStorage.setItem('am_car_photos_raw', JSON.stringify(raw)); }
     catch(e){
@@ -2460,6 +2510,7 @@ function saveCarPhotos(){ try{
 }catch(e){ /* ignore */ } }
 function loadCarPhotos(){ try{
   const o=JSON.parse(localStorage.getItem('am_car_photos')||'null'); if(o) Object.assign(CAR_PHOTOS,o);
+  const oi=JSON.parse(localStorage.getItem('am_car_photo_ids')||'null'); if(oi) Object.assign(CAR_PHOTO_IDS,oi);
   // Merge any base64 backups; reconcileLocalPhotos() will turn them into URLs on boot.
   const raw=JSON.parse(localStorage.getItem('am_car_photos_raw')||'null');
   if(raw){ for(const k in raw){ const cur=CAR_PHOTOS[k]||[]; const set=new Set(cur); for(const p of (raw[k]||[])) if(!set.has(p)){ cur.push(p); set.add(p); } if(cur.length) CAR_PHOTOS[k]=cur; } }
@@ -3391,7 +3442,7 @@ function clearLocalInventory(){
   for(const k in OWNERS) delete OWNERS[k];
   for(const k in ALL_EMP) delete ALL_EMP[k];
   SHOWROOMS.length=0;
-  ['am_cars','am_listed','am_car_photos','am_car_videos','am_emps','am_showrooms','am_dirty_cars','am_dirty_emps','am_car_deleted'].forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
+  ['am_cars','am_listed','am_car_photos','am_car_photo_ids','am_car_videos','am_emps','am_showrooms','am_dirty_cars','am_dirty_emps','am_car_deleted','am_server_cars','am_since'].forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
 }
 
 /* ================== cloud sync: one inventory across all devices ==================
@@ -4380,7 +4431,17 @@ async function syncNow(silent, withPhotos){
       // re-uploaded EVERY car that merely had local photos on every sync — re-sending all
       // base64 photos each refresh, which cost ~1 min on mobile links. markCarDirty() runs
       // on every photo add/edit, so photos still reach the server.
-      const _ph=CAR_PHOTOS[id]!==undefined?CAR_PHOTOS[id].filter(isPhotoOK):undefined; const _vd=CAR_VIDEOS[id]!==undefined?CAR_VIDEOS[id].filter(isPhotoOK):undefined;
+      // Send photo IDENTITIES when we know them (stable-id protocol). If even one photo's id is
+      // unknown we fall back to plain URL values, so a partially-known map can never make the
+      // server delete the photos it doesn't recognise.
+      let _ph=undefined;
+      if(CAR_PHOTOS[id]!==undefined){
+        const valid=CAR_PHOTOS[id].filter(isPhotoOK);
+        const imap=CAR_PHOTO_IDS[id]||{};
+        const allKnown=valid.length>0 && valid.every(function(p){ return typeof imap[p]==='number'; });
+        _ph=allKnown ? valid.map(function(p){ return {id:imap[p], url:p}; }) : valid;
+      }
+      const _vd=CAR_VIDEOS[id]!==undefined?CAR_VIDEOS[id].filter(isPhotoOK):undefined;
       payload.cars.push({id:id,updatedAt:SYNC.cars[id]||Date.now(),listedAt:LISTED_AT[id]||null,data:CARS[id],photos:_ph,videos:_vd}); }
     for(const id in SYNC.emps){ const e=ALL_EMP[id]; if(!e) continue;
       payload.employees.push({id:id,updatedAt:SYNC.emps[id],data:e}); }
@@ -4393,6 +4454,7 @@ async function syncNow(silent, withPhotos){
       localStorage.removeItem('am_dirty_cars'); localStorage.removeItem('am_dirty_emps');
     }
     /* 2 — pull everything changed since our cursor */
+    const wasFull=!(+SYNC.since);   // since=0 → this pull returns the WHOLE company inventory
     const p=await api('/api/pull?photos='+(withPhotos!==false?1:0)+'&since='+SYNC.since);
     let n=0;
     (p.cars||[]).forEach(c=>{
@@ -4401,12 +4463,14 @@ async function syncNow(silent, withPhotos){
         CARS[c.id]=c.data;
         if(c.listedAt) LISTED_AT[c.id]=c.listedAt;
         if(Array.isArray(c.photos)){
-          const srv=c.photos.filter(isPhotoOK);
+          const srv=[], imap={};
+          c.photos.forEach((p,i)=>{ if(isPhotoOK(p)){ srv.push(p); if(Array.isArray(c.photoIds) && typeof c.photoIds[i]==='number') imap[p]=c.photoIds[i]; } });
           // Never blindly replace local photos with the server's: keep any photo this device
           // added that hasn't reached the server yet (car still pending push). Otherwise a pull
           // firing right after an add silently deletes the just-added picture.
           const pend=(pendingIds.has(c.id) && Array.isArray(CAR_PHOTOS[c.id])) ? CAR_PHOTOS[c.id].filter(v=>v && srv.indexOf(v)<0) : [];
           CAR_PHOTOS[c.id]=pend.length ? srv.concat(pend) : srv;
+          CAR_PHOTO_IDS[c.id]=imap;   // a pending local photo simply has no id yet → syncs as new
         }
         if(c.videos && c.videos.length) CAR_VIDEOS[c.id]=c.videos;
       }
@@ -4416,6 +4480,27 @@ async function syncNow(silent, withPhotos){
     // the local cache after a sync — it was cleared on the server but may have
     // missed the deletion event if the sync cursor predated it.
     SAMPLE_CAR_IDS.forEach(function(id){ if(CARS[id]){ delete CARS[id]; delete LISTED_AT[id]; delete CAR_PHOTOS[id]; delete CAR_VIDEOS[id]; } });
+    // Full pull = authoritative inventory for this company (server wins). Drop local cars that
+    // were server-sourced before but are no longer returned (ghosts), while NEVER touching a car
+    // created locally that hasn't reached the server yet, or one still queued for push.
+    const gotIds=new Set((p.cars||[]).filter(function(c){ return !c.deleted; }).map(function(c){ return c.id; }));
+    if(wasFull && SYNC.token){
+      let purged=0;
+      Object.keys(CARS).forEach(function(id){
+        if(!SERVER_CAR_IDS.has(id)) return;                // never came from the server → keep
+        if(gotIds.has(id)) return;                         // still on the server → keep
+        if(pendingIds.has(id) || CAR_DELETED[id]) return;   // queued locally → keep
+        if(SAMPLE_CAR_IDS.indexOf(id)>=0) return;           // seeds are handled just above
+        delete CARS[id]; delete LISTED_AT[id]; delete CAR_PHOTOS[id]; delete CAR_VIDEOS[id];
+        purged++;
+      });
+      SYNC.purged=purged; n+=purged;
+      if(purged){ recomputeFacets(); renderHome(); renderStock(); }
+      SERVER_CAR_IDS=new Set(gotIds);
+    } else {
+      gotIds.forEach(function(id){ SERVER_CAR_IDS.add(id); });
+    }
+    try{ localStorage.setItem('am_server_cars', JSON.stringify(Array.from(SERVER_CAR_IDS))); }catch(e){}
     // Detect team members who joined since the last sync so the owner/partners get a
     // visible signal (otherwise a new hire is silently absent until they happen to refresh).
     const hadRoster = Object.keys(ALL_EMP).length > 0;
@@ -4493,7 +4578,11 @@ function lazyPhotoFetch(id, el){
   const caller = useAuth ? api : apiPublic;
   if(el) el.setAttribute('data-loading','1');
   return caller(ep).then(r=>{
-    if(r && Array.isArray(r.photos)){ CAR_PHOTOS[id]=r.photos.filter(isPhotoOK); saveCarPhotos(); }
+    if(r && Array.isArray(r.photos)){
+      const urls=[], imap={};
+      r.photos.forEach((p,i)=>{ if(isPhotoOK(p)){ urls.push(p); if(Array.isArray(r.photoIds) && typeof r.photoIds[i]==='number') imap[p]=r.photoIds[i]; } });
+      CAR_PHOTOS[id]=urls; CAR_PHOTO_IDS[id]=imap; saveCarPhotos();
+    }
     if(r && r.videos && r.videos.length){ CAR_VIDEOS[id]=r.videos; saveCarVideos(); }
     if(el) applyLazyPhoto(id, el);
   }).catch(()=>{ if(el) el.removeAttribute('data-loading'); });

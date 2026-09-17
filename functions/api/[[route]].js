@@ -232,9 +232,16 @@ async function uploadToStorage(dataUrl, cid, carId, kind) {
   if (error) throw new Error('storage_upload_failed: ' + (error.message || error));
   return `${SUPABASE_URL_FIXED}/storage/v1/object/public/car-photos/${path}`;
 }
-async function photosOf(id, cid) {
+// Returns the car's photos WITH their stable row ids (`idx`). The id lets a client delete a
+// specific photo unambiguously instead of the fragile "match by URL value" approach, which
+// broke whenever a value drifted (base64 vs URL, re-upload path, …).
+async function photosWithIds(id, cid) {
   const { data } = await sb.from('photos').select('*').eq('car_id', id).eq('company_id', cid).order('idx', { ascending: true });
-  return (data || []).map(r => r.url || r.data).filter(Boolean);
+  const rows = (data || []).filter(r => (r.url || r.data));
+  return { urls: rows.map(r => r.url || r.data), ids: rows.map(r => r.idx) };
+}
+async function photosOf(id, cid) {
+  return (await photosWithIds(id, cid)).urls;
 }
 // Lightweight single-cover lookup for the public car list — returns just the first
 // photo URL so the browse grid can paint covers in one request (no full photo blob).
@@ -253,16 +260,32 @@ async function writePhotos(id, arr, cid) {
   if (!Array.isArray(arr)) return;
   const { data: existing, error: selErr } = await sb.from('photos').select('*').eq('car_id', id).eq('company_id', cid);
   if (selErr) throw new Error('photos_select_failed: ' + (selErr.message || selErr));
-  const want = new Set(arr.filter(d => typeof d === 'string'));
-  // Decide what to drop: (a) any row the client no longer wants (a deletion), and (b) any
-  // duplicate-value row beyond the first. Collapsing duplicates matters: if two rows share a
-  // value, value-matching can never delete either one — the value stays "wanted" forever, so
-  // the picture looks impossible to remove.
-  const have = new Set();
-  const toRemove = [];
-  for (const r of (existing || [])) {
-    const v = r.url || r.data;
-    if (!want.has(v) || have.has(v)) toRemove.push(r); else have.add(v);
+  // Normalise the incoming list. A modern client sends [{id, url}] where `id` is the stable row
+  // idx; an older client (or one whose id bookkeeping drifted) still sends plain URL strings.
+  // Both are accepted, so this protocol upgrade can never hard-break photo syncing.
+  const items = [];
+  for (const d of arr) {
+    if (typeof d === 'string') { if (d) items.push({ id: null, url: d }); }
+    else if (d && typeof d.url === 'string' && d.url) items.push({ id: (typeof d.id === 'number' ? d.id : null), url: d.url });
+  }
+  const existingRows = existing || [];
+  const idAware = items.some(it => it.id !== null);
+  let keep = [], toRemove = [];
+  if (idAware) {
+    // Stable-id path: keep EXACTLY the rows the client named; every other row is a deletion.
+    // This is unambiguous — it cannot be confused by a value that drifted on either side.
+    const keepIds = new Set(items.filter(it => it.id !== null).map(it => it.id));
+    toRemove = existingRows.filter(r => !keepIds.has(r.idx));
+    keep = existingRows.filter(r => keepIds.has(r.idx));
+  } else {
+    // Legacy value path: keep the rows whose value the client still wants, and collapse any
+    // duplicate-value rows (two rows sharing a value can never be value-matched for deletion).
+    const want = new Set(items.map(it => it.url));
+    const seen = new Set();
+    for (const r of existingRows) {
+      const v = r.url || r.data;
+      if (!want.has(v) || seen.has(v)) toRemove.push(r); else { seen.add(v); keep.push(r); }
+    }
   }
   if (toRemove.length) {
     const idxs = toRemove.map(r => r.idx).filter(v => typeof v === 'number');
@@ -274,19 +297,26 @@ async function writePhotos(id, arr, cid) {
       if (delErr) throw new Error('photos_delete_failed: ' + (delErr.message || delErr));
     }
   }
-  let nextIdx = (existing || []).reduce((m, r) => Math.max(m, (r.idx || 0) + 1), 0);
-  const seen = new Set();
+  const haveById = new Map(keep.map(r => [r.idx, r.url || r.data]));
+  const haveVals = new Set(keep.map(r => r.url || r.data));
+  let nextIdx = existingRows.reduce((m, r) => Math.max(m, (r.idx || 0) + 1), 0);
   const rows = [];
-  for (const d of arr) {
-    if (typeof d !== 'string') continue;
-    // Already a Storage URL → store as-is; otherwise upload the base64 blob and
-    // store the resulting CDN URL directly in `data` (no separate `url` column needed).
-    const value = /^https?:\/\//.test(d)
-      ? d
-      : (await uploadToStorage(d, cid, id, 'photo').catch(() => null));
-    if (!value) continue;
-    if (have.has(value) || seen.has(value)) continue;
-    seen.add(value);
+  const seenVals = new Set();
+  for (const it of items) {
+    // Already a Storage URL → store as-is; otherwise upload the base64 blob and store the
+    // resulting CDN URL in `data` (no separate `url` column needed).
+    const value = /^https?:\/\//.test(it.url) ? it.url : (await uploadToStorage(it.url, cid, id, 'photo').catch(() => null));
+    if (!value || seenVals.has(value)) continue;
+    seenVals.add(value);
+    if (it.id !== null && haveById.has(it.id)) {
+      // Row kept by id — refresh its stored value if the client's URL for it changed.
+      if (haveById.get(it.id) !== value) {
+        const { error: ue } = await sb.from('photos').update({ data: value }).eq('car_id', id).eq('company_id', cid).eq('idx', it.id);
+        if (ue) throw new Error('photos_update_failed: ' + (ue.message || ue));
+      }
+      continue;
+    }
+    if (haveVals.has(value)) continue;   // this exact value is already stored on the server
     rows.push({ car_id: id, company_id: cid, idx: nextIdx, data: value });
     nextIdx++;
     if (rows.length >= 30) break;
@@ -423,12 +453,16 @@ async function applyPush(emp, payload) {
 async function pull(since, withPhotos, companyId) {
   const s = +since || 0;
   const { data: cars } = await sb.from('cars').select('*').eq('company_id', companyId).gt('updated_at', s).order('updated_at', { ascending: true });
-  const carList = await Promise.all((cars || []).map(async (r) => ({
-    id: r.id, companyId: r.company_id, data: r.data, listedAt: r.listed_at,
-    updatedAt: r.updated_at, updatedBy: r.updated_by, deleted: !!r.deleted,
-    photos: withPhotos ? await photosOf(r.id, companyId) : undefined,
-    videos: withPhotos ? await videosOf(r.id, companyId) : undefined
-  })));
+  const carList = await Promise.all((cars || []).map(async (r) => {
+    const pw = withPhotos ? await photosWithIds(r.id, companyId) : null;
+    return {
+      id: r.id, companyId: r.company_id, data: r.data, listedAt: r.listed_at,
+      updatedAt: r.updated_at, updatedBy: r.updated_by, deleted: !!r.deleted,
+      photos: pw ? pw.urls : undefined,
+      photoIds: pw ? pw.ids : undefined,
+      videos: withPhotos ? await videosOf(r.id, companyId) : undefined
+    };
+  }));
   const { data: emps } = await sb.from('employees').select('*').eq('company_id', companyId).gt('updated_at', s).order('updated_at', { ascending: true });
   const empList = (emps || []).map(r => ({ id: r.id, companyId: r.company_id, data: stripPw(r.data), updatedAt: r.updated_at, deleted: !!r.deleted }));
   return { now: now(), cars: carList, employees: empList };
@@ -498,7 +532,7 @@ export async function onRequest(context) {
           }
         }
       } catch (e) { keyWarn = 'key_decode_failed'; }
-      const base = { build: 'app-1.2.43', now: now(), version: 2, backend: APP_VER };
+      const base = { build: 'app-1.2.44', now: now(), version: 2, backend: APP_VER };
       if (dbErr || authErr || keyWarn) {
         return send(503, Object.assign({
           ok: false, dbError: dbErr, authError: authErr, keyWarn,
@@ -659,13 +693,15 @@ export async function onRequest(context) {
       let agent = null;
       if (ref) agent = await empData(ref);
       if (!agent && cd.sales) agent = await empData(cd.sales);
-      return send(200, { car: publicCar(row), photos: await photosOf(id, cid), videos: await videosOf(id, cid), agent, company: companyInfo });
+      const phw = await photosWithIds(id, cid);
+      return send(200, { car: publicCar(row), photos: phw.urls, photoIds: phw.ids, videos: await videosOf(id, cid), agent, company: companyInfo });
     }
     if (p.startsWith('/api/public/car/') && p.endsWith('/photos')) {
       const id = decodeURIComponent(p.slice('/api/public/car/'.length, -'/photos'.length));
       const { data: row } = await sb.from('cars').select('id,company_id,deleted').eq('id', id).maybeSingle();
       if (!row || row.deleted) return send(404, { error: 'not_found' });
-      return send(200, { id, photos: await photosOf(id, row.company_id), videos: await videosOf(id, row.company_id) });
+      const phw = await photosWithIds(id, row.company_id);
+      return send(200, { id, photos: phw.urls, photoIds: phw.ids, videos: await videosOf(id, row.company_id) });
     }
 
     /* plans */
@@ -714,6 +750,38 @@ export async function onRequest(context) {
       await migrateTable('photos', 'photo');
       await migrateTable('videos', 'video');
       return send(200, { ok: true, migrated, errors, skipped, lastError });
+    }
+
+    /* ---- secret-protected maintenance: drop photo/video rows whose car no longer exists --- */
+    if (p === '/api/photos-gc' && method === 'POST') {
+      const secret = u.searchParams.get('secret') || ((await readBody(req)).secret);
+      const EXP = env.MIGRATE_SECRET || 'am-migrate-2026';
+      if (secret !== EXP) return send(403, { error: 'forbidden' });
+      // A car that exists in ANY state (incl. soft-deleted) still owns its photos, so it counts
+      // as "known". Only rows pointing at a car that is completely gone are orphans. Idempotent.
+      const { data: cars, error: ce } = await sb.from('cars').select('id,company_id');
+      if (ce) return send(500, { error: 'cars_select_failed', detail: ce.message || String(ce) });
+      const known = new Set((cars || []).map(r => r.company_id + '/' + r.id));
+      const removed = { photos: 0, videos: 0 };
+      for (const table of ['photos', 'videos']) {
+        const orphans = [];
+        let from = 0;
+        while (true) {
+          const { data: rows, error } = await sb.from(table).select('car_id,company_id,idx')
+            .order('company_id').order('car_id').order('idx').range(from, from + 199);
+          if (error) return send(500, { error: table + '_select_failed', detail: error.message || String(error) });
+          if (!rows || !rows.length) break;
+          for (const r of rows) if (!known.has(r.company_id + '/' + r.car_id)) orphans.push(r);
+          if (rows.length < 200) break;
+          from += 200;
+        }
+        for (const r of orphans) {
+          const { error: de } = await sb.from(table).delete()
+            .eq('company_id', r.company_id).eq('car_id', r.car_id).eq('idx', r.idx);
+          if (!de) removed[table]++;
+        }
+      }
+      return send(200, { ok: true, removedPhotos: removed.photos, removedVideos: removed.videos });
     }
 
     /* ---- authenticated below ---- */
@@ -879,7 +947,8 @@ export async function onRequest(context) {
       const cid = decodeURIComponent(p.slice('/api/car/'.length, -'/photos'.length));
       const { data: row } = await sb.from('cars').select('id').eq('id', cid).eq('company_id', emp.companyId).eq('deleted', 0).maybeSingle();
       if (!row) return send(404, { error: 'not_found' });
-      return send(200, { id: cid, photos: await photosOf(cid, emp.companyId), videos: await videosOf(cid, emp.companyId) });
+      const phw = await photosWithIds(cid, emp.companyId);
+      return send(200, { id: cid, photos: phw.urls, photoIds: phw.ids, videos: await videosOf(cid, emp.companyId) });
     }
     if (p === '/api/upload' && method === 'POST') {
       const b = await readBody(req);
