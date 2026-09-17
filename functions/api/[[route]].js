@@ -450,7 +450,7 @@ export async function onRequest(context) {
           }
         }
       } catch (e) { keyWarn = 'key_decode_failed'; }
-      const base = { build: 'share-og-v140', now: now(), version: 2, backend: APP_VER };
+      const base = { build: 'app-1.2.37', now: now(), version: 2, backend: APP_VER };
       if (dbErr || authErr || keyWarn) {
         return send(503, Object.assign({
           ok: false, dbError: dbErr, authError: authErr, keyWarn,

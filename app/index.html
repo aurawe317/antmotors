@@ -53,7 +53,13 @@
     width:392px; flex:0 0 392px; background:var(--surface);
     border:1px solid var(--border-strong); border-radius:34px; overflow:hidden; position:relative;
     box-shadow:0 30px 80px rgba(0,0,0,0.45);
+    /* 桌面端：固定高度的手机框（同效果图），内容在框内滚动，tabbar 常驻框底。
+       之前 .phone 无高度上限会被内容撑到 2000px+，absolute 沉底的 tabbar 看不见。 */
+    height:min(844px, calc(100vh - 96px));
+    display:flex; flex-direction:column;
   }
+  .appbar,.attr{flex:0 0 auto;}
+  .screen.active{flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:none; position:relative;}
 
   .appbar{display:flex; align-items:center; justify-content:space-between; padding:calc(env(safe-area-inset-top,0px) + 8px) 16px 10px;}
   .brand{display:flex; align-items:center; gap:9px;}
@@ -66,7 +72,7 @@
   .pill-btn .seg.on{opacity:1; color:var(--gold);}
   .icon-btn{width:30px; height:30px; border-radius:50%; border:1px solid var(--border); background:var(--surface-2); display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text);}
 
-  .screen{display:none; padding:0 0 84px;}
+  .screen{display:none; padding:0 0 12px;}
   .screen.active{display:block; animation:fade .25s ease;}
   @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;}}
 
@@ -285,7 +291,7 @@
   .loc-row .t b{font-size:13px; font-weight:700; display:block;}
   .loc-row .t span{font-size:11px; color:var(--text-dim);}
 
-  .sticky{position:absolute; left:0; right:0; bottom:0; display:flex; gap:10px; padding:12px 16px; background:linear-gradient(0deg,var(--surface) 75%, transparent); border-top:1px solid var(--border);}
+  .sticky{position:sticky; left:0; right:0; bottom:0; z-index:5; display:flex; gap:10px; padding:12px 16px; background:linear-gradient(0deg,var(--surface) 75%, transparent); border-top:1px solid var(--border);}
   .sticky .book{flex:1; background:var(--gold); color:#0F0E0E; border:none; font-weight:800; font-size:14px; padding:14px; border-radius:var(--r-btn); cursor:pointer;}
   .sticky .wa{flex:0 0 auto; width:54px; background:var(--wa); color:#06210f; border:none; border-radius:var(--r-btn); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:18px;}
 
@@ -334,7 +340,7 @@
   .perm-col.sales .rows .r b{color:var(--gold);}
   .perm-col.cust .rows .r b{color:var(--rf);}
 
-  .tabbar{position:absolute; left:0; right:0; bottom:0; height:64px; background:var(--surface); border-top:1px solid var(--border); display:flex; padding:8px 6px 0;}
+  .tabbar{position:relative; flex:0 0 auto; z-index:30; height:64px; background:var(--surface); border-top:1px solid var(--border); display:flex; padding:8px 6px 0;}
   .tabbar .tab{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--text-dim); font-size:11px; font-weight:600; cursor:pointer; background:none; border:none;}
   .tabbar .tab.on{color:var(--gold);}
   .tabbar .tab svg{display:block; width:24px; height:24px;}
@@ -1697,7 +1703,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.36';
+const APP_VER='1.2.37';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -1899,6 +1905,7 @@ function go(id){
   if(id==='scr-favorites') renderFav();
   if(id==='scr-me') renderSyncUI();
   document.getElementById('phone').scrollTop=0;
+  const sact=document.querySelector('.screen.active'); if(sact) sact.scrollTop=0;   // 框内滚动布局：切页时重置当前屏幕滚动位置
   const sa=document.getElementById('subActions'); if(sa) sa.style.display=(id==='scr-detail')?'flex':'none';
   closeSubMenu();
 }
