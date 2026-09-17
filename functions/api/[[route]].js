@@ -255,10 +255,15 @@ async function writePhotos(id, arr, cid) {
   const have = new Set((existing || []).map(r => r.url || r.data));
   const want = new Set(arr.filter(d => typeof d === 'string'));
   // Remove ONLY the rows the client no longer wants — this is how deletions reach the
-  // server. We delete by value (not the whole car) so photos added from another device
-  // that this client hasn't pulled yet are preserved across multi-device edits.
-  const toRemove = [...have].filter(v => !want.has(v));
-  if (toRemove.length) await sb.from('photos').delete().eq('car_id', id).eq('company_id', cid).in('data', toRemove);
+  // server. Match by row `idx` (part of the composite PK, unique per car) rather than by
+  // the `data` column: legacy rows migrated by /api/migrate-photos keep their URL in the
+  // `url` column with `data` empty, so an `in('data', …)` delete would never match them
+  // and they'd resurrect on the next pull. Deleting by idx is unambiguous for every row.
+  const toRemove = (existing || []).filter(r => !want.has(r.url || r.data));
+  if (toRemove.length) {
+    const idxs = toRemove.map(r => r.idx).filter(v => typeof v === 'number');
+    if (idxs.length) await sb.from('photos').delete().eq('car_id', id).eq('company_id', cid).in('idx', idxs);
+  }
   let nextIdx = (existing || []).reduce((m, r) => Math.max(m, (r.idx || 0) + 1), 0);
   const seen = new Set();
   const rows = [];
@@ -289,8 +294,13 @@ async function writeVideos(id, arr, cid) {
   const { data: existing } = await sb.from('videos').select('*').eq('car_id', id).eq('company_id', cid);
   const have = new Set((existing || []).map(r => r.url || r.data));
   const want = new Set(arr.filter(d => typeof d === 'string'));
-  const toRemove = [...have].filter(v => !want.has(v));
-  if (toRemove.length) await sb.from('videos').delete().eq('car_id', id).eq('company_id', cid).in('data', toRemove);
+  // Same idx-based deletion as writePhotos — legacy rows store their URL in `url`
+  // with `data` empty, so match by row idx to guarantee they can actually be removed.
+  const toRemove = (existing || []).filter(r => !want.has(r.url || r.data));
+  if (toRemove.length) {
+    const idxs = toRemove.map(r => r.idx).filter(v => typeof v === 'number');
+    if (idxs.length) await sb.from('videos').delete().eq('car_id', id).eq('company_id', cid).in('idx', idxs);
+  }
   let nextIdx = (existing || []).reduce((m, r) => Math.max(m, (r.idx || 0) + 1), 0);
   const seen = new Set();
   const rows = [];
@@ -461,7 +471,7 @@ export async function onRequest(context) {
           }
         }
       } catch (e) { keyWarn = 'key_decode_failed'; }
-      const base = { build: 'app-1.2.40', now: now(), version: 2, backend: APP_VER };
+      const base = { build: 'app-1.2.41', now: now(), version: 2, backend: APP_VER };
       if (dbErr || authErr || keyWarn) {
         return send(503, Object.assign({
           ok: false, dbError: dbErr, authError: authErr, keyWarn,
