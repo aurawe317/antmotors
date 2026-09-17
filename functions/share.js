@@ -102,9 +102,12 @@ export async function onRequest(context) {
   }
   try {
     const client = getSb(env);
+    // 注意：cars 表的列只有 id/company_id/data/listed_at/updated_at/updated_by/deleted。
+    // 车名、年份、价格等全部存在 data JSONB 里 —— select 里出现 name/price 等不存在的列
+    // 会让整条查询报错（column does not exist），被 catch 吞掉后永远落到通用兜底 OG。
     const { data: car } = await client
       .from('cars')
-      .select('id, company_id, name, name_zh, price, year, data')
+      .select('id, company_id, data, deleted')
       .eq('id', c)
       .maybeSingle();
 
@@ -112,17 +115,20 @@ export async function onRequest(context) {
     let desc = 'Quality used car for export from Ghana.';
     let image = DEFAULT_OG_IMAGE;
 
-    if (car) {
-      const nm = (car.name_zh || car.name || '').toString().trim();
-      const yr = car.year || (car.data && car.data.year) || '';
-      title = [yr, nm].filter(Boolean).join(' ') || 'Car for export';
+    if (car && !car.deleted) {
+      const d = car.data || {};
+      const nm = (d.name || d.name_zh || '').toString().trim();
+      const yr = d.year || '';
+      const sub = (d.sub || '').toString().trim();
+      title = [nm, yr].filter(Boolean).join(' ') || 'Car for export';
 
-      const price = (car.price != null) ? car.price : (car.data && car.data.price);
-      const mileage = car.data && car.data.mileage;
-      const fuel = car.data && car.data.fuel;
-      desc = [price != null ? ('GH₵ ' + Number(price).toLocaleString()) : '',
-              mileage ? (mileage + ' km') : '',
-              fuel || ''].filter(Boolean).join(' · ') || 'Quality used car for export from Ghana.';
+      const quote = (d.price && typeof d.price === 'object') ? d.price.quote : d.price;
+      const mileage = d.mileage;
+      const fuel = d.fuel;
+      desc = [(quote != null && !isNaN(Number(quote))) ? ('GH₵ ' + Number(quote).toLocaleString()) : '',
+              mileage ? String(mileage) : '',
+              fuel || '',
+              sub || ''].filter(Boolean).join(' · ') || 'Quality used car for export from Ghana.';
 
       if (car.company_id) {
         const { data: ph } = await client

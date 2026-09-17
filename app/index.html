@@ -3200,10 +3200,10 @@ function shareUrlFor(carId){
     if(!scope && typeof sharedCompany!=='undefined' && sharedCompany) scope='company='+encodeURIComponent(sharedCompany);
   }
   const base=location.origin+'/share';
-  // `_` is a per-share nonce so WeChat (and other crawlers) re-fetch OG metadata
+  // `t` is a per-share timestamp so WeChat (and other crawlers) re-fetch OG metadata
   // every time instead of serving a cached "no cover" result. The /share route
-  // strips it before redirecting the human visitor to the clean SPA URL.
-  const nonce='&_='+Date.now();
+  // ignores it when redirecting the human visitor to the clean SPA URL.
+  const nonce='&t='+Date.now();
   return carId ? (base+'?c='+encodeURIComponent(carId)+(scope?'&'+scope:'')+nonce) : (scope ? (base+'?'+scope+nonce) : location.origin+'/');
 }
 // Unified share: native multi-app picker (WhatsApp / WeChat / Messages / Copy…) when
