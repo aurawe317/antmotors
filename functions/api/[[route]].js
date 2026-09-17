@@ -251,18 +251,28 @@ async function coverOf(id, cid) {
 }
 async function writePhotos(id, arr, cid) {
   if (!Array.isArray(arr)) return;
-  const { data: existing } = await sb.from('photos').select('*').eq('car_id', id).eq('company_id', cid);
-  const have = new Set((existing || []).map(r => r.url || r.data));
+  const { data: existing, error: selErr } = await sb.from('photos').select('*').eq('car_id', id).eq('company_id', cid);
+  if (selErr) throw new Error('photos_select_failed: ' + (selErr.message || selErr));
   const want = new Set(arr.filter(d => typeof d === 'string'));
-  // Remove ONLY the rows the client no longer wants — this is how deletions reach the
-  // server. Match by row `idx` (part of the composite PK, unique per car) rather than by
-  // the `data` column: legacy rows migrated by /api/migrate-photos keep their URL in the
-  // `url` column with `data` empty, so an `in('data', …)` delete would never match them
-  // and they'd resurrect on the next pull. Deleting by idx is unambiguous for every row.
-  const toRemove = (existing || []).filter(r => !want.has(r.url || r.data));
+  // Decide what to drop: (a) any row the client no longer wants (a deletion), and (b) any
+  // duplicate-value row beyond the first. Collapsing duplicates matters: if two rows share a
+  // value, value-matching can never delete either one — the value stays "wanted" forever, so
+  // the picture looks impossible to remove.
+  const have = new Set();
+  const toRemove = [];
+  for (const r of (existing || [])) {
+    const v = r.url || r.data;
+    if (!want.has(v) || have.has(v)) toRemove.push(r); else have.add(v);
+  }
   if (toRemove.length) {
     const idxs = toRemove.map(r => r.idx).filter(v => typeof v === 'number');
-    if (idxs.length) await sb.from('photos').delete().eq('car_id', id).eq('company_id', cid).in('idx', idxs);
+    if (idxs.length) {
+      // Delete by composite-PK idx (unambiguous for every row, incl. legacy migrated rows).
+      const { error: delErr } = await sb.from('photos').delete().eq('car_id', id).eq('company_id', cid).in('idx', idxs);
+      // Surface failures instead of swallowing them — a silent delete error is exactly how
+      // rows accumulate and "deleted" photos keep resurrecting.
+      if (delErr) throw new Error('photos_delete_failed: ' + (delErr.message || delErr));
+    }
   }
   let nextIdx = (existing || []).reduce((m, r) => Math.max(m, (r.idx || 0) + 1), 0);
   const seen = new Set();
@@ -291,15 +301,23 @@ async function videosOf(id, cid) {
 }
 async function writeVideos(id, arr, cid) {
   if (!Array.isArray(arr)) return;
-  const { data: existing } = await sb.from('videos').select('*').eq('car_id', id).eq('company_id', cid);
-  const have = new Set((existing || []).map(r => r.url || r.data));
+  const { data: existing, error: selErr } = await sb.from('videos').select('*').eq('car_id', id).eq('company_id', cid);
+  if (selErr) throw new Error('videos_select_failed: ' + (selErr.message || selErr));
   const want = new Set(arr.filter(d => typeof d === 'string'));
-  // Same idx-based deletion as writePhotos — legacy rows store their URL in `url`
-  // with `data` empty, so match by row idx to guarantee they can actually be removed.
-  const toRemove = (existing || []).filter(r => !want.has(r.url || r.data));
+  // Same reconcile rules as writePhotos: drop rows the client no longer wants, plus any
+  // duplicate-value rows beyond the first.
+  const have = new Set();
+  const toRemove = [];
+  for (const r of (existing || [])) {
+    const v = r.url || r.data;
+    if (!want.has(v) || have.has(v)) toRemove.push(r); else have.add(v);
+  }
   if (toRemove.length) {
     const idxs = toRemove.map(r => r.idx).filter(v => typeof v === 'number');
-    if (idxs.length) await sb.from('videos').delete().eq('car_id', id).eq('company_id', cid).in('idx', idxs);
+    if (idxs.length) {
+      const { error: delErr } = await sb.from('videos').delete().eq('car_id', id).eq('company_id', cid).in('idx', idxs);
+      if (delErr) throw new Error('videos_delete_failed: ' + (delErr.message || delErr));
+    }
   }
   let nextIdx = (existing || []).reduce((m, r) => Math.max(m, (r.idx || 0) + 1), 0);
   const seen = new Set();
@@ -370,8 +388,8 @@ async function applyPush(emp, payload) {
     if (carErr) { rejected.push({ id: c.id, reason: carErr.message || 'upsert_failed' }); continue; }
     // Use Array.isArray (not truthy) so an empty array [] — i.e. "user deleted ALL
     // photos" — still reaches writePhotos and actually clears the rows on the server.
-    if (Array.isArray(c.photos)) await writePhotos(c.id, c.photos, cid);
-    if (Array.isArray(c.videos)) await writeVideos(c.id, c.videos, cid);
+    if (Array.isArray(c.photos)) { try { await writePhotos(c.id, c.photos, cid); } catch (e) { rejected.push({ id: c.id, reason: 'photos_' + ((e && e.message) || e) }); } }
+    if (Array.isArray(c.videos)) { try { await writeVideos(c.id, c.videos, cid); } catch (e) { rejected.push({ id: c.id, reason: 'videos_' + ((e && e.message) || e) }); } }
     applied.push(c.id);
   }
   for (const e of (payload.employees || [])) {
@@ -471,7 +489,7 @@ export async function onRequest(context) {
           }
         }
       } catch (e) { keyWarn = 'key_decode_failed'; }
-      const base = { build: 'app-1.2.41', now: now(), version: 2, backend: APP_VER };
+      const base = { build: 'app-1.2.42', now: now(), version: 2, backend: APP_VER };
       if (dbErr || authErr || keyWarn) {
         return send(503, Object.assign({
           ok: false, dbError: dbErr, authError: authErr, keyWarn,

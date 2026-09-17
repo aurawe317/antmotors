@@ -1726,7 +1726,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.40';
+const APP_VER='1.2.42';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2804,6 +2804,18 @@ function removeCarPhoto(idx){
   saveCarPhotos();
   renderDetailThumbs();
 }
+// Delete by value — immune to index drift. Also de-duplicates: if the same value was
+// somehow stored twice, one tap removes it completely.
+function removeCarPhotoByValue(val){
+  if(!CAR_PHOTOS[curCar] || typeof val!=='string') return;
+  const arr=CAR_PHOTOS[curCar];
+  const out=arr.filter(v=>v!==val);
+  if(out.length===arr.length) return;          // nothing matched → no-op
+  CAR_PHOTOS[curCar]=out;
+  markCarDirty(curCar);
+  saveCarPhotos();
+  renderDetailThumbs();
+}
 
 function renderDetailThumbs(){
   const th=document.getElementById('detailThumbs'); if(!th) return;
@@ -2811,7 +2823,13 @@ function renderDetailThumbs(){
   const photos=CAR_PHOTOS[curCar]||[];
   photos.filter(isPhotoOK).forEach((src,i)=>{
     const t=document.createElement('div'); t.className='photo-slot';
-    t.innerHTML=`<img class="zoomable" src="${src}" data-name="${(CARS[curCar]&&CARS[curCar].name||'photo').replace(/[^\w\u4e00-\u9fa5\- ]/g,'')}.jpg" /><${'div'} class="rm" onclick="event.stopPropagation();removeCarPhoto(${i})">✕</div>`;
+    // Bind ✕ to the photo VALUE, never a captured array index: the index goes stale the
+    // moment the list changes (sync pull / lazy load reassigns CAR_PHOTOS[curCar]), and a
+    // stale/out-of-range index makes splice() a silent no-op — the classic "I keep deleting
+    // it but it comes back" bug.
+    t.innerHTML=`<img class="zoomable" src="${src}" data-name="${(CARS[curCar]&&CARS[curCar].name||'photo').replace(/[^\w\u4e00-\u9fa5\- ]/g,'')}.jpg" /><${'div'} class="rm">✕</${'div'}>`;
+    const rm=t.lastElementChild;
+    if(rm) rm.onclick=(ev)=>{ ev.stopPropagation(); removeCarPhotoByValue(src); };
     t.onclick=()=>toast(T('viewingPhoto','Viewing photo')+' '+(i+1));
     th.appendChild(t);
   });
@@ -4344,6 +4362,9 @@ async function syncNow(silent, withPhotos){
   try{
     /* 1 — push everything queued locally */
     const payload={cars:[],employees:[]};
+    // Snapshot which cars we are about to push: the push clears SYNC.cars below, so the pull
+    // step needs this to know which local photos are still unconfirmed and must NOT be wiped.
+    const pendingIds=new Set(Object.keys(SYNC.cars));
     // Push every dirty car, PLUS any car that has local photos/videos but was
     // never marked dirty (e.g. photos added before this fix) — so already-taken
     // pictures still reach the server and appear on shared links.
@@ -4376,7 +4397,14 @@ async function syncNow(silent, withPhotos){
       else{
         CARS[c.id]=c.data;
         if(c.listedAt) LISTED_AT[c.id]=c.listedAt;
-        if(Array.isArray(c.photos)){ CAR_PHOTOS[c.id]=c.photos.filter(isPhotoOK); }
+        if(Array.isArray(c.photos)){
+          const srv=c.photos.filter(isPhotoOK);
+          // Never blindly replace local photos with the server's: keep any photo this device
+          // added that hasn't reached the server yet (car still pending push). Otherwise a pull
+          // firing right after an add silently deletes the just-added picture.
+          const pend=(pendingIds.has(c.id) && Array.isArray(CAR_PHOTOS[c.id])) ? CAR_PHOTOS[c.id].filter(v=>v && srv.indexOf(v)<0) : [];
+          CAR_PHOTOS[c.id]=pend.length ? srv.concat(pend) : srv;
+        }
         if(c.videos && c.videos.length) CAR_VIDEOS[c.id]=c.videos;
       }
       n++;
@@ -4455,13 +4483,13 @@ function lazyPhotoObserve(){
   });
 }
 function lazyPhotoFetch(id, el){
-  if(CAR_PHOTOS[id] && CAR_PHOTOS[id].length){ if(el) applyLazyPhoto(id, el); return; }
-  if(!SYNC.base) return; // need a server base; guests (no token) use the public photos endpoint
+  if(CAR_PHOTOS[id] && CAR_PHOTOS[id].length){ if(el) applyLazyPhoto(id, el); return Promise.resolve(); }
+  if(!SYNC.base) return Promise.resolve(); // need a server base; guests (no token) use the public photos endpoint
   const useAuth = !!SYNC.token;
   const ep = useAuth ? ('/api/car/'+encodeURIComponent(id)+'/photos') : ('/api/public/car/'+encodeURIComponent(id)+'/photos');
   const caller = useAuth ? api : apiPublic;
   if(el) el.setAttribute('data-loading','1');
-  caller(ep).then(r=>{
+  return caller(ep).then(r=>{
     if(r && Array.isArray(r.photos)){ CAR_PHOTOS[id]=r.photos.filter(isPhotoOK); saveCarPhotos(); }
     if(r && r.videos && r.videos.length){ CAR_VIDEOS[id]=r.videos; saveCarVideos(); }
     if(el) applyLazyPhoto(id, el);
@@ -4692,8 +4720,16 @@ function handleAdminPhotos(e){
     if(i>=files.length) return;
     const file=files[i++];
     openCropper(file, 4/3, dataUrl=>{   // fixed 4:3, crop one by one for multi-select
-      ADMIN_PHOTOS.push(dataUrl);
-      renderAfThumbs();
+      // Upload to Storage immediately (same as the detail-screen "+"). Keeping raw base64 in
+      // ADMIN_PHOTOS/CAR_PHOTOS bloated localStorage — saveCarPhotos()'s quota-trimmer then
+      // DROPPED the biggest blobs, so the photo vanished on the next refresh — and made the
+      // /api/push payload huge. Replacing the crop with its CDN URL fixes both.
+      ADMIN_PHOTOS.push(dataUrl); renderAfThumbs();
+      uploadMedia(dataUrl, editingKey||curCar).then(url=>{
+        if(!url) return;   // upload failed → keep base64; reconcile/push will retry later
+        const k=ADMIN_PHOTOS.indexOf(dataUrl);
+        if(k>=0){ ADMIN_PHOTOS[k]=url; renderAfThumbs(); }
+      }).catch(()=>{});
       next();
     });
   };
@@ -4710,7 +4746,7 @@ function renderAfThumbs(){
   });
 }
 let editingKey=null;
-function openEditCar(key){
+async function openEditCar(key){
   const c=CARS[key]; if(!c) return;
   if(!canEditCar()||!canEditThisCar(key)){ toast(T('noPermPhoto','Your role cannot edit this car.')); return; }
   editingKey=key;
@@ -4728,6 +4764,9 @@ function openEditCar(key){
   set('pvNameEn', c.name); set('pvNameZh', c.nameZh); set('pvSubEn', c.sub); set('pvSubZh', c.subZh);
   set('pvSpecEn', (c.specs||[]).map(s=>s[0]).join(', ')); set('pvSpecZh', (c.specs||[]).map(s=>s[1]||'').join(', '));
   set('pvHlEn', (c.hl||[]).join(', ')); set('pvHlZh', (c.hl||[]).map(s=>revT(s)||'').join(', '));
+  // If this car's photos weren't lazy-loaded yet, CAR_PHOTOS[key] is undefined — treating it
+  // as [] and later saving would WIPE the car's photos on the server. Load them first.
+  if(CAR_PHOTOS[key]===undefined){ try{ await lazyPhotoFetch(key, null); }catch(e){} }
   ADMIN_PHOTOS = CAR_PHOTOS[key] ? CAR_PHOTOS[key].slice() : [];
   ADMIN_VIDEOS = CAR_VIDEOS[key] ? CAR_VIDEOS[key].slice() : [];
   renderAfThumbs(); renderAfVideoThumbs();
