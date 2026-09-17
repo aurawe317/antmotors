@@ -253,6 +253,12 @@ async function writePhotos(id, arr, cid) {
   if (!Array.isArray(arr)) return;
   const { data: existing } = await sb.from('photos').select('*').eq('car_id', id).eq('company_id', cid);
   const have = new Set((existing || []).map(r => r.url || r.data));
+  const want = new Set(arr.filter(d => typeof d === 'string'));
+  // Remove ONLY the rows the client no longer wants — this is how deletions reach the
+  // server. We delete by value (not the whole car) so photos added from another device
+  // that this client hasn't pulled yet are preserved across multi-device edits.
+  const toRemove = [...have].filter(v => !want.has(v));
+  if (toRemove.length) await sb.from('photos').delete().eq('car_id', id).eq('company_id', cid).in('data', toRemove);
   let nextIdx = (existing || []).reduce((m, r) => Math.max(m, (r.idx || 0) + 1), 0);
   const seen = new Set();
   const rows = [];
@@ -282,6 +288,9 @@ async function writeVideos(id, arr, cid) {
   if (!Array.isArray(arr)) return;
   const { data: existing } = await sb.from('videos').select('*').eq('car_id', id).eq('company_id', cid);
   const have = new Set((existing || []).map(r => r.url || r.data));
+  const want = new Set(arr.filter(d => typeof d === 'string'));
+  const toRemove = [...have].filter(v => !want.has(v));
+  if (toRemove.length) await sb.from('videos').delete().eq('car_id', id).eq('company_id', cid).in('data', toRemove);
   let nextIdx = (existing || []).reduce((m, r) => Math.max(m, (r.idx || 0) + 1), 0);
   const seen = new Set();
   const rows = [];
@@ -349,8 +358,10 @@ async function applyPush(emp, payload) {
     }
     const { error: carErr } = await sb.from('cars').upsert({ id: c.id, company_id: cid, data: incoming, listed_at: c.listedAt || null, updated_at: ts, updated_by: emp.id, deleted: c.deleted ? 1 : 0 }, { onConflict: 'id,company_id' });
     if (carErr) { rejected.push({ id: c.id, reason: carErr.message || 'upsert_failed' }); continue; }
-    if (c.photos) await writePhotos(c.id, c.photos, cid);
-    if (c.videos) await writeVideos(c.id, c.videos, cid);
+    // Use Array.isArray (not truthy) so an empty array [] — i.e. "user deleted ALL
+    // photos" — still reaches writePhotos and actually clears the rows on the server.
+    if (Array.isArray(c.photos)) await writePhotos(c.id, c.photos, cid);
+    if (Array.isArray(c.videos)) await writeVideos(c.id, c.videos, cid);
     applied.push(c.id);
   }
   for (const e of (payload.employees || [])) {
@@ -450,7 +461,7 @@ export async function onRequest(context) {
           }
         }
       } catch (e) { keyWarn = 'key_decode_failed'; }
-      const base = { build: 'app-1.2.38', now: now(), version: 2, backend: APP_VER };
+      const base = { build: 'app-1.2.40', now: now(), version: 2, backend: APP_VER };
       if (dbErr || authErr || keyWarn) {
         return send(503, Object.assign({
           ok: false, dbError: dbErr, authError: authErr, keyWarn,
