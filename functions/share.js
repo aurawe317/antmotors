@@ -120,7 +120,9 @@ export async function onRequest(context) {
       const nm = (d.name || d.name_zh || '').toString().trim();
       const yr = d.year || '';
       const sub = (d.sub || '').toString().trim();
-      title = [nm, yr].filter(Boolean).join(' ') || 'Car for export';
+      // 车名本身常已含年份（如 "Toyota RAV4 hybrid 2026"），若再拼 year 会变成
+      // "Toyota RAV4 hybrid 2026 2026"，故年份已出现在车名里时不再追加。
+      title = nm ? ((yr && !nm.includes(String(yr))) ? (nm + ' ' + yr) : nm) : (yr || 'Car for export');
 
       const quote = (d.price && typeof d.price === 'object') ? d.price.quote : d.price;
       const mileage = d.mileage;
