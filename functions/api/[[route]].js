@@ -38,11 +38,51 @@ const TOKEN_TTL_MS = 30 * 24 * 3600 * 1000;
 const TRIAL_DAYS = 14;
 const APP_VER = 'cf-supabase-1';
 
+// 会员宽限期（天）：宽限期内服务照常，只是不能再生成新码。
+const GRACE_QR_DAYS = 30;      // 二维码：30 天
+const GRACE_DOMAIN_DAYS = 60;  // 专属域名：60 天
+
+// 定价：**以人民币为基准**，美元按固定汇率 6.8 换算（保留 2 位小数，不随市价波动）。
+const FX_CNY_PER_USD = 6.8;
+const toUsd = (cny) => Math.round((cny / FX_CNY_PER_USD) * 100) / 100;
+// 档位额度：null = 无限。features.domain = 专属域名，features.qr = 公司二维码。
 const PLANS = {
-  trial:   { id: 'trial',   name: '试用',     nameEn: 'Trial',     price: 0,     days: 14,  currency: 'CNY' },
-  monthly: { id: 'monthly',  name: '月付会员', nameEn: 'Monthly',  price: 3500,  days: 30,  currency: 'CNY' },
-  yearly:  { id: 'yearly',   name: '年付会员', nameEn: 'Yearly',   price: 35000, days: 365, currency: 'CNY' }
+  free: {
+    id: 'free', name: '免费', nameEn: 'Free', rank: 0,
+    monthly: { cny: 0, usd: 0 }, yearly: { cny: 0, usd: 0 },
+    quotas: { cars: 7, employees: 2, showrooms: 1 },
+    features: { domain: false, qr: false }
+  },
+  standard: {
+    id: 'standard', name: '普通会员', nameEn: 'Standard', rank: 1,
+    monthly: { cny: 31, usd: toUsd(31) }, yearly: { cny: 310, usd: toUsd(310) },
+    quotas: { cars: 30, employees: 5, showrooms: 3 },
+    features: { domain: false, qr: false }
+  },
+  premium: {
+    id: 'premium', name: '高级会员', nameEn: 'Premium', rank: 2,
+    monthly: { cny: 58, usd: toUsd(58) }, yearly: { cny: 588, usd: toUsd(588) },
+    quotas: { cars: null, employees: null, showrooms: null },
+    features: { domain: true, qr: true }
+  }
 };
+// 未识别的老档位（trial / owner / monthly / yearly / 空）= 不限额、给全功能：
+// 新规则上线时绝不能把已有客户卡住。
+const LEGACY_QUOTAS = { cars: null, employees: null, showrooms: null };
+const LEGACY_FEATURES = { domain: true, qr: true };
+const quotasOf = (planId) => (PLANS[planId] ? PLANS[planId].quotas : LEGACY_QUOTAS);
+const featuresOf = (planId) => (PLANS[planId] ? PLANS[planId].features : LEGACY_FEATURES);
+// 某个额度是否够用（limit=null 表示无限）
+async function quotaCheck(companyId, planId, kind) {
+  const limit = quotasOf(planId)[kind];
+  if (limit == null) return { limit: null, used: 0, ok: true };
+  const table = kind === 'cars' ? 'cars' : (kind === 'employees' ? 'employees' : 'showrooms');
+  let q = sb.from(table).select('id', { count: 'exact', head: true }).eq('company_id', companyId);
+  if (table !== 'showrooms') q = q.eq('deleted', 0);
+  const { count } = await q;
+  const used = count || 0;
+  return { limit, used, ok: used < limit };
+}
 
 const now = () => Date.now();
 const clampTs = (t) => { const n = now(); const v = +t; return (!v || v > n) ? n : v; };
@@ -120,25 +160,45 @@ function publicCompany(row) {
   return { id: row.id, name: row.name, logo: row.logo || null, bio: row.bio || '', code: row.code, plan: row.plan, status: row.status, permanent: !!row.permanent };
 }
 function membershipView(row) {
-  const isPermanent = !!row.permanent;
-  if (isPermanent) return { plan: row.plan || 'owner', planName: '永久会员', planNameEn: 'Lifetime', status: 'active', active: true, expired: false, periodEnd: 0, canSell: true, isPermanent: true };
   const t = now();
-  let plan = row.plan || 'trial';
+  const isPermanent = !!row.permanent;
+  const raw = row.plan || '';
+  // 试用窗口：新注册公司在前 14 天按「普通会员」额度用，之后回落到「免费」。
+  const trialEnd = (+row.trial_ends_at) || ((+row.created_at || t) + TRIAL_DAYS * 864e5);
+  let effective;                 // free | standard | premium | null(=老档位，不限额)
   let periodEnd = +row.current_period_end || 0;
   let active = true;
-  if (plan === 'trial') {
-    periodEnd = periodEnd || (+row.trial_ends_at || (row.created_at + TRIAL_DAYS * 864e5));
-    active = t < periodEnd;
-  } else {
-    active = row.status === 'active' && t < periodEnd;
-  }
-  const m = PLANS[plan] || PLANS.trial;
-  return { plan, planName: m.name, planNameEn: m.nameEn, status: row.status, active, expired: !active, periodEnd, canSell: active, isPermanent: false };
+  if (isPermanent) { effective = 'premium'; active = true; }
+  else if (PLANS[raw]) {
+    if (raw === 'free') { effective = (t < trialEnd) ? 'standard' : 'free'; periodEnd = trialEnd; active = true; }
+    else { effective = raw; active = (row.status === 'active') && t < periodEnd; }
+  } else { effective = null; active = true; }   // 老档位：不限额、不锁功能（绝不卡住老客户）
+  const onTrial = (raw === 'free') && (t < trialEnd);
+  const m = PLANS[effective] || { name: '会员', nameEn: 'Member' };
+  return {
+    plan: effective, rawPlan: raw, planName: m.name, planNameEn: m.nameEn,
+    status: row.status, active, expired: !active, periodEnd,
+    canSell: active, isPermanent, onTrial,
+    quotas: quotasOf(effective), features: featuresOf(effective),
+    graceDays: { qr: GRACE_QR_DAYS, domain: GRACE_DOMAIN_DAYS }
+  };
 }
-async function activatePlan(companyId, planId, tradeNo) {
-  const p = PLANS[planId]; if (!p) return;
-  const start = now(); const end = start + p.days * 864e5;
-  await sb.from('companies').update({ plan: planId, status: 'active', plan_started_at: start, current_period_end: end, alipay_trade_no: tradeNo || '', subscription_id: tradeNo || '', last_paid_at: start }).eq('id', companyId);
+// planKey 形如 "standard_yearly" / "premium_monthly"（orders.plan_id 里同时编码档位与周期）。
+async function activatePlan(companyId, planKey, tradeNo) {
+  const raw = String(planKey || '');
+  const us = raw.lastIndexOf('_');
+  const tier = us > 0 ? raw.slice(0, us) : raw;
+  const cycle = ((us > 0 ? raw.slice(us + 1) : 'monthly') === 'yearly') ? 'yearly' : 'monthly';
+  const p = PLANS[tier]; if (!p) return;
+  const days = (cycle === 'yearly') ? 365 : 30;
+  const { data: co } = await sb.from('companies').select('current_period_end,plan').eq('id', companyId).maybeSingle();
+  const curEnd = +((co && co.current_period_end) || 0);
+  const sameTier = !!(co && co.plan === tier);
+  const start = now();
+  // 续费（同档位）：从原到期时间往后接，不吞掉客户已付的天数；升级/换档：从现在算起。
+  const base = (sameTier && curEnd > start) ? curEnd : start;
+  const end = base + days * 864e5;
+  await sb.from('companies').update({ plan: tier, status: 'active', plan_started_at: start, current_period_end: end, alipay_trade_no: tradeNo || '', subscription_id: tradeNo || '', last_paid_at: start }).eq('id', companyId);
 }
 async function genCompanyCode() {
   const a = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -392,10 +452,26 @@ async function applyPush(emp, payload) {
   const applied = [], rejected = [];
   const top = isTop(emp);
   const cid = emp.companyId;
+  // 额度（**服务端强制**）：一次取出公司档位与当前用量，循环内复用。
+  // 老档位（未识别 plan）→ quotas 为 null → 不限额，绝不卡住已有客户。
+  const coRow = await companyById(cid);
+  const mv = coRow ? membershipView(coRow) : null;
+  const carLimit = mv ? mv.quotas.cars : null;
+  let carUsed = 0;
+  if (carLimit != null) {
+    const { count } = await sb.from('cars').select('id', { count: 'exact', head: true }).eq('company_id', cid).eq('deleted', 0);
+    carUsed = count || 0;
+  }
   for (const c of (payload.cars || [])) {
     if (!c || !c.id) continue;
     const { data: cur } = await sb.from('cars').select('*').eq('id', c.id).eq('company_id', cid).maybeSingle();
     if (cur && cur.deleted && SEED_CAR_IDS.has(c.id)) { rejected.push({ id: c.id, reason: 'sample_cleared' }); continue; }
+    // 新建车辆（或把已删除的车恢复）会占用额度；超限直接拒绝——改前端也绕不过。
+    const occupies = (!cur) || (!!cur.deleted && !c.deleted);
+    if (occupies && carLimit != null && carUsed >= carLimit) {
+      rejected.push({ id: c.id, reason: 'quota_cars', quota: carLimit, used: carUsed });
+      continue;
+    }
     // IMPORTANT: stamp the row with the SERVER's receive time, not the client-supplied
     // updatedAt. Client device clocks (phones with auto-time off) often run behind the
     // server, which made updated_at land in the past and the teammate's pull cursor
@@ -416,6 +492,7 @@ async function applyPush(emp, payload) {
     }
     const { error: carErr } = await sb.from('cars').upsert({ id: c.id, company_id: cid, data: incoming, listed_at: c.listedAt || null, updated_at: ts, updated_by: emp.id, deleted: c.deleted ? 1 : 0 }, { onConflict: 'id,company_id' });
     if (carErr) { rejected.push({ id: c.id, reason: carErr.message || 'upsert_failed' }); continue; }
+    if (occupies) carUsed++;
     if (c.deleted) {
       // A car deletion carries no photos, so its photo/video rows would otherwise linger on the
       // server forever. Car ids are derived from brand+model, so re-creating the same car would
@@ -532,7 +609,7 @@ export async function onRequest(context) {
           }
         }
       } catch (e) { keyWarn = 'key_decode_failed'; }
-      const base = { build: 'app-1.2.44', now: now(), version: 2, backend: APP_VER };
+      const base = { build: 'app-1.2.45', now: now(), version: 2, backend: APP_VER };
       if (dbErr || authErr || keyWarn) {
         return send(503, Object.assign({
           ok: false, dbError: dbErr, authError: authErr, keyWarn,
@@ -641,7 +718,7 @@ export async function onRequest(context) {
         const code = await genCompanyCode();
         let logo = null;
         if (b.companyLogo && typeof b.companyLogo === 'string' && b.companyLogo.startsWith('data:image') && b.companyLogo.length < 2_000_000) logo = b.companyLogo;
-        const { data: co, error: coErr } = await sb.from('companies').insert({ id: companyId, name: String(b.companyName).trim().slice(0, 80), logo, owner_id: authUserId, code, plan: 'trial', status: 'active', permanent: 0, trial_ends_at: now() + TRIAL_DAYS * 864e5, created_at: now() }).select().single();
+        const { data: co, error: coErr } = await sb.from('companies').insert({ id: companyId, name: String(b.companyName).trim().slice(0, 80), logo, owner_id: authUserId, code, plan: 'free', status: 'active', permanent: 0, trial_ends_at: now() + TRIAL_DAYS * 864e5, created_at: now() }).select().single();
         if (coErr) return send(500, { error: 'company_create_failed', detail: coErr.message });
         if (authUserId) await sb.from('company_members').insert({ user_id: authUserId, company_id: companyId, role: 'owner', created_at: now() });
         company = co; tier = 'boss'; role = 'Boss / Owner'; roleZh = '老板 / 所有者';
@@ -706,7 +783,17 @@ export async function onRequest(context) {
 
     /* plans */
     if (p === '/api/plans' && method === 'GET') {
-      return send(200, { plans: Object.values(PLANS).map(p => ({ id: p.id, name: p.name, nameEn: p.nameEn, price: p.price, days: p.days, currency: p.currency })), simulate: true, live: false });
+      // 三档权益：价格以人民币为基准，美元按固定汇率换算（保留 2 位小数）。
+      const plans = Object.values(PLANS).map(p => ({
+        id: p.id, name: p.name, nameEn: p.nameEn, rank: p.rank,
+        monthly: p.monthly, yearly: p.yearly, currency: 'CNY', fx: FX_CNY_PER_USD,
+        quotas: p.quotas, features: p.features
+      }));
+      return send(200, {
+        plans, trialDays: TRIAL_DAYS,
+        graceDays: { qr: GRACE_QR_DAYS, domain: GRACE_DOMAIN_DAYS },
+        simulate: true, live: false
+      });
     }
 
     /* ---- public, secret-protected one-shot admin ---- */
@@ -849,14 +936,19 @@ export async function onRequest(context) {
     if (p === '/api/subscribe' && method === 'POST') {
       if (!isTop(emp)) return send(403, { error: 'forbidden' });
       const b = await readBody(req);
-      const plan = PLANS[String(b.planId || '')];
-      if (!plan || plan.price <= 0) return send(400, { error: 'bad_plan' });
+      let tier = String(b.planId || '');
+      let cycle = (String(b.cycle || 'monthly') === 'yearly') ? 'yearly' : 'monthly';
+      // 兼容旧调用：planId='monthly'|'yearly' → 普通会员对应的周期
+      if (tier === 'monthly' || tier === 'yearly') { cycle = (tier === 'yearly') ? 'yearly' : 'monthly'; tier = 'standard'; }
+      const plan = PLANS[tier];
+      const priceRow = plan ? plan[cycle] : null;
+      if (!plan || !priceRow || priceRow.cny <= 0) return send(400, { error: 'bad_plan' });
       const co = await companyById(emp.companyId);
       if (co && co.permanent) return send(409, { error: 'permanent', detail: 'lifetime membership — no subscription needed', simulate: true });
       const outTradeNo = 'AM' + now().toString(36).toUpperCase() + crypto.randomUUID().replace(/-/g, '').slice(0, 6).toUpperCase();
-      await sb.from('orders').insert({ out_trade_no: outTradeNo, company_id: emp.companyId, plan_id: plan.id, amount: plan.price, status: 'pending', created_at: now() });
+      await sb.from('orders').insert({ out_trade_no: outTradeNo, company_id: emp.companyId, plan_id: tier + '_' + cycle, amount: priceRow.cny, status: 'pending', created_at: now() });
       const payUrl = `/api/alipay/simulate?out_trade_no=${outTradeNo}`;
-      return send(200, { ok: true, outTradeNo, payUrl, simulate: true, amount: plan.price, planName: plan.name });
+      return send(200, { ok: true, outTradeNo, payUrl, simulate: true, amount: priceRow.cny, amountUsd: priceRow.usd, currency: 'CNY', cycle, planId: tier, planName: plan.name });
     }
     if (p === '/api/alipay/simulate' && method === 'POST') {
       const b = await readBody(req);
@@ -869,6 +961,11 @@ export async function onRequest(context) {
       if (!isTop(emp)) return send(403, { error: 'forbidden' });
       const co = await companyById(emp.companyId);
       if (co && membershipView(co).expired) return send(402, { error: 'payment_required' });
+      // 额度：员工数上限（**服务端强制**）。超限返回 402 + 明确上限，前端据此提示升级。
+      {
+        const q = await quotaCheck(emp.companyId, co ? membershipView(co).plan : null, 'employees');
+        if (!q.ok) return send(402, { error: 'quota_employees', limit: q.limit, used: q.used });
+      }
       const b = await readBody(req);
       const id = String(b.id || '').trim();
       const tier = String(b.tier || '');
