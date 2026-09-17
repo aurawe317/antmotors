@@ -1,4 +1,4 @@
-const CACHE = 'antmotors-v144';
+const CACHE = 'antmotors-v145';
 const STATIC = ['./', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon.svg'];
 
 // Allow the page to force this worker to take over immediately (used by the
@@ -25,6 +25,11 @@ self.addEventListener('activate', e => {
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
   const url = new URL(e.request.url);
+  // NEVER cache API responses. They are dynamic (sync /api/pull, per-car /api/car/:id/photos)
+  // and the cache-first branch below used to serve a STALE copy of them — which is exactly why
+  // deleted cars and photos kept "coming back on refresh": the app re-read an old cached pull
+  // while the database was already correct. Returning here lets the browser hit the network.
+  if (url.origin === self.location.origin && url.pathname.startsWith('/api/')) return;
   const isNav = url.origin === self.location.origin &&
     (url.pathname.endsWith('/') || url.pathname.endsWith('index.html'));
   if (isNav) {

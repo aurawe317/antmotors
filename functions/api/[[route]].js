@@ -386,6 +386,15 @@ async function applyPush(emp, payload) {
     }
     const { error: carErr } = await sb.from('cars').upsert({ id: c.id, company_id: cid, data: incoming, listed_at: c.listedAt || null, updated_at: ts, updated_by: emp.id, deleted: c.deleted ? 1 : 0 }, { onConflict: 'id,company_id' });
     if (carErr) { rejected.push({ id: c.id, reason: carErr.message || 'upsert_failed' }); continue; }
+    if (c.deleted) {
+      // A car deletion carries no photos, so its photo/video rows would otherwise linger on the
+      // server forever. Car ids are derived from brand+model, so re-creating the same car would
+      // instantly resurrect the "old photos". Purge them together with the car.
+      await sb.from('photos').delete().eq('company_id', cid).eq('car_id', c.id);
+      await sb.from('videos').delete().eq('company_id', cid).eq('car_id', c.id);
+      applied.push(c.id);
+      continue;
+    }
     // Use Array.isArray (not truthy) so an empty array [] — i.e. "user deleted ALL
     // photos" — still reaches writePhotos and actually clears the rows on the server.
     if (Array.isArray(c.photos)) { try { await writePhotos(c.id, c.photos, cid); } catch (e) { rejected.push({ id: c.id, reason: 'photos_' + ((e && e.message) || e) }); } }
@@ -489,7 +498,7 @@ export async function onRequest(context) {
           }
         }
       } catch (e) { keyWarn = 'key_decode_failed'; }
-      const base = { build: 'app-1.2.42', now: now(), version: 2, backend: APP_VER };
+      const base = { build: 'app-1.2.43', now: now(), version: 2, backend: APP_VER };
       if (dbErr || authErr || keyWarn) {
         return send(503, Object.assign({
           ok: false, dbError: dbErr, authError: authErr, keyWarn,
