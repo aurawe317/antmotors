@@ -1,4 +1,4 @@
-# AutoStock · iOS 原生化加固（提升 App Store 过审率）
+# Antoto · iOS 原生化加固（提升 App Store 过审率）
 
 目标：把当前「远程加载网页的壳」改造成一眼就是原生 App 的形态，规避 App Store 审核指南
 **4.2（最低功能）** 与 **2.5.2（远程 WebView / 仅是网站壳）** 的拒审风险。
@@ -139,8 +139,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
 ## 5. 必须同步改掉的「网页感」细节
 
-- [ ] `app/index.html` 里残留的 `apple-mobile-web-app-title` 仍是 **"Ant Motors"** → 统一为 **AutoStock**（与商店名一致，否则审核员会觉得名实不符）。
-- [ ] `capacitor.config.json` 的 `ios.scheme` 仍是 `AntMotors` → 改成 `AutoStock`（影响 URL Scheme / 深链）。
+- [x] `app/index.html` 的 `apple-mobile-web-app-title` 已统一为 **"Antoto"**（与商店名/品牌一致）。
+- [x] `capacitor.config.json` 的 `ios.scheme` 已改为 **antoto**（小写，URL Scheme / 深链）。
 - [ ] 确保所有 App 内链接**不弹去 Safari**（网页壳典型特征）：用 `InAppBrowser` 或拦截处理。
 - [ ] 商店描述强调「车商库存/成交管理工具、支持离线、团队协作、拍照上传」，而非「网站」。
 

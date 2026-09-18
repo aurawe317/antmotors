@@ -15,7 +15,7 @@ import { createClient } from '@supabase/supabase-js';
 const SUPABASE_URL_FIXED = 'https://mcjvlohnyfkvkftrvxeq.supabase.co';
 // 没有封面图时的兜底 OG 图（站点自有图标，绝对地址）
 const DEFAULT_OG_IMAGE = 'https://antmotors.pages.dev/icon-512.png';
-const BRAND = 'Ant Motors';
+const BRAND = 'Antoto';
 
 let sb = null;
 function getSb(env) {
@@ -33,9 +33,29 @@ function esc(s) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// 解析出「车行（租户）自己的名字」。分享出去的链接必须带车行名，不能带平台名 ——
+// 否则别家车行的客户会看到 "Antoto"。平台名只出现在 App 自身，不出现在分享卡片。
+// companyId 优先；只有 ref 时反查 employees.company_id；都查不到返回 ''（调用方兜底 BRAND）。
+async function dealerName(client, companyId, ref) {
+  if (!client) return '';
+  let cid = companyId || '';
+  if (!cid && ref) {
+    try {
+      const { data: emp } = await client.from('employees').select('company_id').eq('id', ref).maybeSingle();
+      if (emp && emp.company_id) cid = emp.company_id;
+    } catch (e) { /* best-effort：employees 查不动就放弃 */ }
+  }
+  if (!cid) return '';
+  try {
+    const { data: co } = await client.from('companies').select('name').eq('id', cid).maybeSingle();
+    return (co && co.name && String(co.name).trim()) || '';
+  } catch (e) { return ''; }
+}
+
 // 组装一个最小但完整的分享落地页：OG 标签给爬虫看，meta refresh + JS 给真人跳转
-function shareHtml({ title, desc, image, url }) {
-  const ogTitle = esc(BRAND + ' · ' + title);
+function shareHtml({ title, desc, image, url, brand, ogTitleOverride }) {
+  const b = (brand && String(brand).trim()) || BRAND;
+  const ogTitle = esc(ogTitleOverride || (b + ' · ' + title));
   const ogDesc = esc(desc);
   const ogImage = esc(image);
   const ogUrl = esc(url);
@@ -86,13 +106,16 @@ export async function onRequest(context) {
     : (ref ? `${origin}/?ref=${encodeURIComponent(ref)}`
            : (cp ? `${origin}/?company=${encodeURIComponent(cp)}` : `${origin}/`));
 
-  // 首页 / 展厅分享：无具体车，给品牌级 OG 即可
+  // 首页 / 展厅分享：无具体车，给车行级 OG（用车行自己的名字，不是平台名）
   if (!c) {
+    const cl0 = env.SUPABASE_SERVICE_ROLE_KEY ? getSb(env) : null;
+    const b0 = (cl0 ? await dealerName(cl0, cp, ref) : '') || BRAND;
     return resp(shareHtml({
-      title: BRAND + ' — Ghana Car Export',
+      title: 'Ghana Car Export',
       desc: 'Browse quality used cars for export from Ghana. Toyota, Honda, Hyundai and more.',
       image: DEFAULT_OG_IMAGE,
-      url: target
+      url: target,
+      ogTitleOverride: b0 + ' — Ghana Car Export'
     }));
   }
 
@@ -145,7 +168,8 @@ export async function onRequest(context) {
         }
       }
     }
-    return resp(shareHtml({ title, desc, image, url: target }));
+    const dealer = (await dealerName(client, (car && car.company_id) || cp, ref)) || BRAND;
+    return resp(shareHtml({ title, desc, image, url: target, brand: dealer }));
   } catch (e) {
     // 任一查询失败都降级为品牌兜底，绝不让分享页白屏
     return resp(shareHtml({ title: BRAND, desc: 'Car for export', image: DEFAULT_OG_IMAGE, url: target }));

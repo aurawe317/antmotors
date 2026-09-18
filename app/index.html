@@ -6,13 +6,13 @@
 <meta name="theme-color" id="themeColorMeta" content="#0F0E0E" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
 <meta name="apple-mobile-web-app-status-bar-style" id="statusBarMeta" content="black-translucent" />
-<meta name="apple-mobile-web-app-title" content="AutoStock" />
+<meta name="apple-mobile-web-app-title" content="Antoto" />
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="apple-touch-icon" href="icon-192.png" />
 <link rel="icon" href="favicon.ico" sizes="any" />
 <link rel="icon" href="icon.svg" type="image/svg+xml" />
-<title>Ant Motors — Ghana Car Export</title>
-<meta property="og:title" content="Ant Motors — Ghana Car Export" />
+<title>Antoto — Ghana Car Export</title>
+<meta property="og:title" content="Antoto — Ghana Car Export" />
 <meta property="og:description" content="Quality used cars for export from Ghana. Toyota, Honda, Hyundai and more." />
 <meta property="og:image" content="https://antmotors.pages.dev/icon-512.png" />
 <meta property="og:type" content="website" />
@@ -698,8 +698,8 @@
     <div class="appbar">
       <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
-        <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Ant Motors" /></div>
-        <div><b id="brandNameFoot">ANT MOTORS</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span id="footVer" style="display:block;font-size:9px;color:var(--gold);opacity:.6;"></span></div>
+        <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Antoto" /></div>
+        <div><b id="brandNameFoot">Antoto</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span id="footVer" style="display:block;font-size:9px;color:var(--gold);opacity:.6;"></span></div>
       </div>
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
@@ -1417,7 +1417,7 @@ function empOf(id){
   // before employees load, return a safe placeholder so the UI doesn't crash.
   // (Used to fall back to the seed "kwame" here, which leaked a fake name into the
   //  banner / consultant card — removed so unknown ids never masquerade as a person.)
-  return {name:id||'Ant Motors', av:String(id||'A').charAt(0).toUpperCase(), tier:'customer', role:'Sales', roleZh:'销售', wa:'', phone:'', branch:''};
+  return {name:id||'Antoto', av:String(id||'A').charAt(0).toUpperCase(), tier:'customer', role:'Sales', roleZh:'销售', wa:'', phone:'', branch:''};
 }
 const ALL_EMP = Object.assign({}, SALES, OWNERS);
 
@@ -1561,12 +1561,12 @@ I18N.zh.notifTitle="通知"; I18N.zh.notifToggle="允许通知"; I18N.zh.notifSu
 I18N.zh.privacyTitle="隐私与缓存"; I18N.zh.deviceId="设备"; I18N.zh.lastSync="上次同步"; I18N.zh.appVer="应用版本"; I18N.zh.never="从未"; I18N.zh.clearCache="清除本机离线数据"; I18N.zh.clearCacheConfirm="清除本机全部离线数据？登录后可重新同步。"; I18N.zh.cacheCleared="本机数据已清除"; I18N.zh.forceLogout="退出登录 / 注销会话"; I18N.zh.forceLogoutConfirm="退出并清除本机会话？服务器令牌会自动过期。";
 I18N.zh.synced="已同步"; I18N.zh.signedIn="已登录"; I18N.zh.newCar="新增车辆"; I18N.zh.bookingNotif="新预约"; I18N.zh.coBioLbl="公司简介";
 I18N.en.backupTitle="Data backup (employees)"; I18N.en.backupHint="Export all cars, favorites and staff to a file. Re-import after reinstall to avoid any data loss."; I18N.en.exportData="Export backup"; I18N.en.importData="Import backup";
-I18N.en.installTitle="Get the app (employees)"; I18N.en.installHint="Employees install the Ant Motors native app from the App Store / Google Play, or via internal TestFlight / MDM. Customers simply open the shared link — no install needed.";
+I18N.en.installTitle="Get the app (employees)"; I18N.en.installHint="Employees install the Antoto native app from the App Store / Google Play, or via internal TestFlight / MDM. Customers simply open the shared link — no install needed.";
 I18N.zh.backupTitle="数据备份（员工）"; I18N.zh.backupHint="将全部车辆、收藏与员工数据导出为文件。重装后重新导入，避免任何数据丢失。"; I18N.zh.exportData="导出备份"; I18N.zh.importData="导入备份";
-I18N.zh.installTitle="获取 App（员工）"; I18N.zh.installHint="员工从 App Store / Google Play 安装 Ant Motors 原生 App，或通过企业内部 TestFlight / MDM 分发。客户只需打开分享链接，无需安装。";
+I18N.zh.installTitle="获取 App（员工）"; I18N.zh.installHint="员工从 App Store / Google Play 安装 Antoto 原生 App，或通过企业内部 TestFlight / MDM 分发。客户只需打开分享链接，无需安装。";
 /* --- cloud sync --- */
 I18N.en.syncTitle="Cloud sync (all devices share one inventory)"; I18N.en.syncServer="Server address"; I18N.en.syncEmpId="Staff ID"; I18N.en.syncPin="PIN";
-I18N.en.syncSignIn="Sign in & sync"; I18N.en.syncNowBtn="Sync now"; I18N.en.syncSignOut="Sign out"; I18N.en.syncServerHint="Backend address (needed for login & sync)"; I18N.en.syncServerHint2="This is your account & data-sync server. Leave as-is to use the shared ANT MOTORS backend — every company connects here by default. Change it ONLY if your company runs its own server."; I18N.en.ph_setApi="https://your-server.up.railway.app"; I18N.en.ph_fgCode="6 digits"; I18N.en.ph_regCoName="Ant Motors Ghana"; I18N.en.ph_regId="e.g. ama"; I18N.en.ph_regName="Ama K."; I18N.en.syncConnected="Connected to the shared ANT MOTORS backend — no setup needed. Your company's data stays private."; I18N.en.advServerTitle="Advanced: backend address";
+I18N.en.syncSignIn="Sign in & sync"; I18N.en.syncNowBtn="Sync now"; I18N.en.syncSignOut="Sign out"; I18N.en.syncServerHint="Backend address (needed for login & sync)"; I18N.en.syncServerHint2="This is your account & data-sync server. Leave as-is to use the shared ANT MOTORS backend — every company connects here by default. Change it ONLY if your company runs its own server."; I18N.en.ph_setApi="https://your-server.up.railway.app"; I18N.en.ph_fgCode="6 digits"; I18N.en.ph_regCoName="Antoto Ghana"; I18N.en.ph_regId="e.g. ama"; I18N.en.ph_regName="Ama K."; I18N.en.syncConnected="Connected to the shared ANT MOTORS backend — no setup needed. Your company's data stays private."; I18N.en.advServerTitle="Advanced: backend address";
 I18N.en.syncHint="By default you connect to the shared ANT MOTORS backend (no setup). In Advanced you can point to your own server. When connected, cars and prices added by anyone in your company appear on every signed-in device.";
 I18N.en.syncOffline="Offline mode — this device only"; I18N.en.syncNeedLogin="Sign in to sync"; I18N.en.syncSyncing="Syncing…"; I18N.en.syncSigningIn="Signing in…";
 I18N.en.syncPending="change(s) waiting to upload"; I18N.en.syncedAt="Synced"; I18N.en.syncDone="Sync complete"; I18N.en.syncItems="item(s)";
@@ -4262,7 +4262,7 @@ async function registerAccount(){
 }
 /* ---- company helpers ---- */
 function loadCompany(){ try{ return JSON.parse(localStorage.getItem('am_company')||'null'); }catch(e){ return null; } }
-function brandName(){ const c=loadCompany(); return (c&&c.name&&c.name.trim())?c.name.trim():'ANT MOTORS'; }
+function brandName(){ const c=loadCompany(); return (c&&c.name&&c.name.trim())?c.name.trim():'Antoto'; }
 function applyCompanyLogo(){
   const co=loadCompany();
   const img=document.getElementById('appLogo');
@@ -4740,7 +4740,9 @@ function renderWorkbench(){
       const car=CARS[n.car]; if(!car) return;
       const d=document.createElement('div'); d.className='wb-lead';
       const phoneClean=n.phone.replace(/[^0-9]/g,'');
-      const waUrl = phoneClean ? ("https://wa.me/"+phoneClean+"?text="+encodeURIComponent("Hi "+n.name+", this is "+empOf(curEmployee).name+" from Ant Motors about your viewing of the "+carName(car)+".")) : "";
+      const _co=(typeof loadCompany==='function')?loadCompany():null;
+      const _coName=(_co&&_co.name)||'Antoto';
+      const waUrl = phoneClean ? ("https://wa.me/"+phoneClean+"?text="+encodeURIComponent("Hi "+n.name+", this is "+empOf(curEmployee).name+" from "+_coName+" about your viewing of the "+carName(car)+".")) : "";
       d.innerHTML=`<div class="av">📅</div><div class="info"><b>${n.name}</b><span>${carName(car)} · ${n.date} ${n.time} · ${bName(n.branch)}</span></div>`+
         (waUrl?`<button class="wa-btn" onclick="openWA('${waUrl}')">WhatsApp</button>`:`<span style="font-size:10px;color:var(--text-dim);">no phone</span>`);
       nb.appendChild(d);
@@ -5120,7 +5122,7 @@ function initAdminBranch(){
 function openWA(url){ const w=window.open(url,'_blank'); if(!w) window.location.href=url; }
 function waTap(kind){
   const s=empOf(curSales);
-  let msg="Hi "+s.name+", I saw a car on Ant Motors and want to ask about it.";
+  let msg="Hi "+s.name+", I saw a car on Antoto and want to ask about it.";
   if(kind==='car'){ msg="Hi "+s.name+", I'm interested in the "+carName(CARS[curCar])+". Is it available?"; }
   if(kind==='consult'){ msg="Hi "+s.name+", I'd like your help choosing a car."; }
   if(kind==='booking'){ const b=lastBooking; msg="Hi "+s.name+", thanks for confirming my viewing "+(b?("of "+carName(CARS[b.car])):"request")+". See you then!"; }
