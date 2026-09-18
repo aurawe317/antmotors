@@ -22,7 +22,11 @@ const SUPABASE_URL_FIXED = 'https://mcjvlohnyfkvkftrvxeq.supabase.co';
 let SUPABASE_URL = SUPABASE_URL_FIXED;
 let SUPABASE_KEY = '';
 let sb = null;
+// Optional env fallback for hostname -> company binding (no SQL required):
+//   COMPANY_HOSTS = "antmotors.autos:co_a4812811971e,valor.autos:co_xxxxxxxx"
+let COMPANY_HOSTS = '';
 function getSb(env) {
+  COMPANY_HOSTS = env.COMPANY_HOSTS || COMPANY_HOSTS;
   if (!sb) {
     SUPABASE_URL = SUPABASE_URL_FIXED;
     SUPABASE_KEY = env.SUPABASE_SERVICE_ROLE_KEY || '';
@@ -437,11 +441,45 @@ function publicCar(row) {
   out.price = { quote };
   return out;
 }
+/* ---- hostname -> company ------------------------------------------------
+   A tenant can be reached through its own domain (antmotors.autos) or through a
+   platform subdomain (ant.antmotors.autos). Resolution order:
+     1) company_domains table   — explicit mapping, supports ANY custom domain
+     2) companies.slug          — covers <slug>.<any host> automatically
+     3) COMPANY_HOSTS env       — "host:company_id,host2:company_id2" (no SQL needed)
+   Each step is optional: if the table / column / env var is missing we simply skip
+   it, so this never breaks on a database that has not been migrated yet. */
+const PLATFORM_HOSTS = new Set(['antmotors.pages.dev', 'localhost', '127.0.0.1']);
+async function companyByHost(host) {
+  if (!host) return null;
+  const h = String(host).toLowerCase().split(':')[0].replace(/\.$/, '');
+  if (!h || PLATFORM_HOSTS.has(h)) return null;
+  try {
+    const { data } = await sb.from('company_domains').select('company_id').eq('host', h).maybeSingle();
+    if (data && data.company_id) return data.company_id;
+  } catch (e) { /* table not created yet — fall through */ }
+  const m = /^([a-z0-9-]{2,30})\..+$/.exec(h);
+  if (m) {
+    try {
+      const { data } = await sb.from('companies').select('id').eq('slug', m[1]).maybeSingle();
+      if (data && data.id) return data.id;
+    } catch (e) { /* slug column not added yet — fall through */ }
+  }
+  for (const pair of String(COMPANY_HOSTS || '').split(',')) {
+    const bits = pair.split(':');
+    if (bits.length >= 2 && bits[0].trim().toLowerCase() === h) return bits.slice(1).join(':').trim() || null;
+  }
+  return null;
+}
 async function resolveCompanyId(u, emp) {
   const ref = u.searchParams.get('ref');
   if (ref) { const { data: e } = await sb.from('employees').select('company_id').eq('id', ref).eq('deleted', 0).maybeSingle(); if (e) return e.company_id; }
   const cp = u.searchParams.get('company');
   if (cp) { const { data: c } = await sb.from('companies').select('id').eq('id', cp).maybeSingle(); if (c) return c.id; }
+  // Fall back to the domain the visitor is on: this is how a dealership's own
+  // domain (or its platform subdomain) shows only that dealership's inventory.
+  const hc = await companyByHost(u.hostname);
+  if (hc) return hc;
   return emp ? emp.companyId : null;
 }
 const SEED_CAR_IDS = new Set();   // 演示车 id（无种子文件时为空，由运营清样例处理）
@@ -609,7 +647,7 @@ export async function onRequest(context) {
           }
         }
       } catch (e) { keyWarn = 'key_decode_failed'; }
-      const base = { build: 'app-1.2.45', now: now(), version: 2, backend: APP_VER };
+      const base = { build: 'app-1.2.46', now: now(), version: 2, backend: APP_VER };
       if (dbErr || authErr || keyWarn) {
         return send(503, Object.assign({
           ok: false, dbError: dbErr, authError: authErr, keyWarn,
