@@ -783,7 +783,16 @@ export async function onRequest(context) {
       if (!cid) return send(200, { company: null, cars: [] });
       const { data } = await sb.from('cars').select('*').eq('company_id', cid).eq('deleted', 0).order('updated_at', { ascending: false });
       const rows = (data || []).filter(r => !((r.data || {}).sold));
-      const cars = await Promise.all(rows.map(async (r) => { const c = publicCar(r); c.cover = await coverOf(r.id, cid); return c; }));
+      // Return the FULL gallery, not just the cover — otherwise a customer browsing
+      // the showroom and tapping a car only ever sees one photo (the deep-linked
+      // ?c= path was fine because /api/public/car/:id already returns all photos).
+      const cars = await Promise.all(rows.map(async (r) => {
+        const c = publicCar(r);
+        const phw = await photosWithIds(r.id, cid);
+        c.cover = phw.urls[0] || null;
+        c.photos = phw.urls;
+        return c;
+      }));
       return send(200, { company: cid, cars });
     }
     if (p === '/api/showrooms') {
