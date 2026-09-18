@@ -4005,7 +4005,12 @@ function renderSyncUI(){
 function isSharedView(){
   try{
     const q=new URLSearchParams(location.search);
-    if(q.get('c')||q.get('car')||q.get('ref')) return true;
+    // 'company' counts as shared too: a showroom share / QR link carries
+    // ?company=<id> whenever no employee ref is available, and it is exactly as
+    // customer-facing as a car link. Without it those links kept showing the
+    // gold "Login / Register" bar, the desktop demo role switcher (leaks staff
+    // tiers / cost prices) and the internal "enter your server address" text.
+    if(q.get('c')||q.get('car')||q.get('ref')||q.get('company')) return true;
     if(/\/c\/[^/?#]+/.test(location.pathname)) return true;
   }catch(e){}
   return false;
