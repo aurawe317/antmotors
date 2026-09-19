@@ -54,3 +54,21 @@ update public.companies set slug = 'ant' where id = 'co_a4812811971e' and slug i
 --    下面两条按需执行（把「Ant motors」设成高级/永久）：
 -- update public.companies set plan = 'premium' where id = 'co_a4812811971e';
 -- update public.companies set permanent = 1   where id = 'co_a4812811971e';
+
+-- 6) 公司对外联系信息 —— 展示在租户自有域名浏览页（如 antmotors.autos）的客户底部联系栏。
+--    由 App 后台「公司设置 → Public contact」编辑；直访公司域名的客户（非销售分享链接进入）
+--    看到该联系人。通过销售分享链接进入的，仍显示该销售本人（见前端 customerContact()）。
+alter table public.companies
+  add column if not exists contact_name  text,   -- 公司对外联系人姓名
+  add column if not exists contact_phone text,   -- 公司对外电话（tel: 拨号，含国家码）
+  add column if not exists contact_wa    text;   -- 公司对外 WhatsApp（含国家码，不含 +）
+
+comment on column public.companies.contact_name  is '公司对外联系人姓名（客户浏览页底部联系栏）';
+comment on column public.companies.contact_phone is '公司对外电话（tel: 拨号，建议含国家码如 233xxxx）';
+comment on column public.companies.contact_wa    is '公司对外 WhatsApp 号码（含国家码，不含 +，如 233xxxx）';
+
+-- 6.1) 校验：应看到三列已存在
+-- select column_name, data_type from information_schema.columns
+--   where table_schema='public' and table_name='companies'
+--     and column_name in ('contact_name','contact_phone','contact_wa')
+--   order by column_name;
