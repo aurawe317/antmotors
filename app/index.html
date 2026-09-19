@@ -3315,6 +3315,21 @@ async function deleteEmployee(id){
 }
 function copyText(s){ try{ if(navigator.clipboard) navigator.clipboard.writeText(s); else { const ta=document.createElement('textarea'); ta.value=s; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); ta.remove(); } }catch(e){} }
 
+// ---- which domain a share link goes out on -------------------------------
+// Premium (or permanent) tenants share on their OWN domain; everyone else shares
+// from the platform domain, so a customer never lands on an internal/legacy host.
+const PLATFORM_ORIGIN='https://antoto.app';
+function shareOrigin(){
+  try{
+    const co=loadCompany();
+    const own=(co&&co.domain)?String(co.domain).trim():'';
+    if(own && (co.permanent || co.plan==='premium')){
+      return /^https?:\/\//i.test(own) ? own.replace(/\/+$/,'') : ('https://'+own);
+    }
+  }catch(e){}
+  return PLATFORM_ORIGIN;
+}
+
 // Build the share URL. A specific car => /share?c=<id>&ref=<emp> (opens that car,
 // and the /share landing page serves WeChat/OG share-card metadata for it).
 // Otherwise (showroom/home) => /share?ref=<emp> only (opens the showroom, not a car).
@@ -3329,12 +3344,13 @@ function shareUrlFor(carId){
     try{ const co=loadCompany(); if(co&&co.id) scope='company='+encodeURIComponent(co.id); }catch(e){}
     if(!scope && typeof sharedCompany!=='undefined' && sharedCompany) scope='company='+encodeURIComponent(sharedCompany);
   }
-  const base=location.origin+'/share';
+  const origin=shareOrigin();
+  const base=origin+'/share';
   // `t` is a per-share timestamp so WeChat (and other crawlers) re-fetch OG metadata
   // every time instead of serving a cached "no cover" result. The /share route
   // ignores it when redirecting the human visitor to the clean SPA URL.
   const nonce='&t='+Date.now();
-  return carId ? (base+'?c='+encodeURIComponent(carId)+(scope?'&'+scope:'')+nonce) : (scope ? (base+'?'+scope+nonce) : location.origin+'/');
+  return carId ? (base+'?c='+encodeURIComponent(carId)+(scope?'&'+scope:'')+nonce) : (scope ? (base+'?'+scope+nonce) : origin+'/');
 }
 // Unified share: native multi-app picker (WhatsApp / WeChat / Messages / Copy…) when
 // available; custom sheet otherwise. The URL is ALSO embedded in the text — WeChat (and

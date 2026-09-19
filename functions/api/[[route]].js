@@ -163,6 +163,23 @@ async function companyById(id) {
 function publicCompany(row) {
   return { id: row.id, name: row.name, logo: row.logo || null, bio: row.bio || '', code: row.code, plan: row.plan, status: row.status, permanent: !!row.permanent };
 }
+// The tenant's own (custom) domain, if they bound one. Decides whether a share
+// link goes out on the dealer's own domain (premium) or on the platform domain.
+// Missing table / no binding => null (never throws).
+async function ownDomainOf(cid) {
+  if (!cid) return null;
+  try {
+    const { data } = await sb.from('company_domains').select('host')
+      .eq('company_id', cid).eq('kind', 'custom')
+      .order('created_at', { ascending: true }).limit(1);
+    if (data && data.length && data[0].host) return String(data[0].host).trim().toLowerCase();
+  } catch (e) { /* company_domains not created yet — treat as unbound */ }
+  return null;
+}
+async function publicCompanyWithDomain(row) {
+  if (!row) return null;
+  return Object.assign(publicCompany(row), { domain: await ownDomainOf(row.id) });
+}
 function membershipView(row) {
   const t = now();
   const isPermanent = !!row.permanent;
@@ -707,7 +724,7 @@ export async function onRequest(context) {
       const token = await issueToken(fullEmp.id, companyId);
       const co = await companyById(companyId);
       const eObj = stripPw(fullEmp.data || {}); eObj.id = fullEmp.id; eObj.companyId = companyId; eObj.email = fullEmp.email || email;
-      return send(200, { token, employee: eObj, company: co ? publicCompany(co) : null, mustChangePassword: false });
+      return send(200, { token, employee: eObj, company: await publicCompanyWithDomain(co), mustChangePassword: false });
     }
 
     /* register (creates Supabase Auth user + employee + company) */
@@ -776,7 +793,7 @@ export async function onRequest(context) {
       const { error: empErr } = await sb.from('employees').upsert({ id, company_id: companyId, user_id: authUserId, data, email: email || null, updated_at: now(), deleted: 0 }, { onConflict: 'id,company_id' });
       if (empErr) return send(500, { error: 'employee_create_failed', detail: empErr.message });
       const token = await issueToken(id, companyId);
-      return send(200, { token, employee: Object.assign({ id, companyId, email }, stripPw(data)), company: company ? publicCompany(company) : null, authWarn });
+      return send(200, { token, employee: Object.assign({ id, companyId, email }, stripPw(data)), company: await publicCompanyWithDomain(company), authWarn });
     }
 
     /* public (no auth, company-scoped) */
@@ -926,12 +943,12 @@ export async function onRequest(context) {
 
     if (p === '/api/me') {
       const co = await companyById(emp.companyId);
-      return send(200, { employee: emp, canEditPrices: isTop(emp), company: co ? publicCompany(co) : null, membership: co ? membershipView(co) : null, mustChangePassword: false });
+      return send(200, { employee: emp, canEditPrices: isTop(emp), company: await publicCompanyWithDomain(co), membership: co ? membershipView(co) : null, mustChangePassword: false });
     }
     if (p === '/api/company' && method === 'GET') {
       if (!isTop(emp)) return send(403, { error: 'forbidden' });
       const co = await companyById(emp.companyId);
-      return send(200, { company: co ? publicCompany(co) : null, membership: co ? membershipView(co) : null });
+      return send(200, { company: await publicCompanyWithDomain(co), membership: co ? membershipView(co) : null });
     }
     if (p === '/api/company' && method === 'PUT') {
       if (!isTop(emp)) return send(403, { error: 'forbidden' });
@@ -942,7 +959,7 @@ export async function onRequest(context) {
       if (b.logo !== undefined) { if (b.logo && typeof b.logo === 'string' && b.logo.startsWith('data:image') && b.logo.length < 2_000_000) co.logo = b.logo; else if (b.logo === null || b.logo === '') co.logo = null; }
       if (b.bio !== undefined) co.bio = String(b.bio || '').slice(0, 500);
       await sb.from('companies').update({ name: co.name, logo: co.logo, bio: co.bio }).eq('id', emp.companyId);
-      return send(200, { company: publicCompany(co) });
+      return send(200, { company: await publicCompanyWithDomain(co) });
     }
     if (p === '/api/company/code' && method === 'GET') {
       if (!isTop(emp)) return send(403, { error: 'forbidden' });
