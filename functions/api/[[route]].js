@@ -449,7 +449,9 @@ function publicCar(row) {
      3) COMPANY_HOSTS env       — "host:company_id,host2:company_id2" (no SQL needed)
    Each step is optional: if the table / column / env var is missing we simply skip
    it, so this never breaks on a database that has not been migrated yet. */
-const PLATFORM_HOSTS = new Set(['antmotors.pages.dev', 'localhost', '127.0.0.1']);
+// Hosts that belong to the PLATFORM itself (staff sign in here), never to a tenant.
+// antoto.app is the platform domain; antmotors.pages.dev is the legacy Pages host.
+const PLATFORM_HOSTS = new Set(['antoto.app', 'www.antoto.app', 'antmotors.pages.dev', 'localhost', '127.0.0.1']);
 async function companyByHost(host) {
   if (!host) return null;
   const h = String(host).toLowerCase().split(':')[0].replace(/\.$/, '');

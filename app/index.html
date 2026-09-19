@@ -3923,6 +3923,9 @@ async function bootstrap(){
   recomputeFacets();
   renderHome(); renderStock(); renderPerm(); renderFilterBranch(); renderShowroomList(); initAdminBranch();
   applyEmployeeScope(); updateRoleUI(); renderSyncUI(); applyCompanyLogo(); renderMembershipUI();
+  // The company is only resolved from the hostname inside bootstrap, so the
+  // customer-view guards (no login entry / no demo role switcher) must run here.
+  applyCustomerGuards();
 
   // shared link (has ?ref=) => ALWAYS guest/customer view, like a visitor — even on an owner's own device,
   // regardless of the role remembered locally or a signed-in account. Prices stay quote-only.
@@ -4015,10 +4018,24 @@ function isSharedView(){
   }catch(e){}
   return false;
 }
+// A tenant's own domain (e.g. antmotors.autos) is 100% customer-facing — staff
+// use the native app or the platform domain (antoto.app). So never surface any
+// sign-in / register entry there. The company is only known AFTER bootstrap
+// resolves it from the hostname, so these guards are re-applied post-bootstrap.
+function onTenantDomain(){
+  return (typeof sharedCompany!=='undefined' && !!sharedCompany) && !isSignedIn();
+}
+function applyCustomerGuards(){
+  if(isSharedView() || onTenantDomain()){
+    try{ const dm=document.querySelector('.demo'); if(dm) dm.style.display='none'; }catch(e){}
+  }
+  try{ updateAuthCTA(); }catch(e){}
+}
 function updateAuthCTA(){
   const loggedIn=isSignedIn();
   const shared=isSharedView(); // customer opened a shared car link -> never show a register prompt
-  const wb=document.getElementById('welcomeBar'); if(wb) wb.style.display=(loggedIn||shared)?'none':'block';
+  // Tenant domains are customer-only: no "Login / Register" bar there either.
+  const wb=document.getElementById('welcomeBar'); if(wb) wb.style.display=(loggedIn||shared||onTenantDomain())?'none':'block';
   // refresh welcome bar language
   const wt=document.getElementById('welcomeTitle'); if(wt) wt.textContent='👋 '+T('welcomeTo','Welcome to')+' '+brandName();
   const wd=document.getElementById('welcomeDesc'); if(wd) wd.textContent=T('welcomeDesc','New here? Create your company account to start adding cars, managing your team and viewing membership info. Tap the settings button above or the button below.');
@@ -5318,9 +5335,9 @@ parseDeepLink();
 // switcher (Boss/Owner, cost prices…) — it makes the shared page look like a
 // prototype and leaks staff tiers. Hide it for any shared view.
 if(isSharedView()){
-  try{ const dm=document.querySelector('.demo'); if(dm) dm.style.display='none'; }catch(e){}
   curLang='en';   // shared car pages always open in English; never follow the viewer's saved/device language
 }
+applyCustomerGuards();
 applyTheme(); syncLangUI(); applyI18n(); renderSyncUI(); updateAuthCTA();
 applyDefSales(); renderNotifs(); genDeviceId();
 bootstrap().then(()=>{
