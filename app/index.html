@@ -278,6 +278,7 @@
   .staff-row select{background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:5px 8px; font-size:12px;}
   #settingsSheet .form-row{display:flex; flex-direction:column; gap:4px; margin:8px 0;}
   #settingsSheet .form-row label{font-size:11px; color:var(--text-dim);}
+  #settingsSheet .form-subhead{font-size:12px; font-weight:700; color:var(--gold); margin:14px 0 2px;}
   #settingsSheet input{background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:9px 10px; font-size:13px;}
   .more-cars{margin-top:6px;}
   .more-grid{display:flex; gap:10px; overflow-x:auto; padding-bottom:6px; -webkit-overflow-scrolling:touch;}
@@ -1125,6 +1126,11 @@
         <input type="file" id="coEditLogo" accept="image/*" onchange="previewCoEditLogo()" style="padding:6px;width:100%;" />
         <img id="coEditLogoPrev" style="display:none;max-height:46px;max-width:120px;margin-top:6px;border-radius:8px;background:var(--surface-2);" />
       </div>
+      <div class="form-subhead" data-i18n="coContactHead">Public contact (shown on your domain)</div>
+      <p class="sheet-hint" data-i18n="coContactHint">Customers who browse your own domain (e.g. antmotors.autos) directly — not via a sales link — see this contact in the bottom bar.</p>
+      <div class="form-row"><label data-i18n="coContactName">Contact name</label><input type="text" id="coEditContactName" autocomplete="off" placeholder="e.g. Kwame" /></div>
+      <div class="form-row"><label data-i18n="coContactPhone">Phone</label><input type="tel" id="coEditContactPhone" autocomplete="off" placeholder="233 24 000 0000" /></div>
+      <div class="form-row"><label data-i18n="coContactWa">WhatsApp</label><input type="tel" id="coEditContactWa" autocomplete="off" placeholder="233 24 000 0000" /></div>
       <button class="submit" onclick="saveCompany()" data-i18n="coSave" style="margin-top:8px;">Save company</button>
     </div>
     <div style="display:flex;gap:8px;margin-top:10px;">
@@ -1555,12 +1561,14 @@ I18N.en.curLbl="Display currency"; I18N.en.curSub="Currency symbol shown on ever
 I18N.en.notifTitle="Notifications"; I18N.en.notifToggle="Allow notifications"; I18N.en.notifSub="Get alerted on sync, new arrivals & bookings"; I18N.en.notifClear="Clear notifications"; I18N.en.notifEmpty="No notifications yet"; I18N.en.notifOn="Notifications on"; I18N.en.notifOnSub="You'll be alerted on sync & bookings"; I18N.en.notifOff="Notifications off"; I18N.en.notifCleared="Notifications cleared";
 I18N.en.privacyTitle="Privacy & cache"; I18N.en.deviceId="Device"; I18N.en.lastSync="Last sync"; I18N.en.appVer="App version"; I18N.en.never="never"; I18N.en.clearCache="Clear local offline data"; I18N.en.clearCacheConfirm="Clear all local offline data? You can re-sync after signing in."; I18N.en.cacheCleared="Local data cleared"; I18N.en.forceLogout="Sign out / revoke session"; I18N.en.forceLogoutConfirm="Sign out and clear this session? Server tokens expire automatically.";
 I18N.en.synced="Synced"; I18N.en.signedIn="Signed in"; I18N.en.newCar="New car added"; I18N.en.bookingNotif="New booking"; I18N.en.coBioLbl="About";
+I18N.en.coContactHead="Public contact (shown on your domain)"; I18N.en.coContactHint="Customers who browse your own domain directly — not via a sales link — see this contact in the bottom bar."; I18N.en.coContactName="Contact name"; I18N.en.coContactPhone="Phone"; I18N.en.coContactWa="WhatsApp"; I18N.en.contactUs="Contact us"; I18N.en.noContact="No contact number yet";
 I18N.zh.appearance="外观"; I18N.zh.themeLbl="主题"; I18N.zh.themeSub="默认跟随手机系统设置"; I18N.zh.thLight="浅色"; I18N.zh.thDark="深色"; I18N.zh.thSystem="跟随系统";
 I18N.zh.prefs="偏好"; I18N.zh.defSalesLbl="默认销售员"; I18N.zh.defSalesSub="首页“正在浏览”默认指向谁"; I18N.zh.defSalesSet="已设置默认销售员";
 I18N.zh.curLbl="显示货币"; I18N.zh.curSub="所有价格显示的货币符号（不做汇率换算）";
 I18N.zh.notifTitle="通知"; I18N.zh.notifToggle="允许通知"; I18N.zh.notifSub="同步、新到店、预约时提醒"; I18N.zh.notifClear="清除通知"; I18N.zh.notifEmpty="暂无通知"; I18N.zh.notifOn="通知已开启"; I18N.zh.notifOnSub="同步与预约时将收到提醒"; I18N.zh.notifOff="通知已关闭"; I18N.zh.notifCleared="通知已清除";
 I18N.zh.privacyTitle="隐私与缓存"; I18N.zh.deviceId="设备"; I18N.zh.lastSync="上次同步"; I18N.zh.appVer="应用版本"; I18N.zh.never="从未"; I18N.zh.clearCache="清除本机离线数据"; I18N.zh.clearCacheConfirm="清除本机全部离线数据？登录后可重新同步。"; I18N.zh.cacheCleared="本机数据已清除"; I18N.zh.forceLogout="退出登录 / 注销会话"; I18N.zh.forceLogoutConfirm="退出并清除本机会话？服务器令牌会自动过期。";
 I18N.zh.synced="已同步"; I18N.zh.signedIn="已登录"; I18N.zh.newCar="新增车辆"; I18N.zh.bookingNotif="新预约"; I18N.zh.coBioLbl="公司简介";
+I18N.zh.coContactHead="对外联系信息（显示在您的域名）"; I18N.zh.coContactHint="客户直接在贵司自有域名浏览（非销售分享链接进入）时，在底部联系栏看到此联系人。"; I18N.zh.coContactName="联系人姓名"; I18N.zh.coContactPhone="电话"; I18N.zh.coContactWa="WhatsApp"; I18N.zh.contactUs="联系我们"; I18N.zh.noContact="暂无联系电话";
 I18N.en.backupTitle="Data backup (employees)"; I18N.en.backupHint="Export all cars, favorites and staff to a file. Re-import after reinstall to avoid any data loss."; I18N.en.exportData="Export backup"; I18N.en.importData="Import backup";
 I18N.en.installTitle="Get the app (employees)"; I18N.en.installHint="Employees install the Antoto native app from the App Store / Google Play, or via internal TestFlight / MDM. Customers simply open the shared link — no install needed.";
 I18N.zh.backupTitle="数据备份（员工）"; I18N.zh.backupHint="将全部车辆、收藏与员工数据导出为文件。重装后重新导入，避免任何数据丢失。"; I18N.zh.exportData="导出备份"; I18N.zh.importData="导入备份";
@@ -1589,12 +1597,12 @@ I18N.en.regHasAccount="New here? Create an account"; I18N.en.regSwitchToLogin="H
 I18N.en.joinTitle="Join your company"; I18N.en.joinHint="Enter the invitation code from your boss, or scan the QR they share. Pick your role, then you get full access."; I18N.en.joinCode="Invitation code"; I18N.en.joinScan="Scan"; I18N.en.joinRole="Your role"; I18N.en.jrPartner="Partner (co-owner)"; I18N.en.jrManager="Manager"; I18N.en.jrSalesA="Senior Sales"; I18N.en.jrSalesB="Sales"; I18N.en.joinBranch="Branch"; I18N.en.joinBind="Bind & activate"; I18N.en.joinNeedCode="Enter or scan the invitation code"; I18N.en.joinSuccess="You are now part of the company"; I18N.en.joinBadCode="Invitation code does not match"; I18N.en.joinBadTier="Pick a role"; I18N.en.joinNotFound="Account not found";
 I18N.en.codeTitle="Company invitation code"; I18N.en.codeHint="Share this with partners & staff. They enter or scan it to join your company and get access."; I18N.en.codeCopy="Copy code"; I18N.en.codeRegen="Regenerate"; I18N.en.codeCopied="Code copied"; I18N.en.codeRegenConfirm="Regenerate the code? Old shares will stop working."; I18N.en.codeRegenOk="New code generated"; I18N.en.scanNoCam="Camera not available"; I18N.en.scanOk="Code scanned";
 I18N.en.memTitle="Membership"; I18N.en.memManage="Manage membership"; I18N.en.memActive="Active"; I18N.en.memExpired="Expired"; I18N.en.memTrial="Trial"; I18N.en.memUntil="Valid until"; I18N.en.memExpiredMsg="Your membership has expired. Renew to add or edit cars and keep staff synced."; I18N.en.memPick="Choose a plan"; I18N.en.memScan="Scan this with Alipay to pay"; I18N.en.memOpenAlipay="Open Alipay"; I18N.en.memSimPay="（测试）模拟支付成功"; I18N.en.memPaying="Creating order…"; I18N.en.memPaid="Payment received — membership activated"; I18N.en.memPayFailed="Payment failed, please retry"; I18N.en.memSimNote="DEV mode: Alipay is simulated — use the test button to activate.";
-I18N.en.memNeedServer="Connect to a server to subscribe"; I18N.en.memNeedLogin="Sign in as the company owner to subscribe"; I18N.en.memSubscribe="Subscribe"; I18N.en.memOwnerOnly="Owner only"; I18N.en.memActive="Active"; I18N.en.perMonth="/month"; I18N.en.perYear="/year"; I18N.en.memRenew="Renew now"; I18N.en.memCurrent="Current plan"; I18N.en.memLifetime="Lifetime"; I18N.en.memLifetimeMsg="You have lifetime membership — active forever, no subscription needed.";
+I18N.en.memNeedServer="Connect to a server to subscribe"; I18N.en.memNeedLogin="Sign in as the company owner to subscribe"; I18N.en.memSubscribe="Subscribe"; I18N.en.memOwnerOnly="Owner only"; I18N.en.memActive="Active"; I18N.en.perMonth="/mo"; I18N.en.perYear="/yr"; I18N.en.memRenew="Renew now"; I18N.en.memCurrent="Current plan"; I18N.en.memLifetime="Lifetime"; I18N.en.memLifetimeMsg="You have lifetime membership — active forever, no subscription needed."; I18N.en.memFeatDomain="Own domain (e.g. yourcompany.autos)"; I18N.en.memFeatQr="Exclusive QR code"; I18N.en.unlimited="Unlimited"; I18N.en.carsUnit2="cars"; I18N.en.staffUnit="staff"; I18N.en.shopsUnit="shops";
 I18N.zh.regHasAccount="新用户？注册账号"; I18N.zh.regSwitchToLogin="已有账号？去登录"; I18N.zh.regId="账号 ID"; I18N.zh.regName="你的姓名";I18N.zh.regIdSub="登录账号 — 简短、唯一、小写。同事用它 @ 你、分配客户（如 ama、kwame）。"; I18N.zh.regNameSub="展示给客户的姓名，出现在报价单、聊天与预约里（如 Ama K.、Kwame Asante）。"; I18N.zh.regWa="WhatsApp"; I18N.zh.regPhone="电话"; I18N.zh.regPin="密码 PIN（4-8 位）"; I18N.zh.regCreate="创建账号"; I18N.zh.regCreating="创建中…"; I18N.zh.regSuccess="账号已创建"; I18N.zh.regExists="该账号 ID 已被占用"; I18N.zh.regHint="先填写服务器地址，再在下方填写你的资料即可创建账号。如果已有账号，点“已有账号？去登录”。"; I18N.zh.regModeCreate="创建公司"; I18N.zh.regModeJoin="加入公司"; I18N.zh.regCoName="公司名称"; I18N.zh.regCoLogo="公司 Logo"; I18N.zh.regCode="邀请码"; I18N.zh.coTitle="公司"; I18N.zh.coSave="保存公司"; I18N.zh.coEdit="编辑公司"; I18N.zh.reqField="必填"; I18N.zh.coSaved="公司已保存";
 I18N.zh.joinTitle="加入公司"; I18N.zh.joinHint="输入老板给你的邀请码，或扫描对方分享的二维码，选择你的角色即可获得权限。"; I18N.zh.joinCode="邀请码"; I18N.zh.joinScan="扫描"; I18N.zh.joinRole="你的角色"; I18N.zh.jrPartner="合伙人（共同所有者）"; I18N.zh.jrManager="经理"; I18N.zh.jrSalesA="高级销售"; I18N.zh.jrSalesB="销售"; I18N.zh.joinBranch="门店"; I18N.zh.joinBind="绑定并激活"; I18N.zh.joinNeedCode="请填写或扫描邀请码"; I18N.zh.joinSuccess="你已加入公司"; I18N.zh.joinBadCode="邀请码不匹配"; I18N.zh.joinBadTier="请选择角色"; I18N.zh.joinNotFound="未找到账号";
 I18N.zh.codeTitle="公司邀请码"; I18N.zh.codeHint="把这个码发给合伙人和员工，他们输入或扫码即可加入公司并获得权限。"; I18N.zh.codeCopy="复制邀请码"; I18N.zh.codeRegen="重新生成"; I18N.zh.codeCopied="邀请码已复制"; I18N.zh.codeRegenConfirm="重新生成邀请码？旧的分享将失效。"; I18N.zh.codeRegenOk="已生成新邀请码"; I18N.zh.scanNoCam="无法使用摄像头"; I18N.zh.scanOk="已扫描到邀请码";
 I18N.zh.memTitle="会员"; I18N.zh.memManage="管理会员"; I18N.zh.memActive="生效中"; I18N.zh.memExpired="已过期"; I18N.zh.memTrial="试用"; I18N.zh.memUntil="有效期至"; I18N.zh.memExpiredMsg="会员已过期，续费后可继续添加/编辑车辆并保持员工同步。"; I18N.zh.memPick="选择套餐"; I18N.zh.memScan="用支付宝扫描此码付款"; I18N.zh.memOpenAlipay="打开支付宝"; I18N.zh.memSimPay="（测试）模拟支付成功"; I18N.zh.memPaying="正在创建订单…"; I18N.zh.memPaid="已收到付款 — 会员已开通"; I18N.zh.memPayFailed="支付失败，请重试"; I18N.zh.memSimNote="开发模式：支付宝为模拟支付 — 点击测试按钮即可激活。";
-I18N.zh.memNeedServer="连接服务器后可订阅套餐"; I18N.zh.memNeedLogin="请以公司所有者身份登录后再订阅"; I18N.zh.memSubscribe="订阅"; I18N.zh.memOwnerOnly="仅所有者"; I18N.zh.memRenew="立即续费"; I18N.zh.memCurrent="当前套餐"; I18N.zh.perMonth="/月"; I18N.zh.perYear="/年"; I18N.zh.memLifetime="永久会员"; I18N.zh.memLifetimeMsg="您已拥有永久会员，永久有效，无需订阅。";
+I18N.zh.memNeedServer="连接服务器后可订阅套餐"; I18N.zh.memNeedLogin="请以公司所有者身份登录后再订阅"; I18N.zh.memSubscribe="订阅"; I18N.zh.memOwnerOnly="仅所有者"; I18N.zh.memRenew="立即续费"; I18N.zh.memCurrent="当前套餐"; I18N.zh.perMonth="/月"; I18N.zh.perYear="/年"; I18N.zh.memLifetime="永久会员"; I18N.zh.memLifetimeMsg="您已拥有永久会员，永久有效，无需订阅。"; I18N.zh.memFeatDomain="独立域名（如 yourcompany.autos）"; I18N.zh.memFeatQr="专属二维码"; I18N.zh.unlimited="不限"; I18N.zh.carsUnit2="辆车"; I18N.zh.staffUnit="名员工"; I18N.zh.shopsUnit="家门店";
 /* ---- toast/inline messages that were previously hardcoded English ---- */
 I18N.en.editModeHint="Edit mode: specs, highlights, branch can be modified."; I18N.en.videoTooLarge="Video too large — max 25MB"; I18N.en.max3Videos="Max 3 videos per car"; I18N.en.videoAdded="Video added for"; I18N.en.viewingPhoto="Viewing photo"; I18N.en.shareLinkCopied="Share link copied"; I18N.en.staffIdFmt="Staff ID: 2-20 letters/numbers/_"; I18N.en.pinFmt="PIN must be 4-8 digits"; I18N.en.linkCopiedRef="Link copied · ref"; I18N.en.backupExported="Backup exported"; I18N.en.backupRestored="Backup restored"; I18N.en.invalidBackup="Invalid backup file"; I18N.en.qrLibOffline="QR library unavailable offline"; I18N.en.createFailed="create failed"; I18N.en.reqFieldX="required"; I18N.en.regNeedMode="Choose a mode and fill the company field"; I18N.en.afNeedFields="Please fill brand, model and year"; I18N.en.afNeedQuote="Please enter a customer quote price"; I18N.en.mBoss="Boss"; I18N.en.mPA="P.A"; I18N.en.mPB="P.B"; I18N.en.mMgr="Mgr"; I18N.en.mSA="S.A"; I18N.en.mSB="S.B";
 I18N.zh.editModeHint="编辑模式：可修改规格、亮点与门店。"; I18N.zh.videoTooLarge="视频过大——最大 25MB"; I18N.zh.max3Videos="每辆车最多 3 个视频"; I18N.zh.videoAdded="已添加视频："; I18N.zh.viewingPhoto="正在查看照片"; I18N.zh.shareLinkCopied="分享链接已复制"; I18N.zh.staffIdFmt="员工账号：2-20 位字母/数字/_"; I18N.zh.pinFmt="PIN 必须为 4-8 位数字"; I18N.zh.linkCopiedRef="链接已复制 · 引用"; I18N.zh.backupExported="备份已导出"; I18N.zh.backupRestored="备份已恢复"; I18N.zh.invalidBackup="备份文件无效"; I18N.zh.qrLibOffline="离线时二维码库不可用"; I18N.zh.createFailed="创建失败"; I18N.zh.reqFieldX="必填"; I18N.zh.regNeedMode="请选择注册方式并填写对应公司信息"; I18N.zh.afNeedFields="请填写品牌、型号与年份"; I18N.zh.afNeedQuote="请填写对客户报价"; I18N.zh.mBoss="老板"; I18N.zh.mPA="合伙人A"; I18N.zh.mPB="合伙人B"; I18N.zh.mMgr="店长"; I18N.zh.mSA="销售A"; I18N.zh.mSB="销售B";
@@ -2396,8 +2404,12 @@ function updateAttrBanner(){
   const b=document.getElementById('attrBanner'), t=document.getElementById('attrText'); if(!b||!t) return;
   const loggedIn=isSignedIn();
   if(!loggedIn){
-    // Public / customer view: show who they are shopping with.
-    if(curRole==='customer' && curSales && empOf(curSales)){
+    // Public / customer view. Only show "shopping with <salesperson>" when the
+    // visitor arrived via a share link — that's the person they should reach.
+    // A customer browsing the company's own domain directly (no ?ref=) has no
+    // attributed rep; the bottom contact bar shows the company contact instead,
+    // so we keep this banner hidden (avoids the legacy "kwame" placeholder).
+    if(attributedSalesRef && curRole==='customer' && curSales && empOf(curSales)){
       const s=empOf(curSales);
       const br=(curLang==='zh'&&I18N.zh.branch&&I18N.zh.branch[s.branch])?I18N.zh.branch[s.branch]:(s.branch||'');
       b.style.display='';
@@ -2923,24 +2935,39 @@ function handleShowroomPhoto(e,showroomName){
 }
 
 
+// The contact a browsing customer should reach:
+//  - arrived via a salesperson's share link (?ref=)  -> that salesperson
+//  - browsing the company's own domain directly       -> the company-level contact
+//    (set in the app backend). Falls back to a generic "Contact us" when neither
+//    is available, so the bottom bar never shows the legacy "kwame" placeholder.
+function customerContact(){
+  if(attributedSalesRef && curSales){
+    const s=empOf(curSales);
+    if(s) return { name:s.name||'', av:s.av||'', role:(typeof salesRoleLabel==='function'?salesRoleLabel(s):(s.role||'')), wa:s.wa||'', phone:s.phone||'' };
+  }
+  if(companyContact){
+    return { name:companyContact.name||'', av:(companyContact.name||'C').charAt(0).toUpperCase(), role:'', wa:companyContact.wa||'', phone:companyContact.phone||'' };
+  }
+  return { name:T('contactUs','Contact us'), av:'C', role:'', wa:'', phone:'' };
+}
 function renderAttrBanner(){
-  // Reflects the chosen salesperson in the "Your Sales Consultant" card only.
-  // It must NOT write #attrText (the global banner) — that is updateAttrBanner's
-  // job — otherwise the owner's banner gets overwritten with "Kwame".
-  const s=empOf(curSales); if(!s) return;
-  const av=document.getElementById('consultAv'); if(av) av.textContent=s.av||'';
-  const nm=document.getElementById('consultName'); if(nm) nm.textContent=s.name||'';
-  const rl=document.getElementById('consultRole'); if(rl) rl.textContent=(typeof salesRoleLabel==='function')?salesRoleLabel(s):(s.role||'');
-  // Mirror the same consultant into the customer bottom contact bar
-  const cav=document.getElementById('custAv'); if(cav) cav.textContent=s.av||'';
-  const cnm=document.getElementById('custName'); if(cnm) cnm.textContent=s.name||'';
-  const crl=document.getElementById('custRole'); if(crl) crl.textContent=(typeof salesRoleLabel==='function')?salesRoleLabel(s):(s.role||'');
+  // Reflects the chosen contact in the "Your Sales Consultant" card AND mirrors it
+  // into the customer bottom contact bar. It must NOT write #attrText (the global
+  // banner) — that is updateAttrBanner's job.
+  const c=customerContact();
+  const av=document.getElementById('consultAv'); if(av) av.textContent=c.av||'';
+  const nm=document.getElementById('consultName'); if(nm) nm.textContent=c.name||'';
+  const rl=document.getElementById('consultRole'); if(rl) rl.textContent=c.role||'';
+  // Mirror the same contact into the customer bottom contact bar
+  const cav=document.getElementById('custAv'); if(cav) cav.textContent=c.av||'';
+  const cnm=document.getElementById('custName'); if(cnm) cnm.textContent=c.name||'';
+  const crl=document.getElementById('custRole'); if(crl) crl.textContent=c.role||'';
   updateAttrBanner();
 }
-// Customer bottom bar: direct phone dial to the sharing consultant
+// Customer bottom bar: direct phone dial to the shown contact
 function callTap(){
-  const s=empOf(curSales);
-  const num=String((s&&s.wa)||'').replace(/[^0-9]/g,'');
+  const c=customerContact();
+  const num=String((c&&c.phone)||(c&&c.wa)||'').replace(/[^0-9]/g,'');
   if(!num){ toast(T('noContact','No contact number yet')); return; }
   location.href='tel:+'+num;
 }
@@ -3583,16 +3610,24 @@ async function showMembership(force){
 function renderPlanList(plans, simulate){
   const el=document.getElementById('planList'); if(!el) return;
   const top=isTopEmployee();
+  const featsOf=(f)=>{ const a=[]; if(f&&f.domain) a.push(T('memFeatDomain','Own domain (e.g. yourcompany.autos)')); if(f&&f.qr) a.push(T('memFeatQr','Exclusive QR code')); return a; };
+  const quotaOf=(q)=>{ if(!q) return ''; const parts=[]; if(q.cars!=null) parts.push(q.cars===null?T('unlimited','Unlimited'):(q.cars+' '+T('carsUnit2','cars'))); if(q.employees!=null) parts.push(q.employees===null?T('unlimited','Unlimited'):(q.employees+' '+T('staffUnit','staff'))); if(q.showrooms!=null) parts.push(q.showrooms===null?T('unlimited','Unlimited'):(q.showrooms+' '+T('shopsUnit','shops'))); return parts.join(' · '); };
   el.innerHTML = (plans.filter(p=>p.id!=='trial').map(p=>{
-    const price=(p.price/100);
-    const cur=(p.currency==='CNY'?'¥':(p.currency||'¥'));
-    const cycle=(p.days>=360?T('perYear','/year'):T('perMonth','/month'));
+    const mo=p.monthly?p.monthly.cny:0, yr=p.yearly?p.yearly.cny:0;
     const canBuy=top;
-    return '<div class="plan-card" style="border:1px solid var(--border);border-radius:12px;padding:12px;margin:8px 0;display:flex;align-items:center;justify-content:space-between;">'
-      +'<div><div style="font-weight:800;">'+p.nameEn+' · '+p.name+'</div><div style="font-size:12px;color:var(--text-dim);">'+cur+price+' '+cycle+'</div></div>'
-      +'<button class="submit" '+(canBuy?'':'disabled style="opacity:.5;"')+' onclick="subscribePlan(\''+p.id+'\',this)">'+(canBuy?T('memSubscribe','Subscribe'):T('memOwnerOnly','Owner only'))+'</button></div>';
+    const feats=featsOf(p.features);
+    const quotas=quotaOf(p.quotas);
+    return '<div class="plan-card" style="border:1px solid var(--border);border-radius:12px;padding:12px;margin:8px 0;">'
+      +'<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">'
+      +'<div><div style="font-weight:800;">'+p.nameEn+' · '+p.name+'</div>'
+      +'<div style="font-size:12px;color:var(--text-dim);">¥'+mo+' '+T('perMonth','/mo')+' · ¥'+yr+' '+T('perYear','/yr')+'</div>'
+      +(quotas?'<div style="font-size:11px;color:var(--text-dim);margin-top:2px;">'+quotas+'</div>':'')
+      +'</div>'
+      +'<button class="submit" style="margin-top:8px;" '+(canBuy?'':'disabled style="opacity:.5;"')+' onclick="subscribePlan(\''+p.id+'\',this)">'+(canBuy?T('memSubscribe','Subscribe'):T('memOwnerOnly','Owner only'))+'</button></div>'
+      +(feats.length?'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">'+feats.map(f=>'<span class="tag">✓ '+f+'</span>').join('')+'</div>':'')
+      +'</div>';
   }).join(''))
-  + (simulate?'<div class="sheet-hint" style="color:var(--gold);">'+T('memSimNote','DEV mode: Alipay is simulated — use the test button to activate.')+'</div>':'');
+  + (simulate?'<div class="sheet-hint" style="color:var(--gold);">'+T('memSimNote','DEV mode: payment is simulated — use the test button to activate.')+'</div>':'');
 }
 let CUR_ORDER=null;
 async function subscribePlan(planId, btn){
@@ -3879,6 +3914,7 @@ async function bootstrap(){
           apiPublic('/api/showrooms'+listQ)
         ]);
         if(list.companyInfo && list.companyInfo.name) sharedCompanyName=String(list.companyInfo.name);
+        if(list.companyInfo && list.companyInfo.contact) companyContact=list.companyInfo.contact;
         const listCars=list.cars||[];
         const serverIds=new Set(listCars.map(c=>c.id));
         // Prefer the full gallery from the list; fall back to the cover alone.
@@ -3929,6 +3965,7 @@ async function bootstrap(){
         if(d2.agent) upsertEmp(d2.agent.id||dRef, d2.agent);
         if(d2.company && d2.company.id) sharedCompany=d2.company.id;
         if(d2.company && d2.company.name) sharedCompanyName=String(d2.company.name);
+        if(d2.company && d2.company.contact) companyContact=d2.company.contact;
         saveCars(); saveCarPhotos(); saveCarVideos(); saveEmps();
       }
     }
@@ -3953,6 +3990,7 @@ async function bootstrap(){
   if(shareRef){
     curRole='customer';
     curSales=shareRef;
+    attributedSalesRef=shareRef;   // this visitor came via a salesperson's share link
     window.__deeplink=true;
     updateRoleUI();
   } else {
@@ -4375,7 +4413,15 @@ function toggleCoEdit(){
   const box=document.getElementById('coEditBox'); if(!box) return;
   const open=box.style.display!=='block';
   box.style.display=open?'block':'none';
-  const co=loadCompany(); if(co){ document.getElementById('coEditName').value=co.name||''; const be=document.getElementById('coEditBio'); if(be) be.value=co.bio||''; }
+  const co=loadCompany();
+  if(co){
+    document.getElementById('coEditName').value=co.name||'';
+    const be=document.getElementById('coEditBio'); if(be) be.value=co.bio||'';
+    const ct=co.contact||{};
+    const cn=document.getElementById('coEditContactName'); if(cn) cn.value=ct.name||'';
+    const cp=document.getElementById('coEditContactPhone'); if(cp) cp.value=ct.phone||'';
+    const cw=document.getElementById('coEditContactWa'); if(cw) cw.value=ct.wa||'';
+  }
   window.__coEditLogo=undefined;
   const prev=document.getElementById('coEditLogoPrev'); if(prev) prev.style.display='none';
 }
@@ -4388,8 +4434,13 @@ async function saveCompany(){
   const name=(document.getElementById('coEditName').value||'').trim();
   if(!name){ toast(T('regCoName','Company name')+': '+T('reqField','required')); return; }
   const bio=(document.getElementById('coEditBio').value||'').trim();
+  const contact={
+    name:(document.getElementById('coEditContactName').value||'').trim(),
+    phone:(document.getElementById('coEditContactPhone').value||'').trim(),
+    wa:(document.getElementById('coEditContactWa').value||'').trim()
+  };
   try{
-    const r=await api('/api/company',{method:'PUT',body:{name, bio, logo: (window.__coEditLogo!==undefined?window.__coEditLogo:co.logo)}});
+    const r=await api('/api/company',{method:'PUT',body:{name, bio, contact, logo: (window.__coEditLogo!==undefined?window.__coEditLogo:co.logo)}});
     localStorage.setItem('am_company',JSON.stringify(r.company)); applyCompanyLogo();
     document.getElementById('coNameTxt').textContent=r.company.name;
     document.getElementById('coCodeTxt').textContent=r.company.code;
@@ -5172,14 +5223,15 @@ function initAdminBranch(){
 /* ---- whatsapp & booking ---- */
 function openWA(url){ const w=window.open(url,'_blank'); if(!w) window.location.href=url; }
 function waTap(kind){
-  const s=empOf(curSales);
-  let msg="Hi "+s.name+", I saw a car on Antoto and want to ask about it.";
-  if(kind==='car'){ msg="Hi "+s.name+", I'm interested in the "+carName(CARS[curCar])+". Is it available?"; }
-  if(kind==='consult'){ msg="Hi "+s.name+", I'd like your help choosing a car."; }
-  if(kind==='booking'){ const b=lastBooking; msg="Hi "+s.name+", thanks for confirming my viewing "+(b?("of "+carName(CARS[b.car])):"request")+". See you then!"; }
-  const url="https://wa.me/"+String(s.wa).replace(/[^0-9]/g,'')+"?text="+encodeURIComponent(msg);
+  const c=customerContact();
+  if(!c.wa){ toast(T('noContact','No contact yet')); return; }
+  let msg="Hi "+c.name+", I saw a car on Antoto and want to ask about it.";
+  if(kind==='car'){ msg="Hi "+c.name+", I'm interested in the "+carName(CARS[curCar])+". Is it available?"; }
+  if(kind==='consult'){ msg="Hi "+c.name+", I'd like your help choosing a car."; }
+  if(kind==='booking'){ const b=lastBooking; msg="Hi "+c.name+", thanks for confirming my viewing "+(b?("of "+carName(CARS[b.car])):"request")+". See you then!"; }
+  const url="https://wa.me/"+String(c.wa).replace(/[^0-9]/g,'')+"?text="+encodeURIComponent(msg);
   openWA(url);
-  toast(T('waOpening','Opening WhatsApp → ')+"<b>"+s.name+"</b>");
+  toast(T('waOpening','Opening WhatsApp → ')+"<b>"+c.name+"</b>");
 }
 
 function openBooking(){
@@ -5304,6 +5356,13 @@ let sharedCompany=null;
 // — a visitor has no cached company of their own, so brandName() must fall back
 // to this (never to the platform brand).
 let sharedCompanyName=null;
+// Company-level public contact (name / phone / WhatsApp). Shown on a tenant's own
+// domain (e.g. antmotors.autos) for customers who browse directly — i.e. arrived
+// with NO ?ref=. Populated from the public payload (companyInfo.contact). When the
+// visitor DID come via a salesperson's share link, the attributed rep wins instead.
+let companyContact=null;
+// The ?ref= this customer arrived with. Null => browsing the company domain directly.
+let attributedSalesRef=null;
 let sharedGone=null;
 function parseDeepLink(){
   try{

@@ -161,7 +161,24 @@ async function companyById(id) {
   return data;
 }
 function publicCompany(row) {
-  return { id: row.id, name: row.name, logo: row.logo || null, bio: row.bio || '', code: row.code, plan: row.plan, status: row.status, permanent: !!row.permanent };
+  return { id: row.id, name: row.name, logo: row.logo || null, bio: row.bio || '', code: row.code, plan: row.plan, status: row.status, permanent: !!row.permanent, contact: contactOf(row) };
+}
+// Company-level public contact (name / phone / WhatsApp). Shown on a tenant's own
+// domain (e.g. antmotors.autos) for customers who browse directly (no sales share
+// link). Null when nothing is set, so the client can fall back to the agent.
+function contactOf(row) {
+  if (!row) return null;
+  const name = row.contact_name || null;
+  const phone = row.contact_phone || null;
+  const wa = row.contact_wa || null;
+  if (!name && !phone && !wa) return null;
+  return { name, phone, wa };
+}
+// Compact company descriptor sent to customer views (homepage list + single car),
+// including the public contact so the bottom bar can show the company contact.
+function companyInfoOf(co) {
+  if (!co) return null;
+  return { id: co.id, name: co.name, logo: co.logo || null, contact: contactOf(co) };
 }
 // The tenant's own (custom) domain, if they bound one. Decides whether a share
 // link goes out on the dealer's own domain (premium) or on the platform domain.
@@ -815,7 +832,7 @@ export async function onRequest(context) {
       // Expose the dealer's own identity so a customer-facing page can show the
       // TENANT name instead of falling back to the platform name (Antoto).
       const co = await companyById(cid);
-      return send(200, { company: cid, companyInfo: co ? { id: co.id, name: co.name, logo: co.logo || null } : null, cars });
+      return send(200, { company: cid, companyInfo: companyInfoOf(co), cars });
     }
     if (p === '/api/showrooms') {
       const cid = await resolveCompanyId(u, null);
@@ -830,7 +847,7 @@ export async function onRequest(context) {
       const cid = row.company_id;
       const co = await companyById(cid);
       const pubCo = co ? publicCompany(co) : null;
-      const companyInfo = pubCo ? { id: pubCo.id, name: pubCo.name, logo: pubCo.logo } : { id: cid, name: null, logo: null };
+      const companyInfo = pubCo ? companyInfoOf(pubCo) : { id: cid, name: null, logo: null, contact: null };
       const cd = row.data || {};
       const gone = !!row.deleted || !!cd.sold;
       if (gone) return send(200, { gone: true, reason: row.deleted ? 'deleted' : 'sold', company: companyInfo, carName: cd.name || '' });
@@ -961,7 +978,13 @@ export async function onRequest(context) {
       if (b.name !== undefined) co.name = String(b.name).trim().slice(0, 80);
       if (b.logo !== undefined) { if (b.logo && typeof b.logo === 'string' && b.logo.startsWith('data:image') && b.logo.length < 2_000_000) co.logo = b.logo; else if (b.logo === null || b.logo === '') co.logo = null; }
       if (b.bio !== undefined) co.bio = String(b.bio || '').slice(0, 500);
-      await sb.from('companies').update({ name: co.name, logo: co.logo, bio: co.bio }).eq('id', emp.companyId);
+      if (b.contact && typeof b.contact === 'object') {
+        const c = b.contact;
+        if (c.name !== undefined) co.contact_name = c.name ? String(c.name).trim().slice(0, 60) : null;
+        if (c.phone !== undefined) co.contact_phone = c.phone ? String(c.phone).trim().slice(0, 40) : null;
+        if (c.wa !== undefined) co.contact_wa = c.wa ? String(c.wa).trim().slice(0, 40) : null;
+      }
+      await sb.from('companies').update({ name: co.name, logo: co.logo, bio: co.bio, contact_name: co.contact_name, contact_phone: co.contact_phone, contact_wa: co.contact_wa }).eq('id', emp.companyId);
       return send(200, { company: await publicCompanyWithDomain(co) });
     }
     if (p === '/api/company/code' && method === 'GET') {
