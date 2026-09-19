@@ -3348,6 +3348,15 @@ function copyText(s){ try{ if(navigator.clipboard) navigator.clipboard.writeText
 // from the platform domain, so a customer never lands on an internal/legacy host.
 const PLATFORM_ORIGIN='https://antoto.app';
 function shareOrigin(){
+  // If we are already on the company's own (custom) domain — a customer or the
+  // owner browsing antmotors.autos — every share must stay on that domain, using
+  // the very origin we are served from. This avoids falling back to the platform
+  // domain just because the cached am_company lacks a `domain` (e.g. last login
+  // predated the domain binding, or the visitor is a non-logged-in customer). It
+  // mirrors share.js, which renders the OG card on the request's own origin.
+  if(typeof sharedCompany!=='undefined' && sharedCompany && typeof location!=='undefined' && location.origin){
+    return location.origin.replace(/\/+$/,'');
+  }
   try{
     const co=loadCompany();
     const own=(co&&co.domain)?String(co.domain).trim():'';
