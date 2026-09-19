@@ -1126,11 +1126,6 @@
         <input type="file" id="coEditLogo" accept="image/*" onchange="previewCoEditLogo()" style="padding:6px;width:100%;" />
         <img id="coEditLogoPrev" style="display:none;max-height:46px;max-width:120px;margin-top:6px;border-radius:8px;background:var(--surface-2);" />
       </div>
-      <div class="form-subhead" data-i18n="coContactHead">Public contact (shown on your domain)</div>
-      <p class="sheet-hint" data-i18n="coContactHint">Customers who browse your own domain (e.g. antmotors.autos) directly — not via a sales link — see this contact in the bottom bar.</p>
-      <div class="form-row"><label data-i18n="coContactName">Contact name</label><input type="text" id="coEditContactName" autocomplete="off" placeholder="e.g. Kwame" /></div>
-      <div class="form-row"><label data-i18n="coContactPhone">Phone</label><input type="tel" id="coEditContactPhone" autocomplete="off" placeholder="233 24 000 0000" /></div>
-      <div class="form-row"><label data-i18n="coContactWa">WhatsApp</label><input type="tel" id="coEditContactWa" autocomplete="off" placeholder="233 24 000 0000" /></div>
       <button class="submit" onclick="saveCompany()" data-i18n="coSave" style="margin-top:8px;">Save company</button>
     </div>
     <div style="display:flex;gap:8px;margin-top:10px;">
@@ -1317,6 +1312,35 @@
   <div class="grp" style="background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--text-dim);display:flex;align-items:center;gap:8px;">
     <span style="color:var(--gold);font-weight:800;">●</span>
     <span data-i18n="syncConnected">Connected to the shared ANT MOTORS backend — no setup needed. Your company's data stays private.</span>
+  </div>
+  <div class="grp" id="premiumGroup" style="display:none;background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:12px;padding:12px 14px;">
+    <div id="premUnlocked" style="display:none;">
+      <div class="lbl" style="color:var(--gold);font-weight:800;" data-i18n="premTitle">Premium tools</div>
+      <p class="sheet-hint" data-i18n="premSub">Exclusive features unlocked with your Premium plan.</p>
+      <div class="ui-row" style="margin:6px 0 4px;">
+        <div><div class="lab" data-i18n="premDomain">Your showroom domain</div><div class="sub" id="premDomainVal">—</div></div>
+      </div>
+      <div class="form-subhead" data-i18n="coContactHead">Public contact (shown on your domain)</div>
+      <p class="sheet-hint" data-i18n="coContactHint">Customers who browse your own domain directly — not via a sales link — see this contact in the bottom bar.</p>
+      <div class="form-row"><label data-i18n="coContactName">Contact name</label><input type="text" id="premContactName" autocomplete="off" placeholder="e.g. Kwame" /></div>
+      <div class="form-row"><label data-i18n="coContactPhone">Phone</label><input type="tel" id="premContactPhone" autocomplete="off" placeholder="233 24 000 0000" /></div>
+      <div class="form-row"><label data-i18n="coContactWa">WhatsApp</label><input type="tel" id="premContactWa" autocomplete="off" placeholder="233 24 000 0000" /></div>
+      <button class="submit" id="premContactSave" onclick="savePremiumContact()" data-i18n="coEdit" style="margin-top:6px;">Save contact</button>
+      <div class="form-subhead" data-i18n="premQrTitle" style="margin-top:14px;">Showroom QR code</div>
+      <p class="sheet-hint" data-i18n="premQrHint">Permanent code for your showroom homepage. Print it or share on WhatsApp.</p>
+      <div id="premQr" style="display:inline-block;padding:10px;background:#fff;border-radius:12px;"></div>
+      <div style="margin-top:8px;"><button class="share-copy" id="premQrDl" onclick="downloadPremQr()" data-i18n="premQrDownload">Download PNG</button></div>
+    </div>
+    <div id="premLocked" style="display:none;">
+      <div class="lbl" style="color:var(--gold);font-weight:800;" data-i18n="premTitle">Premium tools</div>
+      <p class="sheet-hint" data-i18n="premLockedHint">Unlock with Premium to get:</p>
+      <ul style="margin:6px 0 12px;padding-left:18px;font-size:13px;color:var(--text-dim);line-height:1.7;">
+        <li data-i18n="premPerkDomain">Your own showroom domain</li>
+        <li data-i18n="premPerkContact">Editable public contact on your domain</li>
+        <li data-i18n="premPerkQr">Permanent showroom QR code</li>
+      </ul>
+      <button class="submit" onclick="showMembership()" data-i18n="premUpgrade">Upgrade to Premium</button>
+    </div>
   </div>
   <div class="grp" id="shSettingsGroup" style="display:none;">
     <div class="lbl" data-i18n="shSettingsTitle">Sales points / Showrooms</div>
@@ -1561,14 +1585,14 @@ I18N.en.curLbl="Display currency"; I18N.en.curSub="Currency symbol shown on ever
 I18N.en.notifTitle="Notifications"; I18N.en.notifToggle="Allow notifications"; I18N.en.notifSub="Get alerted on sync, new arrivals & bookings"; I18N.en.notifClear="Clear notifications"; I18N.en.notifEmpty="No notifications yet"; I18N.en.notifOn="Notifications on"; I18N.en.notifOnSub="You'll be alerted on sync & bookings"; I18N.en.notifOff="Notifications off"; I18N.en.notifCleared="Notifications cleared";
 I18N.en.privacyTitle="Privacy & cache"; I18N.en.deviceId="Device"; I18N.en.lastSync="Last sync"; I18N.en.appVer="App version"; I18N.en.never="never"; I18N.en.clearCache="Clear local offline data"; I18N.en.clearCacheConfirm="Clear all local offline data? You can re-sync after signing in."; I18N.en.cacheCleared="Local data cleared"; I18N.en.forceLogout="Sign out / revoke session"; I18N.en.forceLogoutConfirm="Sign out and clear this session? Server tokens expire automatically.";
 I18N.en.synced="Synced"; I18N.en.signedIn="Signed in"; I18N.en.newCar="New car added"; I18N.en.bookingNotif="New booking"; I18N.en.coBioLbl="About";
-I18N.en.coContactHead="Public contact (shown on your domain)"; I18N.en.coContactHint="Customers who browse your own domain directly — not via a sales link — see this contact in the bottom bar."; I18N.en.coContactName="Contact name"; I18N.en.coContactPhone="Phone"; I18N.en.coContactWa="WhatsApp"; I18N.en.contactUs="Contact us"; I18N.en.noContact="No contact number yet";
+I18N.en.coContactHead="Public contact (shown on your domain)"; I18N.en.coContactHint="Customers who browse your own domain directly — not via a sales link — see this contact in the bottom bar."; I18N.en.coContactName="Contact name"; I18N.en.coContactPhone="Phone"; I18N.en.coContactWa="WhatsApp"; I18N.en.contactUs="Contact us"; I18N.en.noContact="No contact number yet"; I18N.en.premTitle="Premium tools"; I18N.en.premSub="Exclusive features unlocked with your Premium plan."; I18N.en.premDomain="Your showroom domain"; I18N.en.premQrTitle="Showroom QR code"; I18N.en.premQrHint="Permanent code for your showroom homepage. Print it or share on WhatsApp."; I18N.en.premQrDownload="Download PNG"; I18N.en.premLockedHint="Unlock with Premium to get:"; I18N.en.premPerkDomain="Your own showroom domain"; I18N.en.premPerkContact="Editable public contact on your domain"; I18N.en.premPerkQr="Permanent showroom QR code"; I18N.en.premUpgrade="Upgrade to Premium"; I18N.en.premQrErr="QR not ready";
 I18N.zh.appearance="外观"; I18N.zh.themeLbl="主题"; I18N.zh.themeSub="默认跟随手机系统设置"; I18N.zh.thLight="浅色"; I18N.zh.thDark="深色"; I18N.zh.thSystem="跟随系统";
 I18N.zh.prefs="偏好"; I18N.zh.defSalesLbl="默认销售员"; I18N.zh.defSalesSub="首页“正在浏览”默认指向谁"; I18N.zh.defSalesSet="已设置默认销售员";
 I18N.zh.curLbl="显示货币"; I18N.zh.curSub="所有价格显示的货币符号（不做汇率换算）";
 I18N.zh.notifTitle="通知"; I18N.zh.notifToggle="允许通知"; I18N.zh.notifSub="同步、新到店、预约时提醒"; I18N.zh.notifClear="清除通知"; I18N.zh.notifEmpty="暂无通知"; I18N.zh.notifOn="通知已开启"; I18N.zh.notifOnSub="同步与预约时将收到提醒"; I18N.zh.notifOff="通知已关闭"; I18N.zh.notifCleared="通知已清除";
 I18N.zh.privacyTitle="隐私与缓存"; I18N.zh.deviceId="设备"; I18N.zh.lastSync="上次同步"; I18N.zh.appVer="应用版本"; I18N.zh.never="从未"; I18N.zh.clearCache="清除本机离线数据"; I18N.zh.clearCacheConfirm="清除本机全部离线数据？登录后可重新同步。"; I18N.zh.cacheCleared="本机数据已清除"; I18N.zh.forceLogout="退出登录 / 注销会话"; I18N.zh.forceLogoutConfirm="退出并清除本机会话？服务器令牌会自动过期。";
 I18N.zh.synced="已同步"; I18N.zh.signedIn="已登录"; I18N.zh.newCar="新增车辆"; I18N.zh.bookingNotif="新预约"; I18N.zh.coBioLbl="公司简介";
-I18N.zh.coContactHead="对外联系信息（显示在您的域名）"; I18N.zh.coContactHint="客户直接在贵司自有域名浏览（非销售分享链接进入）时，在底部联系栏看到此联系人。"; I18N.zh.coContactName="联系人姓名"; I18N.zh.coContactPhone="电话"; I18N.zh.coContactWa="WhatsApp"; I18N.zh.contactUs="联系我们"; I18N.zh.noContact="暂无联系电话";
+I18N.zh.coContactHead="对外联系信息（显示在您的域名）"; I18N.zh.coContactHint="客户直接在贵司自有域名浏览（非销售分享链接进入）时，在底部联系栏看到此联系人。"; I18N.zh.coContactName="联系人姓名"; I18N.zh.coContactPhone="电话"; I18N.zh.coContactWa="WhatsApp"; I18N.zh.contactUs="联系我们"; I18N.zh.noContact="暂无联系电话"; I18N.zh.premTitle="高级会员专属"; I18N.zh.premSub="开通高级会员后解锁的专属功能。"; I18N.zh.premDomain="您的展厅域名"; I18N.zh.premQrTitle="展厅二维码"; I18N.zh.premQrHint="指向您展厅主页的永久二维码，可打印或发到 WhatsApp。"; I18N.zh.premQrDownload="下载 PNG"; I18N.zh.premLockedHint="开通高级会员即可获得："; I18N.zh.premPerkDomain="独立展厅域名"; I18N.zh.premPerkContact="可编辑的对外联系信息"; I18N.zh.premPerkQr="永久展厅二维码"; I18N.zh.premUpgrade="升级高级会员"; I18N.zh.premQrErr="二维码未就绪";
 I18N.en.backupTitle="Data backup (employees)"; I18N.en.backupHint="Export all cars, favorites and staff to a file. Re-import after reinstall to avoid any data loss."; I18N.en.exportData="Export backup"; I18N.en.importData="Import backup";
 I18N.en.installTitle="Get the app (employees)"; I18N.en.installHint="Employees install the Antoto native app from the App Store / Google Play, or via internal TestFlight / MDM. Customers simply open the shared link — no install needed.";
 I18N.zh.backupTitle="数据备份（员工）"; I18N.zh.backupHint="将全部车辆、收藏与员工数据导出为文件。重装后重新导入，避免任何数据丢失。"; I18N.zh.exportData="导出备份"; I18N.zh.importData="导入备份";
@@ -3158,6 +3182,7 @@ function openSettings(){
   showDevices();
   renderSyncUI(); // refresh signOutGroup visibility
   renderMembershipUI(); // populate membership card
+  showPremiumGroup();   // gate Premium tools (locked teaser vs unlocked)
   const x2=document.getElementById('settingsExtra2'); if(x2) x2.style.display=SYNC.token?'':'none';
 }
 /* ---------- ME tab (profile + account + company) ---------- */
@@ -4426,10 +4451,7 @@ function toggleCoEdit(){
   if(co){
     document.getElementById('coEditName').value=co.name||'';
     const be=document.getElementById('coEditBio'); if(be) be.value=co.bio||'';
-    const ct=co.contact||{};
-    const cn=document.getElementById('coEditContactName'); if(cn) cn.value=ct.name||'';
-    const cp=document.getElementById('coEditContactPhone'); if(cp) cp.value=ct.phone||'';
-    const cw=document.getElementById('coEditContactWa'); if(cw) cw.value=ct.wa||'';
+    // company contact is now edited in the Premium tools group (gated by plan)
   }
   window.__coEditLogo=undefined;
   const prev=document.getElementById('coEditLogoPrev'); if(prev) prev.style.display='none';
@@ -4443,11 +4465,7 @@ async function saveCompany(){
   const name=(document.getElementById('coEditName').value||'').trim();
   if(!name){ toast(T('regCoName','Company name')+': '+T('reqField','required')); return; }
   const bio=(document.getElementById('coEditBio').value||'').trim();
-  const contact={
-    name:(document.getElementById('coEditContactName').value||'').trim(),
-    phone:(document.getElementById('coEditContactPhone').value||'').trim(),
-    wa:(document.getElementById('coEditContactWa').value||'').trim()
-  };
+  const contact=co.contact||{};
   try{
     const r=await api('/api/company',{method:'PUT',body:{name, bio, contact, logo: (window.__coEditLogo!==undefined?window.__coEditLogo:co.logo)}});
     localStorage.setItem('am_company',JSON.stringify(r.company)); applyCompanyLogo();
@@ -4458,6 +4476,71 @@ async function saveCompany(){
     toggleCoEdit();
     toast('✅ '+T('coSaved','Company saved'));
   }catch(e){ toast('⚠ '+e.message); }
+}
+function isPremiumTenant(){ try{ const co=loadCompany(); return !!(co && (co.permanent || co.plan==='premium')); }catch(e){ return false; } }
+// Stable URL for the company's own showroom homepage (used by the permanent QR).
+// Prefers the tenant's bound domain; falls back to a platform link scoped by company id.
+function companyHomeUrl(){
+  try{
+    const co=loadCompany();
+    const own=(co&&co.domain)?String(co.domain).trim():'';
+    if(own && (co.permanent||co.plan==='premium')){
+      return (/^https?:\/\//i.test(own)?own.replace(/\/+$/,''):'https://'+own)+'/';
+    }
+  }catch(e){}
+  try{ const co=loadCompany(); if(co&&co.id) return PLATFORM_ORIGIN+'/share?company='+encodeURIComponent(co.id); }catch(e){}
+  return PLATFORM_ORIGIN+'/';
+}
+// Gate the Premium tools group: show the locked teaser for non-premium, the real
+// tools (domain status, contact editor, permanent QR) for premium/permanent tenants.
+function showPremiumGroup(){
+  const g=document.getElementById('premiumGroup'); if(!g) return;
+  const unlocked=isPremiumTenant();
+  g.style.display='block';
+  const u=document.getElementById('premUnlocked'), l=document.getElementById('premLocked');
+  if(u) u.style.display=unlocked?'block':'none';
+  if(l) l.style.display=unlocked?'none':'block';
+  if(!unlocked) return;
+  const co=loadCompany()||{};
+  const dv=document.getElementById('premDomainVal'); if(dv) dv.textContent=(co.domain?String(co.domain).replace(/^https?:\/\//,'').replace(/\/+$/,''):'—');
+  const ct=co.contact||{};
+  const setV=(id,v)=>{ const el=document.getElementById(id); if(el) el.value=v||''; };
+  setV('premContactName',ct.name); setV('premContactPhone',ct.phone); setV('premContactWa',ct.wa);
+  const saveBtn=document.getElementById('premContactSave'); if(saveBtn) saveBtn.style.display=isTopEmployee()?'inline-block':'none';
+  renderPremiumQr(document.getElementById('premQr'), companyHomeUrl());
+}
+async function savePremiumContact(){
+  const co=loadCompany(); if(!co) return;
+  const contact={
+    name:(document.getElementById('premContactName').value||'').trim(),
+    phone:(document.getElementById('premContactPhone').value||'').trim(),
+    wa:(document.getElementById('premContactWa').value||'').trim()
+  };
+  try{
+    const r=await api('/api/company',{method:'PUT',body:{contact}});
+    localStorage.setItem('am_company',JSON.stringify(r.company));
+    toast('✅ '+T('coSaved','Contact saved'));
+  }catch(e){ toast('⚠ '+e.message); }
+}
+function renderPremiumQr(box, url){
+  if(!box) return; box.__qrUrl=url;
+  const draw=()=>{ try{ const qr=window.qrcode(0,'M'); qr.addData(url); qr.make(); box.innerHTML=qr.createSvgTag(6,2); }catch(e){ box.innerHTML='<span style="font-size:10px;color:var(--text-dim)">QR n/a</span>'; } };
+  if(window.qrcode){ draw(); return; }
+  if(window.__qrLoading){ let n=0; const iv=setInterval(()=>{ if(window.qrcode){ clearInterval(iv); draw(); } else if(++n>100){ clearInterval(iv); box.innerHTML='<span style="font-size:10px;color:var(--text-dim)">QR unavailable</span>'; } },60); return; }
+  window.__qrLoading=true;
+  const s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js';
+  s.onload=()=>{ window.__qrLoading=false; draw(); document.querySelectorAll('.am-ss .qr').forEach(b=>{ if(b.__qrUrl){ const q=window.qrcode(0,'M'); q.addData(b.__qrUrl); q.make(); b.innerHTML=q.createSvgTag(4,1); } }); };
+  s.onerror=()=>{ box.innerHTML='<span style="font-size:10px;color:var(--text-dim)">QR unavailable</span>'; };
+  document.head.appendChild(s);
+}
+function downloadPremQr(){
+  const box=document.getElementById('premQr'); const svg=box&&box.querySelector('svg');
+  if(!svg){ toast(T('premQrErr','QR not ready')); return; }
+  const xml=new XMLSerializer().serializeToString(svg);
+  const img=new Image();
+  img.onload=()=>{ const c=document.createElement('canvas'); c.width=img.width||320; c.height=img.height||320; const ctx=c.getContext('2d'); ctx.fillStyle='#fff'; ctx.fillRect(0,0,c.width,c.height); ctx.drawImage(img,0,0); const a=document.createElement('a'); a.download='showroom-qr.png'; a.href=c.toDataURL('image/png'); a.click(); };
+  img.onerror=()=>{ toast(T('premQrErr','QR not ready')); };
+  img.src='data:image/svg+xml;charset=utf-8,'+encodeURIComponent(xml);
 }
 /* ---- boss: company invitation code ---- */
 async function renderCompanyCode(){
