@@ -812,7 +812,10 @@ export async function onRequest(context) {
         c.photos = phw.urls;
         return c;
       }));
-      return send(200, { company: cid, cars });
+      // Expose the dealer's own identity so a customer-facing page can show the
+      // TENANT name instead of falling back to the platform name (Antoto).
+      const co = await companyById(cid);
+      return send(200, { company: cid, companyInfo: co ? { id: co.id, name: co.name, logo: co.logo || null } : null, cars });
     }
     if (p === '/api/showrooms') {
       const cid = await resolveCompanyId(u, null);

@@ -1417,7 +1417,9 @@ function empOf(id){
   // before employees load, return a safe placeholder so the UI doesn't crash.
   // (Used to fall back to the seed "kwame" here, which leaked a fake name into the
   //  banner / consultant card — removed so unknown ids never masquerade as a person.)
-  return {name:id||'Antoto', av:String(id||'A').charAt(0).toUpperCase(), tier:'customer', role:'Sales', roleZh:'销售', wa:'', phone:'', branch:''};
+  // Unknown id: never surface the platform/brand name here (it read as "Antoto"
+  // in the customer contact bar). Use the generic role label instead.
+  return {name:id||'Sales Consultant', av:String(id||'A').charAt(0).toUpperCase(), tier:'customer', role:'Sales', roleZh:'销售', wa:'', phone:'', branch:''};
 }
 const ALL_EMP = Object.assign({}, SALES, OWNERS);
 
@@ -3877,6 +3879,7 @@ async function bootstrap(){
           apiPublic('/api/public/cars'+listQ),
           apiPublic('/api/showrooms'+listQ)
         ]);
+        if(list.companyInfo && list.companyInfo.name) sharedCompanyName=String(list.companyInfo.name);
         const listCars=list.cars||[];
         const serverIds=new Set(listCars.map(c=>c.id));
         // Prefer the full gallery from the list; fall back to the cover alone.
@@ -3926,6 +3929,7 @@ async function bootstrap(){
         if(d2.videos) CAR_VIDEOS[dCarId]=d2.videos;
         if(d2.agent) upsertEmp(d2.agent.id||dRef, d2.agent);
         if(d2.company && d2.company.id) sharedCompany=d2.company.id;
+        if(d2.company && d2.company.name) sharedCompanyName=String(d2.company.name);
         saveCars(); saveCarPhotos(); saveCarVideos(); saveEmps();
       }
     }
@@ -4303,7 +4307,14 @@ async function registerAccount(){
 }
 /* ---- company helpers ---- */
 function loadCompany(){ try{ return JSON.parse(localStorage.getItem('am_company')||'null'); }catch(e){ return null; } }
-function brandName(){ const c=loadCompany(); return (c&&c.name&&c.name.trim())?c.name.trim():'Antoto'; }
+function brandName(){
+  const c=loadCompany();
+  if(c&&c.name&&c.name.trim()) return c.name.trim();
+  // A customer on a shared / tenant page has no cached company of their own, so
+  // fall back to THAT DEALER's name — never to the platform brand (Antoto).
+  if(typeof sharedCompanyName!=='undefined' && sharedCompanyName&&String(sharedCompanyName).trim()) return String(sharedCompanyName).trim();
+  return 'Antoto';
+}
 function applyCompanyLogo(){
   const co=loadCompany();
   const img=document.getElementById('appLogo');
@@ -5289,6 +5300,11 @@ let _dlCar=null, _dlRef=null;
    can never show a different dealership), and whether the shared car is gone
    (deleted or sold) so we can show a "browse other cars" notice instead. */
 let sharedCompany=null;
+// The dealer's own name as seen by a customer on a shared / tenant page. Used so
+// customer-facing UI shows the TENANT name instead of the platform name (Antoto)
+// — a visitor has no cached company of their own, so brandName() must fall back
+// to this (never to the platform brand).
+let sharedCompanyName=null;
 let sharedGone=null;
 function parseDeepLink(){
   try{
