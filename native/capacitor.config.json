@@ -1,0 +1,13 @@
+{
+  "appId": "com.antmotors.app",
+  "appName": "Antoto",
+  "webDir": "../app",
+  "server": {
+    "url": "https://antoto.app",
+    "allowNavigation": ["antoto.app", "antmotors.pages.dev", "*.supabase.co", "*.supabase.in"],
+    "cleartext": false
+  },
+  "ios": {
+    "scheme": "antoto"
+  }
+}
