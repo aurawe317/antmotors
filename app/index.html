@@ -465,6 +465,12 @@
   #scr-me .seg-tabs{margin:12px 0 0;}
   #scr-me .sheet-hint{margin:8px 0 4px;}
   .me-links{margin:12px 16px 0; background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden;}
+  /* 1x4 quick-access tiles (gold line icons) */
+  .me-tiles{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:12px 16px 0;}
+  .me-tile{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; padding:14px 6px 12px; background:var(--surface); border:1px solid var(--border); border-radius:14px; color:var(--text); font-family:inherit; cursor:pointer; transition:transform .12s, border-color .15s;}
+  .me-tile:active{transform:scale(.95);}
+  .me-tile svg{width:24px; height:24px; color:var(--gold);}
+  .me-tile .tl{font-size:12px; font-weight:700; color:var(--text); white-space:nowrap;}
   .me-link{display:flex; align-items:center; gap:11px; width:100%; padding:14px 15px; border:none; border-bottom:1px solid var(--border); background:none; color:var(--text); font-size:14px; font-weight:600; font-family:inherit; text-align:left; cursor:pointer;}
   .me-link:last-child{border-bottom:none;}
   .me-link:active{background:var(--surface-2);}
@@ -1033,6 +1039,51 @@
           <span class="me-badge" id="meBadge" style="display:none;"></span>
         </div>
       </div>
+  <div class="grp" id="memStrip" style="display:none;padding:12px 15px;">
+    <div class="mem-card" id="memCard" style="margin:0;">
+      <div class="mem-card-top">
+        <div class="mem-plan" id="memPlan">—</div>
+        <span class="mem-pill" id="memBadge" style="display:none;"></span>
+      </div>
+      <div class="mem-meta" id="memInfo"></div>
+    </div>
+    <button class="share-copy" id="memBtn" onclick="showMembership()" data-i18n="memManage" style="margin-top:8px;width:100%;">Manage membership</button>
+  </div>
+  <div class="me-tiles" id="meTiles">
+    <button class="me-tile" onclick="openFavTab('saved')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7-4.35-7-9.5a4.2 4.2 0 0 1 7-3 4.2 4.2 0 0 1 7 3c0 5.15-7 9.5-7 9.5z"/></svg><span class="tl" data-i18n="tileFav">Saved</span></button>
+    <button class="me-tile" onclick="openFavTab('recent')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"/><path d="M12 7.5V12l3 2"/></svg><span class="tl" data-i18n="tileRecent">Recent</span></button>
+    <button class="me-tile" id="tileCars" onclick="go('scr-admin')" style="display:none;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13l1.6-4.2A2 2 0 0 1 6.5 7.2h11a2 2 0 0 1 1.9 1.6L21 13"/><path d="M3 13h18v4a1 1 0 0 1-1 1h-1.3a1.7 1.7 0 0 1-3.4 0H9.7a1.7 1.7 0 0 1-3.4 0H4a1 1 0 0 1-1-1z"/><path d="M7 17v-2M17 17v-2"/></svg><span class="tl" data-i18n="tileCars">My cars</span></button>
+    <button class="me-tile" onclick="go('scr-showrooms')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-6.5-5.2-6.5-10.5a6.5 6.5 0 0 1 13 0C18.5 15.8 12 21 12 21z"/><circle cx="12" cy="10.5" r="2.3"/></svg><span class="tl" data-i18n="tileShops">Showrooms</span></button>
+  </div>
+  <div class="grp" id="premiumGroup" style="display:none;background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:12px;padding:12px 14px;">
+    <div id="premUnlocked" style="display:none;">
+      <div class="lbl" style="color:var(--gold);font-weight:800;" data-i18n="premTitle">Premium tools</div>
+      <p class="sheet-hint" data-i18n="premSub">Exclusive features unlocked with your Premium plan.</p>
+      <div class="ui-row" style="margin:6px 0 4px;">
+        <div><div class="lab" data-i18n="premDomain">Your showroom domain</div><div class="sub" id="premDomainVal">—</div></div>
+      </div>
+      <div class="form-subhead" data-i18n="coContactHead">Public contact (shown on your domain)</div>
+      <p class="sheet-hint" data-i18n="coContactHint">Customers who browse your own domain directly — not via a sales link — see this contact in the bottom bar.</p>
+      <div class="form-row"><label data-i18n="coContactName">Contact name</label><input type="text" id="premContactName" autocomplete="off" placeholder="e.g. Kwame" /></div>
+      <div class="form-row"><label data-i18n="coContactPhone">Phone</label><input type="tel" id="premContactPhone" autocomplete="off" placeholder="233 24 000 0000" /></div>
+      <div class="form-row"><label data-i18n="coContactWa">WhatsApp</label><input type="tel" id="premContactWa" autocomplete="off" placeholder="233 24 000 0000" /></div>
+      <button class="submit" id="premContactSave" onclick="savePremiumContact()" data-i18n="coEdit" style="margin-top:6px;">Save contact</button>
+      <div class="form-subhead" data-i18n="premQrTitle" style="margin-top:14px;">Showroom QR code</div>
+      <p class="sheet-hint" data-i18n="premQrHint">Permanent code for your showroom homepage. Print it or share on WhatsApp.</p>
+      <div id="premQr" style="display:inline-block;padding:10px;background:#fff;border-radius:12px;"></div>
+      <div style="margin-top:8px;"><button class="share-copy" id="premQrDl" onclick="downloadPremQr()" data-i18n="premQrDownload">Download PNG</button></div>
+    </div>
+    <div id="premLocked" style="display:none;">
+      <div class="lbl" style="color:var(--gold);font-weight:800;" data-i18n="premTitle">Premium tools</div>
+      <p class="sheet-hint" data-i18n="premLockedHint">Unlock with Premium to get:</p>
+      <ul style="margin:6px 0 12px;padding-left:18px;font-size:13px;color:var(--text-dim);line-height:1.7;">
+        <li data-i18n="premPerkDomain">Your own showroom domain</li>
+        <li data-i18n="premPerkContact">Editable public contact on your domain</li>
+        <li data-i18n="premPerkQr">Permanent showroom QR code</li>
+      </ul>
+      <button class="submit" onclick="showMembership()" data-i18n="premUpgrade">Upgrade to Premium</button>
+    </div>
+  </div>
   <div class="grp">
     <div id="syncStatus" class="sync-status">—</div>
     <div class="lbl" id="authLbl"><span data-i18n="syncTitle">Account</span> <span class="info-dot" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">i</span><div class="info-expand" data-i18n="syncHint">By default you connect to the shared ANT MOTORS backend (no setup). In Advanced you can point to your own server.</div></div>
@@ -1132,14 +1183,6 @@
       <button class="share-copy" id="coEditBtn" onclick="toggleCoEdit()" data-i18n="coEdit" style="flex:1;">Edit company</button>
       <button class="share-copy" id="coCopyBtn" onclick="copyCoCode()" data-i18n="codeCopy" style="flex:1;">Copy code</button>
     </div>
-    <div class="mem-card" id="memCard" style="margin-top:12px;">
-      <div class="mem-card-top">
-        <div class="mem-plan" id="memPlan">—</div>
-        <span class="mem-pill" id="memBadge" style="display:none;"></span>
-      </div>
-      <div class="mem-meta" id="memInfo"></div>
-    </div>
-    <button class="share-copy" id="memBtn" onclick="showMembership()" data-i18n="memManage" style="margin-top:8px;">Manage membership</button>
   </div>
   <div class="grp" id="settingsExtra" style="display:none;">
     <div class="lbl" data-i18n="myContact">My contact (customer reaches you)</div>
@@ -1195,14 +1238,86 @@
         <div id="soldList" class="link-list"></div>
       </div>
       <div class="me-links" id="meLinks">
-        <button class="me-link" onclick="go('scr-favorites')"><span data-i18n="mlFav">My favorites</span><span class="ar">&rsaquo;</span></button>
         <button class="me-link" id="mlAddBtn" onclick="go('scr-admin')" style="display:none;"><span data-i18n="mlAdd">Add vehicle</span><span class="ar">&rsaquo;</span></button>
         <button class="me-link" id="mlWorkBtn" onclick="go('scr-workbench')"><span data-i18n="mlWork">Workbench</span><span class="ar">&rsaquo;</span></button>
-        <button class="me-link" id="mlAdminBtn" onclick="go('scr-admin')"><span data-i18n="mlAdmin">Car admin</span><span class="ar">&rsaquo;</span></button>
         <button class="me-link" id="mlPermBtn" onclick="go('scr-perm')"><span data-i18n="mlPerm">Roles &amp; permissions</span><span class="ar">&rsaquo;</span></button>
         <button class="me-link" onclick="openPricingInfo()"><span data-i18n="mlPrice">How pricing works</span><span class="ar">&rsaquo;</span></button>
-        <button class="me-link" onclick="openSettings()"><span data-i18n="mlSettings">App settings</span><span class="ar">&rsaquo;</span></button>
       </div>
+  <details class="grp collapsible" id="prefGroupD">
+    <summary class="lbl" style="margin:0;" data-i18n="prefs">Preferences</summary>
+    <div class="grp" style="margin:0;border:none;padding:0;background:none;">
+      <div class="ui-row">
+        <div><div class="lab" data-i18n="themeLbl">Theme</div><div class="sub" data-i18n="themeSub">Follows your phone's system setting by default</div></div>
+        <div class="seg3" id="themeSeg">
+          <span class="seg" id="thLight" onclick="setThemeMode('light')" data-i18n="thLight">Light</span>
+          <span class="seg" id="thDark" onclick="setThemeMode('dark')" data-i18n="thDark">Dark</span>
+          <span class="seg" id="thSys" onclick="setThemeMode('system')" data-i18n="thSystem">System</span>
+        </div>
+      </div>
+    </div>
+    <div class="grp" id="prefGroup" style="margin:0;border:none;padding:0;background:none;">
+      <div class="ui-row" id="defSalesRow" style="display:none;">
+        <div><div class="lab" data-i18n="defSalesLbl">Default salesperson</div><div class="sub" data-i18n="defSalesSub">Who the home "shopping with" defaults to</div></div>
+        <select class="pill-select" id="defSalesSel" onchange="setDefSales(this.value)"></select>
+      </div>
+      <div class="ui-row">
+        <div><div class="lab" data-i18n="curLbl">Display currency</div><div class="sub" data-i18n="curSub">Currency symbol shown on every price (no conversion)</div></div>
+        <select class="pill-select" id="curSel" onchange="setCurrency(this.value)"></select>
+      </div>
+    </div>
+  </details>
+  <details class="grp collapsible" id="dataHelpD">
+    <summary class="lbl" style="margin:0;" data-i18n="dataHelp">Data &amp; Help</summary>
+    <div class="grp" id="settingsExtra2" style="margin:0 0 10px;display:none;">
+      <div class="lbl" data-i18n="installTitle">Install the app (employees)</div>
+      <p class="sheet-hint" data-i18n="installHint">iOS: open in Safari → Share → Add to Home Screen. Android: open in Chrome → ⋮ → Install app. Customers just open the shared link — no install needed.</p>
+    </div>
+    <details class="adv-details" id="advServerDetails" style="margin-bottom:10px;">
+      <summary data-i18n="advServerTitle">Advanced: backend address</summary>
+      <div style="margin-top:8px;">
+        <div class="form-row" style="margin:0;"><input type="text" id="setApi" placeholder="https://your-server.up.railway.app" data-ph="ph_setApi" style="font-size:13px;" /></div>
+        <div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.5;" data-i18n="syncServerHint2">This is your account &amp; data-sync server. Leave as-is to use the shared ANT MOTORS backend — every company connects here by default. Change it ONLY if your company runs its own server.</div>
+      </div>
+    </details>
+    <div class="grp" id="shSettingsGroup" style="margin:0 0 10px;display:none;">
+      <div class="lbl" data-i18n="shSettingsTitle">Sales points / Showrooms</div>
+      <div id="shSettingsList"></div>
+      <button class="submit" onclick="toggleShForm()" data-i18n="addShowroom" style="margin-top:8px;">+ Add sales point</button>
+      <div id="shForm" style="display:none;margin-top:10px;">
+        <div class="form-row"><label data-i18n="shName">Name</label><input type="text" id="shName" placeholder="e.g. Main Showroom"></div>
+        <div class="form-row"><label data-i18n="shAddr">Address</label><input type="text" id="shAddr" placeholder="123 Spintex Rd"></div>
+        <div class="form-row"><label data-i18n="shPhone">Phone</label><input type="text" id="shPhone" placeholder="+233 20 000 0001"></div>
+        <div class="form-row"><label data-i18n="shHours">Hours</label><input type="text" id="shHours" placeholder="Mon-Sat 9am-6pm"></div>
+        <div class="form-row"><label data-i18n="shDist">Distance</label><input type="text" id="shDist" placeholder="3.5 km from CBD"></div>
+        <button class="submit" onclick="addShowroom()" data-i18n="shSave">Save</button>
+      </div>
+    </div>
+    <div class="grp" style="margin:0 0 10px;">
+      <div class="lbl" data-i18n="backupTitle">Data backup (employees)</div>
+      <p class="sheet-hint" data-i18n="backupHint">Export all cars, favorites and staff to a file. Re-import after reinstall to avoid any data loss.</p>
+      <button class="submit" onclick="exportData()" data-i18n="exportData">Export backup</button>
+      <button class="submit" style="margin-top:8px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="document.getElementById('importFile').click()" data-i18n="importData">Import backup</button>
+      <input type="file" id="importFile" accept="application/json" style="display:none;" onchange="importData(event)" />
+    </div>
+    <div class="grp" id="notifGroup" style="margin:0 0 10px;">
+      <div class="lbl" data-i18n="notifTitle">Notifications</div>
+      <div class="ui-row">
+        <div><div class="lab" data-i18n="notifToggle">Allow notifications</div><div class="sub" data-i18n="notifSub">Get alerted on sync, new arrivals &amp; bookings</div></div>
+        <button class="ui-toggle" id="notifToggle" onclick="toggleNotify()" aria-label="toggle notifications"></button>
+      </div>
+      <div id="notifList" style="margin-top:6px;"></div>
+      <button class="share-copy" style="margin-top:8px;" onclick="clearNotifs()" data-i18n="notifClear">Clear notifications</button>
+    </div>
+    <div class="grp" style="margin:0;">
+      <div class="lbl" data-i18n="privacyTitle">Privacy &amp; cache</div>
+      <div id="deviceInfo" class="sheet-hint"></div>
+      <button class="submit" style="margin-top:8px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="openSyncDiag()" data-i18n="syncDiag">Sync diagnostics</button>
+      <button class="submit" style="margin-top:8px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="clearLocalData()" data-i18n="clearCache">Clear local offline data</button>
+    </div>
+  </details>
+  <div class="grp" id="signOutGroup" style="display:none;text-align:center;">
+    <button class="share-copy" style="border-color:var(--danger);color:var(--danger);padding:10px;width:100%;" onclick="syncLogout()" data-i18n="syncSignOut">Sign out</button>
+  </div>
       <div class="me-ver" id="meVer">ANT MOTORS &middot; v1.0.0</div>
     </section>
 
@@ -1284,108 +1399,7 @@
     </div>
   </div>
   <div class="grp">
-    <div class="lbl" data-i18n="appearance">Appearance</div>
-    <div class="ui-row">
-      <div><div class="lab" data-i18n="themeLbl">Theme</div><div class="sub" data-i18n="themeSub">Follows your phone's system setting by default</div></div>
-      <div class="seg3" id="themeSeg">
-        <span class="seg" id="thLight" onclick="setThemeMode('light')" data-i18n="thLight">Light</span>
-        <span class="seg" id="thDark" onclick="setThemeMode('dark')" data-i18n="thDark">Dark</span>
-        <span class="seg" id="thSys" onclick="setThemeMode('system')" data-i18n="thSystem">System</span>
-      </div>
-    </div>
-  </div>
-  <div class="grp" id="prefGroup">
-    <div class="lbl" data-i18n="prefs">Preferences</div>
-    <div class="ui-row" id="defSalesRow" style="display:none;">
-      <div><div class="lab" data-i18n="defSalesLbl">Default salesperson</div><div class="sub" data-i18n="defSalesSub">Who the home "shopping with" defaults to</div></div>
-      <select class="pill-select" id="defSalesSel" onchange="setDefSales(this.value)"></select>
-    </div>
-    <div class="ui-row">
-      <div><div class="lab" data-i18n="curLbl">Display currency</div><div class="sub" data-i18n="curSub">Currency symbol shown on every price (no conversion)</div></div>
-      <select class="pill-select" id="curSel" onchange="setCurrency(this.value)"></select>
-    </div>
-  </div>
-  <div class="grp" id="settingsExtra2" style="display:none;">
-    <div class="lbl" data-i18n="installTitle">Install the app (employees)</div>
-    <p class="sheet-hint" data-i18n="installHint">iOS: open in Safari → Share → Add to Home Screen. Android: open in Chrome → ⋮ → Install app. Customers just open the shared link — no install needed.</p>
-  </div>
-  <div class="grp" style="background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--text-dim);display:flex;align-items:center;gap:8px;">
-    <span style="color:var(--gold);font-weight:800;">●</span>
-    <span data-i18n="syncConnected">Connected to the shared ANT MOTORS backend — no setup needed. Your company's data stays private.</span>
-  </div>
-  <div class="grp" id="premiumGroup" style="display:none;background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:12px;padding:12px 14px;">
-    <div id="premUnlocked" style="display:none;">
-      <div class="lbl" style="color:var(--gold);font-weight:800;" data-i18n="premTitle">Premium tools</div>
-      <p class="sheet-hint" data-i18n="premSub">Exclusive features unlocked with your Premium plan.</p>
-      <div class="ui-row" style="margin:6px 0 4px;">
-        <div><div class="lab" data-i18n="premDomain">Your showroom domain</div><div class="sub" id="premDomainVal">—</div></div>
-      </div>
-      <div class="form-subhead" data-i18n="coContactHead">Public contact (shown on your domain)</div>
-      <p class="sheet-hint" data-i18n="coContactHint">Customers who browse your own domain directly — not via a sales link — see this contact in the bottom bar.</p>
-      <div class="form-row"><label data-i18n="coContactName">Contact name</label><input type="text" id="premContactName" autocomplete="off" placeholder="e.g. Kwame" /></div>
-      <div class="form-row"><label data-i18n="coContactPhone">Phone</label><input type="tel" id="premContactPhone" autocomplete="off" placeholder="233 24 000 0000" /></div>
-      <div class="form-row"><label data-i18n="coContactWa">WhatsApp</label><input type="tel" id="premContactWa" autocomplete="off" placeholder="233 24 000 0000" /></div>
-      <button class="submit" id="premContactSave" onclick="savePremiumContact()" data-i18n="coEdit" style="margin-top:6px;">Save contact</button>
-      <div class="form-subhead" data-i18n="premQrTitle" style="margin-top:14px;">Showroom QR code</div>
-      <p class="sheet-hint" data-i18n="premQrHint">Permanent code for your showroom homepage. Print it or share on WhatsApp.</p>
-      <div id="premQr" style="display:inline-block;padding:10px;background:#fff;border-radius:12px;"></div>
-      <div style="margin-top:8px;"><button class="share-copy" id="premQrDl" onclick="downloadPremQr()" data-i18n="premQrDownload">Download PNG</button></div>
-    </div>
-    <div id="premLocked" style="display:none;">
-      <div class="lbl" style="color:var(--gold);font-weight:800;" data-i18n="premTitle">Premium tools</div>
-      <p class="sheet-hint" data-i18n="premLockedHint">Unlock with Premium to get:</p>
-      <ul style="margin:6px 0 12px;padding-left:18px;font-size:13px;color:var(--text-dim);line-height:1.7;">
-        <li data-i18n="premPerkDomain">Your own showroom domain</li>
-        <li data-i18n="premPerkContact">Editable public contact on your domain</li>
-        <li data-i18n="premPerkQr">Permanent showroom QR code</li>
-      </ul>
-      <button class="submit" onclick="showMembership()" data-i18n="premUpgrade">Upgrade to Premium</button>
-    </div>
-  </div>
-  <div class="grp" id="shSettingsGroup" style="display:none;">
-    <div class="lbl" data-i18n="shSettingsTitle">Sales points / Showrooms</div>
-    <div id="shSettingsList"></div>
-    <button class="submit" onclick="toggleShForm()" data-i18n="addShowroom" style="margin-top:8px;">+ Add sales point</button>
-    <div id="shForm" style="display:none;margin-top:10px;">
-      <div class="form-row"><label data-i18n="shName">Name</label><input type="text" id="shName" placeholder="e.g. Main Showroom"></div>
-      <div class="form-row"><label data-i18n="shAddr">Address</label><input type="text" id="shAddr" placeholder="123 Spintex Rd"></div>
-      <div class="form-row"><label data-i18n="shPhone">Phone</label><input type="text" id="shPhone" placeholder="+233 20 000 0001"></div>
-      <div class="form-row"><label data-i18n="shHours">Hours</label><input type="text" id="shHours" placeholder="Mon-Sat 9am-6pm"></div>
-      <div class="form-row"><label data-i18n="shDist">Distance</label><input type="text" id="shDist" placeholder="3.5 km from CBD"></div>
-      <button class="submit" onclick="addShowroom()" data-i18n="shSave">Save</button>
-    </div>
-  </div>
-  <details class="adv-details" id="advServerDetails">
-    <summary data-i18n="advServerTitle">Advanced: backend address</summary>
-    <div style="margin-top:8px;">
-      <div class="form-row" style="margin:0;"><input type="text" id="setApi" placeholder="https://your-server.up.railway.app" data-ph="ph_setApi" style="font-size:13px;" /></div>
-      <div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.5;" data-i18n="syncServerHint2">This is your account &amp; data-sync server. Leave as-is to use the shared ANT MOTORS backend — every company connects here by default. Change it ONLY if your company runs its own server.</div>
-    </div>
-  </details>
-  <div class="grp">
-    <div class="lbl" data-i18n="backupTitle">Data backup (employees)</div>
-    <p class="sheet-hint" data-i18n="backupHint">Export all cars, favorites and staff to a file. Re-import after reinstall to avoid any data loss.</p>
-    <button class="submit" onclick="exportData()" data-i18n="exportData">Export backup</button>
-    <button class="submit" style="margin-top:8px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="document.getElementById('importFile').click()" data-i18n="importData">Import backup</button>
-    <input type="file" id="importFile" accept="application/json" style="display:none;" onchange="importData(event)" />
-  </div>
-  <div class="grp" id="notifGroup">
-    <div class="lbl" data-i18n="notifTitle">Notifications</div>
-    <div class="ui-row">
-      <div><div class="lab" data-i18n="notifToggle">Allow notifications</div><div class="sub" data-i18n="notifSub">Get alerted on sync, new arrivals &amp; bookings</div></div>
-      <button class="ui-toggle" id="notifToggle" onclick="toggleNotify()" aria-label="toggle notifications"></button>
-    </div>
-    <div id="notifList" style="margin-top:6px;"></div>
-    <button class="share-copy" style="margin-top:8px;" onclick="clearNotifs()" data-i18n="notifClear">Clear notifications</button>
-  </div>
-  <div class="grp">
-    <div class="lbl" data-i18n="privacyTitle">Privacy &amp; cache</div>
-    <div id="deviceInfo" class="sheet-hint"></div>
-    <button class="submit" style="margin-top:8px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="openSyncDiag()" data-i18n="syncDiag">Sync diagnostics</button>
-    <button class="submit" style="margin-top:8px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="clearLocalData()" data-i18n="clearCache">Clear local offline data</button>
-  </div>
-  <div class="grp" id="signOutGroup" style="display:none;text-align:center;">
-    <button class="share-copy" style="border-color:var(--danger);color:var(--danger);padding:10px;width:100%;" onclick="syncLogout()" data-i18n="syncSignOut">Sign out</button>
+    <p class="sheet-hint" data-i18n="mlSettingsHint">Settings now live on the Me tab — preferences, data &amp; help are there.</p>
   </div>
 </div>
 
@@ -1635,8 +1649,10 @@ I18N.en.bookDone="Booking Confirmed!"; I18N.en.backHome="Back to Home"; I18N.en.
 I18N.zh.bookDone="预约成功！"; I18N.zh.backHome="返回首页"; I18N.zh.waOpening="正在打开 WhatsApp → ";
 I18N.en.navMe="Me"; I18N.en.meGuest="Guest"; I18N.en.meGuestSub="Sign in or create a company account"; I18N.en.meSignedIn="Signed in";
 I18N.en.mlFav="My favorites"; I18N.en.mlAdd="Add vehicle"; I18N.en.mlWork="Workbench"; I18N.en.mlAdmin="Car admin"; I18N.en.mlPerm="Roles & permissions"; I18N.en.mlPrice="How pricing works"; I18N.en.mlSettings="App settings"; I18N.en.soldTitle="Sold vehicles";
+I18N.en.tileFav="Saved"; I18N.en.tileRecent="Recent"; I18N.en.tileCars="My cars"; I18N.en.tileShops="Showrooms"; I18N.en.dataHelp="Data & Help"; I18N.en.mlSettingsHint="Settings now live on the Me tab — preferences, data & help are there.";
 I18N.zh.navMe="我的"; I18N.zh.meGuest="访客"; I18N.zh.meGuestSub="登录或创建公司账号"; I18N.zh.meSignedIn="已登录";
 I18N.zh.mlFav="我的收藏"; I18N.zh.mlAdd="添加车辆"; I18N.zh.mlWork="工作台"; I18N.zh.mlAdmin="车辆后台"; I18N.zh.mlPerm="角色权限"; I18N.zh.mlPrice="定价说明"; I18N.zh.mlSettings="应用设置"; I18N.zh.soldTitle="已售车辆";
+I18N.zh.tileFav="收藏"; I18N.zh.tileRecent="最近"; I18N.zh.tileCars="车辆"; I18N.zh.tileShops="门店"; I18N.zh.dataHelp="数据与帮助"; I18N.zh.mlSettingsHint="设置已移到「我的」页——偏好、数据与帮助都在那里。";
 I18N.en.welcomeTitle="👋 Welcome to ANT MOTORS"; I18N.en.welcomeDesc="New here? Create your company account to start adding cars, managing your team and viewing membership. Open the “Me” tab at the bottom right, or tap the button below."; I18N.en.welcomeBtn="Login / Register"; I18N.en.loginRegBtn="👤 Login / Register"; I18N.en.settingsBtn="⚙ Settings"; I18N.en.welcomeTo="Welcome to"; I18N.en.errOccurred="Something went wrong — try refreshing"; I18N.en.updateAvail="New version available";
 I18N.zh.welcomeTitle="👋 欢迎使用 ANT MOTORS"; I18N.zh.welcomeDesc="首次使用？创建公司账号即可添加车辆、管理团队与查看会员。请打开右下角“我的”页，或点击下方按钮。"; I18N.zh.welcomeBtn="登录 / 注册"; I18N.zh.loginRegBtn="👤 登录 / 注册"; I18N.zh.settingsBtn="⚙ 设置"; I18N.zh.welcomeTo="欢迎使用"; I18N.zh.errOccurred="出错了，请尝试刷新"; I18N.zh.updateAvail="有新版本可用";
 /* --- detail-page ⋯ menu labels (were missing → stayed English on lang switch) --- */
@@ -3254,9 +3270,22 @@ function renderMe(){
   // quick links gating
   const staff = loggedIn && e.tier && e.tier!=='customer';
   const w=document.getElementById('mlWorkBtn'); if(w) w.style.display=staff?'flex':'none';
-  const ad=document.getElementById('mlAdminBtn'); if(ad) ad.style.display=staff?'flex':'none';
+  const tc=document.getElementById('tileCars'); if(tc) tc.style.display=staff?'flex':'none';
   const pm=document.getElementById('mlPermBtn'); if(pm) pm.style.display=(loggedIn&&top)?'flex':'none';
   const vr=document.getElementById('meVer'); if(vr) vr.textContent=brandName()+' \u00B7 v'+(typeof APP_VER!=='undefined'?APP_VER:'1.0.0');
+  // membership strip (moved out of companyGroup -> sits right under the header)
+  const ms=document.getElementById('memStrip'); if(ms) ms.style.display=(loggedIn&&co)?'block':'none';
+  // settings UI now lives on the Me tab (preferences + data & help collapsibles)
+  try{ applyTheme(); }catch(err){}
+  try{ fillCurrencyUI(); }catch(err){}
+  try{ fillDefSalesUI(); }catch(err){}
+  try{ renderNotifs(); }catch(err){}
+  try{ renderShSettings(); }catch(err){}
+  try{ showDevices(); }catch(err){}
+  try{ const nt=document.getElementById('notifToggle'); if(nt) nt.classList.toggle('on', localStorage.getItem('am_notify')==='1'); }catch(err){}
+  try{ renderMembershipUI(); }catch(err){}
+  try{ showPremiumGroup(); }catch(err){}
+  const x2=document.getElementById('settingsExtra2'); if(x2) x2.style.display=SYNC.token?'':'none';
   renderSoldList();
 }
 function renderSoldList(){
@@ -4495,6 +4524,9 @@ function companyHomeUrl(){
 // tools (domain status, contact editor, permanent QR) for premium/permanent tenants.
 function showPremiumGroup(){
   const g=document.getElementById('premiumGroup'); if(!g) return;
+  // now lives on the Me tab: hide entirely for guests (nothing to unlock yet)
+  const loggedIn=(typeof isSignedIn==='function')&&isSignedIn();
+  if(!loggedIn){ g.style.display='none'; return; }
   const unlocked=isPremiumTenant();
   g.style.display='block';
   const u=document.getElementById('premUnlocked'), l=document.getElementById('premLocked');
@@ -4855,6 +4887,14 @@ function switchFavTab(tab,btn){
   document.querySelectorAll('.fav-tab').forEach(t=>t.classList.remove('on'));
   btn.classList.add('on');
   renderFav();
+}
+/* Me-tab tile entry: jump to favorites screen with the right tab pre-selected */
+function openFavTab(tab){
+  go('scr-favorites');
+  const btns=document.querySelectorAll('.fav-tab');
+  const btn = tab==='recent' ? btns[1] : btns[0];
+  if(btn) switchFavTab(tab, btn);
+  else { favTab=tab; try{ renderFav(); }catch(e){} }
 }
 function renderFav(){
   const c=document.getElementById('favContent');
