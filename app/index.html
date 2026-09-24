@@ -1314,6 +1314,11 @@
       <button class="submit" style="margin-top:8px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="openSyncDiag()" data-i18n="syncDiag">Sync diagnostics</button>
       <button class="submit" style="margin-top:8px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="clearLocalData()" data-i18n="clearCache">Clear local offline data</button>
     </div>
+    <div class="grp" id="recoverGroup" style="margin:0 0 10px; display:none;">
+      <div class="lbl" data-i18n="recoverTitle">Recover missing photos</div>
+      <p class="sheet-hint" data-i18n="recoverHint">If photos you uploaded are missing after reopening the app, this re-attaches them from storage. Only affects your company.</p>
+      <button class="submit" onclick="recoverPhotos()" data-i18n="recoverBtn">Recover missing photos</button>
+    </div>
   </details>
   <div class="grp" id="signOutGroup" style="display:none;text-align:center;">
     <button class="share-copy" style="border-color:var(--danger);color:var(--danger);padding:10px;width:100%;" onclick="syncLogout()" data-i18n="syncSignOut">Sign out</button>
@@ -1653,6 +1658,9 @@ I18N.en.tileFav="Saved"; I18N.en.tileRecent="Recent"; I18N.en.tileCars="My cars"
 I18N.zh.navMe="我的"; I18N.zh.meGuest="访客"; I18N.zh.meGuestSub="登录或创建公司账号"; I18N.zh.meSignedIn="已登录";
 I18N.zh.mlFav="我的收藏"; I18N.zh.mlAdd="添加车辆"; I18N.zh.mlWork="工作台"; I18N.zh.mlAdmin="车辆后台"; I18N.zh.mlPerm="角色权限"; I18N.zh.mlPrice="定价说明"; I18N.zh.mlSettings="应用设置"; I18N.zh.soldTitle="已售车辆";
 I18N.zh.tileFav="收藏"; I18N.zh.tileRecent="最近"; I18N.zh.tileCars="车辆"; I18N.zh.tileShops="门店"; I18N.zh.dataHelp="数据与帮助"; I18N.zh.mlSettingsHint="设置已移到「我的」页——偏好、数据与帮助都在那里。";
+/* --- B-plan photo recovery (boss-only utility) --- */
+I18N.en.recoverTitle="Recover missing photos"; I18N.en.recoverHint="If photos you uploaded are missing after reopening the app, this re-attaches them from storage. Only affects your company."; I18N.en.recoverBtn="Recover missing photos"; I18N.en.recovering="Recovering…"; I18N.en.recovered="Recovered"; I18N.en.recoverFail="Recovery failed"; I18N.en.photoN="photo"; I18N.en.photoNs="photos";
+I18N.zh.recoverTitle="恢复丢失照片"; I18N.zh.recoverHint="若上传的照片重新打开后丢失，此操作会从存储中重新挂回对应车辆。仅影响本公司。"; I18N.zh.recoverBtn="恢复丢失照片"; I18N.zh.recovering="正在恢复…"; I18N.zh.recovered="已恢复"; I18N.zh.recoverFail="恢复失败"; I18N.zh.photoN="张照片"; I18N.zh.photoNs="张照片";
 I18N.en.welcomeTitle="👋 Welcome to ANT MOTORS"; I18N.en.welcomeDesc="New here? Create your company account to start adding cars, managing your team and viewing membership. Open the “Me” tab at the bottom right, or tap the button below."; I18N.en.welcomeBtn="Login / Register"; I18N.en.loginRegBtn="👤 Login / Register"; I18N.en.settingsBtn="⚙ Settings"; I18N.en.welcomeTo="Welcome to"; I18N.en.errOccurred="Something went wrong — try refreshing"; I18N.en.updateAvail="New version available";
 I18N.zh.welcomeTitle="👋 欢迎使用 ANT MOTORS"; I18N.zh.welcomeDesc="首次使用？创建公司账号即可添加车辆、管理团队与查看会员。请打开右下角“我的”页，或点击下方按钮。"; I18N.zh.welcomeBtn="登录 / 注册"; I18N.zh.loginRegBtn="👤 登录 / 注册"; I18N.zh.settingsBtn="⚙ 设置"; I18N.zh.welcomeTo="欢迎使用"; I18N.zh.errOccurred="出错了，请尝试刷新"; I18N.zh.updateAvail="有新版本可用";
 /* --- detail-page ⋯ menu labels (were missing → stayed English on lang switch) --- */
@@ -2238,6 +2246,27 @@ async function uploadMedia(dataUrl, carId){
   console.error('uploadMedia failed after retries', lastErr);
   return null;
 }
+// B-plan recovery trigger (boss only): re-attaches orphaned Storage photos on the server, then
+// re-pulls so they show up immediately. Calls /api/recover-photos which is scoped to this company.
+async function recoverPhotos(){
+  const btn=document.querySelector('#recoverGroup .submit');
+  try{
+    if(btn){ btn.disabled=true; btn.textContent=T('recovering','Recovering…'); }
+    toast(T('recovering','Recovering…'));
+    const r=await api('/api/recover-photos',{method:'POST'});
+    if(r && r.ok){
+      const n=r.attached||0;
+      toast(T('recovered','Recovered')+' '+n+' '+(n===1?T('photoN','photo'):T('photoNs','photos')));
+      try{ await syncNow(true, true); }catch(e){}
+    } else {
+      toast(T('recoverFail','Recovery failed'));
+    }
+  }catch(e){
+    toast(T('recoverFail','Recovery failed')+': '+((e&&e.message)||e));
+  } finally {
+    if(btn){ btn.disabled=false; btn.textContent=T('recoverBtn','Recover missing photos'); }
+  }
+}
 function toggleFeatured(){
   const c=CARS[curCar]; if(!c) return;
   c.featured=!c.featured;
@@ -2498,6 +2527,8 @@ function updateRoleUI(){
   if(pv) pv.style.display = curRole==='customer' ? 'none' : 'flex';
   const staffGroup=document.getElementById('staffGroup');
   if(staffGroup) staffGroup.style.display = isTopEmployee()?'block':'none';
+  const recoverGroup=document.getElementById('recoverGroup');
+  if(recoverGroup) recoverGroup.style.display = isTopEmployee()?'block':'none';
   const adminCard=document.getElementById('adminCard');
   if(adminCard) adminCard.style.display = canEditPrices() ? 'block' : 'none';
   const permCard=document.getElementById('permCard');

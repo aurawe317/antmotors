@@ -330,6 +330,21 @@ async function uploadToStorage(dataUrl, cid, carId, kind) {
   if (error) throw new Error('storage_upload_failed: ' + (error.message || error));
   return `${SUPABASE_URL_FIXED}/storage/v1/object/public/car-photos/${path}`;
 }
+// Immediately persist an uploaded photo into the `photos` table. The old flow only wrote photos
+// during /api/push (writePhotos), so an upload that was NOT followed by a successful car sync left
+// the file orphaned in Storage and invisible after the next full pull. Persisting here makes the
+// photo durable the moment it is uploaded; writePhotos later de-dupes by value so no row is doubled.
+async function persistPhoto(cid, carId, url) {
+  if (!carId || carId === 'unknown') return;   // can't attach without a real car id
+  try {
+    const { data: existing } = await sb.from('photos').select('idx').eq('car_id', carId).eq('company_id', cid);
+    const nextIdx = (existing || []).reduce((m, r) => Math.max(m, (r.idx || 0) + 1), 0);
+    const { error } = await sb.from('photos').insert({ car_id: carId, company_id: cid, idx: nextIdx, data: url });
+    if (error && !/duplicate|unique/i.test(error.message || '')) {
+      console.error('persistPhoto insert failed (non-fatal):', error.message || error);
+    }
+  } catch (e) { /* non-fatal: the push path still reconciles later */ }
+}
 // Returns the car's photos WITH their stable row ids (`idx`). The id lets a client delete a
 // specific photo unambiguously instead of the fragile "match by URL value" approach, which
 // broke whenever a value drifted (base64 vs URL, re-upload path, …).
@@ -1146,8 +1161,59 @@ export async function onRequest(context) {
       if (!dataUrl || typeof dataUrl !== 'string' || !/^data:/.test(dataUrl)) return send(400, { error: 'bad_dataurl' });
       try {
         const url = await uploadToStorage(dataUrl, emp.companyId, carId || 'unknown', 'photo');
+        await persistPhoto(emp.companyId, carId || 'unknown', url);   // A: persist immediately so a later failed sync can't drop it
         return send(200, { ok: true, url });
       } catch (e) { return send(500, { error: 'upload_failed', detail: String((e && e.message) || e) }); }
+    }
+    // B-plan recovery: re-attach orphaned Storage files (uploaded but never pushed) back to their
+    // cars' `photos` rows. Scoped strictly to the caller's company — never touches other tenants.
+    if (p === '/api/recover-photos' && method === 'POST') {
+      try {
+        const cid = emp.companyId;
+        await ensureBucket(sb);
+        const { data: cars } = await sb.from('cars').select('id').eq('company_id', cid).eq('deleted', 0);
+        const validCars = new Set((cars || []).map(c => c.id));
+        if (!validCars.size) return send(200, { ok: true, attached: 0, scanned: 0, total: 0, note: 'no_cars' });
+        const files = [];
+        const walk = async (prefix) => {
+          let offset = 0;
+          while (true) {
+            const { data, error } = await sb.storage.from('car-photos').list(prefix, { limit: 1000, offset });
+            if (error) throw error;
+            const items = data || [];
+            for (const it of items) {
+              const path = prefix ? prefix + '/' + it.name : it.name;
+              const segs = path.split('/').length;
+              if (it.metadata || segs >= 3) files.push(path);   // file (folders have no metadata)
+              else await walk(path);                            // recurse into company / car folders
+            }
+            if (items.length < 1000) break;
+            offset += 1000;
+          }
+        };
+        await walk('');
+        let scanned = 0, attached = 0, skipped = 0;
+        const cache = {};   // carId -> Set of existing data URLs (de-dupe within the run)
+        for (const path of files) {
+          const parts = path.split('/');
+          if (parts.length < 3) { skipped++; continue; }        // not cid/carId/file
+          const fcid = parts[0], carId = parts[1];
+          if (fcid !== cid || !validCars.has(carId)) { skipped++; continue; }
+          scanned++;
+          const url = `${SUPABASE_URL_FIXED}/storage/v1/object/public/car-photos/${path}`;
+          if (!cache[carId]) {
+            const { data: rows } = await sb.from('photos').select('data').eq('company_id', cid).eq('car_id', carId);
+            cache[carId] = new Set((rows || []).map(r => r.data).filter(Boolean));
+          }
+          if (cache[carId].has(url)) continue;                  // already attached
+          const { data: ex } = await sb.from('photos').select('idx').eq('company_id', cid).eq('car_id', carId);
+          const nextIdx = (ex || []).reduce((m, r) => Math.max(m, (r.idx || 0) + 1), 0);
+          const { error } = await sb.from('photos').insert({ company_id: cid, car_id: carId, idx: nextIdx, data: url });
+          if (error) { skipped++; continue; }
+          cache[carId].add(url); attached++;
+        }
+        return send(200, { ok: true, attached, scanned, skipped, total: files.length });
+      } catch (e) { return send(500, { error: 'recover_failed', detail: String((e && e.message) || e) }); }
     }
     if (p === '/api/pull') {
       const out = await pull(u.searchParams.get('since'), u.searchParams.get('photos') === '1', emp.companyId);
