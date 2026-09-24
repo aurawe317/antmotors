@@ -1198,7 +1198,10 @@ export async function onRequest(context) {
           const parts = path.split('/');
           if (parts.length < 3) { skipped++; continue; }        // not cid/carId/file
           const fcid = parts[0], carId = parts[1];
-          if (fcid !== cid || !validCars.has(carId)) { skipped++; continue; }
+          // Attach ANY orphan whose car belongs to THIS company, even if it landed in
+          // another company's folder (e.g. uploaded while a different account was active).
+          // Car ids are globally unique, so we never cross-attach another company's photos.
+          if (!validCars.has(carId)) { skipped++; continue; }
           scanned++;
           const url = `${SUPABASE_URL_FIXED}/storage/v1/object/public/car-photos/${path}`;
           if (!cache[carId]) {
