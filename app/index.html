@@ -640,6 +640,7 @@
   .code-btn{white-space:nowrap;padding:0 14px;border-radius:8px;background:transparent;border:1px solid var(--gold-line);color:var(--gold);font-size:12px;font-weight:700;cursor:pointer;}
   .code-btn[disabled]{opacity:.45;cursor:default;}
   .submit.ghost{background:var(--surface-2);color:var(--text);border:1px solid var(--border);font-weight:600;}
+  .submit.danger{background:rgba(229,115,107,0.14);color:var(--danger);border:1px solid rgba(229,115,107,0.5);font-weight:700;}
   .role-tag{font-size:9px;padding:2px 6px;border-radius:3px;font-weight:700;}
   .role-tag.boss{background:rgba(232,194,104,.15);color:var(--gold);}
   .price-tiers-h{font-size:13px;font-weight:800;margin:18px 0 10px;padding-top:14px;border-top:1px solid var(--border);}
@@ -1318,6 +1319,8 @@
       <div class="lbl" data-i18n="recoverTitle">Recover missing photos</div>
       <p class="sheet-hint" data-i18n="recoverHint">If photos you uploaded are missing after reopening the app, this re-attaches them from storage. Only affects your company.</p>
       <button class="submit" onclick="recoverPhotos()" data-i18n="recoverBtn">Recover missing photos</button>
+      <button class="submit danger" style="margin-top:8px;" onclick="cleanupRecovered()" data-i18n="cleanupBtn">Permanently delete recovered photos</button>
+      <p class="sheet-hint" data-i18n="cleanupHint">Deletes the "Recovered Photos" car, its storage files, and the car record. For junk from already-deleted cars. Cannot be undone.</p>
     </div>
   </details>
   <div class="grp" id="signOutGroup" style="display:none;text-align:center;">
@@ -1659,8 +1662,8 @@ I18N.zh.navMe="我的"; I18N.zh.meGuest="访客"; I18N.zh.meGuestSub="登录或�
 I18N.zh.mlFav="我的收藏"; I18N.zh.mlAdd="添加车辆"; I18N.zh.mlWork="工作台"; I18N.zh.mlAdmin="车辆后台"; I18N.zh.mlPerm="角色权限"; I18N.zh.mlPrice="定价说明"; I18N.zh.mlSettings="应用设置"; I18N.zh.soldTitle="已售车辆";
 I18N.zh.tileFav="收藏"; I18N.zh.tileRecent="最近"; I18N.zh.tileCars="车辆"; I18N.zh.tileShops="门店"; I18N.zh.dataHelp="数据与帮助"; I18N.zh.mlSettingsHint="设置已移到「我的」页——偏好、数据与帮助都在那里。";
 /* --- B-plan photo recovery (boss-only utility) --- */
-I18N.en.recoverTitle="Recover missing photos"; I18N.en.recoverHint="If photos you uploaded are missing after reopening the app, this re-attaches them from storage. Only affects your company."; I18N.en.recoverBtn="Recover missing photos"; I18N.en.recovering="Recovering…"; I18N.en.recovered="Recovered"; I18N.en.recoverFail="Recovery failed"; I18N.en.photoN="photo"; I18N.en.photoNs="photos";
-I18N.zh.recoverTitle="恢复丢失照片"; I18N.zh.recoverHint="若上传的照片重新打开后丢失，此操作会从存储中重新挂回对应车辆。仅影响本公司。"; I18N.zh.recoverBtn="恢复丢失照片"; I18N.zh.recovering="正在恢复…"; I18N.zh.recovered="已恢复"; I18N.zh.recoverFail="恢复失败"; I18N.zh.photoN="张照片"; I18N.zh.photoNs="张照片";
+I18N.en.recoverTitle="Recover missing photos"; I18N.en.recoverHint="If photos you uploaded are missing after reopening the app, this re-attaches them from storage. Only affects your company."; I18N.en.recoverBtn="Recover missing photos"; I18N.en.recovering="Recovering…"; I18N.en.recovered="Recovered"; I18N.en.recoverFail="Recovery failed"; I18N.en.photoN="photo"; I18N.en.photoNs="photos"; I18N.en.cleanupBtn="Permanently delete recovered photos"; I18N.en.cleanupHint="Deletes the \"Recovered Photos\" car, its storage files, and the car record. For junk from already-deleted cars. Cannot be undone."; I18N.en.cleaningUp="Cleaning up…"; I18N.en.cleanupDone="Permanently deleted "; I18N.en.cleanupEmpty="Nothing to clean up"; I18N.en.cleanupConfirm="Delete the \"Recovered Photos\" car and its files permanently? This cannot be undone.";
+I18N.zh.recoverTitle="恢复丢失照片"; I18N.zh.recoverHint="若上传的照片重新打开后丢失，此操作会从存储中重新挂回对应车辆。仅影响本公司。"; I18N.zh.recoverBtn="恢复丢失照片"; I18N.zh.recovering="正在恢复…"; I18N.zh.recovered="已恢复"; I18N.zh.recoverFail="恢复失败"; I18N.zh.photoN="张照片"; I18N.zh.photoNs="张照片"; I18N.zh.cleanupBtn="彻底删除找回的照片"; I18N.zh.cleanupHint="删除「找回的照片」车及其存储文件、车辆记录。适用于已删除车辆的废图，不可恢复。"; I18N.zh.cleaningUp="正在清理…"; I18N.zh.cleanupDone="已永久删除 "; I18N.zh.cleanupEmpty="没有可清理的内容"; I18N.zh.cleanupConfirm="将永久删除「找回的照片」车及其文件，且不可恢复。确定吗？";
 I18N.en.welcomeTitle="👋 Welcome to ANT MOTORS"; I18N.en.welcomeDesc="New here? Create your company account to start adding cars, managing your team and viewing membership. Open the “Me” tab at the bottom right, or tap the button below."; I18N.en.welcomeBtn="Login / Register"; I18N.en.loginRegBtn="👤 Login / Register"; I18N.en.settingsBtn="⚙ Settings"; I18N.en.welcomeTo="Welcome to"; I18N.en.errOccurred="Something went wrong — try refreshing"; I18N.en.updateAvail="New version available";
 I18N.zh.welcomeTitle="👋 欢迎使用 ANT MOTORS"; I18N.zh.welcomeDesc="首次使用？创建公司账号即可添加车辆、管理团队与查看会员。请打开右下角“我的”页，或点击下方按钮。"; I18N.zh.welcomeBtn="登录 / 注册"; I18N.zh.loginRegBtn="👤 登录 / 注册"; I18N.zh.settingsBtn="⚙ 设置"; I18N.zh.welcomeTo="欢迎使用"; I18N.zh.errOccurred="出错了，请尝试刷新"; I18N.zh.updateAvail="有新版本可用";
 /* --- detail-page ⋯ menu labels (were missing → stayed English on lang switch) --- */
@@ -2274,7 +2277,24 @@ async function recoverPhotos(){
     if(btn){ btn.disabled=false; btn.textContent=T('recoverBtn','Recover missing photos'); }
   }
 }
-function toggleFeatured(){
+// Permanently delete the company-scoped "Recovered Photos" car and its Storage files. For junk
+// (e.g. photos of already-deleted cars). This is irreversible — the files are gone for good.
+async function cleanupRecovered(){
+  if(!confirm(T('cleanupConfirm','Delete the "Recovered Photos" car and its files permanently? This cannot be undone.'))) return;
+  try{
+    toast(T('cleaningUp','Cleaning up…'));
+    const r=await api('/api/cleanup-recovered',{method:'POST'});
+    if(r && r.ok){
+      const n=r.removed||0;
+      toast(n>0 ? (T('cleanupDone','Permanently deleted ')+n+T('photoNs',' photos')) : T('cleanupEmpty','Nothing to clean up'));
+      try{ await syncNow(true, true); }catch(e){}
+    } else {
+      toast(T('recoverFail','Cleanup failed'));
+    }
+  }catch(e){
+    toast(T('recoverFail','Cleanup failed')+': '+((e&&e.message)||e));
+  }
+}
   const c=CARS[curCar]; if(!c) return;
   c.featured=!c.featured;
   if(c.featured){ if(c.featuredOrder==null){ let mx=0; Object.values(CARS).forEach(x=>{ if(x.featuredOrder&&x.featuredOrder>mx) mx=x.featuredOrder; }); c.featuredOrder=mx+1; } }

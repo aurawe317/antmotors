@@ -345,6 +345,25 @@ async function persistPhoto(cid, carId, url) {
     }
   } catch (e) { /* non-fatal: the push path still reconciles later */ }
 }
+// Remove a car's media both from the DB (photos/videos rows) and from Storage (the physical
+// files). Used on car deletion and on orphan cleanup so files never linger as orphans in the bucket.
+async function purgeCarMedia(cid, carId) {
+  let removed = 0;
+  for (const table of ['photos', 'videos']) {
+    const { data: rows } = await sb.from(table).select('data,url').eq('company_id', cid).eq('car_id', carId);
+    const urls = (rows || []).map(r => r.url || r.data).filter(Boolean);
+    const paths = urls
+      .map(u => u.replace(`${SUPABASE_URL_FIXED}/storage/v1/object/public/car-photos/`, ''))
+      .filter(p => p && p.length && !p.includes('SUPABASE_URL_FIXED'));
+    if (paths.length) {
+      const { error } = await sb.storage.from('car-photos').remove(paths);
+      if (error) console.error('purgeCarMedia storage remove failed:', error.message || error);
+    }
+    const { error: delErr } = await sb.from(table).delete().eq('company_id', cid).eq('car_id', carId);
+    if (!delErr) removed += urls.length;
+  }
+  return removed;
+}
 // Returns the car's photos WITH their stable row ids (`idx`). The id lets a client delete a
 // specific photo unambiguously instead of the fragile "match by URL value" approach, which
 // broke whenever a value drifted (base64 vs URL, re-upload path, …).
@@ -583,11 +602,10 @@ async function applyPush(emp, payload) {
     if (carErr) { rejected.push({ id: c.id, reason: carErr.message || 'upsert_failed' }); continue; }
     if (occupies) carUsed++;
     if (c.deleted) {
-      // A car deletion carries no photos, so its photo/video rows would otherwise linger on the
-      // server forever. Car ids are derived from brand+model, so re-creating the same car would
-      // instantly resurrect the "old photos". Purge them together with the car.
-      await sb.from('photos').delete().eq('company_id', cid).eq('car_id', c.id);
-      await sb.from('videos').delete().eq('company_id', cid).eq('car_id', c.id);
+      // A car deletion must also wipe its photos/videos from Storage, otherwise the files linger
+      // as orphans in the bucket forever (and re-creating the same brand+model car would instantly
+      // resurrect the "old photos"). purgeCarMedia removes both the DB rows and the Storage files.
+      await purgeCarMedia(cid, c.id);
       applied.push(c.id);
       continue;
     }
@@ -1243,6 +1261,20 @@ export async function onRequest(context) {
         }
         return send(200, { ok: true, attached, scanned, skipped, recovered, total: files.length, note: orphanPaths.length ? 'recovered_to_recovered_car' : '' });
       } catch (e) { return send(500, { error: 'recover_failed', detail: String((e && e.message) || e) }); }
+    }
+    // Permanently wipe the company-scoped "Recovered Photos" car: its photos DB rows, its Storage
+    // files, and the car record itself. Use after the user has reviewed those orphans and decided
+    // they are junk (e.g. photos of already-deleted cars).
+    if (p === '/api/cleanup-recovered' && method === 'POST') {
+      try {
+        const cid = emp.companyId;
+        const recId = 'recovered_' + cid;
+        const { data: row } = await sb.from('cars').select('id').eq('company_id', cid).eq('id', recId).maybeSingle();
+        if (!row) return send(200, { ok: true, removed: 0, note: 'no_recovered_car' });
+        const n = await purgeCarMedia(cid, recId);
+        await sb.from('cars').delete().eq('company_id', cid).eq('id', recId);
+        return send(200, { ok: true, removed: n });
+      } catch (e) { return send(500, { error: 'cleanup_failed', detail: String((e && e.message) || e) }); }
     }
     if (p === '/api/pull') {
       const out = await pull(u.searchParams.get('since'), u.searchParams.get('photos') === '1', emp.companyId);
