@@ -2255,12 +2255,13 @@ async function recoverPhotos(){
     toast(T('recovering','Recovering…'));
     const r=await api('/api/recover-photos',{method:'POST'});
     if(r && r.ok){
-      const n=r.attached||0;
+      const n=r.attached||0, rec=r.recovered||0;
       let verdict;
-      if(n>0) verdict='已恢复 '+n+' 张照片';
+      if(n>0 && rec>0) verdict='已归位 '+n+' 张，另有 '+rec+' 张孤儿照片已放进「找回的照片」车，请打开核对';
+      else if(n>0) verdict='已恢复 '+n+' 张照片';
+      else if(rec>0) verdict='找到 '+rec+' 张孤儿照片（挂错车辆文件夹），已全部放进「找回的照片」车，请打开核对并重新归位';
       else if((r.total||0)===0) verdict='存储桶里没有任何照片文件（说明昨天上传没真正保存到存储）';
-      else if(r.note==='no_cars') verdict='本公司车辆列表为空，没有可挂回的对象';
-      else if((r.scanned||0)===0) verdict='存储里有照片文件，但对应的车辆都不属于当前公司（可能当时登录的是别的账号/公司）';
+      else if((r.scanned||0)===0 && (r.skipped||0)>0) verdict='存储里有 '+(r.total||0)+' 个照片文件，但都不属于任何现有车辆（多半是上传时车还没保存）。已为你放进「找回的照片」车：'+(r.recovered||0)+' 张';
       else verdict='扫描到 '+(r.scanned||0)+' 个匹配文件但未能挂回（可能已存在或车辆已删除）';
       toast(verdict);
       try{ await syncNow(true, true); }catch(e){}

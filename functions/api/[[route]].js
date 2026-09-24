@@ -1191,17 +1191,18 @@ export async function onRequest(context) {
         await walk('');
         const { data: cars } = await sb.from('cars').select('id').eq('company_id', cid).eq('deleted', 0);
         const validCars = new Set((cars || []).map(c => c.id));
-        if (!validCars.size) return send(200, { ok: true, attached: 0, scanned: 0, skipped: 0, total: files.length, note: 'no_cars' });
-        let scanned = 0, attached = 0, skipped = 0;
+        if (!files.length) return send(200, { ok: true, attached: 0, scanned: 0, skipped: 0, recovered: 0, total: 0, note: 'empty_bucket' });
+        let scanned = 0, attached = 0, skipped = 0, recovered = 0;
         const cache = {};   // carId -> Set of existing data URLs (de-dupe within the run)
+        const orphanPaths = [];   // files whose embedded carId is NOT a real car (e.g. uploaded before the car was saved → folder "lc")
         for (const path of files) {
           const parts = path.split('/');
           if (parts.length < 3) { skipped++; continue; }        // not cid/carId/file
-          const fcid = parts[0], carId = parts[1];
+          const carId = parts[1];
           // Attach ANY orphan whose car belongs to THIS company, even if it landed in
           // another company's folder (e.g. uploaded while a different account was active).
           // Car ids are globally unique, so we never cross-attach another company's photos.
-          if (!validCars.has(carId)) { skipped++; continue; }
+          if (!validCars.has(carId)) { orphanPaths.push(path); skipped++; continue; }
           scanned++;
           const url = `${SUPABASE_URL_FIXED}/storage/v1/object/public/car-photos/${path}`;
           if (!cache[carId]) {
@@ -1215,7 +1216,32 @@ export async function onRequest(context) {
           if (error) { skipped++; continue; }
           cache[carId].add(url); attached++;
         }
-        return send(200, { ok: true, attached, scanned, skipped, total: files.length });
+        // Phase 2: files whose carId never became a real car (classic "uploaded photos to a NEW
+        // car before saving it" bug — they land under the default 'lc' folder) can't be matched
+        // to any car. To avoid silently losing them, attach them all to a company-scoped
+        // "Recovered Photos" car the user can open and review / reassign.
+        if (orphanPaths.length) {
+          const recId = 'recovered_' + cid;
+          const recName = '找回的照片 / Recovered Photos';
+          await sb.from('cars').upsert({
+            id: recId, company_id: cid,
+            data: { name: recName, sub: '自动找回的孤儿照片 · 请核对后重新归位', cond: 'USED', body: 'Other', brand: 'Recovered', model: 'Photos', year: '2026',
+                    grad: 'g3', loc: { name: 'Main Branch' }, sold: false, featured: false,
+                    inStockDays: null, specs: [['Note', 'Storage 中的孤儿照片已找回，请打开此车核对并重新分配到正确车辆']], hl: [],
+                    price: { cost: 0, floorA: 0, floorB: 0, quote: 0 } },
+            listed_at: new Date().toISOString().slice(0, 10), updated_at: now(), updated_by: emp.id, deleted: 0
+          }, { onConflict: 'id,company_id' });
+          const { data: ex } = await sb.from('photos').select('idx').eq('company_id', cid).eq('car_id', recId);
+          let nextIdx = (ex || []).reduce((m, r) => Math.max(m, (r.idx || 0) + 1), 0);
+          for (const path of orphanPaths) {
+            const url = `${SUPABASE_URL_FIXED}/storage/v1/object/public/car-photos/${path}`;
+            const { data: dup } = await sb.from('photos').select('idx').eq('company_id', cid).eq('car_id', recId).eq('data', url);
+            if (dup && dup.length) continue;
+            const { error } = await sb.from('photos').insert({ company_id: cid, car_id: recId, idx: nextIdx, data: url });
+            if (!error) { nextIdx++; recovered++; }
+          }
+        }
+        return send(200, { ok: true, attached, scanned, skipped, recovered, total: files.length, note: orphanPaths.length ? 'recovered_to_recovered_car' : '' });
       } catch (e) { return send(500, { error: 'recover_failed', detail: String((e && e.message) || e) }); }
     }
     if (p === '/api/pull') {
