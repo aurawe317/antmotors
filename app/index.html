@@ -2256,8 +2256,13 @@ async function recoverPhotos(){
     const r=await api('/api/recover-photos',{method:'POST'});
     if(r && r.ok){
       const n=r.attached||0;
-      const diag=`(桶内文件=${r.total??0} 匹配本公司=${r.scanned??0} 跳过=${r.skipped??0}${r.note?(' '+r.note):''})`;
-      toast(T('recovered','已恢复')+' '+n+' '+(n===1?T('photoN','张'):T('photoNs','张'))+' '+diag);
+      let verdict;
+      if(n>0) verdict='已恢复 '+n+' 张照片';
+      else if((r.total||0)===0) verdict='存储桶里没有任何照片文件（说明昨天上传没真正保存到存储）';
+      else if(r.note==='no_cars') verdict='本公司车辆列表为空，没有可挂回的对象';
+      else if((r.scanned||0)===0) verdict='存储里有照片文件，但对应的车辆都不属于当前公司（可能当时登录的是别的账号/公司）';
+      else verdict='扫描到 '+(r.scanned||0)+' 个匹配文件但未能挂回（可能已存在或车辆已删除）';
+      toast(verdict);
       try{ await syncNow(true, true); }catch(e){}
     } else {
       toast(T('recoverFail','Recovery failed'));
