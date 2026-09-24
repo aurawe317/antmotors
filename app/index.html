@@ -2256,7 +2256,8 @@ async function recoverPhotos(){
     const r=await api('/api/recover-photos',{method:'POST'});
     if(r && r.ok){
       const n=r.attached||0;
-      toast(T('recovered','Recovered')+' '+n+' '+(n===1?T('photoN','photo'):T('photoNs','photos')));
+      const diag=`(桶内文件=${r.total??0} 匹配本公司=${r.scanned??0} 跳过=${r.skipped??0}${r.note?(' '+r.note):''})`;
+      toast(T('recovered','已恢复')+' '+n+' '+(n===1?T('photoN','张'):T('photoNs','张'))+' '+diag);
       try{ await syncNow(true, true); }catch(e){}
     } else {
       toast(T('recoverFail','Recovery failed'));

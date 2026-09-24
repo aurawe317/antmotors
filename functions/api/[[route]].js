@@ -1171,9 +1171,6 @@ export async function onRequest(context) {
       try {
         const cid = emp.companyId;
         await ensureBucket(sb);
-        const { data: cars } = await sb.from('cars').select('id').eq('company_id', cid).eq('deleted', 0);
-        const validCars = new Set((cars || []).map(c => c.id));
-        if (!validCars.size) return send(200, { ok: true, attached: 0, scanned: 0, total: 0, note: 'no_cars' });
         const files = [];
         const walk = async (prefix) => {
           let offset = 0;
@@ -1192,6 +1189,9 @@ export async function onRequest(context) {
           }
         };
         await walk('');
+        const { data: cars } = await sb.from('cars').select('id').eq('company_id', cid).eq('deleted', 0);
+        const validCars = new Set((cars || []).map(c => c.id));
+        if (!validCars.size) return send(200, { ok: true, attached: 0, scanned: 0, skipped: 0, total: files.length, note: 'no_cars' });
         let scanned = 0, attached = 0, skipped = 0;
         const cache = {};   // carId -> Set of existing data URLs (de-dupe within the run)
         for (const path of files) {
