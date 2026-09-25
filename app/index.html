@@ -2008,12 +2008,14 @@ function setLang(l){
 
 function go(id){
   if(id!=='scr-home' && heroTimer){ clearInterval(heroTimer); heroTimer=null; }
+  const _from=document.querySelector('.screen.active'); const _fromId=_from?_from.id:'scr-home';
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
   const map=['scr-home','scr-showrooms','scr-me'];
   document.querySelectorAll('.tabbar .tab').forEach((t,i)=>t.classList.toggle('on', map[i]===id));
   /* Sub-pages: toggle CSS class on .phone for instant visual switch */
   const isSub=['scr-workbench','scr-admin','scr-favorites','scr-perm','scr-detail','scr-datahelp'].includes(id);
+  if(isSub) subBackTarget=_fromId;
   const ph=document.getElementById('phone'); if(ph) ph.classList.toggle('subpage-mode', isSub);
   const ab=document.getElementById('appbar'); if(ab) ab.style.display=(id==='scr-me')?'none':'';
   if(isSub){ const sb=document.getElementById('subPageBar'); if(sb){ const st=document.getElementById('subPageTitle'); if(st){ const titleMap={workbenchTitle:'scr-workbench',adminTitle:'scr-admin',favTitle:'scr-favorites',permTitleShort:'scr-perm',dataHelp:'scr-datahelp'}; const k=Object.keys(titleMap).find(k=>titleMap[k]===id); if(k) st.textContent=T(k,'Back'); else if(id==='scr-detail'){ st.textContent=CARS[curCar]?carName(CARS[curCar]):T('back','Back'); } else st.textContent=T('back','Back'); } } }
@@ -2033,7 +2035,8 @@ function go(id){
   const sa=document.getElementById('subActions'); if(sa) sa.style.display=(id==='scr-detail')?'flex':'none';
   closeSubMenu();
 }
-function goBackHome(){ go('scr-home'); }
+var subBackTarget='scr-home';
+function goBackHome(){ go(subBackTarget||'scr-home'); }
 /* Sub-bar "⋯" menu (replaces the old floating detail-top action row) */
 function toggleSubMenu(e){ if(e) e.stopPropagation(); const m=document.getElementById('subMoreMenu'); if(m) m.classList.toggle('show'); }
 function closeSubMenu(){ const m=document.getElementById('subMoreMenu'); if(m) m.classList.remove('show'); }
