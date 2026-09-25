@@ -908,6 +908,24 @@
     <!-- SHOWROOMS -->
     <section class="screen" id="scr-showrooms">
       <div class="sec-head"><h2 data-i18n="showroomsTitle">Showrooms</h2></div>
+      <div id="shEditBar" style="display:none;padding:0 16px 12px;">
+        <button class="submit" onclick="openShEditor('')" data-i18n="addShowroom" style="margin:0;">+ Add sales point</button>
+      </div>
+      <div id="shEditor" style="display:none;margin:0 16px 12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 15px;">
+        <div id="shEditorTitle" style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:12px;" data-i18n="addShowroom">New sales point</div>
+        <div class="form-row"><label data-i18n="shName">Name</label><input type="text" id="shEdName" placeholder="e.g. Main Showroom"></div>
+        <div class="form-row"><label data-i18n="shAddr">Address</label><input type="text" id="shEdAddr" placeholder="123 Spintex Rd"></div>
+        <div class="form-row"><label data-i18n="shPhone">Phone</label><input type="text" id="shEdPhone" placeholder="+233 20 000 0001"></div>
+        <div class="form-row"><label data-i18n="shHours">Hours</label><input type="text" id="shEdHours" placeholder="Mon-Sat 9am-6pm"></div>
+        <div class="form-row"><label data-i18n="shDist">Distance</label><input type="text" id="shEdDist" placeholder="3.5 km from CBD"></div>
+        <div class="form-row"><label data-i18n="shPin">Map pin</label><input type="text" id="shEdPin" placeholder="5.6037,-0.1870  or paste a Google Maps link"></div>
+        <p class="sheet-hint" data-i18n="shPinHint">Latitude, longitude — or paste a Google Maps link. Used for turn-by-turn directions.</p>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button class="submit" onclick="saveShEditor()" data-i18n="shSave" style="flex:1;margin:0;">Save</button>
+          <button class="submit" onclick="closeShEditor()" data-i18n="cancel" style="flex:1;margin:0;background:transparent;border:1px solid var(--border);color:var(--text-dim);">Cancel</button>
+        </div>
+        <button class="submit" id="shEdDelete" onclick="deleteShowroomFromEditor()" data-i18n="del" style="display:none;margin-top:8px;background:transparent;border:1px solid var(--danger);color:var(--danger);">Delete</button>
+      </div>
       <div class="sh-list" id="shList"></div>
     </section>
 
@@ -1654,9 +1672,11 @@ I18N.zh.bookDone="预约成功！"; I18N.zh.backHome="返回首页"; I18N.zh.waO
 I18N.en.navMe="Me"; I18N.en.meGuest="Guest"; I18N.en.meGuestSub="Sign in or create a company account"; I18N.en.meSignedIn="Signed in";
 I18N.en.mlFav="My favorites"; I18N.en.mlAdd="Add vehicle"; I18N.en.mlWork="Workbench"; I18N.en.mlAdmin="Car admin"; I18N.en.mlPerm="Roles & permissions"; I18N.en.mlPrice="How pricing works"; I18N.en.mlSettings="App settings"; I18N.en.soldTitle="Sold vehicles";
 I18N.en.tileFav="Saved"; I18N.en.tileRecent="Recent"; I18N.en.tileCars="My cars"; I18N.en.tileShops="Showrooms"; I18N.en.dataHelp="Data & Help"; I18N.en.mlSettingsHint="Settings now live on the Me tab — preferences, data & help are there.";
+I18N.en.shEdit="Edit"; I18N.en.shEditTitle="Edit sales point"; I18N.en.shPin="Map pin"; I18N.en.shPinHint="Latitude, longitude — or paste a Google Maps link. Used for turn-by-turn directions."; I18N.en.shPinBad="Could not read that location"; I18N.en.shSaved="Sales point saved"; I18N.en.shMissing="Sales point not found"; I18N.en.pinSet="Pin set"; I18N.en.pinNone="No map pin";
 I18N.zh.navMe="我的"; I18N.zh.meGuest="访客"; I18N.zh.meGuestSub="登录或创建公司账号"; I18N.zh.meSignedIn="已登录";
 I18N.zh.mlFav="我的收藏"; I18N.zh.mlAdd="添加车辆"; I18N.zh.mlWork="工作台"; I18N.zh.mlAdmin="车辆后台"; I18N.zh.mlPerm="角色权限"; I18N.zh.mlPrice="定价说明"; I18N.zh.mlSettings="应用设置"; I18N.zh.soldTitle="已售车辆";
 I18N.zh.tileFav="收藏"; I18N.zh.tileRecent="最近"; I18N.zh.tileCars="车辆"; I18N.zh.tileShops="门店"; I18N.zh.dataHelp="数据与帮助"; I18N.zh.mlSettingsHint="设置已移到「我的」页——偏好、数据与帮助都在那里。";
+I18N.zh.shEdit="编辑"; I18N.zh.shEditTitle="编辑销售点"; I18N.zh.shPin="地图定位"; I18N.zh.shPinHint="纬度, 经度 —— 或粘贴 Google Maps 链接，用于一键导航。"; I18N.zh.shPinBad="无法识别该定位"; I18N.zh.shSaved="销售点已保存"; I18N.zh.shMissing="未找到该销售点"; I18N.zh.pinSet="已设定位"; I18N.zh.pinNone="未设定位";
 /* v4.1 section headers + workspace link labels */
 I18N.en.secWork="Workspace"; I18N.en.secAdmin="Manage"; I18N.en.secSettings="Settings"; I18N.en.mlShops2="Sales points / Stores";
 I18N.zh.secWork="工作台"; I18N.zh.secAdmin="管理"; I18N.zh.secSettings="设置"; I18N.zh.mlShops2="销售点 / 门店";
@@ -3125,10 +3145,10 @@ function closeSettings(){
   updateAttrBanner();
 }
 function closeSheets(){ closeSettings(); document.getElementById('sheetMask').classList.remove('show'); document.getElementById('previewSheet').classList.remove('show'); const ps=document.getElementById('pricingSheet'); if(ps) ps.classList.remove('show'); const ms=document.getElementById('membershipSheet'); if(ms) ms.classList.remove('show'); const ca=document.getElementById('carActionsSheet'); if(ca) ca.classList.remove('show'); const ns=document.getElementById('navSheet'); if(ns) ns.classList.remove('show'); }
-let NAV_ADDR='', NAV_NAME='';
-function openNavSheet(name){ const s=SHOWROOMS.find(x=>x.name===name); if(!s) return; NAV_NAME=s.name; NAV_ADDR=(s.addr||'').trim(); const t=document.getElementById('navSheetTitle'); if(t) t.textContent=T('dirTo','Directions to')+' '+bName(s.name); const a=document.getElementById('navSheetAddr'); if(a) a.textContent=NAV_ADDR||T('noAddr','No address set for this showroom'); const m=document.getElementById('sheetMask'), n=document.getElementById('navSheet'); if(m) m.classList.add('show'); if(n) n.classList.add('show'); }
+let NAV_ADDR='', NAV_NAME='', NAV_LL='';
+function openNavSheet(name){ const s=SHOWROOMS.find(x=>x.name===name); if(!s) return; NAV_NAME=s.name; NAV_ADDR=(s.addr||'').trim(); NAV_LL=(s.lat!=null&&s.lng!=null&&s.lat!==''&&s.lng!=='')?(s.lat+','+s.lng):''; const t=document.getElementById('navSheetTitle'); if(t) t.textContent=T('dirTo','Directions to')+' '+bName(s.name); const a=document.getElementById('navSheetAddr'); if(a) a.textContent=NAV_ADDR||NAV_LL||T('noAddr','No address set for this showroom'); const m=document.getElementById('sheetMask'), n=document.getElementById('navSheet'); if(m) m.classList.add('show'); if(n) n.classList.add('show'); }
 function closeNavSheet(){ const m=document.getElementById('sheetMask'), n=document.getElementById('navSheet'); if(m) m.classList.remove('show'); if(n) n.classList.remove('show'); }
-function navTo(app){ closeNavSheet(); if(!NAV_ADDR){ toast(T('noAddr','No address set for this showroom')); return; } const q=encodeURIComponent(NAV_ADDR); let url=''; if(app==='google') url='https://www.google.com/maps/dir/?api=1&destination='+q; else if(app==='apple') url='https://maps.apple.com/?daddr='+q+'&dirflg=d'; else if(app==='amap') url='https://uri.amap.com/search?keyword='+q; if(url) window.open(url,'_blank'); }
+function navTo(app){ closeNavSheet(); if(!NAV_LL&&!NAV_ADDR){ toast(T('noAddr','No address or pin set for this showroom')); return; } const q=encodeURIComponent(NAV_LL||NAV_ADDR); let url=''; if(app==='google') url='https://www.google.com/maps/dir/?api=1&destination='+q; else if(app==='apple') url='https://maps.apple.com/?daddr='+q+'&dirflg=d'; else if(app==='amap') url='https://uri.amap.com/search?keyword='+q; if(url) window.open(url,'_blank'); }
 function openCarActions(){
   const c=CARS[curCar]; if(!c) return;
   if(!canEditCar()){ toast(T('noPermPhoto','Your role cannot perform this action.')); return; }
@@ -5487,6 +5507,7 @@ function toast(html){ const t=document.getElementById('toast'); t.innerHTML=html
 
 function renderShowroomList(){
   const sl=document.getElementById('shList'); if(!sl) return;
+  const bar=document.getElementById('shEditBar'); if(bar) bar.style.display=isTopRole()?'block':'none';
   sl.innerHTML="";
   if(!SHOWROOMS.length){
     sl.innerHTML='<div class="empty" style="padding:40px 16px;text-align:center;color:var(--text-dim)">'+T('noShowrooms','No showrooms added yet')+'</div>';
@@ -5508,6 +5529,10 @@ function renderShowroomList(){
       uploadBtn=`<div class="add-photo" onclick="event.stopPropagation();document.getElementById('shPhotoInput_${idx}').click()">${T('addPhoto','+ Photo')}</div><input type="file" id="shPhotoInput_${idx}" accept="image/*" style="display:none;" onchange="handleShowroomPhoto(event,'${s.name}')" />`;
     }
     const carCount=Object.values(CARS).filter(c=>c.loc.name===s.name).length;
+    const showEdit=canEditThisShowroom(s.name);
+    const hasPin=!(s.lat==null||s.lng==null||s.lat===''||s.lng==='');
+    const pinBadge=hasPin?'<span style="color:var(--gold);font-weight:600;">📍 '+T('pinSet','Pin set')+'</span>':'<span style="color:var(--text-dim);">📍 '+T('pinNone','No map pin')+'</span>';
+    const editBtn=showEdit?`<button onclick="openShEditor('${s.name.replace(/\'/g,"\\'")}')">${T('shEdit','Edit')}</button>`:'';
     item.innerHTML=`<div class="sh-photo-ph">${phHTML}${uploadBtn}</div>
       <div class="body"><h3>${bName(s.name)}</h3><div class="addr">${s.addr}</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;font-size:11px;">
@@ -5516,7 +5541,8 @@ function renderShowroomList(){
       </div>
       <div style="font-size:11px;color:var(--text-dim);margin-top:4px;">${s.phone}</div>
       <div style="font-size:11px;color:var(--gold);font-weight:600;margin-top:4px;">${s.dist}</div>
-      <div class="row"><button onclick="openNavSheet('${s.name.replace(/\'/g,"\\'")}')">${T('directions','Directions')}</button><button class="wa" onclick="waTap('general')">↗ WhatsApp</button></div></div>`;
+      <div style="font-size:11px;margin-top:4px;">${pinBadge}</div>
+      <div class="row">${editBtn}<button onclick="openNavSheet('${s.name.replace(/\'/g,"\\'")}')">${T('directions','Directions')}</button><button class="wa" onclick="waTap('general')">↗ WhatsApp</button></div></div>`;
     sl.appendChild(item);
   });
 }
@@ -5556,6 +5582,79 @@ function deleteShowroom(name){
   saveShowrooms(); jsave('am_showroom_photos',SHOWROOM_PHOTOS);
   renderShowroomList(); renderFilterBranch(); renderHome(); initAdminBranch(); renderShSettings();
   toast(T('shDeleted','Showroom deleted')+': '+name);
+}
+/* ---- Showroom editor (Add / Edit) living on the Shops tab ---- */
+let SH_EDIT_ORIG='';   // '' = creating a new one, otherwise the original name being edited
+function parsePin(raw){
+  const str=(raw||'').trim(); if(!str) return null;
+  let m=str.match(/@(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/);          // .../@5.6037,-0.1870,17z
+  if(!m) m=str.match(/[?&]q=(-?\d+(?:\.\d+)?),\s*(-?\d+(?:\.\d+)?)/);  // ...?q=5.6037,-0.1870
+  if(!m) m=str.match(/^(-?\d+(?:\.\d+)?)\s*,\s*(-?\d+(?:\.\d+)?)$/);   // 5.6037, -0.1870
+  if(!m) return null;
+  const lat=parseFloat(m[1]), lng=parseFloat(m[2]);
+  if(!isFinite(lat)||!isFinite(lng)||lat<-90||lat>90||lng<-180||lng>180) return null;
+  return {lat:lat, lng:lng};
+}
+function openShEditor(name){
+  const ed=document.getElementById('shEditor'); if(!ed) return;
+  const s=name?SHOWROOMS.find(x=>x.name===name):null;
+  SH_EDIT_ORIG=s?s.name:'';
+  document.getElementById('shEdName').value=s?(s.name||''):'';
+  document.getElementById('shEdAddr').value=s?(s.addr||''):'';
+  document.getElementById('shEdPhone').value=s?(s.phone||''):'';
+  document.getElementById('shEdHours').value=s?(s.hours||''):'';
+  document.getElementById('shEdDist').value=s?(s.dist||''):'';
+  document.getElementById('shEdPin').value=(s&&s.lat!=null&&s.lng!=null&&s.lat!==''&&s.lng!=='')?(s.lat+', '+s.lng):'';
+  const title=document.getElementById('shEditorTitle');
+  if(title) title.textContent=s?T('shEditTitle','Edit sales point'):T('addShowroom','New sales point');
+  const del=document.getElementById('shEdDelete');
+  if(del){ del.style.display=(s&&isTopRole())?'block':'none'; del.dataset.target=s?s.name:''; }
+  ed.style.display='block';
+  try{ ed.scrollIntoView({behavior:'smooth',block:'start'}); }catch(e){}
+}
+function closeShEditor(){
+  const ed=document.getElementById('shEditor'); if(ed) ed.style.display='none';
+  SH_EDIT_ORIG='';
+}
+function saveShEditor(){
+  const n=(document.getElementById('shEdName').value||'').trim();
+  if(!n){ toast(T('nameReq','Name required')); return; }
+  const raw=(document.getElementById('shEdPin').value||'').trim();
+  if(raw && !parsePin(raw)){ toast(T('shPinBad','Could not read that location')); return; }
+  const p=raw?parsePin(raw):null;
+  const data={
+    addr:(document.getElementById('shEdAddr').value||'').trim(),
+    phone:(document.getElementById('shEdPhone').value||'').trim(),
+    hours:(document.getElementById('shEdHours').value||'').trim(),
+    dist:(document.getElementById('shEdDist').value||'').trim(),
+    lat:p?p.lat:'', lng:p?p.lng:''
+  };
+  if(SH_EDIT_ORIG){
+    const idx=SHOWROOMS.findIndex(x=>x.name===SH_EDIT_ORIG);
+    if(idx<0){ toast(T('shMissing','Sales point not found')); return; }
+    const old=SHOWROOMS[idx];
+    if(n!==old.name){
+      if(SHOWROOMS.find(x=>x.name===n)){ toast(T('shExists','This showroom already exists')); return; }
+      if(SHOWROOM_PHOTOS[old.name]!==undefined){ SHOWROOM_PHOTOS[n]=SHOWROOM_PHOTOS[old.name]; delete SHOWROOM_PHOTOS[old.name]; jsave('am_showroom_photos',SHOWROOM_PHOTOS); }
+      Object.values(CARS).forEach(c=>{ if(c.loc&&c.loc.name===old.name) c.loc.name=n; });
+      Object.values((SYNC&&SYNC.cars)||{}).forEach(c=>{ if(c.loc&&c.loc.name===old.name) c.loc.name=n; });
+    }
+    SHOWROOMS[idx]=Object.assign({}, old, {name:n}, data);
+  }else{
+    if(SHOWROOMS.find(x=>x.name===n)){ toast(T('shExists','This showroom already exists')); return; }
+    SHOWROOMS.push(Object.assign({name:n, grad:'g3'}, data));
+  }
+  saveShowrooms();
+  closeShEditor();
+  renderShowroomList(); renderFilterBranch(); renderHome(); initAdminBranch(); renderShSettings();
+  toast(T('shSaved','Sales point saved')+': <b>'+n+'</b>');
+}
+function deleteShowroomFromEditor(){
+  const del=document.getElementById('shEdDelete'); if(!del) return;
+  const name=del.dataset.target||SH_EDIT_ORIG;
+  if(!name) return;
+  closeShEditor();
+  deleteShowroom(name);
 }
 
 // Capture raw deep-link params here; resolve them only AFTER CARS/ALL_EMP
