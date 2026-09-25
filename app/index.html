@@ -491,8 +491,8 @@
   .me-prem{display:none; align-items:center; gap:8px; margin-top:8px; padding:5px 11px; border-radius:999px; background:rgba(232,194,104,.16); border:1px solid rgba(232,194,104,.55); color:var(--gold); font-size:12px; font-weight:700; cursor:pointer; width:fit-content;}
   .me-prem-plan{font-weight:800; letter-spacing:.4px; text-transform:uppercase; font-size:11px;}
   .me-prem-exp{color:var(--text-dim); font-weight:600;}
-  /* unify collapsible summary (card titles) to 15px/700 to match section headers */
-  .collapsible > summary.lbl, .collapsible > summary .lbl{font-size:15px; font-weight:800; letter-spacing:.2px; text-transform:none; color:var(--text);}
+  /* unify collapsible summary (card titles) to 14px/600 to match me-link rows */
+  .collapsible > summary.lbl, .collapsible > summary .lbl{font-size:14px; font-weight:600; letter-spacing:.2px; text-transform:none; color:var(--text);}
   .notif-item{display:flex; gap:10px; padding:10px 0; border-bottom:1px solid var(--border);}
   .notif-item:last-child{border-bottom:none;}
   .notif-item .ni-ic{flex:0 0 auto; width:30px; height:30px; border-radius:50%; background:var(--gold-soft); color:var(--gold); display:flex; align-items:center; justify-content:center; font-size:15px;}
@@ -721,9 +721,6 @@
       <div class="appbar-actions">
         <div class="pill-btn" id="langBtn" onclick="toggleLang()">
           <span class="seg on" id="segEn">EN</span><span class="seg" id="segZh">中</span>
-        </div>
-        <div class="icon-btn" onclick="go('scr-favorites')" title="Favorites">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 20s-7.5-4.6-7.5-9.6A4.4 4.4 0 0112 8.2a4.4 4.4 0 017.5 2.2c0 5-7.5 9.6-7.5 9.6z" stroke="var(--gold)" stroke-width="1.6" stroke-linejoin="round"/></svg>
         </div>
         <div class="icon-btn" id="previewBtn" onclick="openPreview()" title="Preview as">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7z" stroke="var(--gold)" stroke-width="1.6"/><circle cx="12" cy="12" r="2.6" stroke="var(--gold)" stroke-width="1.6"/></svg>
@@ -1158,23 +1155,12 @@
     <div class="form-row"><label data-i18n="joinBranch">Branch</label><input type="text" id="bindBranch" list="afBranchList" placeholder="Select or type" autocomplete="off" /></div>
     <button class="submit" onclick="bindCompany()" data-i18n="joinBind">Bind &amp; activate</button>
   </div>
-  <div class="me-sec-h" data-i18n="secWork">Workspace</div>
   <div class="me-links" id="wbLinks">
     <button class="me-link" id="mlWorkBtn" onclick="go('scr-workbench')"><span data-i18n="mlWork">Workbench</span><span class="ar">&rsaquo;</span></button>
   </div>
   <div class="me-sec-h" data-i18n="secAdmin">Manage</div>
-  <div class="grp" id="memStrip" style="display:none;padding:12px 15px;">
-    <div class="mem-card" id="memCard" style="margin:0;">
-      <div class="mem-card-top">
-        <div class="mem-plan" id="memPlan">—</div>
-        <span class="mem-pill" id="memBadge" style="display:none;"></span>
-      </div>
-      <div class="mem-meta" id="memInfo"></div>
-    </div>
-    <button class="share-copy" id="memBtn" onclick="showMembership()" data-i18n="memManage" style="margin-top:8px;width:100%;">Manage membership</button>
-  </div>
   <details class="grp collapsible" id="premiumGroup" style="display:none;background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:12px;">
-    <summary class="lbl" style="color:var(--gold);font-weight:800;" data-i18n="premTitle">Premium tools</summary>
+    <summary class="lbl" data-i18n="premTitle">Premium tools</summary>
     <div id="premUnlocked" style="display:none;">
       <p class="sheet-hint" data-i18n="premSub">Exclusive features unlocked with your Premium plan.</p>
       <div class="ui-row" style="margin:6px 0 4px;">
@@ -1271,8 +1257,17 @@
       </div>
     </div>
   </details>
-  <details class="grp collapsible" id="dataHelpD">
-    <summary class="lbl" style="margin:0;" data-i18n="dataHelp">Data &amp; Help</summary>
+  <button class="me-link" onclick="go('scr-datahelp')"><span data-i18n="dataHelp">Data &amp; Help</span><span class="ar">&rsaquo;</span></button>
+
+  <div class="grp" id="signOutGroup" style="display:none;text-align:center;">
+    <button class="share-copy" style="border-color:var(--danger);color:var(--danger);padding:10px;width:100%;" onclick="syncLogout()" data-i18n="syncSignOut">Sign out</button>
+  </div>
+      <div class="me-ver" id="meVer">ANT MOTORS &middot; v1.0.0</div>
+
+      </section>
+
+    <section class="screen" id="scr-datahelp">
+      <div style="padding:12px 16px 40px;">
     <div class="grp" id="settingsExtra2" style="margin:0 0 10px;display:none;">
       <div class="lbl" data-i18n="installTitle">Install the app (employees)</div>
       <p class="sheet-hint" data-i18n="installHint">iOS: open in Safari → Share → Add to Home Screen. Android: open in Chrome → ⋮ → Install app. Customers just open the shared link — no install needed.</p>
@@ -1327,12 +1322,8 @@
       <p class="sheet-hint" data-i18n="cleanupHint">Deletes the "Recovered Photos" car, its storage files, and the car record. For junk from already-deleted cars. Cannot be undone.</p>
     </div>
   </details>
-  <div class="grp" id="signOutGroup" style="display:none;text-align:center;">
-    <button class="share-copy" style="border-color:var(--danger);color:var(--danger);padding:10px;width:100%;" onclick="syncLogout()" data-i18n="syncSignOut">Sign out</button>
-  </div>
-      <div class="me-ver" id="meVer">ANT MOTORS &middot; v1.0.0</div>
-
-      </section>
+      </div>
+    </section>
 
     <div class="tabbar">
       <button class="tab on" onclick="go('scr-home')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 10.5L12 4l8 6.5V20a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1v-9.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span data-i18n="navHome">Home</span></button>
@@ -1552,7 +1543,7 @@ const I18N = {
       pvR_partnerB:"Partner B",pvR_partnerB_sub:"Co-owner · same as Boss",
       pvS_kwame:"Kwame A. · Accra",pvS_ama:"Ama K. · Tema",pvS_kwasi:"Kwasi O. · Kumasi",
       prTitle:"💰 Pricing model",prHint:"One car, up to three prices by role. Prices show in your chosen display currency. Owner + 2 Partners see cost; Sales see a graded floor; the customer sees the quote.",
-      priceSetByTop:"Only Boss/Owner & Partners can set price tiers.",loginAs:"Login as",pvLogin:"Login as (admin only)",pvL_boss:"Boss / Owner",pvL_partnerA:"Partner A",pvL_partnerB:"Partner B",boundLink:"Bound link · customers reach only you",noSwitchRole:"Roles are assigned by admin — you cannot switch",noSwitchSales:"Share link is bound to your account",viewingAs:"viewing as",loggedInAs:"Logged in as",sortDefault:"Default",sortPriceAsc:"Price ↑",sortPriceDesc:"Price ↓",sortNewest:"Listed newest",sortOldest:"Listed oldest",inStockDays:"In stock",days:"days",overstock:"overstock",settingsTitle:"Settings",myContact:"My contact (customer reaches you)",fWhatsApp:"WhatsApp number",fPhone:"Phone",saveContact:"Save",installTitle:"Install the app (employees)",installHint:"iOS: Safari → Share → Add to Home Screen. Android: Chrome → ⋮ → Install app. Customers just open the shared link — no install needed.",staffMgmt:"Staff & roles (admin)",addStaff:"+ Add staff",staffId:"Staff ID",staffName:"Name",staffRole:"Role",staffBranch:"Branch",staffWa:"WhatsApp",staffPhone:"Phone",staffPin:"PIN (4-8 digits)",staffCreate:"Create & invite",staffCreated:"Staff created",contactSaved:"Contact saved",tierAssigned:"Assigned ",pvEditContact:"Edit my WhatsApp & phone",pvLockNote:"Your share link is bound to this account — customers can only reach you. Role switching is assigned by admin.",close:"Close",edit:"Edit",noContact:"No contact set",shoppingAs:"Shopping with",cap_cost:"See cost price",cap_floors:"See all floor prices",cap_ownfloor:"See own floor price",cap_quote:"See selling quote",cap_editcar:"Edit car info (specs, highlights)",cap_editprice:"Edit prices (cost, floor, quote)",cap_photocar:"Upload car photos",cap_photoshowroom:"Upload showroom photos",cap_addcar:"Add / remove cars",cap_managestaff:"Manage sales staff",cap_sharelinks:"Generate share links",cap_leads:"View customer leads",permNote:"<b>Boss + Partner A + Partner B</b> share identical top-level access — cost, pricing, full edit. &nbsp; <b>*</b> Manager: limited to own branch. &nbsp; <b>**</b> Sales A: limited to cars they manage.",memNone:"No plan",memActive:"Active",ph_paste:"Smart paste: drop a full vehicle description and fields fill automatically. e.g. Toyota Camry 2021, SUV, Black, Accra, 2.5L Auto, 45,000 km, Sunroof Leather seats",bilingualPrev:"Bilingual preview (editable)",featuredCars:"Featured",browseAll:"Browse all",markFeat:"Set as Featured",unmarkFeat:"Remove from Featured",markedFeat:"Marked as featured",unmarkedFeat:"Removed from featured",noPermBranch:"This car belongs to another branch.",addShowroom:"+ Add sales point",shName:"Name",shAddr:"Address",shPhone:"Phone",shHours:"Hours",shDist:"Distance",shSave:"Save",del:"Delete",showroomsTitle:"Showrooms",shDelConfirm:"Delete showroom",unassigned:"Unassigned",shSettingsTitle:"Sales points / Showrooms",wbStatLeads:"Leads",wbStatClicks:"Link clicks",wbStatConv:"Conversion",noLeads:"No leads yet",noBookings:"No new bookings",clicksLbl:"clicks",leadsLbl:"leads",back:"Back"},
+      priceSetByTop:"Only Boss/Owner & Partners can set price tiers.",loginAs:"Login as",pvLogin:"Login as (admin only)",pvL_boss:"Boss / Owner",pvL_partnerA:"Partner A",pvL_partnerB:"Partner B",boundLink:"Bound link · customers reach only you",noSwitchRole:"Roles are assigned by admin — you cannot switch",noSwitchSales:"Share link is bound to your account",viewingAs:"viewing as",loggedInAs:"Logged in as",sortDefault:"Default",sortPriceAsc:"Price ↑",sortPriceDesc:"Price ↓",sortNewest:"Listed newest",sortOldest:"Listed oldest",inStockDays:"In stock",days:"days",overstock:"overstock",settingsTitle:"Settings",myContact:"My contact (customer reaches you)",fWhatsApp:"WhatsApp number",fPhone:"Phone",saveContact:"Save",installTitle:"Install the app (employees)",installHint:"iOS: Safari → Share → Add to Home Screen. Android: Chrome → ⋮ → Install app. Customers just open the shared link — no install needed.",staffMgmt:"Staff & roles (admin)",addStaff:"+ Add staff",staffId:"Staff ID",staffName:"Name",staffRole:"Role",staffBranch:"Branch",staffWa:"WhatsApp",staffPhone:"Phone",staffPin:"PIN (4-8 digits)",staffCreate:"Create & invite",staffCreated:"Staff created",contactSaved:"Contact saved",tierAssigned:"Assigned ",pvEditContact:"Edit my WhatsApp & phone",pvLockNote:"Your share link is bound to this account — customers can only reach you. Role switching is assigned by admin.",close:"Close",edit:"Edit",noContact:"No contact set",shoppingAs:"Shopping with",cap_cost:"See cost price",cap_floors:"See all floor prices",cap_ownfloor:"See own floor price",cap_quote:"See selling quote",cap_editcar:"Edit car info (specs, highlights)",cap_editprice:"Edit prices (cost, floor, quote)",cap_photocar:"Upload car photos",cap_photoshowroom:"Upload showroom photos",cap_addcar:"Add / remove cars",cap_managestaff:"Manage sales staff",cap_sharelinks:"Generate share links",cap_leads:"View customer leads",permNote:"<b>Boss + Partner A + Partner B</b> share identical top-level access — cost, pricing, full edit. &nbsp; <b>*</b> Manager: limited to own branch. &nbsp; <b>**</b> Sales A: limited to cars they manage.",memNone:"No plan",memUpgrade:"Upgrade",memActive:"Active",ph_paste:"Smart paste: drop a full vehicle description and fields fill automatically. e.g. Toyota Camry 2021, SUV, Black, Accra, 2.5L Auto, 45,000 km, Sunroof Leather seats",bilingualPrev:"Bilingual preview (editable)",featuredCars:"Featured",browseAll:"Browse all",markFeat:"Set as Featured",unmarkFeat:"Remove from Featured",markedFeat:"Marked as featured",unmarkedFeat:"Removed from featured",noPermBranch:"This car belongs to another branch.",addShowroom:"+ Add sales point",shName:"Name",shAddr:"Address",shPhone:"Phone",shHours:"Hours",shDist:"Distance",shSave:"Save",del:"Delete",showroomsTitle:"Showrooms",shDelConfirm:"Delete showroom",unassigned:"Unassigned",shSettingsTitle:"Sales points / Showrooms",wbStatLeads:"Leads",wbStatClicks:"Link clicks",wbStatConv:"Conversion",noLeads:"No leads yet",noBookings:"No new bookings",clicksLbl:"clicks",leadsLbl:"leads",back:"Back"},
   zh:{tagline:"加纳 · 中国车出口",st_new:"新",st_contacted:"已联系",st_closed:"已成交",stAdvance:"点击推进",stUpdated:"线索状态更新为",featured:"精选",viewDetails:"查看详情",ourShowrooms:"门店网点",seeAll:"全部",allVehicles:"全部车源",
       newArrivals:"新到车源",browseAll:"浏览全部",yourConsultant:"您的销售顾问",consultRole:"销售顾问",call:"拨打",
       inventory:"在售库存",all:"全部",new:"新车",used:"二手车",highlights:"配置亮点",bookViewing:"预约看车",back:"返回",
@@ -1600,7 +1591,7 @@ const I18N = {
       pvR_partnerB:"合伙人B",pvR_partnerB_sub:"共同业主 · 同老板",
       pvS_kwame:"Kwame A. · 阿克拉",pvS_ama:"Ama K. · 特马",pvS_kwasi:"Kwasi O. · 库马西",
       prTitle:"💰 价格机制",prHint:"同一辆车，按角色最多三档价格。价格按你设置的显示货币展示。业主与两位合伙人看成本；销售看分级底价；客户看报价。",
-      priceSetByTop:"客户报价及销售底价仅由老板/业主和合伙人设定。",loginAs:"登录为",pvLogin:"登录身份（仅管理员）",pvL_boss:"老板 / 业主",pvL_partnerA:"合伙人A",pvL_partnerB:"合伙人B",boundLink:"绑定链接 · 客户只能联系你",noSwitchRole:"角色由管理员统一分配，你不能切换",noSwitchSales:"分享链接已绑定你的账号",viewingAs:"当前查看",loggedInAs:"已登录为",sortDefault:"默认",sortPriceAsc:"价格升序",sortPriceDesc:"价格降序",sortNewest:"上架最新",sortOldest:"上架最早",inStockDays:"在库",days:"天",overstock:"积压预警",settingsTitle:"设置",myContact:"我的联系方式（客户联系你）",fWhatsApp:"WhatsApp 号码",fPhone:"电话",saveContact:"保存",installTitle:"安装 App（员工）",installHint:"iOS：Safari 打开 → 分享 → 添加到主屏幕。Android：Chrome 打开 → ⋮ → 安装应用。客户只需打开分享链接，无需安装。",staffMgmt:"员工与角色（管理员）",addStaff:"+ 新增员工",staffId:"员工账号",staffName:"姓名",staffRole:"角色",staffBranch:"门店",staffWa:"WhatsApp",staffPhone:"电话",staffPin:"密码 PIN（4-8 位）",staffCreate:"创建并邀请",staffCreated:"员工已创建",contactSaved:"联系方式已保存",tierAssigned:"已分配 ",pvEditContact:"编辑我的 WhatsApp 与电话",pvLockNote:"你的分享链接已绑定本账号——客户只能联系你。角色切换由管理员统一分配。",close:"关闭",edit:"编辑",noContact:"尚未设置联系方式",shoppingAs:"正在以",cap_cost:"查看成本价",cap_floors:"查看所有底价",cap_ownfloor:"查看本人底价",cap_quote:"查看销售报价",cap_editcar:"编辑车辆信息（配置、亮点）",cap_editprice:"编辑价格（成本/底价/报价）",cap_photocar:"上传车辆照片",cap_photoshowroom:"上传门店照片",cap_addcar:"上架/下架车辆",cap_managestaff:"管理销售人员",cap_sharelinks:"生成分享链接",cap_leads:"查看客户线索",permNote:"<b>老板 + 合伙人A + 合伙人B</b> 拥有相同的最高权限——成本、定价、全面编辑。&nbsp; <b>*</b> 经理：仅限本门店。&nbsp; <b>**</b> 销售A：仅限其负责的车辆。",memNone:"尚无会员",memActive:"生效中",ph_paste:"智能粘贴：把整段车辆信息贴进来，系统自动识别并填入下方。例如：Toyota Camry 2021, SUV, Black, Accra, 2.5L Auto, 45,000 km, Sunroof Leather seats",bilingualPrev:"双语预览（可手动修改）",featuredCars:"精选车辆",browseAll:"浏览全部",markFeat:"设为精选",unmarkFeat:"取消精选",markedFeat:"已设为精选",unmarkedFeat:"已取消精选",noPermBranch:"该车辆属于其他门店",addShowroom:"+ 添加销售点",shName:"名称",shAddr:"地址",shPhone:"电话",shHours:"营业时间",shDist:"距离",shSave:"保存",del:"删除",showroomsTitle:"门店网点",shDelConfirm:"删除门店",unassigned:"未分配",shSettingsTitle:"销售点/门店管理",wbStatLeads:"线索",wbStatClicks:"链接点击",wbStatConv:"转化率",noLeads:"暂无线索",noBookings:"暂无新预约",clicksLbl:"次",leadsLbl:"条",back:"返回"},
+      priceSetByTop:"客户报价及销售底价仅由老板/业主和合伙人设定。",loginAs:"登录为",pvLogin:"登录身份（仅管理员）",pvL_boss:"老板 / 业主",pvL_partnerA:"合伙人A",pvL_partnerB:"合伙人B",boundLink:"绑定链接 · 客户只能联系你",noSwitchRole:"角色由管理员统一分配，你不能切换",noSwitchSales:"分享链接已绑定你的账号",viewingAs:"当前查看",loggedInAs:"已登录为",sortDefault:"默认",sortPriceAsc:"价格升序",sortPriceDesc:"价格降序",sortNewest:"上架最新",sortOldest:"上架最早",inStockDays:"在库",days:"天",overstock:"积压预警",settingsTitle:"设置",myContact:"我的联系方式（客户联系你）",fWhatsApp:"WhatsApp 号码",fPhone:"电话",saveContact:"保存",installTitle:"安装 App（员工）",installHint:"iOS：Safari 打开 → 分享 → 添加到主屏幕。Android：Chrome 打开 → ⋮ → 安装应用。客户只需打开分享链接，无需安装。",staffMgmt:"员工与角色（管理员）",addStaff:"+ 新增员工",staffId:"员工账号",staffName:"姓名",staffRole:"角色",staffBranch:"门店",staffWa:"WhatsApp",staffPhone:"电话",staffPin:"密码 PIN（4-8 位）",staffCreate:"创建并邀请",staffCreated:"员工已创建",contactSaved:"联系方式已保存",tierAssigned:"已分配 ",pvEditContact:"编辑我的 WhatsApp 与电话",pvLockNote:"你的分享链接已绑定本账号——客户只能联系你。角色切换由管理员统一分配。",close:"关闭",edit:"编辑",noContact:"尚未设置联系方式",shoppingAs:"正在以",cap_cost:"查看成本价",cap_floors:"查看所有底价",cap_ownfloor:"查看本人底价",cap_quote:"查看销售报价",cap_editcar:"编辑车辆信息（配置、亮点）",cap_editprice:"编辑价格（成本/底价/报价）",cap_photocar:"上传车辆照片",cap_photoshowroom:"上传门店照片",cap_addcar:"上架/下架车辆",cap_managestaff:"管理销售人员",cap_sharelinks:"生成分享链接",cap_leads:"查看客户线索",permNote:"<b>老板 + 合伙人A + 合伙人B</b> 拥有相同的最高权限——成本、定价、全面编辑。&nbsp; <b>*</b> 经理：仅限本门店。&nbsp; <b>**</b> 销售A：仅限其负责的车辆。",memNone:"尚无会员",memUpgrade:"升级会员",memActive:"生效中",ph_paste:"智能粘贴：把整段车辆信息贴进来，系统自动识别并填入下方。例如：Toyota Camry 2021, SUV, Black, Accra, 2.5L Auto, 45,000 km, Sunroof Leather seats",bilingualPrev:"双语预览（可手动修改）",featuredCars:"精选车辆",browseAll:"浏览全部",markFeat:"设为精选",unmarkFeat:"取消精选",markedFeat:"已设为精选",unmarkedFeat:"已取消精选",noPermBranch:"该车辆属于其他门店",addShowroom:"+ 添加销售点",shName:"名称",shAddr:"地址",shPhone:"电话",shHours:"营业时间",shDist:"距离",shSave:"保存",del:"删除",showroomsTitle:"门店网点",shDelConfirm:"删除门店",unassigned:"未分配",shSettingsTitle:"销售点/门店管理",wbStatLeads:"线索",wbStatClicks:"链接点击",wbStatConv:"转化率",noLeads:"暂无线索",noBookings:"暂无新预约",clicksLbl:"次",leadsLbl:"条",back:"返回"},
 };
 I18N.en.advanced="Advanced"; I18N.en.mileage="Mileage (km)"; I18N.en.priceRangeLbl="Price range (₵)"; I18N.en.color="Color"; I18N.en.year="Year"; I18N.en.advBranch="Sales point"; I18N.en.advHint="Combine multiple filters — options auto-detected from your listed cars."; I18N.en.resetFilters="Reset"; I18N.en.applyFilters="Apply"; I18N.en.allBranches="All branches"; I18N.en.allBrands="All brands"; I18N.en.needServer="Please enter your server address in Settings to load inventory.";
 I18N.zh.advanced="高级筛选"; I18N.zh.mileage="公里数 (km)"; I18N.zh.priceRangeLbl="价格区间 (₵)"; I18N.zh.color="颜色"; I18N.zh.year="年份"; I18N.zh.advBranch="销售点"; I18N.zh.advHint="可同时叠加多个条件——筛选项根据在售车辆自动识别。"; I18N.zh.resetFilters="重置"; I18N.zh.applyFilters="应用"; I18N.zh.allBranches="全部门店"; I18N.zh.allBrands="全部品牌"; I18N.zh.needServer="请在设置中填写服务器地址以加载库存。";
@@ -2022,9 +2013,10 @@ function go(id){
   const map=['scr-home','scr-showrooms','scr-me'];
   document.querySelectorAll('.tabbar .tab').forEach((t,i)=>t.classList.toggle('on', map[i]===id));
   /* Sub-pages: toggle CSS class on .phone for instant visual switch */
-  const isSub=['scr-workbench','scr-admin','scr-favorites','scr-perm','scr-detail'].includes(id);
+  const isSub=['scr-workbench','scr-admin','scr-favorites','scr-perm','scr-detail','scr-datahelp'].includes(id);
   const ph=document.getElementById('phone'); if(ph) ph.classList.toggle('subpage-mode', isSub);
-  if(isSub){ const sb=document.getElementById('subPageBar'); if(sb){ const st=document.getElementById('subPageTitle'); if(st){ const titleMap={workbenchTitle:'scr-workbench',adminTitle:'scr-admin',favTitle:'scr-favorites',permTitleShort:'scr-perm'}; const k=Object.keys(titleMap).find(k=>titleMap[k]===id); if(k) st.textContent=T(k,'Back'); else if(id==='scr-detail'){ st.textContent=CARS[curCar]?carName(CARS[curCar]):T('back','Back'); } else st.textContent=T('back','Back'); } } }
+  const ab=document.getElementById('appbar'); if(ab) ab.style.display=(id==='scr-me')?'none':'';
+  if(isSub){ const sb=document.getElementById('subPageBar'); if(sb){ const st=document.getElementById('subPageTitle'); if(st){ const titleMap={workbenchTitle:'scr-workbench',adminTitle:'scr-admin',favTitle:'scr-favorites',permTitleShort:'scr-perm',dataHelp:'scr-datahelp'}; const k=Object.keys(titleMap).find(k=>titleMap[k]===id); if(k) st.textContent=T(k,'Back'); else if(id==='scr-detail'){ st.textContent=CARS[curCar]?carName(CARS[curCar]):T('back','Back'); } else st.textContent=T('back','Back'); } } }
   else { updateAttrBanner(); }
   /* Always refresh attr banner after ANY nav — prevents stale shopping-with name */
   updateAttrBanner();
@@ -3125,7 +3117,7 @@ function closeSettings(){
   // keep subpage-mode on. Previously this removed it unconditionally, so closing any
   // bottom sheet (car actions, etc.) on a sub-page made the top bar vanish.
   const active=document.querySelector('.screen.active');
-  const isSub = !!(active && ['scr-workbench','scr-admin','scr-favorites','scr-perm','scr-detail'].includes(active.id));
+  const isSub = !!(active && ['scr-workbench','scr-admin','scr-favorites','scr-perm','scr-detail','scr-datahelp'].includes(active.id));
   const ph=document.getElementById('phone'); if(ph) ph.classList.toggle('subpage-mode', isSub);
   updateAttrBanner();
 }
@@ -3716,6 +3708,12 @@ function renderMembershipUI(){
         else if(m.isPermanent) ex.textContent=' · '+T('memManage','Manage')+' ›';
         else ex.textContent=(curLang==='zh'?T('memUntil','Valid until '):'Valid until ')+new Date(m.periodEnd).toLocaleDateString()+' · '+T('memManage','Manage')+' ›';
       }
+    } else if(SYNC.token){
+      /* free (logged-in) user: keep a single consolidated membership entry in the person card */
+      mp.style.display='inline-flex';
+      const pl=document.getElementById('mePremPlan'), ex=document.getElementById('mePremExp');
+      if(pl) pl.textContent=T('memNone','No plan');
+      if(ex) ex.textContent=' · '+T('memUpgrade','Upgrade')+' ›';
     } else mp.style.display='none';
   }
 }
