@@ -61,7 +61,7 @@
   .appbar,.attr{flex:0 0 auto;}
   .screen.active{flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:none; position:relative;}
 
-  .appbar{display:flex; align-items:center; justify-content:space-between; padding:calc(env(safe-area-inset-top,0px) + 8px) 16px 10px;}
+  .appbar{display:flex; align-items:center; justify-content:space-between; padding:calc(env(safe-area-inset-top,0px) + 8px) 16px 10px; background:var(--surface);}
   .brand{display:flex; align-items:center; gap:9px;}
   .logo{width:38px; height:38px; border-radius:8px; background:transparent; display:flex; align-items:center; justify-content:center; overflow:hidden;}.logo img{width:100%; height:100%; object-fit:contain;}.brand-foot .logo{width:30px; height:30px; border-radius:7px;}
   .brand b{font-size:15px; letter-spacing:1.5px; font-weight:800;}
@@ -1849,9 +1849,10 @@ function applyTheme(){
   if(sl) sl.classList.toggle('on', amTheme==='light');
   if(sd) sd.classList.toggle('on', amTheme==='dark');
   if(ss) ss.classList.toggle('on', amTheme==='system');
-  // Keep the SYSTEM status bar blended with the app top bar — same colour, not a fake bar.
+  // Keep the SYSTEM status bar blended with the app top bar — translucent so the app's own
+  // surface colour shows through behind the status-bar icons (one continuous bar, no seam).
   const sbm=document.getElementById('statusBarMeta');
-  if(sbm) sbm.content = (curTheme==='dark') ? 'black' : 'default';
+  if(sbm) sbm.content = (curTheme==='dark') ? 'black-translucent' : 'default';
   const tcm=document.getElementById('themeColorMeta');
   if(tcm) tcm.content = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || (curTheme==='dark'?'#0F0E0E':'#F3EFE6');
 }
