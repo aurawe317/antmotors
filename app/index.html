@@ -1231,50 +1231,13 @@
       <button class="share-copy" id="coCopyBtn" onclick="copyCoCode()" data-i18n="codeCopy" style="flex:1;">Copy code</button>
     </div>
   </details>
-  <details class="grp collapsible" id="staffGroup" style="display:none;" ontoggle="if(this.open){ try{ staffRefresh(); }catch(e){} }">
-    <summary class="lbl"><span data-i18n="staffMgmt">Staff &amp; roles (admin)</span><button class="staff-refresh" type="button" title="Refresh roster" onclick="event.stopPropagation();staffRefresh(this)">↻</button></summary>
-    <div id="staffList"></div>
-    <div id="codeCard" style="margin-top:14px;border:1px solid var(--border);border-radius:12px;padding:12px;">
-      <div class="lbl" data-i18n="codeTitle">Company invitation code</div>
-      <p class="sheet-hint" data-i18n="codeHint">Share this with partners &amp; staff. They enter or scan it to join your company and get access.</p>
-      <div style="display:flex;gap:12px;align-items:center;">
-        <div id="codeQR" style="width:96px;height:96px;background:var(--surface-2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-dim);">QR</div>
-        <div style="flex:1;">
-          <div id="codeValue" style="font-weight:700;letter-spacing:1px;font-size:18px;color:var(--gold);">—</div>
-          <button class="share-copy" style="margin-top:6px;" onclick="copyCode()" data-i18n="codeCopy">Copy code</button>
-          <button class="share-copy" style="margin-top:6px;margin-left:6px;" onclick="regenCode()" data-i18n="codeRegen">Regenerate</button>
-        </div>
-      </div>
-    </div>
-  </details>
+  <button class="me-link" id="mlStaffBtn" onclick="go('scr-staff')" style="display:none;"><span data-i18n="mlStaff">Staff &amp; roles</span><span class="ar">&rsaquo;</span></button>
   <div class="me-links" id="meLinks">
     <button class="me-link" id="mlPermBtn" onclick="go('scr-perm')" style="display:none;"><span data-i18n="mlPerm">Roles &amp; permissions</span><span class="ar">&rsaquo;</span></button>
     <button class="me-link" onclick="openPricingInfo()"><span data-i18n="mlPrice">How pricing works</span><span class="ar">&rsaquo;</span></button>
   </div>
   <div class="me-sec-h" data-i18n="secSettings">Settings</div>
-  <details class="grp collapsible" id="prefGroupD">
-    <summary class="lbl" style="margin:0;" data-i18n="prefs">Preferences</summary>
-    <div class="grp" style="margin:0;border:none;padding:0;background:none;">
-      <div class="ui-row">
-        <div><div class="lab" data-i18n="themeLbl">Theme</div><div class="sub" data-i18n="themeSub">Follows your phone's system setting by default</div></div>
-        <div class="seg3" id="themeSeg">
-          <span class="seg" id="thLight" onclick="setThemeMode('light')" data-i18n="thLight">Light</span>
-          <span class="seg" id="thDark" onclick="setThemeMode('dark')" data-i18n="thDark">Dark</span>
-          <span class="seg" id="thSys" onclick="setThemeMode('system')" data-i18n="thSystem">System</span>
-        </div>
-      </div>
-    </div>
-    <div class="grp" id="prefGroup" style="margin:0;border:none;padding:0;background:none;">
-      <div class="ui-row" id="defSalesRow" style="display:none;">
-        <div><div class="lab" data-i18n="defSalesLbl">Default salesperson</div><div class="sub" data-i18n="defSalesSub">Who the home "shopping with" defaults to</div></div>
-        <select class="pill-select" id="defSalesSel" onchange="setDefSales(this.value)"></select>
-      </div>
-      <div class="ui-row">
-        <div><div class="lab" data-i18n="curLbl">Display currency</div><div class="sub" data-i18n="curSub">Currency symbol shown on every price (no conversion)</div></div>
-        <select class="pill-select" id="curSel" onchange="setCurrency(this.value)"></select>
-      </div>
-    </div>
-  </details>
+  <button class="me-link" onclick="go('scr-prefs')"><span data-i18n="prefs">Preferences</span><span class="ar">&rsaquo;</span></button>
   <button class="me-link" onclick="go('scr-datahelp')"><span data-i18n="dataHelp">Data &amp; Help</span><span class="ar">&rsaquo;</span></button>
 
   <div class="grp" id="signOutGroup" style="display:none;text-align:center;">
@@ -1340,6 +1303,58 @@
       <p class="sheet-hint" data-i18n="cleanupHint">Deletes the "Recovered Photos" car, its storage files, and the car record. For junk from already-deleted cars. Cannot be undone.</p>
     </div>
   </details>
+      </div>
+    </section>
+
+    <section class="screen" id="scr-staff">
+      <div class="admin-head">
+        <h2 data-i18n="staffMgmt">Staff &amp; roles</h2>
+        <p data-i18n="staffMgmtDesc">Manage who can access your company, assign tiers, and share the invitation code with new partners &amp; staff.</p>
+      </div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
+        <button class="staff-refresh" type="button" title="Refresh roster" onclick="staffRefresh(this)">↻</button>
+      </div>
+      <div class="grp" style="margin:0 0 12px;">
+        <div id="staffList"></div>
+      </div>
+      <div class="grp" id="codeCard" style="margin:0 0 12px;border:1px solid var(--border);border-radius:12px;padding:12px;">
+        <div class="lbl" data-i18n="codeTitle">Company invitation code</div>
+        <p class="sheet-hint" data-i18n="codeHint">Share this with partners &amp; staff. They enter or scan it to join your company and get access.</p>
+        <div style="display:flex;gap:12px;align-items:center;">
+          <div id="codeQR" style="width:96px;height:96px;background:var(--surface-2);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:10px;color:var(--text-dim);">QR</div>
+          <div style="flex:1;">
+            <div id="codeValue" style="font-weight:700;letter-spacing:1px;font-size:18px;color:var(--gold);">—</div>
+            <button class="share-copy" style="margin-top:6px;" onclick="copyCode()" data-i18n="codeCopy">Copy code</button>
+            <button class="share-copy" style="margin-top:6px;margin-left:6px;" onclick="regenCode()" data-i18n="codeRegen">Regenerate</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="scr-prefs">
+      <div class="admin-head">
+        <h2 data-i18n="prefs">Preferences</h2>
+        <p data-i18n="prefsDesc">Theme, default salesperson and display currency.</p>
+      </div>
+      <div class="grp" style="margin:0 0 12px;">
+        <div class="ui-row">
+          <div><div class="lab" data-i18n="themeLbl">Theme</div><div class="sub" data-i18n="themeSub">Follows your phone's system setting by default</div></div>
+          <div class="seg3" id="themeSeg">
+            <span class="seg" id="thLight" onclick="setThemeMode('light')" data-i18n="thLight">Light</span>
+            <span class="seg" id="thDark" onclick="setThemeMode('dark')" data-i18n="thDark">Dark</span>
+            <span class="seg" id="thSys" onclick="setThemeMode('system')" data-i18n="thSystem">System</span>
+          </div>
+        </div>
+      </div>
+      <div class="grp" id="prefGroup" style="margin:0 0 12px;">
+        <div class="ui-row" id="defSalesRow" style="display:none;">
+          <div><div class="lab" data-i18n="defSalesLbl">Default salesperson</div><div class="sub" data-i18n="defSalesSub">Who the home "shopping with" defaults to</div></div>
+          <select class="pill-select" id="defSalesSel" onchange="setDefSales(this.value)"></select>
+        </div>
+        <div class="ui-row">
+          <div><div class="lab" data-i18n="curLbl">Display currency</div><div class="sub" data-i18n="curSub">Currency symbol shown on every price (no conversion)</div></div>
+          <select class="pill-select" id="curSel" onchange="setCurrency(this.value)"></select>
+        </div>
       </div>
     </section>
 
@@ -1520,7 +1535,7 @@ const I18N = {
       showroomsTitle:"Showrooms",noShowrooms:"No showrooms added yet",searchFilter:"Search & Filter",close:"Close",hToyota:"Toyota",hSUV:"SUV",h2021:"2021",hUnder40:"Under ₵40k",
       cond:"Condition",brand:"Brand",body:"Body",branch:"Branch",priceRange:"Price Range",applyFilters:"Apply Filters",
       navHome:"Home",navStock:"Stock",navShops:"Shops",navPerm:"Prices",navMore:"Search",
-      staffPortal:"Staff Portal",workbench:"Workbench",workbenchSub:"Leads · links · stats",addCar:"Add Car",addCarSub:"New listing entry",permTitleShort:"Role & permission matrix",permSub:"7 tiers · who sees what",
+      staffPortal:"Staff Portal",workbench:"Workbench",workbenchSub:"Leads · links · stats",addCar:"Add Car",addCarSub:"New listing entry",permTitleShort:"Role & permission matrix",permSub:"7 tiers · who sees what",staffTitle:"Staff & roles",staffMgmtDesc:"Manage who can access your company, assign tiers, and share the invitation code.",prefsTitle:"Preferences",prefsDesc:"Theme, default salesperson and display currency.",
       workbenchTitle:"Sales Workbench",wbLeads:"Customer Leads",wbLinks:"Share Links",wbNotifs:"Booking Alerts",wbMyCars:"My Cars",wbFeatOrder:"Featured Order",noFeat:"No featured cars yet. Mark a car as featured from its ⋯ menu.",wbAdmin:"Admin Actions",addNewCar:"+ Add New Car",
       wbStatLeads:"Leads",wbStatClicks:"Link clicks",wbStatConv:"Conversion",
       adminTitle:"Add New Car",fBrand:"Brand",fModel:"Model",fYear:"Year",fCond:"Condition",fBody:"Body Type",fBranch:"Branch",
@@ -1568,7 +1583,7 @@ const I18N = {
       showroomsTitle:"门店网点",noShowrooms:"尚未添加门店",searchFilter:"搜索与筛选",close:"关闭",hToyota:"丰田",hSUV:"SUV",h2021:"2021",hUnder40:"40万以下",
       cond:"车况",brand:"品牌",body:"车型",branch:"门店",priceRange:"价格区间",applyFilters:"应用筛选",
       navHome:"首页",navStock:"库存",navShops:"门店",navPerm:"价格",navMore:"搜索",
-      staffPortal:"员工入口",workbench:"工作台",workbenchSub:"线索 · 链接 · 统计",addCar:"录车",addCarSub:"新增车辆",permTitleShort:"角色与权限矩阵",permSub:"七级角色 · 权限一览",
+      staffPortal:"员工入口",workbench:"工作台",workbenchSub:"线索 · 链接 · 统计",addCar:"录车",addCarSub:"新增车辆",permTitleShort:"角色与权限矩阵",permSub:"七级角色 · 权限一览",staffTitle:"员工与角色",staffMgmtDesc:"管理可访问公司的成员、分配角色，并分享邀请码。",prefsTitle:"偏好设置",prefsDesc:"主题、默认销售员与显示货币。",
       workbenchTitle:"销售工作台",wbLeads:"客户线索",wbLinks:"分享链接",wbNotifs:"预约提醒",wbMyCars:"我的车源",wbFeatOrder:"精选排序",noFeat:"还没有精选车辆。在车辆右上角 ⋯ 菜单中设为精选即可。",wbAdmin:"管理操作",addNewCar:"+ 新增车辆",
       wbStatLeads:"线索数",wbStatClicks:"链接点击",wbStatConv:"转化率",
       adminTitle:"新增车辆",fBrand:"品牌",fModel:"型号",fYear:"年份",fCond:"车况",fBody:"车型",fBranch:"门店",
@@ -2034,11 +2049,11 @@ function go(id){
   const map=['scr-home','scr-showrooms','scr-me'];
   document.querySelectorAll('.tabbar .tab').forEach((t,i)=>t.classList.toggle('on', map[i]===id));
   /* Sub-pages: toggle CSS class on .phone for instant visual switch */
-  const isSub=['scr-workbench','scr-admin','scr-favorites','scr-perm','scr-detail','scr-datahelp'].includes(id);
+  const isSub=['scr-workbench','scr-admin','scr-favorites','scr-perm','scr-detail','scr-datahelp','scr-staff','scr-prefs'].includes(id);
   if(isSub) subBackTarget=_fromId;
   const ph=document.getElementById('phone'); if(ph) ph.classList.toggle('subpage-mode', isSub);
   const ab=document.getElementById('appbar'); if(ab) ab.style.display=(id==='scr-me')?'none':'';
-  if(isSub){ const sb=document.getElementById('subPageBar'); if(sb){ const st=document.getElementById('subPageTitle'); if(st){ const titleMap={workbenchTitle:'scr-workbench',adminTitle:'scr-admin',favTitle:'scr-favorites',permTitleShort:'scr-perm',dataHelp:'scr-datahelp'}; const k=Object.keys(titleMap).find(k=>titleMap[k]===id); if(k) st.textContent=T(k,'Back'); else if(id==='scr-detail'){ st.textContent=CARS[curCar]?carName(CARS[curCar]):T('back','Back'); } else st.textContent=T('back','Back'); } } }
+  if(isSub){ const sb=document.getElementById('subPageBar'); if(sb){ const st=document.getElementById('subPageTitle'); if(st){ const titleMap={workbenchTitle:'scr-workbench',adminTitle:'scr-admin',favTitle:'scr-favorites',permTitleShort:'scr-perm',dataHelp:'scr-datahelp',staffTitle:'scr-staff',prefsTitle:'scr-prefs'}; const k=Object.keys(titleMap).find(k=>titleMap[k]===id); if(k) st.textContent=T(k,'Back'); else if(id==='scr-detail'){ st.textContent=CARS[curCar]?carName(CARS[curCar]):T('back','Back'); } else st.textContent=T('back','Back'); } } }
   else { updateAttrBanner(); }
   /* Always refresh attr banner after ANY nav — prevents stale shopping-with name */
   updateAttrBanner();
@@ -2049,6 +2064,8 @@ function go(id){
   if(id==='scr-stock') renderStock();
   if(id==='scr-perm') renderPerm();
   if(id==='scr-favorites') renderFav();
+  if(id==='scr-staff'){ renderStaff(); renderCompanyCode(); }
+  if(id==='scr-prefs'){ applyTheme(); fillDefSalesUI(); fillCurrencyUI(); }
   if(id==='scr-me') renderSyncUI();
   document.getElementById('phone').scrollTop=0;
   const sact=document.querySelector('.screen.active'); if(sact) sact.scrollTop=0;   // 框内滚动布局：切页时重置当前屏幕滚动位置
@@ -2576,8 +2593,8 @@ function updateRoleUI(){
   if(cw) cw.style.display = curRole==='customer' ? 'none' : 'block';
   const pv=document.getElementById('previewBtn');
   if(pv) pv.style.display = curRole==='customer' ? 'none' : 'flex';
-  const staffGroup=document.getElementById('staffGroup');
-  if(staffGroup) staffGroup.style.display = isTopEmployee()?'block':'none';
+  const mlStaff=document.getElementById('mlStaffBtn');
+  if(mlStaff) mlStaff.style.display = isTopEmployee()?'flex':'none';
   const recoverGroup=document.getElementById('recoverGroup');
   if(recoverGroup) recoverGroup.style.display = isTopEmployee()?'block':'none';
   const adminCard=document.getElementById('adminCard');
@@ -3140,7 +3157,7 @@ function closeSettings(){
   // keep subpage-mode on. Previously this removed it unconditionally, so closing any
   // bottom sheet (car actions, etc.) on a sub-page made the top bar vanish.
   const active=document.querySelector('.screen.active');
-  const isSub = !!(active && ['scr-workbench','scr-admin','scr-favorites','scr-perm','scr-detail','scr-datahelp'].includes(active.id));
+  const isSub = !!(active && ['scr-workbench','scr-admin','scr-favorites','scr-perm','scr-detail','scr-datahelp','scr-staff','scr-prefs'].includes(active.id));
   const ph=document.getElementById('phone'); if(ph) ph.classList.toggle('subpage-mode', isSub);
   updateAttrBanner();
 }
@@ -3326,8 +3343,8 @@ function renderMe(){
   }
   // staff / join / company groups
   const top=(typeof isTopEmployee==='function')?isTopEmployee():false;
-  const sg=document.getElementById('staffGroup');
-  if(sg){ sg.style.display= (loggedIn && top)?'block':'none'; if(loggedIn&&top){ try{renderStaff(); renderCompanyCode();}catch(err){} } }
+  const mlStaff=document.getElementById('mlStaffBtn');
+  if(mlStaff) mlStaff.style.display=(loggedIn && top)?'flex':'none';
   const jg=document.getElementById('joinGroup');
   // "Join your company" is only for guests who received an invite code. A signed-in
   // user already belongs to a company, so it must never appear for them.
