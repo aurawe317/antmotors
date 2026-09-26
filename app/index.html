@@ -1347,10 +1347,6 @@
         </div>
       </div>
       <div class="grp" id="prefGroup" style="margin:0 0 12px;">
-        <div class="ui-row" id="defSalesRow" style="display:none;">
-          <div><div class="lab" data-i18n="defSalesLbl">Default salesperson</div><div class="sub" data-i18n="defSalesSub">Who the home "shopping with" defaults to</div></div>
-          <select class="pill-select" id="defSalesSel" onchange="setDefSales(this.value)"></select>
-        </div>
         <div class="ui-row">
           <div><div class="lab" data-i18n="curLbl">Display currency</div><div class="sub" data-i18n="curSub">Currency symbol shown on every price (no conversion)</div></div>
           <select class="pill-select" id="curSel" onchange="setCurrency(this.value)"></select>
@@ -1631,14 +1627,14 @@ I18N.zh.advanced="高级筛选"; I18N.zh.mileage="公里数 (km)"; I18N.zh.price
 
 /* settings: appearance / preferences / notifications / privacy / currency (en + zh) */
 I18N.en.appearance="Appearance"; I18N.en.themeLbl="Theme"; I18N.en.themeSub="Follows your phone's system setting by default"; I18N.en.thLight="Light"; I18N.en.thDark="Dark"; I18N.en.thSystem="System";
-I18N.en.prefs="Preferences"; I18N.en.defSalesLbl="Default salesperson"; I18N.en.defSalesSub="Who the home 'shopping with' defaults to"; I18N.en.defSalesSet="Default salesperson set";
+I18N.en.prefs="Preferences";
 I18N.en.curLbl="Display currency"; I18N.en.curSub="Currency symbol shown on every price (no conversion)";
 I18N.en.notifTitle="Notifications"; I18N.en.notifToggle="Allow notifications"; I18N.en.notifSub="Get alerted on sync, new arrivals & bookings"; I18N.en.notifClear="Clear notifications"; I18N.en.notifEmpty="No notifications yet"; I18N.en.notifOn="Notifications on"; I18N.en.notifOnSub="You'll be alerted on sync & bookings"; I18N.en.notifOff="Notifications off"; I18N.en.notifCleared="Notifications cleared";
 I18N.en.privacyTitle="Privacy & cache"; I18N.en.deviceId="Device"; I18N.en.lastSync="Last sync"; I18N.en.appVer="App version"; I18N.en.never="never"; I18N.en.clearCache="Clear local offline data"; I18N.en.clearCacheConfirm="Clear all local offline data? You can re-sync after signing in."; I18N.en.cacheCleared="Local data cleared"; I18N.en.forceLogout="Sign out / revoke session"; I18N.en.forceLogoutConfirm="Sign out and clear this session? Server tokens expire automatically.";
 I18N.en.synced="Synced"; I18N.en.signedIn="Signed in"; I18N.en.newCar="New car added"; I18N.en.bookingNotif="New booking"; I18N.en.coBioLbl="About";
 I18N.en.coContactHead="Public contact (shown on your domain)"; I18N.en.coContactHint="Customers who browse your own domain directly — not via a sales link — see this contact in the bottom bar."; I18N.en.coContactName="Contact name"; I18N.en.coContactPhone="Phone"; I18N.en.coContactWa="WhatsApp"; I18N.en.contactUs="Contact us"; I18N.en.noContact="No contact number yet"; I18N.en.premTitle="Premium tools"; I18N.en.premSub="Exclusive features unlocked with your Premium plan."; I18N.en.premDomain="Your showroom domain"; I18N.en.premQrTitle="Showroom QR code"; I18N.en.premQrHint="Permanent code for your showroom homepage. Print it or share on WhatsApp."; I18N.en.premQrDownload="Download PNG"; I18N.en.premLockedHint="Unlock with Premium to get:"; I18N.en.premPerkDomain="Your own showroom domain"; I18N.en.premPerkContact="Editable public contact on your domain"; I18N.en.premPerkQr="Permanent showroom QR code"; I18N.en.premUpgrade="Upgrade to Premium"; I18N.en.premQrErr="QR not ready";
 I18N.zh.appearance="外观"; I18N.zh.themeLbl="主题"; I18N.zh.themeSub="默认跟随手机系统设置"; I18N.zh.thLight="浅色"; I18N.zh.thDark="深色"; I18N.zh.thSystem="跟随系统";
-I18N.zh.prefs="偏好"; I18N.zh.defSalesLbl="默认销售员"; I18N.zh.defSalesSub="首页“正在浏览”默认指向谁"; I18N.zh.defSalesSet="已设置默认销售员";
+I18N.zh.prefs="偏好";
 I18N.zh.curLbl="显示货币"; I18N.zh.curSub="所有价格显示的货币符号（不做汇率换算）";
 I18N.zh.notifTitle="通知"; I18N.zh.notifToggle="允许通知"; I18N.zh.notifSub="同步、新到店、预约时提醒"; I18N.zh.notifClear="清除通知"; I18N.zh.notifEmpty="暂无通知"; I18N.zh.notifOn="通知已开启"; I18N.zh.notifOnSub="同步与预约时将收到提醒"; I18N.zh.notifOff="通知已关闭"; I18N.zh.notifCleared="通知已清除";
 I18N.zh.privacyTitle="隐私与缓存"; I18N.zh.deviceId="设备"; I18N.zh.lastSync="上次同步"; I18N.zh.appVer="应用版本"; I18N.zh.never="从未"; I18N.zh.clearCache="清除本机离线数据"; I18N.zh.clearCacheConfirm="清除本机全部离线数据？登录后可重新同步。"; I18N.zh.cacheCleared="本机数据已清除"; I18N.zh.forceLogout="退出登录 / 注销会话"; I18N.zh.forceLogoutConfirm="退出并清除本机会话？服务器令牌会自动过期。";
@@ -1905,17 +1901,6 @@ function refreshPrices(){
   const pt=document.getElementById('prTitleEl'); if(pt) pt.textContent='\uD83D\uDCB0 '+T('prTitle','Pricing model')+' \u00B7 '+CUR.symbol;
 }
 
-/* ---------- default salesperson preference ---------- */
-function applyDefSales(){ const ds=(typeof localStorage!=='undefined')?localStorage.getItem('am_defSales'):null; if(ds && isTopEmployee() && ALL_EMP[ds]){ curSales=ds; } }
-function fillDefSalesUI(){
-  const row=document.getElementById('defSalesRow'), sel=document.getElementById('defSalesSel'); if(!row||!sel) return;
-  const show=isTopEmployee();
-  row.style.display = show?'flex':'none';
-  if(!show) return;
-  sel.innerHTML=Object.keys(ALL_EMP).map(k=>`<option value="${k}" ${k===curSales?'selected':''}>${ALL_EMP[k].name} · ${salesRoleLabel(ALL_EMP[k])}</option>`).join('');
-}
-function setDefSales(v){ try{localStorage.setItem('am_defSales',v);}catch(e){} curSales=v; renderAttrBanner(); renderRolePrices(); if(typeof renderWorkbench==='function') renderWorkbench(); toast(T('defSalesSet','Default salesperson set')+': '+empOf(v).name); }
-
 /* ---------- notifications (client-side; Web Push needs backend) ---------- */
 function pushNotif(title, body, icon){
   try{ const list=JSON.parse(localStorage.getItem('am_notifs')||'[]'); list.unshift({t:title,d:body||'',ic:icon||'🔔',ts:Date.now()}); localStorage.setItem('am_notifs', JSON.stringify(list.slice(0,30))); }catch(e){}
@@ -2012,7 +1997,7 @@ function setLang(l){
   syncLangUI();
   applyI18n();
   updateAuthCTA();   // run early: refresh auth button + welcome bar BEFORE the heavier re-renders below
-  renderNotifs(); showDevices(); fillCurrencyUI(); fillDefSalesUI(); refreshPrices(); // keep new settings UI in the chosen language
+  renderNotifs(); showDevices(); fillCurrencyUI(); refreshPrices(); // keep new settings UI in the chosen language
   // Re-render every screen + open sheet so ALL dynamic (T()-driven) content
   // switches language immediately instead of staying in the previous language.
   renderHome(); renderStockFiltered(); renderShowroomList(); renderFav();
@@ -2065,7 +2050,7 @@ function go(id){
   if(id==='scr-perm') renderPerm();
   if(id==='scr-favorites') renderFav();
   if(id==='scr-staff'){ renderStaff(); renderCompanyCode(); }
-  if(id==='scr-prefs'){ applyTheme(); fillDefSalesUI(); fillCurrencyUI(); }
+  if(id==='scr-prefs'){ applyTheme(); fillCurrencyUI(); }
   if(id==='scr-me') renderSyncUI();
   document.getElementById('phone').scrollTop=0;
   const sact=document.querySelector('.screen.active'); if(sact) sact.scrollTop=0;   // 框内滚动布局：切页时重置当前屏幕滚动位置
@@ -3290,7 +3275,6 @@ function openSettings(){
   const st=document.getElementById('subPageTitle'); if(st) st.textContent=T('settingsTitle','Settings');
   applyTheme();
   fillCurrencyUI();
-  fillDefSalesUI();
   renderNotifs();
   renderShSettings();
   const nt=document.getElementById('notifToggle'); if(nt) nt.classList.toggle('on', localStorage.getItem('am_notify')==='1');
@@ -3377,7 +3361,6 @@ function renderMe(){
   // settings UI now lives on the Me tab (preferences + data & help collapsibles)
   try{ applyTheme(); }catch(err){}
   try{ fillCurrencyUI(); }catch(err){}
-  try{ fillDefSalesUI(); }catch(err){}
   try{ renderNotifs(); }catch(err){}
   try{ renderShSettings(); }catch(err){}
   try{ showDevices(); }catch(err){}
@@ -5760,7 +5743,7 @@ if(isSharedView()){
 }
 applyCustomerGuards();
 applyTheme(); syncLangUI(); applyI18n(); renderSyncUI(); updateAuthCTA();
-applyDefSales(); renderNotifs(); genDeviceId();
+renderNotifs(); genDeviceId();
 bootstrap().then(()=>{
   renderRolePrices(); updateDemoState(); syncSheet(); updateRoleUI(); renderWorkbench();
   resolveDeepLink();
