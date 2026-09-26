@@ -3683,10 +3683,10 @@ function resolveApiBase(){
   return (DEFAULT_API||'');
 }
 /* membership state (filled after sign-in / register) */
-let MEMBERSHIP={ plan:'owner', active:true, periodEnd:0, planName:'永久会员', planNameEn:'Lifetime', isPermanent:true };
+let MEMBERSHIP={ plan:'', active:true, periodEnd:0, planName:'', planNameEn:'', isPermanent:false };
 let MEMBERSHIP_SIMULATE=false;
 function saveMembership(m){ if(m) MEMBERSHIP=m; localStorage.setItem('am_membership',JSON.stringify(MEMBERSHIP)); }
-function loadMembership(){ try{ const m=JSON.parse(localStorage.getItem('am_membership')||'null'); if(m){ MEMBERSHIP=m; MEMBERSHIP.isPermanent=true; MEMBERSHIP.active=true; MEMBERSHIP.expired=false; } }catch(e){} }
+function loadMembership(){ try{ const m=JSON.parse(localStorage.getItem('am_membership')||'null'); if(m){ MEMBERSHIP=m; } }catch(e){} }
 /* refresh membership state from the server (any signed-in member) */
 async function refreshMembership(){
   if(!SYNC.token){ renderMembershipUI(); return; }
@@ -3694,10 +3694,8 @@ async function refreshMembership(){
     const r=await api('/api/membership');
     if(r && r.membership){
       const inc=r.membership;
-      // The owner company is a lifetime member. The server response may not echo isPermanent
-      // (it often returns plan:'trial'), so preserve the permanent flag instead of overwriting it.
-      if(MEMBERSHIP && MEMBERSHIP.isPermanent) inc.isPermanent=true;
-      inc.active=true; inc.expired=false;
+      // 以服务端 membershipView 返回的 isPermanent / active / expired 为准。
+      // 永久租户（如 co_a4812811971e，数据库 permanent=1）由服务端正确返回，前端无需写死。
       saveMembership(inc);
     }
   }catch(e){ /* offline: keep cached membership */ }
@@ -3943,7 +3941,7 @@ async function apiPublic(p,o){
 async function bootstrap(){
   let loaded=false, error=null;
   // 1) local cache first (instant UI)
-  loadCars(); loadListed(); loadEmps(); restoreSession(); loadShowrooms(); loadCarVideos(); loadCarPhotos(); loadShowroomPhotos(); loadMembership();
+  loadCars(); loadListed(); loadEmps(); restoreSession(); loadShowrooms(); loadCarVideos(); loadCarPhotos(); loadShowroomPhotos(); loadMembership(); try{ await refreshMembership(); }catch(e){ console.error('membership refresh failed', e); }
   // Clear any legacy base64 video cache old builds wrote into localStorage. Photos are now
   // persisted to am_car_photos (see saveCarPhotos), so we must NOT wipe that key on boot.
   try{ localStorage.removeItem('am_car_videos'); }catch(e){}
@@ -4514,6 +4512,7 @@ async function registerAccount(){
     setSyncState('pending',T('regCreating','Creating…')); renderSyncUI();
     const r=await api('/api/register',{method:'POST',body});
     SYNC.token=r.token; localStorage.setItem('am_token',r.token); localStorage.setItem('am_me',r.employee.id);
+    localStorage.removeItem('am_membership'); // 清除旧租户缓存，避免沿用上一家公司的永久会员状态
     saveSession(r.employee, r.company, r.token);
     if(r.company){ localStorage.setItem('am_company',JSON.stringify(r.company)); applyCompanyLogo(); }
     upsertEmp(r.employee.id,r.employee); curEmployee=r.employee.id; applyEmployeeScope(); curRole=empOf(curEmployee).tier;
