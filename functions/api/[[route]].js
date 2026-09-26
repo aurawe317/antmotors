@@ -5,6 +5,8 @@
  * 部署：Cloudflare Pages，构建输出目录 = app，本文件提供 /api/*。
  * 环境变量（在 Cloudflare Pages → Settings → Environment variables 设置，service_role 用 Secret）：
  *   SUPABASE_SERVICE_ROLE_KEY      = <service_role key>  （仅服务端用，切勿暴露给浏览器）
+ *   收款（可选）：ALIPAY_APP_ID / ALIPAY_PRIVATE_KEY(PKCS8 PEM) / ALIPAY_PUBLIC_KEY(支付宝公钥)
+ *                 三者都设置后 /api/subscribe 走真实支付宝 WAP 支付，否则回退到开发态模拟支付。
  *
  * ⚠️ 项目 URL 固定在下面 SUPABASE_URL_FIXED，故意不读 env.SUPABASE_URL：
  *    历史上这里曾被一个拼错的 ref（…fkvm… 而不是 …fkvk…）指向**不存在的主机**，
@@ -153,6 +155,71 @@ async function readForm(req) {
     out[decodeURIComponent(pair.slice(0, i))] = decodeURIComponent(pair.slice(i + 1));
   }
   return out;
+}
+
+/* --------------------------------------------------------------------- alipay
+ * Real Alipay WAP payment (alipay.trade.wap.pay) with RSA2 signing via Web Crypto.
+ * Secrets come from Cloudflare env vars (never hard-coded):
+ *   ALIPAY_APP_ID, ALIPAY_PRIVATE_KEY (PKCS8 PEM), ALIPAY_PUBLIC_KEY (支付宝公钥, SPKI PEM),
+ *   ALIPAY_GATEWAY (optional, default openapi.alipay.com), ALIPAY_RETURN_URL (optional).
+ * When absent we fall back to the dev simulate flow, so local/dev never breaks.
+ */
+function alipayConfig(env) {
+  const appId = (env.ALIPAY_APP_ID || '').trim();
+  const privateKey = (env.ALIPAY_PRIVATE_KEY || '').trim();
+  const publicKey = (env.ALIPAY_PUBLIC_KEY || '').trim();
+  if (!appId || !privateKey || !publicKey) return null;
+  return { appId, privateKey, publicKey, gateway: (env.ALIPAY_GATEWAY || 'https://openapi.alipay.com/gateway.do').trim() };
+}
+function pemToDer(pem) {
+  const b64 = String(pem).replace(/-----(BEGIN|END)[^-]+-----/g, '').replace(/\s+/g, '');
+  const bin = atob(b64); const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes.buffer;
+}
+function b64ToBytes(b64) {
+  const bin = atob(b64); const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes;
+}
+function alipayTs(d) {
+  const bj = new Date(d.getTime() + 8 * 3600 * 1000); // Beijing time
+  const p = (n) => String(n).padStart(2, '0');
+  return `${bj.getUTCFullYear()}-${p(bj.getUTCMonth() + 1)}-${p(bj.getUTCDate())} ${p(bj.getUTCHours())}:${p(bj.getUTCMinutes())}:${p(bj.getUTCSeconds())}`;
+}
+async function rsaSign(content, pem) {
+  const key = await crypto.subtle.importKey('pkcs8', pemToDer(pem), { name: 'RSASSA-PKCS1-v1_5' }, false, ['sign']);
+  const sig = await crypto.subtle.sign({ name: 'RSASSA-PKCS1-v1_5' }, key, new TextEncoder().encode(content));
+  let bin = ''; const u = new Uint8Array(sig);
+  for (let i = 0; i < u.length; i++) bin += String.fromCharCode(u[i]);
+  return btoa(bin);
+}
+async function rsaVerify(content, sigB64, pem) {
+  const key = await crypto.subtle.importKey('spki', pemToDer(pem), { name: 'RSASSA-PKCS1-v1_5' }, false, ['verify']);
+  return crypto.subtle.verify({ name: 'RSASSA-PKCS1-v1_5' }, key, b64ToBytes(sigB64), new TextEncoder().encode(content));
+}
+function alipaySignContent(params) {
+  return Object.keys(params)
+    .filter((k) => k !== 'sign' && k !== 'sign_type' && params[k] !== '' && params[k] != null)
+    .sort().map((k) => `${k}=${params[k]}`).join('&');
+}
+async function alipayPayUrl(cfg, biz, opts) {
+  const params = {
+    app_id: cfg.appId, method: 'alipay.trade.wap.pay', format: 'JSON', charset: 'utf-8',
+    sign_type: 'RSA2', timestamp: alipayTs(new Date()), version: '1.0',
+    notify_url: opts.notifyUrl, return_url: opts.returnUrl, biz_content: JSON.stringify(biz),
+  };
+  params.sign = await rsaSign(alipaySignContent(params), cfg.privateKey);
+  return cfg.gateway + '?' + Object.keys(params).map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`).join('&');
+}
+async function alipayVerify(form, cfg) {
+  if (!form || !form.sign) return false;
+  return rsaVerify(alipaySignContent(form), form.sign, cfg.publicKey);
+}
+function sendText(code, text, extra) {
+  return new Response(text, { status: code, headers: Object.assign({
+    'Content-Type': 'text/plain; charset=utf-8', 'Access-Control-Allow-Origin': '*', 'Cache-Control': 'no-store',
+  }, extra || {}) });
 }
 
 /* --------------------------------------------------------------------- companies */
@@ -908,10 +975,13 @@ export async function onRequest(context) {
         monthly: p.monthly, yearly: p.yearly, currency: 'CNY', fx: FX_CNY_PER_USD,
         quotas: p.quotas, features: p.features
       }));
+      const alipayOn = !!(env.ALIPAY_APP_ID && env.ALIPAY_PRIVATE_KEY && env.ALIPAY_PUBLIC_KEY);
       return send(200, {
         plans, trialDays: TRIAL_DAYS,
         graceDays: { qr: GRACE_QR_DAYS, domain: GRACE_DOMAIN_DAYS },
-        simulate: true, live: false
+        simulate: !alipayOn, live: alipayOn,
+        channels: alipayOn ? ['alipay'] : [],
+        gateway: alipayOn ? 'alipay' : null
       });
     }
 
@@ -1072,6 +1142,16 @@ export async function onRequest(context) {
       if (co && co.permanent) return send(409, { error: 'permanent', detail: 'lifetime membership — no subscription needed', simulate: true });
       const outTradeNo = 'AM' + now().toString(36).toUpperCase() + crypto.randomUUID().replace(/-/g, '').slice(0, 6).toUpperCase();
       await sb.from('orders').insert({ out_trade_no: outTradeNo, company_id: emp.companyId, plan_id: tier + '_' + cycle, amount: priceRow.cny, status: 'pending', created_at: now() });
+      const cfg = alipayConfig(env);
+      if (cfg) {
+        const payUrl = await alipayPayUrl(cfg, {
+          out_trade_no: outTradeNo,
+          total_amount: priceRow.cny.toFixed(2),
+          subject: plan.name + (cycle === 'yearly' ? ' (年付)' : ' (月付)'),
+          product_code: 'QUICK_WAP_WAY',
+        }, { notifyUrl: u.origin + '/api/alipay/notify', returnUrl: (env.ALIPAY_RETURN_URL || (u.origin + '/?alipay=return')) });
+        return send(200, { ok: true, outTradeNo, payUrl, simulate: false, live: true, channel: 'alipay', amount: priceRow.cny, amountUsd: priceRow.usd, currency: 'CNY', cycle, planId: tier, planName: plan.name });
+      }
       const payUrl = `/api/alipay/simulate?out_trade_no=${outTradeNo}`;
       return send(200, { ok: true, outTradeNo, payUrl, simulate: true, amount: priceRow.cny, amountUsd: priceRow.usd, currency: 'CNY', cycle, planId: tier, planName: plan.name });
     }
@@ -1081,6 +1161,22 @@ export async function onRequest(context) {
       if (!order) return send(404, { error: 'no_order' });
       if (order.status !== 'paid') { await sb.from('orders').update({ status: 'paid', paid_at: now() }).eq('out_trade_no', b.outTradeNo); await activatePlan(order.company_id, order.plan_id, 'SIM_' + b.outTradeNo); }
       return send(200, { ok: true });
+    }
+    /* Alipay async payment notification (webhook). Verifies the RSA2 signature, then
+     * activates the plan. Alipay expects the literal body "success"/"failure". */
+    if (p === '/api/alipay/notify' && (method === 'POST' || method === 'GET')) {
+      const cfg = alipayConfig(env);
+      if (!cfg) return sendText(500, 'failure');
+      const form = (method === 'POST') ? await readForm(req) : Object.fromEntries(u.searchParams.entries());
+      if (!(await alipayVerify(form, cfg))) return sendText(200, 'failure');
+      if (form.trade_status === 'TRADE_SUCCESS' || form.trade_status === 'TRADE_FINISHED') {
+        const { data: order } = await sb.from('orders').select('*').eq('out_trade_no', form.out_trade_no).maybeSingle();
+        if (order && order.status !== 'paid') {
+          await sb.from('orders').update({ status: 'paid', paid_at: now() }).eq('out_trade_no', form.out_trade_no);
+          await activatePlan(order.company_id, order.plan_id, form.trade_no || form.out_trade_no);
+        }
+      }
+      return sendText(200, 'success');
     }
     if (p === '/api/employees' && method === 'POST') {
       if (!isTop(emp)) return send(403, { error: 'forbidden' });
