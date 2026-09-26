@@ -1177,71 +1177,18 @@
     <button class="me-link" id="mlWorkBtn" onclick="go('scr-workbench')"><span data-i18n="mlWork">Workbench</span><span class="ar">&rsaquo;</span></button>
   </div>
   <div class="me-sec-h" data-i18n="secAdmin">Manage</div>
-  <details class="grp collapsible" id="premiumGroup" style="display:none;background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:12px;">
-    <summary class="lbl" data-i18n="premTitle">Premium tools</summary>
-    <div id="premUnlocked" style="display:none;">
-      <p class="sheet-hint" data-i18n="premSub">Exclusive features unlocked with your Premium plan.</p>
-      <div class="ui-row" style="margin:6px 0 4px;">
-        <div><div class="lab" data-i18n="premDomain">Your showroom domain</div><div class="sub" id="premDomainVal">—</div></div>
-      </div>
-      <div class="form-subhead" data-i18n="coContactHead">Public contact (shown on your domain)</div>
-      <p class="sheet-hint" data-i18n="coContactHint">Customers who browse your own domain directly — not via a sales link — see this contact in the bottom bar.</p>
-      <div class="form-row"><label data-i18n="coContactName">Contact name</label><input type="text" id="premContactName" autocomplete="off" placeholder="e.g. Kwame" /></div>
-      <div class="form-row"><label data-i18n="coContactPhone">Phone</label><input type="tel" id="premContactPhone" autocomplete="off" placeholder="233 24 000 0000" /></div>
-      <div class="form-row"><label data-i18n="coContactWa">WhatsApp</label><input type="tel" id="premContactWa" autocomplete="off" placeholder="233 24 000 0000" /></div>
-      <button class="submit" id="premContactSave" onclick="savePremiumContact()" data-i18n="coEdit" style="margin-top:6px;">Save contact</button>
-      <div class="form-subhead" data-i18n="premQrTitle" style="margin-top:14px;">Showroom QR code</div>
-      <p class="sheet-hint" data-i18n="premQrHint">Permanent code for your showroom homepage. Print it or share on WhatsApp.</p>
-      <div id="premQr" style="display:inline-block;padding:10px;background:#fff;border-radius:12px;"></div>
-      <div style="margin-top:8px;"><button class="share-copy" id="premQrDl" onclick="downloadPremQr()" data-i18n="premQrDownload">Download PNG</button></div>
-    </div>
-    <div id="premLocked" style="display:none;">
-      <div class="lbl" style="color:var(--gold);font-weight:800;" data-i18n="premTitle">Premium tools</div>
-      <p class="sheet-hint" data-i18n="premLockedHint">Unlock with Premium to get:</p>
-      <ul style="margin:6px 0 12px;padding-left:18px;font-size:13px;color:var(--text-dim);line-height:1.7;">
-        <li data-i18n="premPerkDomain">Your own showroom domain</li>
-        <li data-i18n="premPerkContact">Editable public contact on your domain</li>
-        <li data-i18n="premPerkQr">Permanent showroom QR code</li>
-      </ul>
-      <button class="submit" onclick="showMembership()" data-i18n="premUpgrade">Upgrade to Premium</button>
-    </div>
-  </details>
-  <details class="grp collapsible" id="companyGroup" style="display:none;">
-    <summary class="lbl" data-i18n="coTitle">Company</summary>
-    <div style="display:flex;gap:12px;align-items:center;margin:6px 0 10px;">
-      <img id="coLogoImg" src="" style="width:48px;height:48px;border-radius:10px;object-fit:contain;background:var(--surface-2);border:1px solid var(--border);" />
-      <div style="flex:1;min-width:0;">
-        <div id="coNameTxt" style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
-        <div id="coCodeTxt" style="color:var(--gold);font-size:13px;letter-spacing:1px;"></div>
-        <div id="coBioTxt" style="font-size:11px;color:var(--text-dim);margin-top:3px;line-height:1.4;"></div>
-        <div id="coShopping" class="co-shopping"></div>
-      </div>
-    </div>
-    <div id="coEditBox" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
-      <div class="form-row"><label data-i18n="regCoName">Company name</label><input type="text" id="coEditName" autocomplete="off" /></div>
-      <div class="form-row"><label data-i18n="coBioLbl">About</label><textarea id="coEditBio" rows="3" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none;resize:vertical;"></textarea></div>
-      <div class="form-row"><label data-i18n="regCoLogo">Company logo</label>
-        <input type="file" id="coEditLogo" accept="image/*" onchange="previewCoEditLogo()" style="padding:6px;width:100%;" />
-        <img id="coEditLogoPrev" style="display:none;max-height:46px;max-width:120px;margin-top:6px;border-radius:8px;background:var(--surface-2);" />
-      </div>
-      <button class="submit" onclick="saveCompany()" data-i18n="coSave" style="margin-top:8px;">Save company</button>
-    </div>
-    <div style="display:flex;gap:8px;margin-top:10px;">
-      <button class="share-copy" id="coEditBtn" onclick="toggleCoEdit()" data-i18n="coEdit" style="flex:1;">Edit company</button>
-      <button class="share-copy" id="coCopyBtn" onclick="copyCoCode()" data-i18n="codeCopy" style="flex:1;">Copy code</button>
-    </div>
-  </details>
-  <button class="me-link" id="mlStaffBtn" onclick="go('scr-staff')" style="display:none;"><span data-i18n="mlStaff">Staff &amp; roles</span><span class="ar">&rsaquo;</span></button>
-  <div class="me-links" id="meLinks">
+  <div class="me-links" id="adminLinks">
+    <button class="me-link" id="mlPremBtn" onclick="go('scr-premium')" style="display:none;"><span style="color:var(--gold);" data-i18n="mlPrem">Membership</span><span class="ar">&rsaquo;</span></button>
+    <button class="me-link" id="mlCoBtn" onclick="go('scr-company')" style="display:none;"><span data-i18n="mlCo">Company profile</span><span class="ar">&rsaquo;</span></button>
+    <button class="me-link" id="mlStaffBtn" onclick="go('scr-staff')" style="display:none;"><span data-i18n="mlStaff">Staff &amp; roles</span><span class="ar">&rsaquo;</span></button>
     <button class="me-link" id="mlPermBtn" onclick="go('scr-perm')" style="display:none;"><span data-i18n="mlPerm">Roles &amp; permissions</span><span class="ar">&rsaquo;</span></button>
-    <button class="me-link" onclick="openPricingInfo()"><span data-i18n="mlPrice">How pricing works</span><span class="ar">&rsaquo;</span></button>
+    <button class="me-link" id="mlPriceBtn" onclick="openPricingInfo()"><span data-i18n="mlPrice">How pricing works</span><span class="ar">&rsaquo;</span></button>
   </div>
   <div class="me-sec-h" data-i18n="secSettings">Settings</div>
-  <button class="me-link" onclick="go('scr-prefs')"><span data-i18n="prefs">Preferences</span><span class="ar">&rsaquo;</span></button>
-  <button class="me-link" onclick="go('scr-datahelp')"><span data-i18n="dataHelp">Data &amp; Help</span><span class="ar">&rsaquo;</span></button>
-
-  <div class="grp" id="signOutGroup" style="display:none;text-align:center;">
-    <button class="share-copy" style="border-color:var(--danger);color:var(--danger);padding:10px;width:100%;" onclick="syncLogout()" data-i18n="syncSignOut">Sign out</button>
+  <div class="me-links" id="settingsLinks">
+    <button class="me-link" onclick="go('scr-prefs')"><span data-i18n="prefs">Preferences</span><span class="ar">&rsaquo;</span></button>
+    <button class="me-link" onclick="go('scr-datahelp')"><span data-i18n="dataHelp">Data &amp; Help</span><span class="ar">&rsaquo;</span></button>
+    <button class="me-link" id="signOutGroup" style="display:none;" onclick="syncLogout()"><span style="color:var(--danger);" data-i18n="syncSignOut">Sign out</span><span class="ar">&rsaquo;</span></button>
   </div>
       <div class="me-ver" id="meVer">ANT MOTORS &middot; v1.0.0</div>
 
@@ -1302,7 +1249,6 @@
       <button class="submit danger" style="margin-top:8px;" onclick="cleanupRecovered()" data-i18n="cleanupBtn">Permanently delete recovered photos</button>
       <p class="sheet-hint" data-i18n="cleanupHint">Deletes the "Recovered Photos" car, its storage files, and the car record. For junk from already-deleted cars. Cannot be undone.</p>
     </div>
-  </details>
       </div>
     </section>
 
@@ -1350,6 +1296,72 @@
         <div class="ui-row">
           <div><div class="lab" data-i18n="curLbl">Display currency</div><div class="sub" data-i18n="curSub">Currency symbol shown on every price (no conversion)</div></div>
           <select class="pill-select" id="curSel" onchange="setCurrency(this.value)"></select>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="scr-premium">
+      <div class="admin-head">
+        <h2 data-i18n="premTitle">Premium tools</h2>
+        <p data-i18n="premDesc">Showroom domain, public contact and permanent QR code.</p>
+      </div>
+      <div class="grp" id="premiumGroup" style="display:none;background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:12px;">
+        <div id="premUnlocked" style="display:none;">
+          <p class="sheet-hint" data-i18n="premSub">Exclusive features unlocked with your Premium plan.</p>
+          <div class="ui-row" style="margin:6px 0 4px;">
+            <div><div class="lab" data-i18n="premDomain">Your showroom domain</div><div class="sub" id="premDomainVal">—</div></div>
+          </div>
+          <div class="form-subhead" data-i18n="coContactHead">Public contact (shown on your domain)</div>
+          <p class="sheet-hint" data-i18n="coContactHint">Customers who browse your own domain directly — not via a sales link — see this contact in the bottom bar.</p>
+          <div class="form-row"><label data-i18n="coContactName">Contact name</label><input type="text" id="premContactName" autocomplete="off" placeholder="e.g. Kwame" /></div>
+          <div class="form-row"><label data-i18n="coContactPhone">Phone</label><input type="tel" id="premContactPhone" autocomplete="off" placeholder="233 24 000 0000" /></div>
+          <div class="form-row"><label data-i18n="coContactWa">WhatsApp</label><input type="tel" id="premContactWa" autocomplete="off" placeholder="233 24 000 0000" /></div>
+          <button class="submit" id="premContactSave" onclick="savePremiumContact()" data-i18n="coEdit" style="margin-top:6px;">Save contact</button>
+          <div class="form-subhead" data-i18n="premQrTitle" style="margin-top:14px;">Showroom QR code</div>
+          <p class="sheet-hint" data-i18n="premQrHint">Permanent code for your showroom homepage. Print it or share on WhatsApp.</p>
+          <div id="premQr" style="display:inline-block;padding:10px;background:#fff;border-radius:12px;"></div>
+          <div style="margin-top:8px;"><button class="share-copy" id="premQrDl" onclick="downloadPremQr()" data-i18n="premQrDownload">Download PNG</button></div>
+        </div>
+        <div id="premLocked" style="display:none;">
+          <div class="lbl" style="color:var(--gold);font-weight:800;" data-i18n="premTitle">Premium tools</div>
+          <p class="sheet-hint" data-i18n="premLockedHint">Unlock with Premium to get:</p>
+          <ul style="margin:6px 0 12px;padding-left:18px;font-size:13px;color:var(--text-dim);line-height:1.7;">
+            <li data-i18n="premPerkDomain">Your own showroom domain</li>
+            <li data-i18n="premPerkContact">Editable public contact on your domain</li>
+            <li data-i18n="premPerkQr">Permanent showroom QR code</li>
+          </ul>
+          <button class="submit" onclick="showMembership()" data-i18n="premUpgrade">Upgrade to Premium</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="scr-company">
+      <div class="admin-head">
+        <h2 data-i18n="coTitle">Company</h2>
+        <p data-i18n="coDesc">Company name, logo, invitation code and public profile.</p>
+      </div>
+      <div class="grp" id="companyGroup" style="display:none;">
+        <div style="display:flex;gap:12px;align-items:center;margin:6px 0 10px;">
+          <img id="coLogoImg" src="" style="width:48px;height:48px;border-radius:10px;object-fit:contain;background:var(--surface-2);border:1px solid var(--border);" />
+          <div style="flex:1;min-width:0;">
+            <div id="coNameTxt" style="font-weight:700;font-size:15px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></div>
+            <div id="coCodeTxt" style="color:var(--gold);font-size:13px;letter-spacing:1px;"></div>
+            <div id="coBioTxt" style="font-size:11px;color:var(--text-dim);margin-top:3px;line-height:1.4;"></div>
+            <div id="coShopping" class="co-shopping"></div>
+          </div>
+        </div>
+        <div id="coEditBox" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+          <div class="form-row"><label data-i18n="regCoName">Company name</label><input type="text" id="coEditName" autocomplete="off" /></div>
+          <div class="form-row"><label data-i18n="coBioLbl">About</label><textarea id="coEditBio" rows="3" style="width:100%;background:var(--surface-2);border:1px solid var(--border);border-radius:8px;padding:9px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none;resize:vertical;"></textarea></div>
+          <div class="form-row"><label data-i18n="regCoLogo">Company logo</label>
+            <input type="file" id="coEditLogo" accept="image/*" onchange="previewCoEditLogo()" style="padding:6px;width:100%;" />
+            <img id="coEditLogoPrev" style="display:none;max-height:46px;max-width:120px;margin-top:6px;border-radius:8px;background:var(--surface-2);" />
+          </div>
+          <button class="submit" onclick="saveCompany()" data-i18n="coSave" style="margin-top:8px;">Save company</button>
+        </div>
+        <div style="display:flex;gap:8px;margin-top:10px;">
+          <button class="share-copy" id="coEditBtn" onclick="toggleCoEdit()" data-i18n="coEdit" style="flex:1;">Edit company</button>
+          <button class="share-copy" id="coCopyBtn" onclick="copyCoCode()" data-i18n="codeCopy" style="flex:1;">Copy code</button>
         </div>
       </div>
     </section>
@@ -1531,7 +1543,7 @@ const I18N = {
       showroomsTitle:"Showrooms",noShowrooms:"No showrooms added yet",searchFilter:"Search & Filter",close:"Close",hToyota:"Toyota",hSUV:"SUV",h2021:"2021",hUnder40:"Under ₵40k",
       cond:"Condition",brand:"Brand",body:"Body",branch:"Branch",priceRange:"Price Range",applyFilters:"Apply Filters",
       navHome:"Home",navStock:"Stock",navShops:"Shops",navPerm:"Prices",navMore:"Search",
-      staffPortal:"Staff Portal",workbench:"Workbench",workbenchSub:"Leads · links · stats",addCar:"Add Car",addCarSub:"New listing entry",permTitleShort:"Role & permission matrix",permSub:"7 tiers · who sees what",staffTitle:"Staff & roles",staffMgmtDesc:"Manage who can access your company, assign tiers, and share the invitation code.",prefsTitle:"Preferences",prefsDesc:"Theme, default salesperson and display currency.",
+      staffPortal:"Staff Portal",workbench:"Workbench",workbenchSub:"Leads · links · stats",addCar:"Add Car",addCarSub:"New listing entry",permTitleShort:"Role & permission matrix",permSub:"7 tiers · who sees what",staffTitle:"Staff & roles",staffMgmtDesc:"Manage who can access your company, assign tiers, and share the invitation code.",prefsTitle:"Preferences",prefsDesc:"Theme and display currency.",premDesc:"Showroom domain, public contact and permanent QR code.",coDesc:"Company name, logo, invitation code and public profile.",
       workbenchTitle:"Sales Workbench",wbLeads:"Customer Leads",wbLinks:"Share Links",wbNotifs:"Booking Alerts",wbMyCars:"My Cars",wbFeatOrder:"Featured Order",noFeat:"No featured cars yet. Mark a car as featured from its ⋯ menu.",wbAdmin:"Admin Actions",addNewCar:"+ Add New Car",
       wbStatLeads:"Leads",wbStatClicks:"Link clicks",wbStatConv:"Conversion",
       adminTitle:"Add New Car",fBrand:"Brand",fModel:"Model",fYear:"Year",fCond:"Condition",fBody:"Body Type",fBranch:"Branch",
@@ -1579,7 +1591,7 @@ const I18N = {
       showroomsTitle:"门店网点",noShowrooms:"尚未添加门店",searchFilter:"搜索与筛选",close:"关闭",hToyota:"丰田",hSUV:"SUV",h2021:"2021",hUnder40:"40万以下",
       cond:"车况",brand:"品牌",body:"车型",branch:"门店",priceRange:"价格区间",applyFilters:"应用筛选",
       navHome:"首页",navStock:"库存",navShops:"门店",navPerm:"价格",navMore:"搜索",
-      staffPortal:"员工入口",workbench:"工作台",workbenchSub:"线索 · 链接 · 统计",addCar:"录车",addCarSub:"新增车辆",permTitleShort:"角色与权限矩阵",permSub:"七级角色 · 权限一览",staffTitle:"员工与角色",staffMgmtDesc:"管理可访问公司的成员、分配角色，并分享邀请码。",prefsTitle:"偏好设置",prefsDesc:"主题、默认销售员与显示货币。",
+      staffPortal:"员工入口",workbench:"工作台",workbenchSub:"线索 · 链接 · 统计",addCar:"录车",addCarSub:"新增车辆",permTitleShort:"角色与权限矩阵",permSub:"七级角色 · 权限一览",staffTitle:"员工与角色",staffMgmtDesc:"管理可访问公司的成员、分配角色，并分享邀请码。",prefsTitle:"偏好设置",prefsDesc:"主题与显示货币。",premDesc:"展厅域名、公开联系方式与永久二维码。",coDesc:"公司名称、Logo、邀请码与公开资料。",
       workbenchTitle:"销售工作台",wbLeads:"客户线索",wbLinks:"分享链接",wbNotifs:"预约提醒",wbMyCars:"我的车源",wbFeatOrder:"精选排序",noFeat:"还没有精选车辆。在车辆右上角 ⋯ 菜单中设为精选即可。",wbAdmin:"管理操作",addNewCar:"+ 新增车辆",
       wbStatLeads:"线索数",wbStatClicks:"链接点击",wbStatConv:"转化率",
       adminTitle:"新增车辆",fBrand:"品牌",fModel:"型号",fYear:"年份",fCond:"车况",fBody:"车型",fBranch:"门店",
@@ -1681,11 +1693,11 @@ I18N.zh.editModeHint="编辑模式：可修改规格、亮点与门店。"; I18N
 I18N.en.bookDone="Booking Confirmed!"; I18N.en.backHome="Back to Home"; I18N.en.waOpening="Opening WhatsApp → ";
 I18N.zh.bookDone="预约成功！"; I18N.zh.backHome="返回首页"; I18N.zh.waOpening="正在打开 WhatsApp → ";
 I18N.en.navMe="Me"; I18N.en.meGuest="Guest"; I18N.en.meGuestSub="Sign in or create a company account"; I18N.en.meSignedIn="Signed in";
-I18N.en.mlFav="My favorites"; I18N.en.mlAdd="Add vehicle"; I18N.en.mlWork="Workbench"; I18N.en.mlAdmin="Car admin"; I18N.en.mlStaff="Staff & roles"; I18N.en.mlPerm="Roles & permissions"; I18N.en.mlPrice="How pricing works"; I18N.en.mlSettings="App settings"; I18N.en.soldTitle="Sold vehicles";
+I18N.en.mlFav="My favorites"; I18N.en.mlAdd="Add vehicle"; I18N.en.mlWork="Workbench"; I18N.en.mlAdmin="Car admin"; I18N.en.mlStaff="Staff & roles"; I18N.en.mlPerm="Roles & permissions"; I18N.en.mlPrice="How pricing works"; I18N.en.mlSettings="App settings"; I18N.en.mlPrem="Membership"; I18N.en.mlCo="Company profile"; I18N.en.soldTitle="Sold vehicles";
 I18N.en.tileFav="Saved"; I18N.en.tileRecent="Recent"; I18N.en.tileCars="My cars"; I18N.en.tileShops="Showrooms"; I18N.en.dataHelp="Data & Help"; I18N.en.mlSettingsHint="Settings now live on the Me tab — preferences, data & help are there.";
 I18N.en.shEdit="Edit"; I18N.en.shEditTitle="Edit sales point"; I18N.en.shPin="Map pin"; I18N.en.shPinHint="Latitude, longitude — or paste a Google Maps link. Used for turn-by-turn directions."; I18N.en.shPinBad="Could not read that location"; I18N.en.shSaved="Sales point saved"; I18N.en.shMissing="Sales point not found"; I18N.en.pinSet="Pin set"; I18N.en.pinNone="No map pin";
 I18N.zh.navMe="我的"; I18N.zh.meGuest="访客"; I18N.zh.meGuestSub="登录或创建公司账号"; I18N.zh.meSignedIn="已登录";
-I18N.zh.mlFav="我的收藏"; I18N.zh.mlAdd="添加车辆"; I18N.zh.mlWork="工作台"; I18N.zh.mlAdmin="车辆后台"; I18N.zh.mlStaff="员工与角色"; I18N.zh.mlPerm="角色权限"; I18N.zh.mlPrice="定价说明"; I18N.zh.mlSettings="应用设置"; I18N.zh.soldTitle="已售车辆";
+I18N.zh.mlFav="我的收藏"; I18N.zh.mlAdd="添加车辆"; I18N.zh.mlWork="工作台"; I18N.zh.mlAdmin="车辆后台"; I18N.zh.mlStaff="员工与角色"; I18N.zh.mlPerm="角色权限"; I18N.zh.mlPrice="定价说明"; I18N.zh.mlSettings="应用设置"; I18N.zh.mlPrem="会员权益"; I18N.zh.mlCo="公司资料"; I18N.zh.soldTitle="已售车辆";
 I18N.zh.tileFav="收藏"; I18N.zh.tileRecent="最近"; I18N.zh.tileCars="车辆"; I18N.zh.tileShops="门店"; I18N.zh.dataHelp="数据与帮助"; I18N.zh.mlSettingsHint="设置已移到「我的」页——偏好、数据与帮助都在那里。";
 I18N.zh.shEdit="编辑"; I18N.zh.shEditTitle="编辑销售点"; I18N.zh.shPin="地图定位"; I18N.zh.shPinHint="纬度, 经度 —— 或粘贴 Google Maps 链接，用于一键导航。"; I18N.zh.shPinBad="无法识别该定位"; I18N.zh.shSaved="销售点已保存"; I18N.zh.shMissing="未找到该销售点"; I18N.zh.pinSet="已设定位"; I18N.zh.pinNone="未设定位";
 /* v4.1 section headers + workspace link labels */
@@ -2034,11 +2046,11 @@ function go(id){
   const map=['scr-home','scr-showrooms','scr-me'];
   document.querySelectorAll('.tabbar .tab').forEach((t,i)=>t.classList.toggle('on', map[i]===id));
   /* Sub-pages: toggle CSS class on .phone for instant visual switch */
-  const isSub=['scr-workbench','scr-admin','scr-favorites','scr-perm','scr-detail','scr-datahelp','scr-staff','scr-prefs'].includes(id);
+  const isSub=['scr-workbench','scr-admin','scr-favorites','scr-perm','scr-detail','scr-datahelp','scr-staff','scr-prefs','scr-premium','scr-company'].includes(id);
   if(isSub) subBackTarget=_fromId;
   const ph=document.getElementById('phone'); if(ph) ph.classList.toggle('subpage-mode', isSub);
   const ab=document.getElementById('appbar'); if(ab) ab.style.display=(id==='scr-me')?'none':'';
-  if(isSub){ const sb=document.getElementById('subPageBar'); if(sb){ const st=document.getElementById('subPageTitle'); if(st){ const titleMap={workbenchTitle:'scr-workbench',adminTitle:'scr-admin',favTitle:'scr-favorites',permTitleShort:'scr-perm',dataHelp:'scr-datahelp',staffTitle:'scr-staff',prefsTitle:'scr-prefs'}; const k=Object.keys(titleMap).find(k=>titleMap[k]===id); if(k) st.textContent=T(k,'Back'); else if(id==='scr-detail'){ st.textContent=CARS[curCar]?carName(CARS[curCar]):T('back','Back'); } else st.textContent=T('back','Back'); } } }
+  if(isSub){ const sb=document.getElementById('subPageBar'); if(sb){ const st=document.getElementById('subPageTitle'); if(st){ const titleMap={workbenchTitle:'scr-workbench',adminTitle:'scr-admin',favTitle:'scr-favorites',permTitleShort:'scr-perm',dataHelp:'scr-datahelp',staffTitle:'scr-staff',prefsTitle:'scr-prefs',premTitle:'scr-premium',coTitle:'scr-company'}; const k=Object.keys(titleMap).find(k=>titleMap[k]===id); if(k) st.textContent=T(k,'Back'); else if(id==='scr-detail'){ st.textContent=CARS[curCar]?carName(CARS[curCar]):T('back','Back'); } else st.textContent=T('back','Back'); } } }
   else { updateAttrBanner(); }
   /* Always refresh attr banner after ANY nav — prevents stale shopping-with name */
   updateAttrBanner();
@@ -2051,6 +2063,7 @@ function go(id){
   if(id==='scr-favorites') renderFav();
   if(id==='scr-staff'){ renderStaff(); renderCompanyCode(); }
   if(id==='scr-prefs'){ applyTheme(); fillCurrencyUI(); }
+  if(id==='scr-premium'){ try{ showPremiumGroup(); }catch(e){} }
   if(id==='scr-me') renderSyncUI();
   document.getElementById('phone').scrollTop=0;
   const sact=document.querySelector('.screen.active'); if(sact) sact.scrollTop=0;   // 框内滚动布局：切页时重置当前屏幕滚动位置
@@ -3142,7 +3155,7 @@ function closeSettings(){
   // keep subpage-mode on. Previously this removed it unconditionally, so closing any
   // bottom sheet (car actions, etc.) on a sub-page made the top bar vanish.
   const active=document.querySelector('.screen.active');
-  const isSub = !!(active && ['scr-workbench','scr-admin','scr-favorites','scr-perm','scr-detail','scr-datahelp','scr-staff','scr-prefs'].includes(active.id));
+  const isSub = !!(active && ['scr-workbench','scr-admin','scr-favorites','scr-perm','scr-detail','scr-datahelp','scr-staff','scr-prefs','scr-premium','scr-company'].includes(active.id));
   const ph=document.getElementById('phone'); if(ph) ph.classList.toggle('subpage-mode', isSub);
   updateAttrBanner();
 }
@@ -3350,6 +3363,7 @@ function renderMe(){
       const en=document.getElementById('coEditName'); if(en) en.value=co.name||'';
     } else cg.style.display='none';
   }
+  const mlCo=document.getElementById('mlCoBtn'); if(mlCo) mlCo.style.display=(loggedIn&&co)?'flex':'none';
   // quick links gating
   const staff = loggedIn && e.tier && e.tier!=='customer';
   const w=document.getElementById('mlWorkBtn'); if(w) w.style.display=staff?'flex':'none';
@@ -4203,7 +4217,7 @@ function renderSyncUI(){
   const fg=document.getElementById('forgotBox'), rg=document.getElementById('regBox'), tg=document.getElementById('regToggle');
   const fgOpen=fg&&fg.style.display!=='none', rgOpen=rg&&rg.style.display!=='none';
   if(box) box.style.display=(SYNC.token||fgOpen||rgOpen)?'none':'block';
-  if(out) out.style.display=SYNC.token?'block':'none';
+  if(out) out.style.display=SYNC.token?'flex':'none';
   // show/hide extra sections (contact, install) based on login
   const xt=document.getElementById('settingsExtra'), xt2=document.getElementById('settingsExtra2');
   if(xt) xt.style.display=SYNC.token?'':'none';
@@ -4629,6 +4643,7 @@ function showPremiumGroup(){
   const g=document.getElementById('premiumGroup'); if(!g) return;
   // now lives on the Me tab: hide entirely for guests (nothing to unlock yet)
   const loggedIn=(typeof isSignedIn==='function')&&isSignedIn();
+  const mp=document.getElementById('mlPremBtn'); if(mp) mp.style.display=loggedIn?'flex':'none';
   if(!loggedIn){ g.style.display='none'; return; }
   const unlocked=isPremiumTenant();
   g.style.display='block';
