@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
 <meta name="theme-color" id="themeColorMeta" content="#0F0E0E" />
 <meta name="apple-mobile-web-app-capable" content="yes" />
-<meta name="apple-mobile-web-app-status-bar-style" id="statusBarMeta" content="black-translucent" />
+<meta name="apple-mobile-web-app-status-bar-style" id="statusBarMeta" content="black" />
 <meta name="apple-mobile-web-app-title" content="Antoto" />
 <link rel="manifest" href="manifest.webmanifest" />
 <link rel="apple-touch-icon" href="icon-192.png" />
@@ -1849,12 +1849,16 @@ function applyTheme(){
   if(sl) sl.classList.toggle('on', amTheme==='light');
   if(sd) sd.classList.toggle('on', amTheme==='dark');
   if(ss) ss.classList.toggle('on', amTheme==='system');
-  // Keep the SYSTEM status bar blended with the app top bar — translucent so the app's own
-  // surface colour shows through behind the status-bar icons (one continuous bar, no seam).
+  // Blend the SYSTEM status bar with the app top bar.
+  // On iOS 15+ 'black-translucent' is deprecated/ignored; only 'black' (light text) and
+  // 'default' (dark text) are honoured, and the bar becomes translucent so the app's own
+  // surface colour shows through behind the icons — one continuous bar, no seam.
+  // theme-color is pinned to the exact surface colour so Android (and iOS material) paints
+  // the bar the same colour as the app top instead of a black strip.
   const sbm=document.getElementById('statusBarMeta');
-  if(sbm) sbm.content = (curTheme==='dark') ? 'black-translucent' : 'default';
+  if(sbm) sbm.content = (curTheme==='dark') ? 'black' : 'default';
   const tcm=document.getElementById('themeColorMeta');
-  if(tcm) tcm.content = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || (curTheme==='dark'?'#0F0E0E':'#F3EFE6');
+  if(tcm) tcm.content = (curTheme==='dark') ? '#171615' : '#FFFFFF';
 }
 function setThemeMode(m){ if(m!=='light'&&m!=='dark'&&m!=='system') return; amTheme=m; try{localStorage.setItem('am_theme',m);}catch(e){} applyTheme(); }
 function toggleTheme(){ const cur=effectiveTheme(); setThemeMode(cur==='dark'?'light':'dark'); } // top icon: explicit light<->dark, overrides system
