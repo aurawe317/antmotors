@@ -801,26 +801,6 @@
         </div>
       </div>
 
-      <div id="staffPortal" style="display:none;margin-top:20px;">
-        <div class="sec-head"><h2 data-i18n="staffPortal">Staff Portal</h2></div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-          <div class="portal-card" onclick="go('scr-workbench')" style="padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;">
-            <div style="margin-bottom:6px;color:var(--gold);"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V5"/><path d="M4 19h16"/><path d="M8 15l3-4 3 3 4-6"/></svg></div>
-            <div style="font-size:13px;font-weight:700;" data-i18n="workbench">Workbench</div>
-            <div style="font-size:11px;color:var(--text-dim);" data-i18n="workbenchSub">Leads · links · stats</div>
-          </div>
-          <div class="portal-card" id="adminCard" onclick="go('scr-admin')" style="padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;">
-            <div style="margin-bottom:6px;color:var(--gold);"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 13l2-5h14l2 5v4H3z"/><circle cx="7.5" cy="17" r="1.4"/><circle cx="16.5" cy="17" r="1.4"/></svg></div>
-            <div style="font-size:13px;font-weight:700;" data-i18n="addCar">Add Car</div>
-            <div style="font-size:11px;color:var(--text-dim);" data-i18n="addCarSub">New listing entry</div>
-          </div>
-        </div>
-        <div class="portal-card" id="permCard" onclick="go('scr-perm')" style="margin-top:10px;padding:16px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;display:none;">
-          <div style="margin-bottom:6px;color:var(--gold);"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/></svg></div>
-          <div style="font-size:13px;font-weight:700;" data-i18n="permTitleShort">Role &amp; permission matrix</div>
-          <div style="font-size:11px;color:var(--text-dim);" data-i18n="permSub">7 tiers · who sees what</div>
-        </div>
-      </div>
 
       
 
@@ -950,7 +930,7 @@
       <div id="wbAdminActions" style="display:none;margin-top:18px;">
         <div class="sec-head"><h3 data-i18n="wbAdmin">Admin Actions</h3></div>
         <button class="submit" onclick="go('scr-admin')" data-i18n="addNewCar" style="margin-bottom:8px;">+ Add New Car</button>
-        <button class="submit ghost" onclick="clearWorkbenchData()" data-i18n="clearData" style="margin-bottom:8px;background:transparent;border:1px solid var(--border);color:var(--text-dim);">Clear demo data</button>
+        <button class="submit ghost" onclick="go('scr-sold')" data-i18n="soldTitle" style="margin-bottom:8px;background:transparent;border:1px solid var(--border);color:var(--text-dim);">Sold vehicles</button>
       </div>
     </section>
 
@@ -1366,6 +1346,16 @@
       </div>
     </section>
 
+    <section class="screen" id="scr-sold">
+      <div style="padding:14px 16px 40px;">
+        <div id="soldScreenList"></div>
+        <div id="soldEmpty" style="display:none;padding:50px 20px;text-align:center;color:var(--text-dim);font-size:13px;line-height:1.6;">
+          <div style="font-size:34px;margin-bottom:10px;">🚗</div>
+          <div data-i18n="soldEmpty">No sold vehicles yet. Mark a car as sold from its detail page.</div>
+        </div>
+      </div>
+    </section>
+
     <div class="tabbar">
       <button class="tab on" onclick="go('scr-home')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4 10.5L12 4l8 6.5V20a1 1 0 01-1 1h-4v-6H9v6H5a1 1 0 01-1-1v-9.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span data-i18n="navHome">Home</span></button>
       <button class="tab" onclick="go('scr-showrooms')"><svg width="22" height="22" viewBox="0 0 24 24" fill="none"><path d="M4.2 9.8V20a1 1 0 001 1h13.6a1 1 0 001-1V9.8" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M2.6 6.4L4 3h16l1.4 3.4a2.7 2.7 0 01-5.1 1.5 2.7 2.7 0 01-5.1 0 2.7 2.7 0 01-5.1 0 2.7 2.7 0 01-3.5-1.5z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg><span data-i18n="navShops">Shops</span></button>
@@ -1693,11 +1683,11 @@ I18N.zh.editModeHint="编辑模式：可修改规格、亮点与门店。"; I18N
 I18N.en.bookDone="Booking Confirmed!"; I18N.en.backHome="Back to Home"; I18N.en.waOpening="Opening WhatsApp → ";
 I18N.zh.bookDone="预约成功！"; I18N.zh.backHome="返回首页"; I18N.zh.waOpening="正在打开 WhatsApp → ";
 I18N.en.navMe="Me"; I18N.en.meGuest="Guest"; I18N.en.meGuestSub="Sign in or create a company account"; I18N.en.meSignedIn="Signed in";
-I18N.en.mlFav="My favorites"; I18N.en.mlAdd="Add vehicle"; I18N.en.mlWork="Workbench"; I18N.en.mlAdmin="Car admin"; I18N.en.mlStaff="Staff & roles"; I18N.en.mlPerm="Roles & permissions"; I18N.en.mlPrice="How pricing works"; I18N.en.mlSettings="App settings"; I18N.en.mlPrem="Membership"; I18N.en.mlCo="Company profile"; I18N.en.soldTitle="Sold vehicles";
+I18N.en.mlFav="My favorites"; I18N.en.mlAdd="Add vehicle"; I18N.en.mlWork="Workbench"; I18N.en.mlAdmin="Car admin"; I18N.en.mlStaff="Staff & roles"; I18N.en.mlPerm="Roles & permissions"; I18N.en.mlPrice="How pricing works"; I18N.en.mlSettings="App settings"; I18N.en.mlPrem="Membership"; I18N.en.mlCo="Company profile"; I18N.en.soldTitle="Sold vehicles"; I18N.en.soldEmpty="No sold vehicles yet. Mark a car as sold from its detail page.";
 I18N.en.tileFav="Saved"; I18N.en.tileRecent="Recent"; I18N.en.tileCars="My cars"; I18N.en.tileShops="Showrooms"; I18N.en.dataHelp="Data & Help"; I18N.en.mlSettingsHint="Settings now live on the Me tab — preferences, data & help are there.";
 I18N.en.shEdit="Edit"; I18N.en.shEditTitle="Edit sales point"; I18N.en.shPin="Map pin"; I18N.en.shPinHint="Latitude, longitude — or paste a Google Maps link. Used for turn-by-turn directions."; I18N.en.shPinBad="Could not read that location"; I18N.en.shSaved="Sales point saved"; I18N.en.shMissing="Sales point not found"; I18N.en.pinSet="Pin set"; I18N.en.pinNone="No map pin";
 I18N.zh.navMe="我的"; I18N.zh.meGuest="访客"; I18N.zh.meGuestSub="登录或创建公司账号"; I18N.zh.meSignedIn="已登录";
-I18N.zh.mlFav="我的收藏"; I18N.zh.mlAdd="添加车辆"; I18N.zh.mlWork="工作台"; I18N.zh.mlAdmin="车辆后台"; I18N.zh.mlStaff="员工与角色"; I18N.zh.mlPerm="角色权限"; I18N.zh.mlPrice="定价说明"; I18N.zh.mlSettings="应用设置"; I18N.zh.mlPrem="会员权益"; I18N.zh.mlCo="公司资料"; I18N.zh.soldTitle="已售车辆";
+I18N.zh.mlFav="我的收藏"; I18N.zh.mlAdd="添加车辆"; I18N.zh.mlWork="工作台"; I18N.zh.mlAdmin="车辆后台"; I18N.zh.mlStaff="员工与角色"; I18N.zh.mlPerm="角色权限"; I18N.zh.mlPrice="定价说明"; I18N.zh.mlSettings="应用设置"; I18N.zh.mlPrem="会员权益"; I18N.zh.mlCo="公司资料"; I18N.zh.soldTitle="已售车辆"; I18N.zh.soldEmpty="暂无已售车辆。在车辆详情页把它标记为已售即可。";
 I18N.zh.tileFav="收藏"; I18N.zh.tileRecent="最近"; I18N.zh.tileCars="车辆"; I18N.zh.tileShops="门店"; I18N.zh.dataHelp="数据与帮助"; I18N.zh.mlSettingsHint="设置已移到「我的」页——偏好、数据与帮助都在那里。";
 I18N.zh.shEdit="编辑"; I18N.zh.shEditTitle="编辑销售点"; I18N.zh.shPin="地图定位"; I18N.zh.shPinHint="纬度, 经度 —— 或粘贴 Google Maps 链接，用于一键导航。"; I18N.zh.shPinBad="无法识别该定位"; I18N.zh.shSaved="销售点已保存"; I18N.zh.shMissing="未找到该销售点"; I18N.zh.pinSet="已设定位"; I18N.zh.pinNone="未设定位";
 /* v4.1 section headers + workspace link labels */
@@ -2051,11 +2041,11 @@ function go(id){
   const map=['scr-home','scr-showrooms','scr-me'];
   document.querySelectorAll('.tabbar .tab').forEach((t,i)=>t.classList.toggle('on', map[i]===id));
   /* Sub-pages: toggle CSS class on .phone for instant visual switch */
-  const isSub=['scr-workbench','scr-admin','scr-favorites','scr-perm','scr-detail','scr-datahelp','scr-staff','scr-prefs','scr-premium','scr-company'].includes(id);
+  const isSub=['scr-workbench','scr-admin','scr-favorites','scr-perm','scr-detail','scr-datahelp','scr-staff','scr-prefs','scr-premium','scr-company','scr-sold'].includes(id);
   if(isSub) subBackTarget=_fromId;
   const ph=document.getElementById('phone'); if(ph) ph.classList.toggle('subpage-mode', isSub);
   const ab=document.getElementById('appbar'); if(ab) ab.style.display=(id==='scr-me')?'none':'';
-  if(isSub){ const sb=document.getElementById('subPageBar'); if(sb){ const st=document.getElementById('subPageTitle'); if(st){ const titleMap={workbenchTitle:'scr-workbench',adminTitle:'scr-admin',favTitle:'scr-favorites',permTitleShort:'scr-perm',dataHelp:'scr-datahelp',staffTitle:'scr-staff',prefsTitle:'scr-prefs',premTitle:'scr-premium',coTitle:'scr-company'}; const k=Object.keys(titleMap).find(k=>titleMap[k]===id); if(k) st.textContent=T(k,'Back'); else if(id==='scr-detail'){ st.textContent=CARS[curCar]?carName(CARS[curCar]):T('back','Back'); } else st.textContent=T('back','Back'); } } }
+  if(isSub){ const sb=document.getElementById('subPageBar'); if(sb){ const st=document.getElementById('subPageTitle'); if(st){ const titleMap={workbenchTitle:'scr-workbench',adminTitle:'scr-admin',favTitle:'scr-favorites',permTitleShort:'scr-perm',dataHelp:'scr-datahelp',staffTitle:'scr-staff',prefsTitle:'scr-prefs',premTitle:'scr-premium',coTitle:'scr-company',soldTitle:'scr-sold'}; const k=Object.keys(titleMap).find(k=>titleMap[k]===id); if(k) st.textContent=T(k,'Back'); else if(id==='scr-detail'){ st.textContent=CARS[curCar]?carName(CARS[curCar]):T('back','Back'); } else st.textContent=T('back','Back'); } } }
   else { updateAttrBanner(); }
   /* Always refresh attr banner after ANY nav — prevents stale shopping-with name */
   updateAttrBanner();
@@ -2069,6 +2059,7 @@ function go(id){
   if(id==='scr-staff'){ renderStaff(); renderCompanyCode(); }
   if(id==='scr-prefs'){ applyTheme(); fillCurrencyUI(); }
   if(id==='scr-premium'){ try{ showPremiumGroup(); }catch(e){} }
+  if(id==='scr-sold') renderSoldScreen();
   if(id==='scr-me') renderSyncUI();
   document.getElementById('phone').scrollTop=0;
   const sact=document.querySelector('.screen.active'); if(sact) sact.scrollTop=0;   // 框内滚动布局：切页时重置当前屏幕滚动位置
@@ -2586,8 +2577,6 @@ function updateRoleUI(){
   if(lbl && isTopRole()) lbl.textContent=({boss:T('upBoss','Boss: upload car photos (full access)'),partnerA:T('upPartnerA','Partner A: upload car photos (full access)'),partnerB:T('upPartnerB','Partner B: upload car photos (full access)')}[curRole]);
   if(lbl && curRole==='manager') lbl.textContent=T('upManager','Manager: upload car photos (this branch)');
   if(lbl && curRole==='salesA') lbl.textContent=T('upSalesA','Sales A: upload car photos (your cars)');
-  const portal=document.getElementById('staffPortal');
-  if(portal) portal.style.display = curRole!=='customer' ? 'block' : 'none';
   // Customer mode (client-home-v3): tabbar swapped for the bottom contact bar;
   // inline consultant card merges into that bar, so hide the standalone block.
   const phCust=document.getElementById('phone');
@@ -2600,10 +2589,6 @@ function updateRoleUI(){
   if(mlStaff) mlStaff.style.display = isTopEmployee()?'flex':'none';
   const recoverGroup=document.getElementById('recoverGroup');
   if(recoverGroup) recoverGroup.style.display = isTopEmployee()?'block':'none';
-  const adminCard=document.getElementById('adminCard');
-  if(adminCard) adminCard.style.display = canEditPrices() ? 'block' : 'none';
-  const permCard=document.getElementById('permCard');
-  if(permCard) permCard.style.display = ['boss','partnerA','partnerB','manager'].includes(curRole) ? 'block' : 'none';
   refreshDetailMenu(); // v79: frontend white-label (brandName) + global error guard + auto-update banner
   const mlAdd=document.getElementById('mlAddBtn');
   if(mlAdd) mlAdd.style.display = canEditCar() ? 'flex' : 'none';
@@ -3160,7 +3145,7 @@ function closeSettings(){
   // keep subpage-mode on. Previously this removed it unconditionally, so closing any
   // bottom sheet (car actions, etc.) on a sub-page made the top bar vanish.
   const active=document.querySelector('.screen.active');
-  const isSub = !!(active && ['scr-workbench','scr-admin','scr-favorites','scr-perm','scr-detail','scr-datahelp','scr-staff','scr-prefs','scr-premium','scr-company'].includes(active.id));
+  const isSub = !!(active && ['scr-workbench','scr-admin','scr-favorites','scr-perm','scr-detail','scr-datahelp','scr-staff','scr-prefs','scr-premium','scr-company','scr-sold'].includes(active.id));
   const ph=document.getElementById('phone'); if(ph) ph.classList.toggle('subpage-mode', isSub);
   updateAttrBanner();
 }
@@ -3395,6 +3380,22 @@ function renderSoldList(){
   const sold=Object.keys(CARS).filter(k=>CARS[k]&&CARS[k].sold);
   g.style.display = sold.length ? 'block' : 'none';
   if(!sold.length){ list.innerHTML=''; return; }
+  list.innerHTML = sold.map(k=>{
+    const c=CARS[k]; const oc=carCover(k);
+    return '<button class="me-link sold-item" onclick="openDetail(\''+k+'\')">'+
+      (oc?'<img class="sold-thumb" src="'+oc+'" alt="" />':'<span class="sold-dot"></span>')+
+      '<span class="sold-name">'+carName(c)+'</span>'+
+      (c.cond==='NEW'?'<span class="sold-tag new">NEW</span>':'<span class="sold-tag used">USED</span>')+
+      '<span class="ar">&rsaquo;</span></button>';
+  }).join('');
+}
+function renderSoldScreen(){
+  const list=document.getElementById('soldScreenList'), empty=document.getElementById('soldEmpty');
+  if(!list||!empty) return;
+  const sold=Object.keys(CARS).filter(k=>CARS[k]&&CARS[k].sold);
+  if(!sold.length){ list.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+  list.className='me-links';
   list.innerHTML = sold.map(k=>{
     const c=CARS[k]; const oc=carCover(k);
     return '<button class="me-link sold-item" onclick="openDetail(\''+k+'\')">'+
@@ -5242,53 +5243,6 @@ function cancelEdit(){
   document.getElementById('afZhPreview').style.display='none';
   ADMIN_PHOTOS=[]; renderAfThumbs(); ADMIN_VIDEOS=[]; renderAfVideoThumbs();
   go('scr-workbench');
-}
-async function clearWorkbenchData(){
-  if(!confirm(T('clearConfirm','Clear demo sample cars, leads, share links and booking alerts? This cannot be undone.'))) return;
-  MOCK_LEADS=[]; MOCK_LINKS=[]; BOOKING_NOTIFS=[];
-  renderWorkbench();
-  // Collect every sample id the server actually removed, from BOTH clear paths,
-  // then purge them from local state before syncing (so the stale local copy is
-  // never re-uploaded and the samples can't resurrect on the next refresh).
-  const clearedAll=new Set();
-  const clearedEmps=new Set();
-  const collect=function(r){ if(r&&r.clearedIds) r.clearedIds.forEach(function(id){ clearedAll.add(id); }); };
-  const collectEmp=function(r){ if(r&&r.clearedIds) r.clearedIds.forEach(function(id){ clearedEmps.add(id); }); };
-  // 1) authenticated clear (only when signed in) — clears the owner's own company
-  if(SYNC.base && SYNC.token){
-    try{ const r=await api('/api/clear-sample',{method:'POST'}); collect(r); }catch(e){ console.error('clear-sample failed',e); }
-    try{ const r=await api('/api/clear-sample-employees',{method:'POST'}); collectEmp(r); }catch(e){ console.error('clear-sample-employees failed',e); }
-  }
-  // 2) login-free clear scoped to the company this page / share link resolves to.
-  //    Runs even with no session token, so the samples are REALLY removed from the
-  //    server and a refresh cannot pull them back. Only ever deletes seed ids.
-  if(SYNC.base){
-    try{
-      let qs=''; try{ const u=new URL(location.href); qs=u.search||''; }catch(e){}
-      const r=await api('/api/clear-sample-public'+qs,{method:'POST'}); collect(r);
-    }catch(e){ console.error('clear-sample-public failed',e); }
-  }
-  [...clearedAll].forEach(function(id){
-    delete CARS[id]; delete LISTED_AT[id]; delete CAR_PHOTOS[id];
-    delete CAR_VIDEOS[id]; delete SYNC.cars[id]; delete CAR_DELETED[id];
-    SAVED_CARS.delete(id); // SAVED_CARS is a Set — use delete, not array indexOf/splice
-    const ri=RECENT_CARS.indexOf(id); if(ri>=0) RECENT_CARS.splice(ri,1);
-  });
-  // Also purge any known sample car that lives ONLY in the local cache (never
-  // pushed to the server, so the server-side clear can't reach it). Otherwise it
-  // survives and re-appears on the homepage after a refresh.
-  SAMPLE_CAR_IDS.forEach(function(id){ delete CARS[id]; delete LISTED_AT[id]; delete CAR_PHOTOS[id]; delete CAR_VIDEOS[id]; delete SYNC.cars[id]; delete CAR_DELETED[id]; });
-  saveCars(); saveListed(); saveSaved(); saveRecent();
-  jsave('am_dirty_cars',SYNC.cars); jsave('am_car_deleted',CAR_DELETED);
-  // Purge cleared sample staff from local state BEFORE syncing, otherwise a stale
-  // local copy would be re-uploaded and the demo employees would instantly reappear.
-  clearedEmps.forEach(function(id){ delete SALES[id]; delete OWNERS[id]; delete ALL_EMP[id]; delete SYNC.emps[id]; });
-  saveEmps();
-  recomputeFacets(); renderHome(); renderStock();
-  if(document.getElementById('staffList')) renderStaff();
-  SYNC.since=0; localStorage.setItem('am_since','0');
-  if(SYNC.base && SYNC.token){ try{ await syncNow(true); }catch(e){} }
-  toast(T('dataCleared','Demo data cleared'));
 }
 function submitNewCar(){
   const brand=document.getElementById('afBrand').value.trim();
