@@ -57,33 +57,61 @@ jobs:
         working-directory: native/android
         run: ./gradlew assembleDebug --no-daemon
 
-      - name: Check for keystore secret
+      - name: Check for release key password
         id: keycheck
         run: |
-          if [ -n "${KEYSTORE_B64:-}" ]; then
+          if [ -n "${KP:-}" ]; then
             echo "have_key=true" >> "$GITHUB_OUTPUT"
           else
             echo "have_key=false" >> "$GITHUB_OUTPUT"
           fi
         env:
-          KEYSTORE_B64: ${{ secrets.ANTOTO_KEYSTORE_BASE64 }}
+          KP: ${{ secrets.ANTOTO_KEY_PASSWORD }}
 
-      - name: Build release APK (unsigned — signed below if keystore provided)
+      - name: Build & sign release APK (deterministic key derived from password)
         if: steps.keycheck.outputs.have_key == 'true'
         working-directory: native/android
-        run: ./gradlew assembleRelease --no-daemon
-
-      - name: Sign release APK
-        if: steps.keycheck.outputs.have_key == 'true'
-        uses: r0adkll/sign-android-release@v1
-        with:
-          releaseDirectory: native/android/app/build/outputs/apk/release
-          signingKeyBase64: ${{ secrets.ANTOTO_KEYSTORE_BASE64 }}
-          alias: ${{ secrets.ANTOTO_KEY_ALIAS }}
-          keyStorePassword: ${{ secrets.ANTOTO_STORE_PASSWORD }}
-          keyPassword: ${{ secrets.ANTOTO_KEY_PASSWORD }}
         env:
-          BUILD_TOOL_VERSION: "36.0.0"
+          ANTOTO_KEY_PASSWORD: ${{ secrets.ANTOTO_KEY_PASSWORD }}
+          ANTOTO_KEY_ALIAS: antoto
+          ANDROID_HOME: /usr/local/lib/android/sdk
+        run: |
+          python3 -m pip install --quiet cryptography
+          ./gradlew assembleRelease --no-daemon
+          python3 - <<'PY'
+          import os, hashlib, datetime
+          import cryptography
+          from cryptography.hazmat.primitives.asymmetric import ec
+          from cryptography.hazmat.primitives import serialization, hashes
+          from cryptography.x509 import CertificateBuilder, NameOID, BasicConstraints
+          from cryptography.hazmat.primitives.serialization import pkcs12
+          pw = os.environ["ANTOTO_KEY_PASSWORD"].encode()
+          alias = os.environ.get("ANTOTO_KEY_ALIAS", "antoto")
+          n = 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632550
+          d = (int.from_bytes(hashlib.sha256(pw).digest(), 'big') % (n - 1)) + 1
+          key = ec.derive_private_key(d, ec.SECP256R1())
+          now = datetime.datetime.now(datetime.timezone.utc)
+          subject = cryptography.x509.Name([
+              cryptography.x509.NameAttribute(NameOID.COMMON_NAME, "Antoto"),
+              cryptography.x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Ant Motors"),
+          ])
+          cert = (CertificateBuilder().subject_name(subject).issuer_name(subject)
+                  .public_key(key.public_key()).serial_number(cryptography.x509.random_serial_number())
+                  .not_valid_before(now).not_valid_after(now + datetime.timedelta(days=9125))
+                  .add_extension(BasicConstraints(ca=True, path_length=None), critical=True)
+                  .sign(key, hashes.SHA256()))
+          p12 = pkcs12.serialize_key_and_certificates(alias.encode(), key, cert, None,
+                  serialization.BestAvailableEncryption(pw))
+          with open("release-key.p12", "wb") as f:
+              f.write(p12)
+          der = cert.public_bytes(serialization.Encoding.DER)
+          print("RELEASE_KEY_MD5", hashlib.md5(der).hexdigest().upper())
+          PY
+          "${ANDROID_HOME}/build-tools/36.0.0/apksigner" sign \
+            --ks release-key.p12 --ks-key-alias "${ANTOTO_KEY_ALIAS}" \
+            --ks-pass "pass:${ANTOTO_KEY_PASSWORD}" --key-pass "pass:${ANTOTO_KEY_PASSWORD}" \
+            --out app/build/outputs/apk/release/app-release.apk \
+            app/build/outputs/apk/release/app-release-unsigned.apk
 
       - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
