@@ -90,14 +90,16 @@ jobs:
           n = 0xFFFFFFFF00000000FFFFFFFFFFFFFFFFBCE6FAADA7179E84F3B9CAC2FC632550
           d = (int.from_bytes(hashlib.sha256(pw).digest(), 'big') % (n - 1)) + 1
           key = ec.derive_private_key(d, ec.SECP256R1())
-          now = datetime.datetime.now(datetime.timezone.utc)
+          serial = int.from_bytes(hashlib.sha256(b"antoto-serial" + pw).digest()[:19], 'big')
+          nb = datetime.datetime(2026, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc)
+          na = datetime.datetime(2051, 1, 1, 0, 0, 0, tzinfo=datetime.timezone.utc)
           subject = cryptography.x509.Name([
               cryptography.x509.NameAttribute(NameOID.COMMON_NAME, "Antoto"),
               cryptography.x509.NameAttribute(NameOID.ORGANIZATION_NAME, "Ant Motors"),
           ])
           cert = (CertificateBuilder().subject_name(subject).issuer_name(subject)
-                  .public_key(key.public_key()).serial_number(cryptography.x509.random_serial_number())
-                  .not_valid_before(now).not_valid_after(now + datetime.timedelta(days=9125))
+                  .public_key(key.public_key()).serial_number(serial)
+                  .not_valid_before(nb).not_valid_after(na)
                   .add_extension(BasicConstraints(ca=True, path_length=None), critical=True)
                   .sign(key, hashes.SHA256()))
           p12 = pkcs12.serialize_key_and_certificates(alias.encode(), key, cert, None,
