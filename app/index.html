@@ -1229,6 +1229,10 @@
       <div id="deviceInfo" class="sheet-hint"></div>
       <button class="submit" style="margin-top:8px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="openSyncDiag()" data-i18n="syncDiag">Sync diagnostics</button>
       <button class="submit" style="margin-top:8px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="clearLocalData()" data-i18n="clearCache">Clear local offline data</button>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">
+        <a href="/privacy.html" target="_blank" rel="noopener" class="share-copy" style="text-decoration:none;">Privacy Policy</a>
+        <a href="/terms.html" target="_blank" rel="noopener" class="share-copy" style="text-decoration:none;">Terms of Service</a>
+      </div>
     </div>
     <div class="grp" id="recoverGroup" style="margin:0 0 10px; display:none;">
       <div class="lbl" data-i18n="recoverTitle">Recover missing photos</div>
@@ -1480,6 +1484,25 @@
   <button class="share-copy" style="width:100%;margin-top:14px;" onclick="closeSheets()">Close</button>
 </div>
 
+<style>
+/* ---- Membership sheet polish (Antoto) ---- */
+#membershipSheet{ max-width:520px; margin:0 auto; }
+.mem-status{ background:linear-gradient(135deg,rgba(255,198,92,.10),rgba(255,198,92,.02)); border:1px solid var(--border); border-radius:14px; padding:14px 15px; margin-bottom:6px; }
+.ms-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
+.ms-plan{ font-size:15px; font-weight:800; }
+.ms-sub{ font-size:12px; color:var(--text-dim); margin-top:3px; max-width:62%; }
+.mem-badge{ font-size:11px; font-weight:700; padding:4px 10px; border-radius:999px; white-space:nowrap; }
+.plan-card{ transition:transform .15s ease, border-color .15s ease, box-shadow .15s ease; }
+.plan-card:hover{ transform:translateY(-2px); }
+.plan-card.rec{ border-color:var(--gold)!important; box-shadow:0 0 0 1px var(--gold), 0 12px 30px rgba(255,198,92,.14); background:linear-gradient(180deg,rgba(255,198,92,.08),var(--surface-2))!important; }
+.pc-name{ font-size:15px; font-weight:800; display:flex; align-items:center; gap:8px; }
+.pc-rec{ font-size:10px; font-weight:800; letter-spacing:.5px; color:#111; background:var(--gold); padding:2px 8px; border-radius:999px; }
+.pc-price{ margin:6px 0 2px; font-size:22px; font-weight:800; }
+.feat-chip{ display:inline-flex; align-items:center; gap:4px; background:rgba(138,240,176,.12); color:#8af0b0; border:1px solid rgba(138,240,176,.25); font-size:11px; padding:3px 9px; border-radius:999px; }
+#payBox{ border-top:1px dashed var(--border); padding-top:12px; margin-top:6px; }
+#payLink.submit{ display:block!important; text-align:center; }
+</style>
+
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1493,7 +1516,15 @@ const SAMPLE_CAR_IDS = new Set(['lc','tuc','son','cam','hil','hilux','rav4','nav
 // linger in the browser cache forever. Purged at startup so they can't resurface.
 const DEMO_SHOWROOM_NAMES = new Set(['Accra Branch','Tema Branch','Kumasi Branch']);
 const LISTED_AT={};
-function daysInStock(k){ const c=CARS[k]; if(c&&c.inStockDays!=null&&c.inStockDays!==''){ const n=parseInt(c.inStockDays); if(!isNaN(n)) return Math.max(0,n); } const d=LISTED_AT[k]; if(!d) return null; return Math.max(0,Math.floor((Date.now()-new Date(d).getTime())/86400000)); }
+function daysInStock(k){
+  const c=CARS[k];
+  // Prefer a real listing date so the count keeps growing over time.
+  if(LISTED_AT[k]) return Math.max(0,Math.floor((Date.now()-new Date(LISTED_AT[k]).getTime())/86400000));
+  // Legacy cars only carry a static day count — backdate a listing date from it once,
+  // so the number becomes dynamic from here on (persisted via saveListed()).
+  if(c&&c.inStockDays!=null&&c.inStockDays!==''){ const n=parseInt(c.inStockDays); if(!isNaN(n)){ LISTED_AT[k]=new Date(Date.now()-n*86400000).toISOString().slice(0,10); saveListed(); return Math.max(0,n); } }
+  return null;
+}
 const COLORS={};
 function carColor(k){ return (CARS[k]&&CARS[k].color)||COLORS[k]||"Other"; }
 function carYear(c){ const m=String(c.name).match(/(\d{4})/); return m?+m[1]:null; }
@@ -2554,6 +2585,10 @@ function canEditPrices(){ return isTopRole(); }
    "Kwame" flash and the Me-tab staying on Kwame.) */
 function updateAttrBanner(){
   const b=document.getElementById('attrBanner'), t=document.getElementById('attrText'); if(!b||!t) return;
+  // The "shopping with <rep>" bar is for public/customer browsing. On the owner's own
+  // "Me" screen the account info already lives in the profile card, so hide this bar there.
+  const activeScreen=document.querySelector('.screen.active');
+  if(activeScreen && activeScreen.id==='scr-me'){ b.style.display='none'; return; }
   const loggedIn=isSignedIn();
   if(!loggedIn){
     // Public / customer view. Only show "shopping with <salesperson>" when the
@@ -3863,7 +3898,7 @@ function renderPlanList(plans, simulate){
     else { const lbl = (m && !m.isPermanent && (m.onTrial || m.plan==='free')) ? T('memUpgrade','Upgrade') : T('memSubscribe','Subscribe'); btn='<button class="submit" style="margin-top:8px;" '+(canBuy?'':'disabled style="opacity:.5;"')+' onclick="subscribePlan(\''+p.id+'\',this)">'+lbl+'</button>'; }
     return '<div class="plan-card'+(rec?' rec':'')+'" style="border:1px solid var(--border);border-radius:12px;padding:14px;margin:10px 0;background:var(--surface-2);">'
       +'<div class="pc-name">'+p.nameEn+' · '+p.name+(rec?'<span class="pc-rec">'+(curLang==='zh'?'推荐':'RECOMMENDED')+'</span>':'')+'</div>'
-      +'<div style="margin:6px 0 2px;font-size:18px;font-weight:800;">'+priceStr+usdStr+'</div>'
+      +'<div class="pc-price">'+priceStr+usdStr+'</div>'
       +(quotas?'<div style="font-size:12px;color:var(--text-dim);">'+quotas+'</div>':'')
       +(feats.length?'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">'+feats.map(f=>'<span class="feat-chip">✓ '+f+'</span>').join('')+'</div>':'')
       +btn
@@ -5365,6 +5400,8 @@ function submitNewCar(){
   if(ADMIN_VIDEOS.length>0) CAR_VIDEOS[targetKey]=ADMIN_VIDEOS.slice(); else delete CAR_VIDEOS[targetKey];
   saveCarPhotos();
   if(!editingKey) LISTED_AT[targetKey]=new Date().toISOString().slice(0,10);
+  else if(!LISTED_AT[targetKey] && inStockDays!=null) LISTED_AT[targetKey]=new Date(Date.now()-inStockDays*86400000).toISOString().slice(0,10);
+  saveListed();
   saveCars(); recomputeFacets(); markCarDirty(targetKey);
   toast('Car saved: <b>'+nameEn.trim()+'</b> · 中文: <b>'+nameZh.trim()+'</b>');
   // Learn any novel Chinese→English pairs from manually-edited previews

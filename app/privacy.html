@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Privacy Policy — Antoto</title>
+<link rel="icon" href="icon.svg" type="image/svg+xml" />
+<style>
+  :root{ --bg:#0F0E0E; --surface:#171615; --surface-2:#1F1D1B; --border:#2C2A28; --text:#EDEDED; --dim:#9A9691; --gold:#E9C46A; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); color:var(--text); font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"PingFang SC","Microsoft YaHei",sans-serif; line-height:1.65; }
+  .wrap{ max-width:760px; margin:0 auto; padding:40px 20px 80px; }
+  .brand{ display:flex; align-items:center; gap:12px; margin-bottom:8px; }
+  .brand img{ width:38px; height:38px; border-radius:9px; }
+  .brand b{ font-size:20px; letter-spacing:.3px; }
+  .brand span{ color:var(--gold); }
+  h1{ font-size:26px; margin:18px 0 4px; }
+  .updated{ color:var(--dim); font-size:13px; margin-bottom:28px; }
+  h2{ font-size:18px; margin:30px 0 10px; color:var(--gold); }
+  p,li{ font-size:15px; color:#D9D6D2; }
+  ul{ padding-left:20px; }
+  li{ margin:6px 0; }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px 20px; margin:14px 0; }
+  .alt{ background:var(--surface-2); border-left:3px solid var(--gold); }
+  a{ color:var(--gold); text-decoration:none; }
+  a:hover{ text-decoration:underline; }
+  .back{ display:inline-block; margin-top:36px; color:var(--dim); font-size:14px; }
+  .foot{ margin-top:40px; padding-top:20px; border-top:1px solid var(--border); color:var(--dim); font-size:13px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="brand">
+    <img src="icon.svg" alt="Antoto" />
+    <div><b>An<span>to</span>to</b></div>
+  </div>
+  <h1>Privacy Policy</h1>
+  <div class="updated">Effective date: 2026-09-27 · Last updated: 2026-09-27</div>
+
+  <div class="card">
+    <p>Antoto ("we", "us", "the Service") is a multi-tenant inventory and sharing platform for used-car exporters. This policy explains what data we collect, how we use it, and the choices you have. By using Antoto you agree to the practices described here.</p>
+  </div>
+
+  <h2>1. Information we collect</h2>
+  <ul>
+    <li><b>Account data:</b> company name, staff names, phone numbers, and sign-in credentials you provide when you register or invite teammates.</li>
+    <li><b>Inventory data:</b> vehicle details you enter (make, model, year, mileage, price, condition) and the photos you upload.</li>
+    <li><b>Sharing data:</b> share links and QR codes you generate, including the salesperson and company attributed to each listing.</li>
+    <li><b>Device &amp; usage data:</b> a randomly generated device identifier, app version, and basic sync logs used to keep your offline data in sync.</li>
+    <li><b>Payment data:</b> if you subscribe to a paid plan, payment is processed by Alipay (or another payment provider) on the web. We do <b>not</b> store your full card or bank details.</li>
+  </ul>
+
+  <h2>2. How we use your data</h2>
+  <ul>
+    <li>Provide and maintain your company's inventory, share cards, and member features.</li>
+    <li>Keep your data in sync across devices and surface the correct company to each signed-in user.</li>
+    <li>Process subscriptions and activate the plan you purchased.</li>
+    <li>Diagnose sync issues and improve reliability.</li>
+  </ul>
+
+  <h2>3. Data storage &amp; security</h2>
+  <p>Your data is stored in a hosted Postgres database (Supabase) with row-level security isolating each company's data, served through Cloudflare. Payment credentials are handled by the payment provider, not by us. We apply access controls and encryption in transit.</p>
+
+  <h2>4. Sharing with third parties</h2>
+  <p>We do <b>not</b> sell your data. We share it only with processors strictly necessary to run the Service (hosting, payments) and only to the extent required, or when required by law. Share links you create are publicly viewable by whoever has the link — do not include information you do not wish to disclose.</p>
+
+  <h2>5. Your rights</h2>
+  <ul>
+    <li>Access and export your company's data at any time from within the app.</li>
+    <li>Request correction or deletion of your company's data; clearing your local data or contacting us triggers removal of associated server records where applicable.</li>
+    <li>Withdraw consent to non-essential processing by deleting your account data.</li>
+  </ul>
+
+  <h2>6. Children</h2>
+  <p>Antoto is a business tool not directed to children under 13. We do not knowingly collect data from children.</p>
+
+  <h2>7. Contact</h2>
+  <p>Questions about this policy: <a href="mailto:support@antoto.app">support@antoto.app</a></p>
+
+  <div class="card alt">
+    <h2 style="margin-top:0;">中文摘要</h2>
+    <p>Antoto 是面向二手车出口商的多租户库存与分享平台。我们收集您提供的公司/员工信息、车辆数据与照片、分享链接，以及用于同步的设备标识与用量日志。会员付费由支付宝等网页支付方处理，我们不存储您的完整卡号或银行信息。数据存储于带行级安全隔离的托管数据库并通过 Cloudflare 提供服务。我们不会出售您的数据，仅在运营所必需或法律要求时与处理方共享。您可随时在应用内导出或删除本公司数据。如有疑问请联系 support@antoto.app。</p>
+  </div>
+
+  <a class="back" href="./">← Back to Antoto</a>
+  <div class="foot">Antoto · Ghana Car Export Platform</div>
+</div>
+</body>
+</html>
