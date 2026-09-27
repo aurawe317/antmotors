@@ -56,13 +56,24 @@ jobs:
         working-directory: native/android
         run: ./gradlew assembleDebug --no-daemon
 
+      - name: Check for keystore secret
+        id: keycheck
+        run: |
+          if [ -n "${KEYSTORE_B64:-}" ]; then
+            echo "have_key=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "have_key=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          KEYSTORE_B64: ${{ secrets.ANTOTO_KEYSTORE_BASE64 }}
+
       - name: Build release APK (unsigned — signed below if keystore provided)
-        if: ${{ secrets.ANTOTO_KEYSTORE_BASE64 != '' }}
+        if: steps.keycheck.outputs.have_key == 'true'
         working-directory: native/android
         run: ./gradlew assembleRelease --no-daemon
 
       - name: Sign release APK
-        if: ${{ secrets.ANTOTO_KEYSTORE_BASE64 != '' }}
+        if: steps.keycheck.outputs.have_key == 'true'
         uses: r0adkll/sign-android-release@v1
         with:
           releaseDirectory: native/android/app/build/outputs/apk/release
