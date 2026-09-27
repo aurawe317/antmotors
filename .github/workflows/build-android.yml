@@ -22,11 +22,11 @@ jobs:
           cache: npm
           cache-dependency-path: native/package-lock.json
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 17
+          java-version: 21
 
       - name: Set up Android SDK
         run: |
