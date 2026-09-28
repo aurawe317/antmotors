@@ -188,14 +188,14 @@ function alipayTs(d) {
   return `${bj.getUTCFullYear()}-${p(bj.getUTCMonth() + 1)}-${p(bj.getUTCDate())} ${p(bj.getUTCHours())}:${p(bj.getUTCMinutes())}:${p(bj.getUTCSeconds())}`;
 }
 async function rsaSign(content, pem) {
-  const key = await crypto.subtle.importKey('pkcs8', pemToDer(pem), { name: 'RSASSA-PKCS1-v1_5' }, false, ['sign']);
+  const key = await crypto.subtle.importKey('pkcs8', pemToDer(pem), { name: 'RSASSA-PKCS1-v1_5', hash: { name: 'SHA-256' } }, false, ['sign']);
   const sig = await crypto.subtle.sign({ name: 'RSASSA-PKCS1-v1_5', hash: { name: 'SHA-256' } }, key, new TextEncoder().encode(content));
   let bin = ''; const u = new Uint8Array(sig);
   for (let i = 0; i < u.length; i++) bin += String.fromCharCode(u[i]);
   return btoa(bin);
 }
 async function rsaVerify(content, sigB64, pem) {
-  const key = await crypto.subtle.importKey('spki', pemToDer(pem), { name: 'RSASSA-PKCS1-v1_5' }, false, ['verify']);
+  const key = await crypto.subtle.importKey('spki', pemToDer(pem), { name: 'RSASSA-PKCS1-v1_5', hash: { name: 'SHA-256' } }, false, ['verify']);
   return crypto.subtle.verify({ name: 'RSASSA-PKCS1-v1_5', hash: { name: 'SHA-256' } }, key, b64ToBytes(sigB64), new TextEncoder().encode(content));
 }
 function alipaySignContent(params) {
