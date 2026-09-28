@@ -1060,6 +1060,18 @@ export async function onRequest(context) {
       return send(200, { ok: true, removedPhotos: removed.photos, removedVideos: removed.videos });
     }
 
+    /* ---- 免登录排障：用 Cloudflare 里的真实私钥试签一次，判定密钥是否可用（不需要登录） ---- */
+    if (p === '/api/alipay/check' && method === 'GET') {
+      const cfg = alipayConfig(env);
+      if (!cfg) return send(200, { ok: false, reason: 'missing_env', detail: 'ALIPAY_APP_ID / ALIPAY_PRIVATE_KEY / ALIPAY_PUBLIC_KEY 至少有一个未配置' });
+      try {
+        const testSign = await rsaSign('antoto-alipay-check', cfg.privateKey);
+        return send(200, { ok: true, appId: cfg.appId, signed: !!testSign, hasPublicKey: !!cfg.publicKey });
+      } catch (e) {
+        return send(200, { ok: false, reason: 'sign_failed', detail: String(e && e.message ? e.message : e) });
+      }
+    }
+
     /* ---- authenticated below ---- */
     const emp = await authOf(req);
     if (!emp) return send(401, { error: 'unauthorized' });
@@ -1161,17 +1173,6 @@ export async function onRequest(context) {
       }
       const payUrl = `/api/alipay/simulate?out_trade_no=${outTradeNo}`;
       return send(200, { ok: true, outTradeNo, payUrl, simulate: true, amount: priceRow.cny, amountUsd: priceRow.usd, currency: 'CNY', cycle, planId: tier, planName: plan.name });
-    }
-    // 仅供排障：用 Cloudflare 里配置的真实私钥试签一次，免登录即可判定密钥是否可用。
-    if (p === '/api/alipay/check' && method === 'GET') {
-      const cfg = alipayConfig(env);
-      if (!cfg) return send(200, { ok: false, reason: 'missing_env', detail: 'ALIPAY_APP_ID / ALIPAY_PRIVATE_KEY / ALIPAY_PUBLIC_KEY 至少有一个未配置' });
-      try {
-        const testSign = await rsaSign('antoto-alipay-check', cfg.privateKey);
-        return send(200, { ok: true, appId: cfg.appId, signed: !!testSign, hasPublicKey: !!cfg.publicKey });
-      } catch (e) {
-        return send(200, { ok: false, reason: 'sign_failed', detail: String(e && e.message ? e.message : e) });
-      }
     }
     if (p === '/api/alipay/simulate' && method === 'POST') {
       const b = await readBody(req);
