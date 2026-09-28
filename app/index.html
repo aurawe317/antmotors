@@ -3805,7 +3805,7 @@ function renderMembershipUI(){
         else if(m.isPermanent) ex.textContent=' · '+T('memManage','Manage')+' ›';
         else ex.textContent=(curLang==='zh'?T('memUntil','Valid until '):'Valid until ')+new Date(m.periodEnd).toLocaleDateString()+' · '+T('memManage','Manage')+' ›';
       }
-    } else if(SYNC.token){
+    } else if(SYNC.token || isSignedIn()){
       /* free (logged-in) user: keep a single consolidated membership entry in the person card */
       mp.style.display='inline-flex';
       const pl=document.getElementById('mePremPlan'), ex=document.getElementById('mePremExp');
@@ -3907,7 +3907,11 @@ function renderPlanList(plans, simulate){
   + (simulate?'<div class="sheet-hint" style="color:var(--gold);">'+T('memSimNote','DEV mode: payment is simulated — use the test button to activate.')+'</div>':'');
 }
 async function subscribePlan(planId, btn){
-  if(!SYNC.token){ toast(T('memNeedLogin','Sign in as the company owner to subscribe')); return; }
+  if(!SYNC.token){
+    if(isSignedIn()){ toast(T('sessExpired','登录已过期，请到「我的」页重新登录后再订阅')); }
+    else toast(T('memNeedLogin','Sign in as the company owner to subscribe'));
+    return;
+  }
   try{
     if(btn){ btn.disabled=true; btn.textContent=T('memPaying','Creating order…'); }
     const r=await api('/api/subscribe',{method:'POST',body:{planId, cycle:MEM_CYCLE}});
