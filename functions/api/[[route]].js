@@ -198,9 +198,10 @@ async function rsaVerify(content, sigB64, pem) {
   const key = await crypto.subtle.importKey('spki', pemToDer(pem), { name: 'RSASSA-PKCS1-v1_5', hash: { name: 'SHA-256' } }, false, ['verify']);
   return crypto.subtle.verify({ name: 'RSASSA-PKCS1-v1_5', hash: { name: 'SHA-256' } }, key, b64ToBytes(sigB64), new TextEncoder().encode(content));
 }
-function alipaySignContent(params) {
+function alipaySignContent(params, includeSignType) {
+  // 网关请求签名：sign_type 参与签名（仅排除 sign）；异步通知验签：sign 与 sign_type 都排除。
   return Object.keys(params)
-    .filter((k) => k !== 'sign' && k !== 'sign_type' && params[k] !== '' && params[k] != null)
+    .filter((k) => k !== 'sign' && (includeSignType || k !== 'sign_type') && params[k] !== '' && params[k] != null)
     .sort().map((k) => `${k}=${params[k]}`).join('&');
 }
 async function alipayPayUrl(cfg, biz, opts) {
@@ -209,7 +210,7 @@ async function alipayPayUrl(cfg, biz, opts) {
     sign_type: 'RSA2', timestamp: alipayTs(new Date()), version: '1.0',
     notify_url: opts.notifyUrl, return_url: opts.returnUrl, biz_content: JSON.stringify(biz),
   };
-  params.sign = await rsaSign(alipaySignContent(params), cfg.privateKey);
+  params.sign = await rsaSign(alipaySignContent(params, true), cfg.privateKey);
   return cfg.gateway + '?' + Object.keys(params).map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`).join('&');
 }
 async function alipayVerify(form, cfg) {
