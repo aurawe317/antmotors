@@ -3915,7 +3915,8 @@ async function subscribePlan(planId, btn){
     renderPayBox(r);
     toast(r.simulate ? T('memDevOrder','DEV order created — use the test button') : T('memPayNow','Complete payment to activate'));
   }catch(e){
-    toast(T('memPayFailed','Payment failed, please retry')+': '+e.message);
+    const detail=(e&&e.data&&e.data.detail)?(' — '+e.data.detail):'';
+    toast(T('memPayFailed','Payment failed, please retry')+': '+(e.message||'unknown')+detail);
     if(btn){ btn.disabled=false; btn.textContent=T('memSubscribe','Subscribe'); }
   }
 }

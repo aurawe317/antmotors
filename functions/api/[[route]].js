@@ -1129,7 +1129,7 @@ export async function onRequest(context) {
       return send(200, { membership: co ? membershipView(co) : null });
     }
     if (p === '/api/subscribe' && method === 'POST') {
-      if (!isTop(emp)) return send(403, { error: 'forbidden' });
+      if (!isTop(emp)) return send(403, { error: 'forbidden', detail: '只有公司 owner（boss/partner）账号可以订阅会员，请用 owner 账号登录后再试。' });
       const b = await readBody(req);
       let tier = String(b.planId || '');
       let cycle = (String(b.cycle || 'monthly') === 'yearly') ? 'yearly' : 'monthly';
@@ -1137,23 +1137,41 @@ export async function onRequest(context) {
       if (tier === 'monthly' || tier === 'yearly') { cycle = (tier === 'yearly') ? 'yearly' : 'monthly'; tier = 'standard'; }
       const plan = PLANS[tier];
       const priceRow = plan ? plan[cycle] : null;
-      if (!plan || !priceRow || priceRow.cny <= 0) return send(400, { error: 'bad_plan' });
+      if (!plan || !priceRow || priceRow.cny <= 0) return send(400, { error: 'bad_plan', detail: 'planId=' + tier + ' cycle=' + cycle });
       const co = await companyById(emp.companyId);
       if (co && co.permanent) return send(409, { error: 'permanent', detail: 'lifetime membership — no subscription needed', simulate: true });
       const outTradeNo = 'AM' + now().toString(36).toUpperCase() + crypto.randomUUID().replace(/-/g, '').slice(0, 6).toUpperCase();
-      await sb.from('orders').insert({ out_trade_no: outTradeNo, company_id: emp.companyId, plan_id: tier + '_' + cycle, amount: priceRow.cny, status: 'pending', created_at: now() });
+      const { error: insErr } = await sb.from('orders').insert({ out_trade_no: outTradeNo, company_id: emp.companyId, plan_id: tier + '_' + cycle, amount: priceRow.cny, status: 'pending', created_at: now() });
+      if (insErr) return send(500, { error: 'order_insert_failed', detail: String(insErr.message || insErr) });
       const cfg = alipayConfig(env);
       if (cfg) {
-        const payUrl = await alipayPayUrl(cfg, {
-          out_trade_no: outTradeNo,
-          total_amount: priceRow.cny.toFixed(2),
-          subject: plan.name + (cycle === 'yearly' ? ' (年付)' : ' (月付)'),
-          product_code: 'QUICK_WAP_WAY',
-        }, { notifyUrl: u.origin + '/api/alipay/notify', returnUrl: (env.ALIPAY_RETURN_URL || (u.origin + '/?alipay=return')) });
+        let payUrl;
+        try {
+          payUrl = await alipayPayUrl(cfg, {
+            out_trade_no: outTradeNo,
+            total_amount: priceRow.cny.toFixed(2),
+            subject: plan.name + (cycle === 'yearly' ? ' (年付)' : ' (月付)'),
+            product_code: 'QUICK_WAP_WAY',
+          }, { notifyUrl: u.origin + '/api/alipay/notify', returnUrl: (env.ALIPAY_RETURN_URL || (u.origin + '/?alipay=return')) });
+        } catch (e) {
+          // 绝大多数情况是 ALIPAY_PRIVATE_KEY 在 Cloudflare 里被粘错/粘串行（与支付宝公钥混淆、丢了头尾、多了空格等）。
+          return send(500, { error: 'alipay_sign_failed', detail: '支付宝私钥签名失败：' + String(e && e.message ? e.message : e) + '。请检查 Cloudflare 的 ALIPAY_PRIVATE_KEY 是否完整、且是 PKCS8 应用私钥（以 -----BEGIN PRIVATE KEY----- 开头），不要误填成支付宝公钥。' });
+        }
         return send(200, { ok: true, outTradeNo, payUrl, simulate: false, live: true, channel: 'alipay', amount: priceRow.cny, amountUsd: priceRow.usd, currency: 'CNY', cycle, planId: tier, planName: plan.name });
       }
       const payUrl = `/api/alipay/simulate?out_trade_no=${outTradeNo}`;
       return send(200, { ok: true, outTradeNo, payUrl, simulate: true, amount: priceRow.cny, amountUsd: priceRow.usd, currency: 'CNY', cycle, planId: tier, planName: plan.name });
+    }
+    // 仅供排障：用 Cloudflare 里配置的真实私钥试签一次，免登录即可判定密钥是否可用。
+    if (p === '/api/alipay/check' && method === 'GET') {
+      const cfg = alipayConfig(env);
+      if (!cfg) return send(200, { ok: false, reason: 'missing_env', detail: 'ALIPAY_APP_ID / ALIPAY_PRIVATE_KEY / ALIPAY_PUBLIC_KEY 至少有一个未配置' });
+      try {
+        const testSign = await rsaSign('antoto-alipay-check', cfg.privateKey);
+        return send(200, { ok: true, appId: cfg.appId, signed: !!testSign, hasPublicKey: !!cfg.publicKey });
+      } catch (e) {
+        return send(200, { ok: false, reason: 'sign_failed', detail: String(e && e.message ? e.message : e) });
+      }
     }
     if (p === '/api/alipay/simulate' && method === 'POST') {
       const b = await readBody(req);
