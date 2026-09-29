@@ -3947,9 +3947,35 @@ function renderPayBox(r){
   const labels={flutterwave:'Flutterwave',paystack:'Paystack',momo:'MTN MoMo',alipay:'Alipay',stripe:'Card'};
   const label=labels[channel]||T('memPayGateway','Payment gateway');
   if(chNote) chNote.textContent=T('memPayVia','Pay via ')+label+(r.amountUsd?(' · ≈ $'+r.amountUsd):'');
-  if(link){ link.href=r.payUrl||'#'; link.textContent=T('memPayNow','Complete payment'); link.style.display='inline-block'; }
+  if(link){ link.href=r.payUrl||'#'; link.textContent=T('memPayNow','Complete payment'); link.style.display='inline-block';
+    if(r.orderStr && window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Alipay){
+      link.onclick = (ev)=>{ ev.preventDefault(); payWithAlipay(r.orderStr); };
+    }
+  }
   if(qr){ if(r.payQr){ renderQR(qr, r.payQr); qr.style.display='inline-block'; } else qr.style.display='none'; }
   if(sim) sim.style.display='none';
+}
+async function payWithAlipay(orderStr){
+  const btn = document.getElementById('payLink');
+  if(btn){ btn.disabled = true; btn.textContent = T('memLaunchAlipay','Launching Alipay\u2026'); }
+  try{
+    const res = await Capacitor.Plugins.Alipay.pay({ orderStr });
+    const status = res ? String(res.resultStatus || res.result_status || '') : '';
+    if(status === '9000'){
+      await refreshMembership();
+      toast('\u2705 ' + T('memPaid','Payment received \u2014 membership activated'));
+      const pb = document.getElementById('payBox'); if(pb) pb.style.display='none';
+      renderMembershipUI();
+    } else if(status === '6001'){
+      toast(T('memPayCancelled','Payment cancelled'));
+    } else {
+      toast(T('memPayFailed','Payment failed') + ': ' + (res && res.memo ? res.memo : status));
+    }
+  }catch(e){
+    toast(T('memPayFailed','Payment failed') + ': ' + (e && e.message ? e.message : e));
+  }finally{
+    if(btn){ btn.disabled=false; btn.textContent = T('memPayNow','Complete payment'); }
+  }
 }
 async function simulatePay(){
   if(!CUR_ORDER){ return; }

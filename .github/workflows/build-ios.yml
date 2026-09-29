@@ -38,8 +38,17 @@ jobs:
         working-directory: native
         run: npx cap sync ios
 
+      - name: Inject Alipay native SDK + bridge plugin
+        run: bash scripts/integrate-alipay.sh
+
       - name: Brand iOS icon
         run: bash scripts/brand-ios.sh
+
+      - name: Install CocoaPods & integrate AlipaySDK
+        working-directory: native/ios/App
+        run: |
+          if ! command -v pod >/dev/null 2>&1; then sudo gem install cocoapods -v 1.15.2; fi
+          pod install --repo-update
 
       - name: Check for signing secrets
         id: keycheck

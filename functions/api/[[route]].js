@@ -213,6 +213,16 @@ async function alipayPayUrl(cfg, biz, opts) {
   params.sign = await rsaSign(alipaySignContent(params, true), cfg.privateKey);
   return cfg.gateway + '?' + Object.keys(params).map((k) => `${encodeURIComponent(k)}=${encodeURIComponent(params[k])}`).join('&');
 }
+async function alipayAppOrder(cfg, biz, opts) {
+  // 支付宝 APP 支付（alipay.trade.app.pay）：返回已签名的 orderStr 字符串，由原生 SDK 调起支付宝 App 付款。
+  const params = {
+    app_id: cfg.appId, method: 'alipay.trade.app.pay', format: 'JSON', charset: 'utf-8',
+    sign_type: 'RSA2', timestamp: alipayTs(new Date()), version: '1.0',
+    notify_url: opts.notifyUrl, biz_content: JSON.stringify(biz),
+  };
+  params.sign = await rsaSign(alipaySignContent(params, true), cfg.privateKey);
+  return Object.keys(params).sort().map((k) => `${k}=${params[k]}`).join('&');
+}
 async function alipayVerify(form, cfg) {
   if (!form || !form.sign) return false;
   return rsaVerify(alipaySignContent(form), form.sign, cfg.publicKey);
@@ -1170,7 +1180,15 @@ export async function onRequest(context) {
           // 绝大多数情况是 ALIPAY_PRIVATE_KEY 在 Cloudflare 里被粘错/粘串行（与支付宝公钥混淆、丢了头尾、多了空格等）。
           return send(500, { error: 'alipay_sign_failed', detail: '支付宝私钥签名失败：' + String(e && e.message ? e.message : e) + '。请检查 Cloudflare 的 ALIPAY_PRIVATE_KEY 是否完整、且是 PKCS8 应用私钥（以 -----BEGIN PRIVATE KEY----- 开头），不要误填成支付宝公钥。' });
         }
-        return send(200, { ok: true, outTradeNo, payUrl, simulate: false, live: true, channel: 'alipay', amount: priceRow.cny, amountUsd: priceRow.usd, currency: 'CNY', cycle, planId: tier, planName: plan.name });
+        let orderStr = null;
+        try {
+          orderStr = await alipayAppOrder(cfg, {
+            out_trade_no: outTradeNo,
+            total_amount: priceRow.cny.toFixed(2),
+            subject: plan.name + (cycle === 'yearly' ? ' (年付)' : ' (月付)'),
+          }, { notifyUrl: u.origin + '/api/alipay/notify' });
+        } catch (e2) { orderStr = null; }
+        return send(200, { ok: true, outTradeNo, payUrl, orderStr, simulate: false, live: true, channel: 'alipay', amount: priceRow.cny, amountUsd: priceRow.usd, currency: 'CNY', cycle, planId: tier, planName: plan.name });
       }
       const payUrl = `/api/alipay/simulate?out_trade_no=${outTradeNo}`;
       return send(200, { ok: true, outTradeNo, payUrl, simulate: true, amount: priceRow.cny, amountUsd: priceRow.usd, currency: 'CNY', cycle, planId: tier, planName: plan.name });
