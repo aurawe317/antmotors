@@ -47,8 +47,17 @@ public class AlipayPlugin extends Plugin {
             public void run() {
                 try {
                     PayTask payTask = new PayTask(activity);
-                    final String result = payTask.payV2(orderStr, true);
-                    final Map<String, String> map = parseAlipayResult(result);
+                    // alipaysdk-android:15.8.11 returns Map<String,String> from payV2;
+                    // older builds returned a raw String. Capture as Object and handle both.
+                    final Object raw = payTask.payV2(orderStr, true);
+                    final Map<String, String> map;
+                    if (raw instanceof Map) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, String> m = (Map<String, String>) raw;
+                        map = m;
+                    } else {
+                        map = parseAlipayResult(String.valueOf(raw));
+                    }
                     new Handler(Looper.getMainLooper()).post(new Runnable() {
                         @Override
                         public void run() {
