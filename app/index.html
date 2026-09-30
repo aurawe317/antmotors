@@ -1933,7 +1933,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.48';
+const APP_VER='1.2.49';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -4378,6 +4378,9 @@ async function bootstrap(){
   applyEmployeeScope(); updateRoleUI(); renderSyncUI(); applyCompanyLogo(); renderMembershipUI();
   // The company is only resolved from the hostname inside bootstrap, so the
   // customer-view guards (no login entry / no demo role switcher) must run here.
+  // Locking the verdict in also caches it for the NEXT visit, so the login bar
+  // is already hidden at first paint and can never flash again.
+  try{ markTenantHostResolved(typeof sharedCompany!=='undefined' && !!sharedCompany); }catch(e){}
   applyCustomerGuards();
 
   // shared link (has ?ref=) => ALWAYS guest/customer view, like a visitor — even on an owner's own device,
@@ -4472,15 +4475,58 @@ function isSharedView(){
   }catch(e){}
   return false;
 }
+/* ---- tenant-domain verdict, resolved SYNCHRONOUSLY ----------------------
+   Which company a hostname belongs to is only known after bootstrap() asks the
+   server (async). The old code therefore painted the gold "Login / Register"
+   banner at first paint and hid it a few hundred ms later — a visible flash on
+   EVERY refresh of a dealer's own domain (antmotors.autos …).
+   Two synchronous sources remove it:
+     a) the verdict cached from a previous visit (localStorage) — exact;
+     b) otherwise, any host that is NOT a known platform host is treated as a
+        possible tenant, and the banner stays hidden until bootstrap confirms it
+        isn't (then it appears already resolved, so it still never blinks).
+*/
+var PLATFORM_HOST_RE=/(\.pages\.dev$|\.workers\.dev$|\.antoto\.app$|^localhost$|^127\.0\.0\.1$|\.agentos-app\.net$|\.railway\.app$|\.workbuddy\.cn$|\.local$|\.test$)/i;
+var TENANT_HOST=false;          // exact verdict: this host IS a dealer's own domain
+var TENANT_HOST_PENDING=false;  // still unknown -> keep the login CTA hidden
+function isPlatformHost(){
+  try{ return !location.hostname || PLATFORM_HOST_RE.test(location.hostname); }catch(e){ return true; }
+}
+function tenantHostKey(){ try{ return 'am_hostco_'+String(location.hostname||'').toLowerCase(); }catch(e){ return null; } }
+function initTenantHostSync(){
+  if(isPlatformHost()){ TENANT_HOST=false; TENANT_HOST_PENDING=false; return; }
+  var k=tenantHostKey(), cached=null;
+  try{ cached=k?localStorage.getItem(k):null; }catch(e){}
+  if(cached==='-'){ TENANT_HOST=false; TENANT_HOST_PENDING=false; return; }
+  if(cached){
+    TENANT_HOST=true; TENANT_HOST_PENDING=false;
+    // Restore the company id we resolved last time so the first paint is already
+    // scoped correctly (bootstrap re-confirms it from the server right after).
+    if(cached!=='1' && typeof sharedCompany!=='undefined' && !sharedCompany) sharedCompany=cached;
+    return;
+  }
+  // First visit on a non-platform host: assume it is a tenant's own domain and
+  // keep staff-only UI hidden until bootstrap proves otherwise.
+  TENANT_HOST=true; TENANT_HOST_PENDING=true;
+}
+function markTenantHostResolved(isTenant){
+  TENANT_HOST=!!isTenant; TENANT_HOST_PENDING=false;
+  if(isPlatformHost()) return;   // never tag a platform host (a shared ?ref= link must not poison it)
+  var k=tenantHostKey(); if(!k) return;
+  try{
+    localStorage.setItem(k, isTenant ? ((typeof sharedCompany!=='undefined'&&sharedCompany)?String(sharedCompany):'1') : '-');
+  }catch(e){}
+}
 // A tenant's own domain (e.g. antmotors.autos) is 100% customer-facing — staff
 // use the native app or the platform domain (antoto.app). So never surface any
 // sign-in / register entry there. The company is only known AFTER bootstrap
 // resolves it from the hostname, so these guards are re-applied post-bootstrap.
 function onTenantDomain(){
+  if(TENANT_HOST) return !isSignedIn();
   return (typeof sharedCompany!=='undefined' && !!sharedCompany) && !isSignedIn();
 }
 function applyCustomerGuards(){
-  if(isSharedView() || onTenantDomain()){
+  if(isSharedView() || onTenantDomain() || TENANT_HOST_PENDING){
     try{ const dm=document.querySelector('.demo'); if(dm) dm.style.display='none'; }catch(e){}
   }
   try{ updateAuthCTA(); }catch(e){}
@@ -4489,7 +4535,9 @@ function updateAuthCTA(){
   const loggedIn=isSignedIn();
   const shared=isSharedView(); // customer opened a shared car link -> never show a register prompt
   // Tenant domains are customer-only: no "Login / Register" bar there either.
-  const wb=document.getElementById('welcomeBar'); if(wb) wb.style.display=(loggedIn||shared||onTenantDomain())?'none':'block';
+  // TENANT_HOST_PENDING: host not identified yet -> stay hidden, otherwise the
+  // banner would paint now and disappear after bootstrap (the refresh flash).
+  const wb=document.getElementById('welcomeBar'); if(wb) wb.style.display=(loggedIn||shared||onTenantDomain()||TENANT_HOST_PENDING)?'none':'block';
   // refresh welcome bar language
   const wt=document.getElementById('welcomeTitle'); if(wt) wt.textContent=T('welcomeTo','Welcome to')+' '+brandName();
   const wd=document.getElementById('welcomeDesc'); if(wd) wd.textContent=T('welcomeDesc','New here? Create your company account to start adding cars, managing your team and viewing membership info. Tap the settings button above or the button below.');
@@ -5934,6 +5982,7 @@ parseDeepLink();
 if(isSharedView()){
   curLang='en';   // shared car pages always open in English; never follow the viewer's saved/device language
 }
+initTenantHostSync();   // synchronous: decide NOW whether this hostname is a dealer's own domain
 applyCustomerGuards();
 applyTheme(); syncLangUI(); applyI18n(); renderSyncUI(); updateAuthCTA();
 renderNotifs(); genDeviceId();
