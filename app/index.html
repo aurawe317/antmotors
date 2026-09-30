@@ -323,15 +323,15 @@
   .sticky .book{flex:1; background:var(--gold); color:#0F0E0E; border:none; font-weight:800; font-size:15px; padding:14px; border-radius:var(--r-btn); cursor:pointer; height:48px;}
   .sticky .wa{flex:0 0 auto; width:48px; height:48px; background:transparent; color:var(--wa); border:1px solid var(--wa); border-radius:var(--r-btn); display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:18px;}
 
-  .form{padding:8px 16px 0;}
-  .field{margin-bottom:14px;}
-  .field label{font-size:12px; font-weight:700; color:var(--text-dim); display:block; margin-bottom:6px; letter-spacing:.3px;}
-  .field input,.field select,.field textarea{width:100%; background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:12px 13px; color:var(--text); font-size:13px; font-family:inherit; outline:none;}
-  .field textarea{resize:vertical; min-height:64px;}
+  .form{padding:8px var(--page-pad) 0;}
+  .field{margin-bottom:var(--gap-md);}
+  .field label{font-size:12px; font-weight:600; color:var(--text-dim); display:block; margin-bottom:6px; letter-spacing:.3px;}
+  .field input,.field select{width:100%; height:var(--row-h); background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-btn); padding:0 12px; color:var(--text); font-size:14px; font-family:inherit; outline:none;}
+  .field textarea{width:100%; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-btn); padding:10px 12px; color:var(--text); font-size:14px; font-family:inherit; outline:none; resize:vertical; min-height:64px;}
   .field input:focus,.field select:focus,.field textarea:focus{border-color:var(--gold-line);}
   .submit{width:100%; background:var(--gold); color:#0F0E0E; border:none; font-weight:800; font-size:15px; padding:15px; border-radius:var(--r-btn); cursor:pointer; margin-top:6px;}
-  .booking-summary{margin:8px 16px 4px; display:flex; gap:11px; padding:11px; border-radius:12px; background:var(--surface-2); border:1px solid var(--border); align-items:center;}
-  .booking-summary .ph{width:64px; height:48px; border-radius:7px; flex:0 0 auto; display:flex; align-items:center; justify-content:center;}
+  .booking-summary{margin:8px var(--page-pad) 4px; display:flex; gap:11px; padding:var(--card-pad); border-radius:var(--r-card); background:var(--surface); border:1px solid var(--border); align-items:center; box-shadow:var(--shadow-soft);}
+  .booking-summary .ph{width:64px; height:48px; border-radius:var(--r-card-sm); flex:0 0 auto; display:flex; align-items:center; justify-content:center; overflow:hidden; background:linear-gradient(160deg,#221f1a,#131211);}
   .booking-summary h4{font-size:13px; font-weight:700;}
   .booking-summary p{font-size:11px; color:var(--text-dim); margin-top:2px;}
 
@@ -587,7 +587,7 @@
   .admin-head{padding:18px var(--page-pad) 6px;}
   .admin-head h2{font-size:17px;font-weight:800;}
   .admin-head p{font-size:12px;color:var(--text-dim);margin-top:6px;line-height:1.6;}
-  .perm-table{margin:8px 16px 0;border:1px solid var(--border);border-radius:12px;overflow-x:auto;}
+  .perm-table{margin:8px var(--page-pad) 0;border:1px solid var(--border);border-radius:var(--r-card);overflow-x:auto;background:var(--surface);}
   .perm-table table{width:100%;border-collapse:collapse;font-size:11px;}
   .perm-table th{background:var(--surface-2);padding:9px 6px;text-align:center;font-weight:700;color:var(--text-dim);border-bottom:1px solid var(--border);font-size:10px;letter-spacing:.3px;}
   .perm-table th:first-child{text-align:left;padding-left:12px;}
@@ -597,14 +597,14 @@
   .perm-table .yes{color:var(--gold);font-weight:800;}
   .perm-table .no{color:var(--text-faint);}
   .perm-table .partial{color:var(--text-dim);font-size:10px;}
-  .admin-note{margin:14px 16px 0;padding:12px 14px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border);font-size:11px;color:var(--text-dim);line-height:1.7;}
+  .admin-note{margin:14px var(--page-pad) 0;padding:var(--card-pad);border-radius:var(--r-card);background:var(--surface);border:1px solid var(--border);font-size:12px;color:var(--text-dim);line-height:1.7;}
   .admin-note b{color:var(--gold);}
 
   .booking-confirm{text-align:center;padding:40px 24px;}
-  .bc-icon{width:64px;height:64px;border-radius:50%;background:var(--gold);color:#0F0E0E;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;margin:0 auto 18px;}
+  .bc-icon{width:64px;height:64px;border-radius:50%;background:var(--gold-soft);border:1px solid var(--gold-line);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:800;margin:0 auto 18px;}
   .booking-confirm h3{font-size:18px;font-weight:800;margin-bottom:8px;}
   .booking-confirm p{font-size:13px;color:var(--text-dim);line-height:1.6;margin-bottom:20px;}
-  .bc-sales-card{padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);margin-bottom:20px;text-align:left;display:flex;align-items:center;gap:12px;}
+  .bc-sales-card{padding:var(--card-pad);border-radius:var(--r-card);border:1px solid var(--border);background:var(--surface);margin-bottom:20px;text-align:left;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow-soft);}
   .bc-sales-card .av{width:40px;height:40px;border-radius:50%;background:var(--gold);color:#0F0E0E;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;}
   .bc-sales-card .info{flex:1;}
   .bc-sales-card .info b{font-size:13px;}
@@ -614,7 +614,9 @@
   .wb-mycar .card{position:relative;}
   .card-dot{position:absolute;top:6px;right:6px;z-index:3;width:28px;height:28px;border-radius:50%;border:none;background:rgba(0,0,0,.45);color:#fff;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
   .card-dot:hover{background:var(--gold);color:#111;}
-  .wb-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
+  .wb-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin:0 var(--page-pad);}
+  #wbLeads, #wbLinks, #wbNotifs{padding:0 var(--page-pad);}
+  .wb-empty{font-size:12px;color:var(--text-dim);padding:10px 0;}
   .wb-stat{padding:var(--card-pad) 10px;border-radius:var(--r-card);border:1px solid var(--border);background:var(--surface);text-align:center;box-shadow:var(--shadow-soft);}
   .wb-stat .num{font-size:22px;font-weight:800;color:var(--gold);}
   .wb-stat .lbl{font-size:11px;color:var(--text-dim);margin-top:4px;}
@@ -1305,10 +1307,10 @@
       <div style="display:flex;justify-content:flex-end;margin-bottom:8px;">
         <button class="staff-refresh" type="button" title="Refresh roster" onclick="staffRefresh(this)">↻</button>
       </div>
-      <div class="grp" style="margin:0 0 12px;">
+      <div class="grp" style="margin:0 0 var(--gap-md);">
         <div id="staffList"></div>
       </div>
-      <div class="grp" id="codeCard" style="margin:0 0 12px;border:1px solid var(--border);border-radius:12px;padding:12px;">
+      <div class="grp" id="codeCard" style="margin:0 0 var(--gap-md);">
         <div class="lbl" data-i18n="codeTitle">Company invitation code</div>
         <p class="sheet-hint" data-i18n="codeHint">Share this with partners &amp; staff. They enter or scan it to join your company and get access.</p>
         <div style="display:flex;gap:12px;align-items:center;">
@@ -1350,7 +1352,7 @@
         <h2 data-i18n="premTitle">Premium tools</h2>
         <p data-i18n="premDesc">Showroom domain, public contact and permanent QR code.</p>
       </div>
-      <div class="grp" id="premiumGroup" style="display:none;background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:12px;">
+      <div class="grp" id="premiumGroup" style="display:none;background:var(--gold-soft);border:1px solid var(--gold-line);border-radius:var(--r-card);">
         <div id="premUnlocked" style="display:none;">
           <p class="sheet-hint" data-i18n="premSub">Exclusive features unlocked with your Premium plan.</p>
           <div class="ui-row" style="margin:6px 0 4px;">
@@ -5271,7 +5273,7 @@ function renderWorkbench(){
     <div class="wb-stat"><div class="num">${conv}%</div><div class="lbl">${T('wbStatConv','Conversion')}</div></div>`;
   const ll=document.getElementById('wbLeads');
   ll.innerHTML='';
-  if(myLeads.length===0){ ll.innerHTML='<div style="font-size:12px;color:var(--text-dim);padding:12px 0;">'+T('noLeads','No leads yet')+'</div>'; }
+  if(myLeads.length===0){ ll.innerHTML='<div class="wb-empty">'+T('noLeads','No leads yet')+'</div>'; }
   myLeads.forEach(l=>{
     const d=document.createElement('div'); d.className='wb-lead';
     d.innerHTML=`<div class="av">${l.name[0]}</div><div class="info"><b>${l.name}</b><span>${l.car} · ${l.date}</span></div>
@@ -5293,7 +5295,7 @@ function renderWorkbench(){
   if(nb){
     nb.innerHTML='';
     const myNotifs = isTopRole() ? BOOKING_NOTIFS : BOOKING_NOTIFS.filter(n=>n.sales===curEmployee);
-    if(myNotifs.length===0){ nb.innerHTML='<div style="font-size:12px;color:var(--text-dim);padding:12px 0;">'+T('noBookings','No new bookings')+'</div>'; }
+    if(myNotifs.length===0){ nb.innerHTML='<div class="wb-empty">'+T('noBookings','No new bookings')+'</div>'; }
     else myNotifs.forEach(n=>{
       const car=CARS[n.car]; if(!car) return;
       const d=document.createElement('div'); d.className='wb-lead';
