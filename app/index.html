@@ -19,7 +19,10 @@
 <meta name="twitter:card" content="summary_large_image" />
 <style>
   :root{
-    --r-card:8px; --r-btn:4px; --r-pill:999px; --gap:4px;
+    --r-card:12px; --r-card-sm:10px; --r-btn:10px; --r-pill:999px;
+    --page-pad:16px; --card-pad:12px; --gap-sm:8px; --gap-md:12px; --gap-lg:20px; --row-h:44px;
+    --shadow-card:0 8px 24px rgba(0,0,0,.28); --shadow-soft:0 4px 12px rgba(0,0,0,.22); --shadow-gold:0 8px 24px rgba(232,194,104,.16);
+    --active-scale:.96;
   }
   [data-theme="dark"]{
     --bg:#0F0E0E; --surface:#171615; --surface-2:#1F1D1B;
@@ -39,6 +42,23 @@
   }
   *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
   html,body{height:100%; overscroll-behavior-y:none;}
+
+  /* global press feedback */
+  .card, .btn, .chip, .pill-btn, .icon-btn, .row-action, .me-link, .sub-menu-item, .nav-opt, .upload-btn, .share-copy, .code-btn, .staff-refresh{ transition:transform .12s ease, background .15s ease, filter .15s ease; }
+  .card:active, .btn:active, .chip:active, .pill-btn:active, .icon-btn:active, .row-action:active, .me-link:active, .sub-menu-item:active, .nav-opt:active, .upload-btn:active, .share-copy:active, .code-btn:active, .staff-refresh:active{ transform:scale(var(--active-scale)); }
+  .submit{ transition:transform .12s ease, filter .15s ease, opacity .15s ease; }
+  .submit:active{ transform:scale(var(--active-scale)); filter:brightness(1.08); }
+  .submit:disabled{ opacity:.45; cursor:not-allowed; }
+
+  /* skeleton shimmer */
+  @keyframes shimmer{ 0%{background-position:-200% 0} 100%{background-position:200% 0} }
+  .skeleton{ background:linear-gradient(90deg,var(--surface-2),rgba(232,194,104,.08),var(--surface-2)); background-size:200% 100%; animation:shimmer 1.4s infinite linear; border-radius:var(--r-card); }
+
+  /* empty state */
+  .empty-state{ display:flex; flex-direction:column; align-items:center; justify-content:center; padding:40px 22px; text-align:center; color:var(--text-dim); }
+  .empty-state .ic{ font-size:44px; margin-bottom:12px; color:var(--gold); opacity:.7; }
+  .empty-state .ti{ font-size:15px; font-weight:700; color:var(--text); margin-bottom:6px; }
+  .empty-state .sub{ font-size:13px; line-height:1.5; max-width:280px; }
   body{
     font-family:"Inter","Inter Tight",-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;
     background:radial-gradient(1200px 600px at 50% -10%, rgba(232,194,104,0.06), transparent 60%), var(--bg);
@@ -117,7 +137,7 @@
   .sh-set-row{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;}
   .sh-set-row span:first-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 
-  .hero{margin:14px 16px 0; border-radius:14px; overflow:hidden; position:relative; height:206px; background:linear-gradient(160deg,#2a2723,#0f0e0e 70%); border:1px solid var(--border);}
+  .hero{margin:14px var(--page-pad) 0; border-radius:var(--r-card); overflow:hidden; position:relative; height:206px; background:linear-gradient(160deg,#2a2723,#0f0e0e 70%); border:1px solid var(--border); box-shadow:var(--shadow-card);}
   .hero-track{display:flex; height:100%; width:100%; overflow-x:auto; scroll-snap-type:x mandatory; scrollbar-width:none;}
   .hero-track::-webkit-scrollbar{display:none;}
   .hero-slide{flex:0 0 100%; scroll-snap-align:start; position:relative; height:100%; overflow:hidden;}
@@ -134,25 +154,28 @@
   .hero-dots span{width:6px; height:6px; border-radius:50%; background:var(--text-dim); opacity:.4; transition:.2s;}
   .hero-dots span.on{background:var(--gold); opacity:1; width:16px; border-radius:3px;}
 
-  .search{margin:16px 16px 0; display:flex; align-items:center; gap:9px; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-pill); padding:11px 15px; color:var(--text-dim);}
-  .search input{flex:1; background:none; border:none; outline:none; color:var(--text); font-size:13px; font-family:inherit;}
+  .search{margin:16px var(--page-pad) 0; height:var(--row-h); display:flex; align-items:center; gap:10px; background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-btn); padding:0 14px; color:var(--text-dim); transition:box-shadow .15s ease, border-color .15s ease;}
+  .search:focus-within{box-shadow:0 0 0 1px var(--gold-line); border-color:var(--gold-line);}
+  .search input{flex:1; background:none; border:none; outline:none; color:var(--text); font-size:14px; font-family:inherit;}
+  .search input::placeholder{color:var(--text-faint);}
 
-  .sec-head{display:flex; align-items:center; justify-content:space-between; padding:22px 16px 10px;}
+  .sec-head{display:flex; align-items:center; justify-content:space-between; padding:20px var(--page-pad) 10px;}
   .sec-head h2{font-size:15px; font-weight:800; letter-spacing:.4px;}
   .sec-head a{font-size:12px; color:var(--gold); font-weight:700; cursor:pointer; text-decoration:none;}
 
-  .chips{display:flex; gap:8px; overflow-x:auto; padding:4px 16px 4px; scrollbar-width:none;}
+  .chips{display:flex; gap:var(--gap-sm); overflow-x:auto; padding:4px var(--page-pad) 4px; scrollbar-width:none;}
   .chips::-webkit-scrollbar{display:none;}
-  .chip{flex:0 0 auto; padding:8px 14px; border-radius:var(--r-pill); border:1px solid var(--border); background:var(--surface-2); color:var(--text-dim); font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap;}
+  .chip{flex:0 0 auto; height:32px; padding:0 14px; border-radius:var(--r-pill); border:1px solid var(--border); background:var(--surface); color:var(--text-dim); font-size:12px; font-weight:600; cursor:pointer; white-space:nowrap; display:flex; align-items:center;}
   .chip.on{background:var(--gold); color:#0F0E0E; border-color:var(--gold);}
 
   .seg-tabs{display:flex; gap:8px; margin:12px 16px 0;}
   .seg-tab{flex:1; padding:11px 8px; border-radius:10px; border:1px solid var(--border); background:var(--surface-2); color:var(--text-dim); font-size:13px; font-weight:700; cursor:pointer; transition:.15s;}
   .seg-tab.on{background:var(--gold); color:#0F0E0E; border-color:var(--gold);}
-  .filterbar{display:flex; gap:7px; padding:11px 16px 2px; align-items:stretch;}
-  .fb-select{flex:1 1 0; min-width:0; background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:9px; padding:9px 8px; font-size:12px; font-weight:600; outline:none; -webkit-appearance:none; appearance:none; cursor:pointer;}
+  .filterbar{display:flex; gap:var(--gap-sm); padding:12px var(--page-pad) 4px; align-items:center; overflow-x:auto; scrollbar-width:none;}
+  .filterbar::-webkit-scrollbar{display:none;}
+  .fb-select{flex:1 1 auto; min-width:110px; height:32px; background:var(--surface); color:var(--text); border:1px solid var(--border); border-radius:var(--r-pill); padding:0 12px; font-size:12px; font-weight:600; outline:none; -webkit-appearance:none; appearance:none; cursor:pointer;}
   .fb-select:focus{border-color:var(--gold-line);}
-  .fb-adv{flex:0 0 auto; padding:9px 12px; border-radius:9px; border:1px solid var(--gold-line); background:var(--gold-soft); color:var(--gold); font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:5px;}
+  .fb-adv{flex:0 0 auto; height:32px; padding:0 14px; border-radius:var(--r-pill); border:1px solid var(--gold-line); background:var(--gold-soft); color:var(--gold); font-size:12px; font-weight:700; cursor:pointer; display:flex; align-items:center; gap:5px; white-space:nowrap;}
   .fb-adv.on{background:var(--gold); color:#0F0E0E;}
   .adv-panel{margin:8px 16px 0; padding:14px; border:1px solid var(--border); border-radius:12px; background:var(--surface-2);}
   .adv-note{font-size:11px; color:var(--gold); margin-bottom:10px; line-height:1.5; font-weight:600;}
@@ -172,18 +195,19 @@
   .adv-reset{background:var(--surface); color:var(--text-dim); border:1px solid var(--border)!important;}
   .adv-apply{background:var(--gold); color:#0F0E0E;}
 
-  .grid{display:grid; grid-template-columns:1fr 1fr; gap:12px; padding:8px 16px 0;}
-  .card{background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-card); overflow:hidden; cursor:pointer; position:relative;}
-  .card .ph{height:108px; position:relative; display:flex; align-items:center; justify-content:center;}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:var(--gap-md); padding:8px var(--page-pad) 0;}
+  .card{background:var(--surface); border:1px solid var(--border); border-radius:var(--r-card); overflow:hidden; cursor:pointer; position:relative; box-shadow:var(--shadow-soft); transition:transform .12s ease, box-shadow .15s ease, border-color .15s ease;}
+  .card:hover{box-shadow:var(--shadow-card); border-color:var(--border-strong);}
+  .card .ph{height:112px; position:relative; display:flex; align-items:center; justify-content:center; overflow:hidden;}
   .card .ph .car-svg{width:150px; filter:drop-shadow(0 6px 12px rgba(0,0,0,.45));}
   .card .heart{position:absolute; top:8px; right:8px; width:28px; height:28px; border-radius:50%; background:var(--scrim); display:flex; align-items:center; justify-content:center; cursor:pointer; color:var(--text); font-size:15px;}
   .card .heart.on{color:var(--danger);}
   .card .cond{position:absolute; top:8px; left:8px; font-size:9px; font-weight:800; letter-spacing:.5px; padding:3px 7px; border-radius:var(--r-pill); color:#0F0E0E;}
   .cond.new{background:var(--rf);} .cond.used{background:#9aa0a6;}
-  .card .body{padding:9px 10px 11px;}
-  .card .body h4{font-size:13px; font-weight:700; line-height:1.25;}
-  .card .body .meta{font-size:11px; color:var(--text-dim); margin-top:3px;}
-  .card .body .pr{font-size:13px; font-weight:800; color:var(--gold); margin-top:6px;}
+  .card .body{padding:var(--card-pad);}
+  .card .body h4{font-size:14px; font-weight:700; line-height:1.25;}
+  .card .body .meta{font-size:12px; color:var(--text-dim); margin-top:3px;}
+  .card .body .pr{font-size:15px; font-weight:800; color:var(--gold); margin-top:6px;}
   .car-cover{position:absolute; inset:0; width:100%; height:100%; object-fit:cover; z-index:0;}
   .card.sold,.more-card.sold{opacity:.6;}
   .card .cond.sold,.more-card .ph .cond.sold,.cond-badge.sold{background:rgba(255,90,90,.22); color:#FF8A8A;}
@@ -191,7 +215,7 @@
   .row-action:hover{filter:brightness(1.12);}
   .row-action.danger{color:#FF8A8A; border-color:rgba(255,90,90,.4);}
 
-  .hscroll{display:flex; gap:12px; overflow-x:auto; padding:6px 16px 4px; scrollbar-width:none;}
+  .hscroll{display:flex; gap:var(--gap-sm); overflow-x:auto; padding:6px var(--page-pad) 4px; scrollbar-width:none;}
   .hscroll::-webkit-scrollbar{display:none;}
   .feat-track{padding:4px 16px 10px; scroll-snap-type:x mandatory;}
   .feat-card{flex:0 0 168px; scroll-snap-align:start; border-radius:var(--r-card); overflow:hidden; border:1px solid var(--border); background:var(--surface-2); position:relative; cursor:pointer;}
@@ -200,24 +224,25 @@
   .feat-card .fc-body{padding:8px 10px 10px;}
   .feat-card .fc-name{font-size:12px; font-weight:700; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
   .feat-card .fc-price{font-size:12px; color:var(--gold); font-weight:700; margin-top:2px;}
-  .sh-card{flex:0 0 150px; border-radius:var(--r-card); overflow:hidden; position:relative; border:1px solid var(--border); cursor:pointer;}
-  .sh-card .ph{height:46px; display:flex; align-items:center; justify-content:center;}
+  .sh-card{flex:0 0 140px; border-radius:var(--r-card); overflow:hidden; position:relative; border:1px solid var(--border); cursor:pointer; background:var(--surface); box-shadow:var(--shadow-soft);}
+  .sh-card .ph{height:56px; display:flex; align-items:center; justify-content:center; background:linear-gradient(160deg,#2a2723,#0f0e0e 70%);}
   .sh-card .ph .pin{color:var(--gold);}
-  .sh-card .body{padding:9px 11px 11px; background:var(--surface-2);}
-  .sh-card .body h4{font-size:13px; font-weight:700;}
+  .sh-card .body{padding:var(--card-pad); background:var(--surface);}
+  .sh-card .body h4{font-size:12px; font-weight:700; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
   .sh-card .body .meta{font-size:11px; color:var(--text-dim); margin-top:2px;}
   .sh-card .body .dist{font-size:11px; color:var(--gold); font-weight:700; margin-top:4px;}
 
-  .trust{display:flex; gap:8px; padding:14px 16px 0; flex-wrap:wrap;}
-  .trust .t{flex:1; min-width:100px; display:flex; align-items:center; gap:7px; font-size:11px; color:var(--text-dim); border:1px solid var(--border); border-radius:10px; padding:9px 10px; background:var(--surface-2);}
-  .trust .t b{color:var(--text); display:block; font-size:12px;}
-
-  .consult{margin:14px 16px 0; padding:14px; border-radius:14px; background:linear-gradient(135deg,var(--surface-2),var(--gold-soft)); border:1px solid var(--gold-line); display:flex; align-items:center; gap:12px;}
-  .consult .av{width:48px; height:48px; border-radius:50%; flex:0 0 auto; background:linear-gradient(140deg,var(--gold),#b9842c); color:#0F0E0E; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:18px;}
+  .consult{margin:14px var(--page-pad) 0; padding:var(--card-pad); border-radius:var(--r-card); background:var(--surface); border:1px solid var(--border); display:flex; align-items:center; gap:12px; box-shadow:var(--shadow-soft);}
+  .home-banner{margin:0 var(--page-pad) var(--gap-md); padding:var(--card-pad); border-radius:var(--r-card); border:1px solid var(--gold-line); background:var(--surface); box-shadow:var(--shadow-soft);}
+  .home-banner .hb-t{font-size:15px; font-weight:800; color:var(--gold); margin-bottom:4px;}
+  .home-banner .hb-d{font-size:12px; line-height:1.5; color:var(--text-dim); margin-bottom:10px;}
+  .home-banner .hb-btn{width:100%; background:transparent; color:var(--gold); border:1px solid var(--gold-line); border-radius:var(--r-btn); padding:10px; font-weight:700; font-size:13px; cursor:pointer; transition:background .15s ease, transform .12s ease;}
+  .home-banner .hb-btn:active{background:var(--gold-soft); transform:scale(var(--active-scale));}
+  .consult .av{width:44px; height:44px; border-radius:50%; flex:0 0 auto; background:linear-gradient(140deg,var(--gold),#b9842c); color:#0F0E0E; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:16px;}
   .consult .info{flex:1;}
   .consult .info h4{font-size:14px; font-weight:800;}
-  .consult .info p{font-size:11px; color:var(--text-dim); margin-top:2px;}
-  .consult .wa{background:var(--wa); color:#06210f; border:none; font-weight:800; font-size:12px; padding:10px 13px; border-radius:var(--r-btn); cursor:pointer; display:flex; align-items:center; gap:6px;}
+  .consult .info p{font-size:12px; color:var(--text-dim); margin-top:2px;}
+  .consult .wa{background:transparent; color:var(--gold); border:1px solid var(--gold-line); font-weight:800; font-size:12px; padding:9px 13px; border-radius:var(--r-pill); cursor:pointer; display:flex; align-items:center; gap:6px;}
 
   .detail-hero{position:relative; height:248px; background:linear-gradient(160deg,#2a2723,#0f0e0e 70%);}
   .detail-hero .car-svg{position:absolute; left:50%; bottom:18px; transform:translateX(-50%); width:280px; filter:drop-shadow(0 10px 22px rgba(0,0,0,.55));}
@@ -437,18 +462,18 @@
   .pill-select{flex:1; min-width:0; background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:9px; padding:9px 10px; font-size:13px; outline:none;}
   /* ---------- ME / personal tab ---------- */
   #scr-me{padding-bottom:96px;}
-  .me-head{position:relative; padding:22px 16px 12px; display:flex; align-items:center; gap:13px;}
-  .me-ava{flex:0 0 auto; width:56px; height:56px; border-radius:50%; background:var(--surface); border:2px solid var(--gold); color:var(--text); font-size:22px; font-weight:800; display:flex; align-items:center; justify-content:center; overflow:hidden;}
+  .me-head{position:relative; margin:12px var(--page-pad) 0; padding:var(--page-pad); border-radius:var(--r-card); background:var(--surface); border:1px solid var(--border); display:flex; align-items:center; gap:13px; box-shadow:var(--shadow-soft);}
+  .me-ava{flex:0 0 auto; width:72px; height:72px; border-radius:50%; background:var(--surface-2); border:2px solid var(--gold); color:var(--text); font-size:24px; font-weight:800; display:flex; align-items:center; justify-content:center; overflow:hidden;}
   .me-ava img{width:100%; height:100%; object-fit:cover;}
   .me-id{flex:1; min-width:0; padding-right:46px;}
   .me-name{font-size:18px; font-weight:800; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .me-sub{font-size:12px; color:var(--text-dim); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
-  .me-badge{display:inline-block; margin-top:7px; padding:2px 10px; border-radius:999px; font-size:11px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; background:rgba(232,194,104,.18); color:var(--gold); border:1px solid rgba(232,194,104,.55);}
+  .me-sub{font-size:13px; color:var(--text-dim); margin-top:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .me-badge{display:inline-block; margin-top:7px; padding:4px 10px; border-radius:999px; font-size:11px; font-weight:800; letter-spacing:.4px; text-transform:uppercase; background:var(--gold-soft); color:var(--gold); border:1px solid var(--gold-line);}
   .me-actions{position:absolute; top:16px; right:14px; display:flex; gap:8px; align-items:center;}
   .me-gear{width:36px; height:36px; border-radius:50%; border:1px solid var(--border); background:var(--surface); color:var(--text); font-size:17px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:transform .15s;}
   .me-gear:active{transform:scale(.88) rotate(40deg);}
-  #scr-me .grp{margin:12px 16px 0; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 15px;}
-  #scr-me .lbl{font-size:12px; font-weight:700; color:var(--text-dim); letter-spacing:.3px; margin-bottom:10px;}
+  #scr-me .grp{margin:12px var(--page-pad) 0; background:var(--surface); border:1px solid var(--border); border-radius:var(--r-card); padding:var(--card-pad); box-shadow:var(--shadow-soft);}
+  #scr-me .lbl{font-size:12px; font-weight:800; color:var(--text); letter-spacing:.5px; margin-bottom:10px; text-transform:uppercase;}
   #scr-me .sub{font-size:11px; color:var(--text-dim); line-height:1.5;}
   .collapsible{padding:0 15px;}
   .collapsible > summary{list-style:none; cursor:pointer; outline:none; display:flex; align-items:center; justify-content:space-between; margin:0 -15px; padding:14px 15px; border-bottom:1px solid var(--border);}
@@ -467,22 +492,23 @@
   .staff-row select{max-width:130px;}
   .staff-del{background:rgba(255,90,90,.14); color:#ff8a8a; border:1px solid rgba(255,90,90,.3); border-radius:8px; padding:4px 10px; font-size:12px; cursor:pointer;}
   .staff-del:hover{background:rgba(255,90,90,.24);}
-  #scr-me .form-row{display:flex; flex-direction:column; gap:4px; margin:8px 0;}
-  #scr-me .form-row label{font-size:11px; color:var(--text-dim);}
-  #scr-me input:not([type=checkbox]), #scr-me textarea, #scr-me select{background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:8px; padding:9px 10px; font-size:13px; font-family:inherit; outline:none;}
+  #scr-me .form-row{display:flex; flex-direction:column; gap:6px; margin-bottom:12px;}
+  #scr-me .form-row label{font-size:12px; font-weight:600; color:var(--text-dim);}
+  #scr-me input:not([type=checkbox]), #scr-me select{height:var(--row-h); background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:var(--r-btn); padding:0 12px; font-size:14px; font-family:inherit; outline:none;}
+  #scr-me textarea{background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:var(--r-btn); padding:10px 12px; font-size:14px; font-family:inherit; outline:none; min-height:64px; resize:vertical;}
   #scr-me input:focus, #scr-me select:focus, #scr-me textarea:focus{border-color:var(--gold);}
   #scr-me .seg-tabs{margin:12px 0 0;}
   #scr-me .sheet-hint{margin:8px 0 4px;}
-  .me-links{margin:12px 16px 0; background:var(--surface); border:1px solid var(--border); border-radius:14px; overflow:hidden;}
+  .me-links{margin:12px var(--page-pad) 0; background:var(--surface); border:1px solid var(--border); border-radius:var(--r-card); overflow:hidden; box-shadow:var(--shadow-soft);}
   /* 1x4 quick-access tiles (gold line icons) */
-  .me-tiles{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:12px 16px 0;}
-  .me-tile{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; padding:14px 6px 12px; background:var(--surface); border:1px solid var(--border); border-radius:14px; color:var(--text); font-family:inherit; cursor:pointer; transition:transform .12s, border-color .15s;}
-  .me-tile:active{transform:scale(.95);}
+  .me-tiles{display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:12px var(--page-pad) 0;}
+  .me-tile{display:flex; flex-direction:column; align-items:center; justify-content:center; gap:7px; padding:14px 6px 12px; background:var(--surface); border:1px solid var(--border); border-radius:var(--r-card); color:var(--text); font-family:inherit; cursor:pointer; transition:transform .12s ease, border-color .15s ease, background .15s ease;}
+  .me-tile:active{transform:scale(var(--active-scale)); background:var(--surface-2);}
   .me-tile svg{width:24px; height:24px; color:var(--gold);}
   .me-tile .tl{font-size:12px; font-weight:700; color:var(--text); white-space:nowrap;}
-  .me-link{display:flex; align-items:center; gap:11px; width:100%; padding:14px 15px; border:none; border-bottom:1px solid var(--border); background:none; color:var(--text); font-size:14px; font-weight:600; font-family:inherit; text-align:left; cursor:pointer;}
+  .me-link{height:56px; display:flex; align-items:center; gap:12px; padding:0 4px; margin:0 12px; border:none; border-bottom:1px solid var(--border); background:none; color:var(--text); font-size:14px; font-weight:600; font-family:inherit; text-align:left; cursor:pointer; transition:background .15s ease, transform .12s ease;}
   .me-link:last-child{border-bottom:none;}
-  .me-link:active{background:var(--surface-2);}
+  .me-link:active{background:var(--surface-2); border-radius:10px;}
   .me-link .ic{flex:0 0 auto; width:30px; height:30px; border-radius:9px; background:var(--gold-soft); display:flex; align-items:center; justify-content:center; font-size:15px;}
   .me-link .ar{margin-left:auto; color:var(--text-dim); font-size:17px;}
   .link-list{margin-top:8px;}
@@ -494,7 +520,7 @@
   .sold-item .sold-tag.used{background:rgba(120,120,120,.18); color:var(--text-dim);}
   .me-ver{text-align:center; font-size:11px; color:var(--text-dim); margin:20px 0 4px;}
   /* v4.1: section headers (我的 / Workspace / Manage / Settings) — unified 15px/700 */
-  .me-sec-h{font-size:15px; font-weight:800; color:var(--text); margin:18px 16px 0; letter-spacing:.2px;}
+  .me-sec-h{font-size:15px; font-weight:800; color:var(--text); margin:18px var(--page-pad) 0; letter-spacing:.2px;}
   /* account-head premium line */
   .me-prem{display:none; align-items:center; gap:8px; margin-top:8px; padding:5px 11px; border-radius:999px; background:rgba(232,194,104,.16); border:1px solid rgba(232,194,104,.55); color:var(--gold); font-size:12px; font-weight:700; cursor:pointer; width:fit-content;}
   .me-prem-plan{font-weight:800; letter-spacing:.4px; text-transform:uppercase; font-size:11px;}
@@ -767,10 +793,10 @@
 
     <!-- HOME -->
     <section class="screen active" id="scr-home">
-      <div id="welcomeBar" style="display:none;margin:0 16px 14px;padding:14px 16px;border-radius:12px;border:1px solid var(--gold-line);background:var(--gold-soft);">
-        <div id="welcomeTitle" style="font-weight:800;color:var(--gold);font-size:14px;" data-i18n="welcomeTitle">👋 Welcome to ANT MOTORS</div>
-        <div id="welcomeDesc" style="font-size:12px;margin-top:4px;line-height:1.5;" data-i18n="welcomeDesc">New here? Create your company account to start adding cars, managing your team and viewing membership info. Tap the settings button above or the button below.</div>
-        <button class="submit" id="welcomeBtn" style="margin-top:10px;background:var(--gold);color:#111;font-weight:700;border:none;" onclick="go('scr-me')" data-i18n="welcomeBtn">Login / Register</button>
+      <div id="welcomeBar" class="home-banner" style="display:none;">
+        <div id="welcomeTitle" class="hb-t" data-i18n="welcomeTitle">Welcome to ANT MOTORS</div>
+        <div id="welcomeDesc" class="hb-d" data-i18n="welcomeDesc">New here? Create your company account to start adding cars, managing your team and viewing membership info. Tap the settings button above or the button below.</div>
+        <button class="hb-btn" id="welcomeBtn" onclick="go('scr-me')" data-i18n="welcomeBtn">Login / Register</button>
       </div>
       <div class="hero" id="heroCarousel"><div class="hero-track" id="heroTrack"></div></div>
       <div class="hero-dots" id="heroDots"></div>
@@ -1057,8 +1083,11 @@
   <div class="grp" id="accountGroup">
     <div id="syncStatus" class="sync-status">—</div>
     <div class="lbl" id="authLbl"><span data-i18n="syncTitle">Account</span> <span class="info-dot" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">i</span><div class="info-expand" data-i18n="syncHint">By default you connect to the shared ANT MOTORS backend (no setup). In Advanced you can point to your own server.</div></div>
-    <button class="submit" id="regToggle" onclick="toggleReg()" data-i18n="regHasAccount" style="background:var(--gold);color:#111;font-weight:700;">New here? Create an account</button>
-    <p class="sheet-hint" id="regHint" style="display:none;" data-i18n="regHint">Fill in the server address, then your details below to create your own account. If you already have one, tap "Have an account? Sign in".</p>
+    <div class="seg-tabs" id="authSegTabs" style="margin:0 0 12px;">
+      <div class="seg-tab on" id="segTabLogin" onclick="setAuthMode('login')"><span data-i18n="loginTab">Sign in</span></div>
+      <div class="seg-tab" id="segTabReg" onclick="setAuthMode('register')"><span data-i18n="regTab">Create account</span></div>
+    </div>
+    <p class="sheet-hint" id="regHint" style="display:none;" data-i18n="regHint">Fill in the server address, then your details below to create your own account. If you already have one, tap "Sign in".</p>
     <div id="syncLoginBox">
       <div class="form-row"><label data-i18n="syncEmpId">Account / e-mail</label><input type="text" id="setEmpId" placeholder="boss / you@mail.com" autocomplete="username" /></div>
       <div class="form-row"><label data-i18n="syncPw">Password</label>
@@ -1725,12 +1754,12 @@ I18N.zh.syncSignedIn="已登录："; I18N.zh.syncSignedOut="已退出登录";
 I18N.zh.syncRejPrice="价格只能由老板/合伙人设置"; I18N.zh.syncRejTier="只有老板/合伙人可以调整等级";
 I18N.zh.syncRejAcct="只能修改自己的账号"; I18N.zh.syncRejEmp="未知员工账号";
 /* --- self-registration & company binding --- */
-I18N.en.regHasAccount="New here? Create an account"; I18N.en.regSwitchToLogin="Have an account? Sign in"; I18N.en.regId="Account ID"; I18N.en.regName="Your name";I18N.en.regIdSub="Login handle — short, unique, lowercase. Teammates use it to @-mention you and assign leads (e.g. ama, kwame)."; I18N.en.regNameSub="Display name shown to customers on quotes, chats and bookings (e.g. Ama K., Kwame Asante)."; I18N.en.regWa="WhatsApp"; I18N.en.regPhone="Phone"; I18N.en.regPin="PIN (4-8 digits)"; I18N.en.regCreate="Create account"; I18N.en.regCreating="Creating…"; I18N.en.regSuccess="Account created"; I18N.en.regExists="That account ID is taken"; I18N.en.regHint="Fill in the server address, then your details below to create your own account. If you already have one, tap “Have an account? Sign in”."; I18N.en.regModeCreate="Start a company"; I18N.en.regModeJoin="Join a company"; I18N.en.regCoName="Company name"; I18N.en.regCoLogo="Company logo"; I18N.en.regCode="Invitation code"; I18N.en.coTitle="Company"; I18N.en.coSave="Save company"; I18N.en.coEdit="Edit company"; I18N.en.reqField="required"; I18N.en.coSaved="Company saved";
+I18N.en.loginTab="Sign in"; I18N.en.regTab="Create account"; I18N.en.regHasAccount="New here? Create an account"; I18N.en.regSwitchToLogin="Have an account? Sign in"; I18N.en.regId="Account ID"; I18N.en.regName="Your name";I18N.en.regIdSub="Login handle — short, unique, lowercase. Teammates use it to @-mention you and assign leads (e.g. ama, kwame)."; I18N.en.regNameSub="Display name shown to customers on quotes, chats and bookings (e.g. Ama K., Kwame Asante)."; I18N.en.regWa="WhatsApp"; I18N.en.regPhone="Phone"; I18N.en.regPin="PIN (4-8 digits)"; I18N.en.regCreate="Create account"; I18N.en.regCreating="Creating…"; I18N.en.regSuccess="Account created"; I18N.en.regExists="That account ID is taken"; I18N.en.regHint="Fill in the server address, then your details below to create your own account. If you already have one, tap “Have an account? Sign in”."; I18N.en.regModeCreate="Start a company"; I18N.en.regModeJoin="Join a company"; I18N.en.regCoName="Company name"; I18N.en.regCoLogo="Company logo"; I18N.en.regCode="Invitation code"; I18N.en.coTitle="Company"; I18N.en.coSave="Save company"; I18N.en.coEdit="Edit company"; I18N.en.reqField="required"; I18N.en.coSaved="Company saved";
 I18N.en.joinTitle="Join your company"; I18N.en.joinHint="Enter the invitation code from your boss, or scan the QR they share. Pick your role, then you get full access."; I18N.en.joinCode="Invitation code"; I18N.en.joinScan="Scan"; I18N.en.joinRole="Your role"; I18N.en.jrPartner="Partner (co-owner)"; I18N.en.jrManager="Manager"; I18N.en.jrSalesA="Senior Sales"; I18N.en.jrSalesB="Sales"; I18N.en.joinBranch="Branch"; I18N.en.joinBind="Bind & activate"; I18N.en.joinNeedCode="Enter or scan the invitation code"; I18N.en.joinSuccess="You are now part of the company"; I18N.en.joinBadCode="Invitation code does not match"; I18N.en.joinBadTier="Pick a role"; I18N.en.joinNotFound="Account not found";
 I18N.en.codeTitle="Company invitation code"; I18N.en.codeHint="Share this with partners & staff. They enter or scan it to join your company and get access."; I18N.en.codeCopy="Copy code"; I18N.en.codeRegen="Regenerate"; I18N.en.codeCopied="Code copied"; I18N.en.codeRegenConfirm="Regenerate the code? Old shares will stop working."; I18N.en.codeRegenOk="New code generated"; I18N.en.scanNoCam="Camera not available"; I18N.en.scanOk="Code scanned";
 I18N.en.memTitle="Membership"; I18N.en.memManage="Manage membership"; I18N.en.memActive="Active"; I18N.en.memExpired="Expired"; I18N.en.memTrial="Trial"; I18N.en.memUntil="Valid until"; I18N.en.memExpiredMsg="Your membership has expired. Renew to add or edit cars and keep staff synced."; I18N.en.memPick="Choose a plan"; I18N.en.memScan="Scan this with Alipay to pay"; I18N.en.memOpenAlipay="Open Alipay"; I18N.en.memSimPay="（测试）模拟支付成功"; I18N.en.memPaying="Creating order…"; I18N.en.memPaid="Payment received — membership activated"; I18N.en.memPayFailed="Payment failed, please retry"; I18N.en.memSimNote="DEV mode: Alipay is simulated — use the test button to activate.";
 I18N.en.memNeedServer="Connect to a server to subscribe"; I18N.en.memNeedLogin="Sign in as the company owner to subscribe"; I18N.en.memSubscribe="Subscribe"; I18N.en.memOwnerOnly="Owner only"; I18N.en.memActive="Active"; I18N.en.perMonth="/mo"; I18N.en.perYear="/yr"; I18N.en.memRenew="Renew now"; I18N.en.memCurrent="Current plan"; I18N.en.memLifetime="Lifetime"; I18N.en.memLifetimeMsg="You have lifetime membership — active forever, no subscription needed."; I18N.en.memFeatDomain="Own domain (e.g. yourcompany.autos)"; I18N.en.memFeatQr="Exclusive QR code"; I18N.en.unlimited="Unlimited"; I18N.en.carsUnit2="cars"; I18N.en.staffUnit="staff"; I18N.en.shopsUnit="shops"; I18N.en.memUpgrade="Upgrade"; I18N.en.memLifetimeMsgShort="Lifetime — no subscription needed"; I18N.en.memTrialLeft="Trial left: "; I18N.en.daysUnit=" days"; I18N.en.free2="Free"; I18N.en.memDevOrder="DEV order created — use the test button"; I18N.en.memDevMode="DEV mode — no real payment gateway connected. This button simulates a successful payment for testing."; I18N.en.memPayGateway="Payment gateway"; I18N.en.memPayVia="Pay via "; I18N.en.memPayNow="Complete payment";
-I18N.zh.regHasAccount="新用户？注册账号"; I18N.zh.regSwitchToLogin="已有账号？去登录"; I18N.zh.regId="账号 ID"; I18N.zh.regName="你的姓名";I18N.zh.regIdSub="登录账号 — 简短、唯一、小写。同事用它 @ 你、分配客户（如 ama、kwame）。"; I18N.zh.regNameSub="展示给客户的姓名，出现在报价单、聊天与预约里（如 Ama K.、Kwame Asante）。"; I18N.zh.regWa="WhatsApp"; I18N.zh.regPhone="电话"; I18N.zh.regPin="密码 PIN（4-8 位）"; I18N.zh.regCreate="创建账号"; I18N.zh.regCreating="创建中…"; I18N.zh.regSuccess="账号已创建"; I18N.zh.regExists="该账号 ID 已被占用"; I18N.zh.regHint="先填写服务器地址，再在下方填写你的资料即可创建账号。如果已有账号，点“已有账号？去登录”。"; I18N.zh.regModeCreate="创建公司"; I18N.zh.regModeJoin="加入公司"; I18N.zh.regCoName="公司名称"; I18N.zh.regCoLogo="公司 Logo"; I18N.zh.regCode="邀请码"; I18N.zh.coTitle="公司"; I18N.zh.coSave="保存公司"; I18N.zh.coEdit="编辑公司"; I18N.zh.reqField="必填"; I18N.zh.coSaved="公司已保存";
+I18N.zh.loginTab="登录"; I18N.zh.regTab="注册账号"; I18N.zh.regHasAccount="新用户？注册账号"; I18N.zh.regSwitchToLogin="已有账号？去登录"; I18N.zh.regId="账号 ID"; I18N.zh.regName="你的姓名";I18N.zh.regIdSub="登录账号 — 简短、唯一、小写。同事用它 @ 你、分配客户（如 ama、kwame）。"; I18N.zh.regNameSub="展示给客户的姓名，出现在报价单、聊天与预约里（如 Ama K.、Kwame Asante）。"; I18N.zh.regWa="WhatsApp"; I18N.zh.regPhone="电话"; I18N.zh.regPin="密码 PIN（4-8 位）"; I18N.zh.regCreate="创建账号"; I18N.zh.regCreating="创建中…"; I18N.zh.regSuccess="账号已创建"; I18N.zh.regExists="该账号 ID 已被占用"; I18N.zh.regHint="先填写服务器地址，再在下方填写你的资料即可创建账号。如果已有账号，点“已有账号？去登录”。"; I18N.zh.regModeCreate="创建公司"; I18N.zh.regModeJoin="加入公司"; I18N.zh.regCoName="公司名称"; I18N.zh.regCoLogo="公司 Logo"; I18N.zh.regCode="邀请码"; I18N.zh.coTitle="公司"; I18N.zh.coSave="保存公司"; I18N.zh.coEdit="编辑公司"; I18N.zh.reqField="必填"; I18N.zh.coSaved="公司已保存";
 I18N.zh.joinTitle="加入公司"; I18N.zh.joinHint="输入老板给你的邀请码，或扫描对方分享的二维码，选择你的角色即可获得权限。"; I18N.zh.joinCode="邀请码"; I18N.zh.joinScan="扫描"; I18N.zh.joinRole="你的角色"; I18N.zh.jrPartner="合伙人（共同所有者）"; I18N.zh.jrManager="经理"; I18N.zh.jrSalesA="高级销售"; I18N.zh.jrSalesB="销售"; I18N.zh.joinBranch="门店"; I18N.zh.joinBind="绑定并激活"; I18N.zh.joinNeedCode="请填写或扫描邀请码"; I18N.zh.joinSuccess="你已加入公司"; I18N.zh.joinBadCode="邀请码不匹配"; I18N.zh.joinBadTier="请选择角色"; I18N.zh.joinNotFound="未找到账号";
 I18N.zh.codeTitle="公司邀请码"; I18N.zh.codeHint="把这个码发给合伙人和员工，他们输入或扫码即可加入公司并获得权限。"; I18N.zh.codeCopy="复制邀请码"; I18N.zh.codeRegen="重新生成"; I18N.zh.codeCopied="邀请码已复制"; I18N.zh.codeRegenConfirm="重新生成邀请码？旧的分享将失效。"; I18N.zh.codeRegenOk="已生成新邀请码"; I18N.zh.scanNoCam="无法使用摄像头"; I18N.zh.scanOk="已扫描到邀请码";
 I18N.zh.memTitle="会员"; I18N.zh.memManage="管理会员"; I18N.zh.memActive="生效中"; I18N.zh.memExpired="已过期"; I18N.zh.memTrial="试用"; I18N.zh.memUntil="有效期至"; I18N.zh.memExpiredMsg="会员已过期，续费后可继续添加/编辑车辆并保持员工同步。"; I18N.zh.memPick="选择套餐"; I18N.zh.memScan="用支付宝扫描此码付款"; I18N.zh.memOpenAlipay="打开支付宝"; I18N.zh.memSimPay="（测试）模拟支付成功"; I18N.zh.memPaying="正在创建订单…"; I18N.zh.memPaid="已收到付款 — 会员已开通"; I18N.zh.memPayFailed="支付失败，请重试"; I18N.zh.memSimNote="开发模式：支付宝为模拟支付 — 点击测试按钮即可激活。";
@@ -1755,8 +1784,8 @@ I18N.zh.secWork="工作台"; I18N.zh.secAdmin="管理"; I18N.zh.secSettings="设
 /* --- B-plan photo recovery (boss-only utility) --- */
 I18N.en.recoverTitle="Recover missing photos"; I18N.en.recoverHint="If photos you uploaded are missing after reopening the app, this re-attaches them from storage. Only affects your company."; I18N.en.recoverBtn="Recover missing photos"; I18N.en.recovering="Recovering…"; I18N.en.recovered="Recovered"; I18N.en.recoverFail="Recovery failed"; I18N.en.photoN="photo"; I18N.en.photoNs="photos"; I18N.en.cleanupBtn="Permanently delete recovered photos"; I18N.en.cleanupHint="Deletes the \"Recovered Photos\" car, its storage files, and the car record. For junk from already-deleted cars. Cannot be undone."; I18N.en.cleaningUp="Cleaning up…"; I18N.en.cleanupDone="Permanently deleted "; I18N.en.cleanupEmpty="Nothing to clean up"; I18N.en.cleanupConfirm="Delete the \"Recovered Photos\" car and its files permanently? This cannot be undone.";
 I18N.zh.recoverTitle="恢复丢失照片"; I18N.zh.recoverHint="若上传的照片重新打开后丢失，此操作会从存储中重新挂回对应车辆。仅影响本公司。"; I18N.zh.recoverBtn="恢复丢失照片"; I18N.zh.recovering="正在恢复…"; I18N.zh.recovered="已恢复"; I18N.zh.recoverFail="恢复失败"; I18N.zh.photoN="张照片"; I18N.zh.photoNs="张照片"; I18N.zh.cleanupBtn="彻底删除找回的照片"; I18N.zh.cleanupHint="删除「找回的照片」车及其存储文件、车辆记录。适用于已删除车辆的废图，不可恢复。"; I18N.zh.cleaningUp="正在清理…"; I18N.zh.cleanupDone="已永久删除 "; I18N.zh.cleanupEmpty="没有可清理的内容"; I18N.zh.cleanupConfirm="将永久删除「找回的照片」车及其文件，且不可恢复。确定吗？";
-I18N.en.welcomeTitle="👋 Welcome to ANT MOTORS"; I18N.en.welcomeDesc="New here? Create your company account to start adding cars, managing your team and viewing membership. Open the “Me” tab at the bottom right, or tap the button below."; I18N.en.welcomeBtn="Login / Register"; I18N.en.loginRegBtn="👤 Login / Register"; I18N.en.settingsBtn="⚙ Settings"; I18N.en.welcomeTo="Welcome to"; I18N.en.errOccurred="Something went wrong — try refreshing"; I18N.en.updateAvail="New version available";
-I18N.zh.welcomeTitle="👋 欢迎使用 ANT MOTORS"; I18N.zh.welcomeDesc="首次使用？创建公司账号即可添加车辆、管理团队与查看会员。请打开右下角“我的”页，或点击下方按钮。"; I18N.zh.welcomeBtn="登录 / 注册"; I18N.zh.loginRegBtn="👤 登录 / 注册"; I18N.zh.settingsBtn="⚙ 设置"; I18N.zh.welcomeTo="欢迎使用"; I18N.zh.errOccurred="出错了，请尝试刷新"; I18N.zh.updateAvail="有新版本可用";
+I18N.en.welcomeTitle="Welcome to ANT MOTORS"; I18N.en.welcomeDesc="New here? Create your company account to start adding cars, managing your team and viewing membership. Open the “Me” tab at the bottom right, or tap the button below."; I18N.en.welcomeBtn="Login / Register"; I18N.en.loginRegBtn="Login / Register"; I18N.en.settingsBtn="Settings"; I18N.en.welcomeTo="Welcome to"; I18N.en.errOccurred="Something went wrong — try refreshing"; I18N.en.updateAvail="New version available";
+I18N.zh.welcomeTitle="欢迎使用 ANT MOTORS"; I18N.zh.welcomeDesc="首次使用？创建公司账号即可添加车辆、管理团队与查看会员。请打开右下角“我的”页，或点击下方按钮。"; I18N.zh.welcomeBtn="登录 / 注册"; I18N.zh.loginRegBtn="登录 / 注册"; I18N.zh.settingsBtn="设置"; I18N.zh.welcomeTo="欢迎使用"; I18N.zh.errOccurred="出错了，请尝试刷新"; I18N.zh.updateAvail="有新版本可用";
 /* --- detail-page ⋯ menu labels (were missing → stayed English on lang switch) --- */
 I18N.en.save="Save"; I18N.en.saved="Saved"; I18N.en.share="Share"; I18N.en.theme="Theme"; I18N.en.edit="Edit"; I18N.en.navGoogleSub="Navigate in Google Maps"; I18N.en.navAppleSub="Navigate in Apple Maps"; I18N.en.navAmapSub="Search in Amap"; I18N.en.noAddr="No address set for this showroom"; I18N.en.del="Delete"; I18N.en.carsUnit="cars"; I18N.en.nameReq="Name required"; I18N.en.shExists="This showroom already exists"; I18N.en.shAdded="Showroom added"; I18N.en.shDeleted="Showroom deleted"; I18N.en.shDelMsg="Delete showroom {n}? {c} cars will lose their branch."; I18N.en.shDelMsg0="Delete showroom {n}?"; I18N.en.del="Delete"; I18N.en.carsUnit="cars"; I18N.en.nameReq="Name required"; I18N.en.shExists="This showroom already exists"; I18N.en.shAdded="Showroom added"; I18N.en.shDeleted="Showroom deleted"; I18N.en.shDelMsg="Delete showroom {n}? {c} cars will lose their branch."; I18N.en.shDelMsg0="Delete showroom {n}?";
 I18N.zh.save="收藏"; I18N.zh.saved="已收藏"; I18N.zh.share="分享"; I18N.zh.theme="主题"; I18N.zh.edit="编辑"; I18N.zh.navGoogleSub="在 Google 地图中导航"; I18N.zh.navAppleSub="在 Apple 地图中导航"; I18N.zh.navAmapSub="在高德地图中搜索"; I18N.zh.noAddr="该门店未设置地址"; I18N.zh.del="删除"; I18N.zh.carsUnit="辆车"; I18N.zh.nameReq="请填写名称"; I18N.zh.shExists="该门店已存在"; I18N.zh.shAdded="门店已添加"; I18N.zh.shDeleted="门店已删除"; I18N.zh.shDelMsg="删除门店 {n}？其下的 {c} 辆车将失去归属门店。"; I18N.zh.shDelMsg0="删除门店 {n}？";
@@ -2076,7 +2105,9 @@ function setLang(l){
   if(document.getElementById('scr-detail') && document.getElementById('scr-detail').classList.contains('active')) refreshDetailMenu();
   updateDemoState(); syncSheet();
   // settings sheet internals: keep user inputs, just refresh language-bound bits
-  if(document.getElementById('regToggle')) document.getElementById('regToggle').textContent=regShowCreate?T('regSwitchToLogin','Have an account? Sign in'):T('regHasAccount','New here? Create an account');
+  const segLogin=document.getElementById('segTabLogin'), segReg=document.getElementById('segTabReg');
+  if(segLogin) segLogin.firstElementChild.textContent=T('loginTab','Sign in');
+  if(segReg) segReg.firstElementChild.textContent=T('regTab','Create account');
   // password strength hints are generated by T() → refresh them too
   updatePwMeter('regPin','regMeter','regTip'); updatePwMeter('fgPw','fgMeter','fgTip');
   const fgb=document.getElementById('fgSendBtn');
@@ -2268,7 +2299,7 @@ function renderStock(){
   else if(s==='priceDesc') ks.sort((a,b)=>CARS[b].price.quote-CARS[a].price.quote);
   else if(s==='newest') ks.sort((a,b)=>new Date(LISTED_AT[b])-new Date(LISTED_AT[a]));
   else if(s==='oldest') ks.sort((a,b)=>new Date(LISTED_AT[a])-new Date(LISTED_AT[b]));
-  if(ks.length===0){ g.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--text-dim);font-size:13px;padding:34px 0;">'+T('noMatch','No cars match your filters.')+'</div>'; return; }
+  if(ks.length===0){ g.innerHTML='<div class="empty-state" style="grid-column:1/-1;"><div class="ic">🔍</div><div class="ti">'+T('noMatch','No cars match your filters.')+'</div></div>'; return; }
   ks.forEach(k=>g.appendChild(carCard(k)));
   lazyPhotoObserve(); // stream each visible car's photo in on demand
 }
@@ -2277,13 +2308,13 @@ function renderHome(){
   populateFilterSelects();
   const grid=document.getElementById('homeGrid'); grid.innerHTML="";
   const homeKeys=Object.keys(CARS).filter(matchCar);
-  if(homeKeys.length===0){ const emptyMsg=isSharedView()?T('emptyShared','Our showroom is being updated — tap the WhatsApp button below to ask about available vehicles.'):T('needServer','Please enter your server address in Settings to load inventory.'); grid.innerHTML='<div class="empty" style="margin:40px 16px;text-align:center;color:var(--text-dim)">'+emptyMsg+'</div>'; }
+  if(homeKeys.length===0){ const emptyMsg=isSharedView()?T('emptyShared','Our showroom is being updated — tap the WhatsApp button below to ask about available vehicles.'):T('needServer','Please enter your server address in Settings to load inventory.'); grid.innerHTML='<div class="empty-state" style="grid-column:1/-1;"><div class="ic">🚗</div><div class="ti">'+T('noCars','No cars available')+'</div><div class="sub">'+emptyMsg+'</div></div>'; }
   homeKeys.forEach(k=>{ grid.appendChild(carCard(k)); });
   // Featured cars now live in the big hero carousel (see renderHeroCarousel) — no separate section below.
   renderHeroCarousel();
   const hs=document.getElementById('homeShowrooms'); hs.innerHTML="";
   if(!SHOWROOMS.length){
-    hs.innerHTML='<div class="empty" style="padding:18px 4px;color:var(--text-dim);font-size:13px;">'+T('noShowrooms','No showrooms added yet')+'</div>';
+    hs.innerHTML='<div class="empty-state" style="padding:18px 4px;"><div class="ic">🏢</div><div class="sub">'+T('noShowrooms','No showrooms added yet')+'</div></div>';
   } else {
     SHOWROOMS.forEach(s=>{
       const c=document.createElement('div'); c.className="sh-card"; c.onclick=()=>go('scr-showrooms');
@@ -2418,7 +2449,7 @@ function renderStockFiltered(){
   else if(s==='priceDesc') ks.sort((a,b)=>CARS[b].price.quote-CARS[a].price.quote);
   else if(s==='newest') ks.sort((a,b)=>new Date(LISTED_AT[b])-new Date(LISTED_AT[a]));
   else if(s==='oldest') ks.sort((a,b)=>new Date(LISTED_AT[a])-new Date(LISTED_AT[b]));
-  if(ks.length===0){ g.innerHTML='<div style="grid-column:1/-1;text-align:center;color:var(--text-dim);font-size:13px;padding:34px 0;">'+T('noMatch','No cars match your filters.')+'</div>'; return; }
+  if(ks.length===0){ g.innerHTML='<div class="empty-state" style="grid-column:1/-1;"><div class="ic">🔍</div><div class="ti">'+T('noMatch','No cars match your filters.')+'</div></div>'; return; }
   ks.forEach(k=>g.appendChild(carCard(k)));
   lazyPhotoObserve(); // stream each visible car's photo in on demand
 }
@@ -4369,7 +4400,7 @@ function setSyncState(s,m){ SYNC.state=s; SYNC.msg=m||''; }
 function renderSyncUI(){
   const el=document.getElementById('syncStatus');
   const box=document.getElementById('syncLoginBox'), out=document.getElementById('signOutGroup');
-  const fg=document.getElementById('forgotBox'), rg=document.getElementById('regBox'), tg=document.getElementById('regToggle');
+  const fg=document.getElementById('forgotBox'), rg=document.getElementById('regBox'), tabs=document.getElementById('authSegTabs');
   const fgOpen=fg&&fg.style.display!=='none', rgOpen=rg&&rg.style.display!=='none';
   if(box) box.style.display=(SYNC.token||fgOpen||rgOpen)?'none':'block';
   if(out) out.style.display=SYNC.token?'flex':'none';
@@ -4381,9 +4412,9 @@ function renderSyncUI(){
   if(SYNC.token){
     if(fg) fg.style.display='none';
     if(rg) rg.style.display='none';
-    if(tg) tg.style.display='none';
+    if(tabs) tabs.style.display='none';
     regShowCreate=false;
-  } else if(tg && !fgOpen){ tg.style.display=''; }
+  } else if(tabs && !fgOpen){ tabs.style.display=''; }
   try{ renderMe(); }catch(err){}
   if(!el) return;
   const pend=Object.keys(SYNC.cars).length+Object.keys(SYNC.emps).length;
@@ -4429,7 +4460,7 @@ function updateAuthCTA(){
   // Tenant domains are customer-only: no "Login / Register" bar there either.
   const wb=document.getElementById('welcomeBar'); if(wb) wb.style.display=(loggedIn||shared||onTenantDomain())?'none':'block';
   // refresh welcome bar language
-  const wt=document.getElementById('welcomeTitle'); if(wt) wt.textContent='👋 '+T('welcomeTo','Welcome to')+' '+brandName();
+  const wt=document.getElementById('welcomeTitle'); if(wt) wt.textContent=T('welcomeTo','Welcome to')+' '+brandName();
   const wd=document.getElementById('welcomeDesc'); if(wd) wd.textContent=T('welcomeDesc','New here? Create your company account to start adding cars, managing your team and viewing membership info. Tap the settings button above or the button below.');
   const wbtn=document.getElementById('welcomeBtn'); if(wbtn) wbtn.textContent=T('welcomeBtn','Login / Register');
   renderAttrBanner();
@@ -4544,23 +4575,22 @@ async function syncLogin(){
 
 /* ---- password recovery ---- */
 function openForgot(){
-  const s=document.getElementById('syncLoginBox'), r=document.getElementById('regBox'), f=document.getElementById('forgotBox'), t=document.getElementById('regToggle'), h=document.getElementById('regHint');
+  const s=document.getElementById('syncLoginBox'), r=document.getElementById('regBox'), f=document.getElementById('forgotBox'), tabs=document.getElementById('authSegTabs'), h=document.getElementById('regHint');
   if(!f) return;
   if(s) s.style.display='none';
   if(r) r.style.display='none';
   if(h) h.style.display='none';
-  if(t) t.style.display='none';
+  if(tabs) tabs.style.display='none';
   f.style.display='block';
   const acct=document.getElementById('fgAcct'), cur=(document.getElementById('setEmpId')||{}).value||'';
   if(acct&&!acct.value) acct.value=cur;
 }
 function closeForgot(){
-  const s=document.getElementById('syncLoginBox'), f=document.getElementById('forgotBox'), t=document.getElementById('regToggle');
+  const s=document.getElementById('syncLoginBox'), f=document.getElementById('forgotBox'), tabs=document.getElementById('authSegTabs');
   if(f) f.style.display='none';
   if(s) s.style.display='block';
-  if(t) t.style.display='';
+  if(tabs) tabs.style.display='';
   regShowCreate=false;
-  if(t) t.textContent=T('regHasAccount','New here? Create an account');
 }
 let fgTimer=null;
 async function sendResetCode(){
@@ -4617,17 +4647,19 @@ function syncLogout(){
 }
 /* ---- self-registration ---- */
 let regShowCreate = false;
-function toggleReg(){
-  const s=document.getElementById('syncLoginBox'), r=document.getElementById('regBox'), t=document.getElementById('regToggle'), h=document.getElementById('regHint');
-  if(!s||!r||!t) return;
-  const f=document.getElementById('forgotBox'); if(f) f.style.display='none';
-  const showReg = r.style.display==='none';
-  regShowCreate = showReg;
-  s.style.display = showReg?'none':'block';
-  r.style.display = showReg?'block':'none';
-  if(h) h.style.display = showReg?'block':'none';
-  t.textContent = showReg ? T('regSwitchToLogin','Have an account? Sign in') : T('regHasAccount','New here? Create an account');
+function setAuthMode(mode){
+  const s=document.getElementById('syncLoginBox'), r=document.getElementById('regBox'), h=document.getElementById('regHint'), f=document.getElementById('forgotBox');
+  const l=document.getElementById('segTabLogin'), g=document.getElementById('segTabReg');
+  if(!s||!r) return;
+  if(f) f.style.display='none';
+  regShowCreate = (mode==='register');
+  s.style.display = mode==='login'?'block':'none';
+  r.style.display = mode==='register'?'block':'none';
+  if(h) h.style.display = mode==='register'?'block':'none';
+  if(l) l.classList.toggle('on', mode==='login');
+  if(g) g.classList.toggle('on', mode==='register');
 }
+function toggleReg(){ setAuthMode(regShowCreate?'login':'register'); }
 async function registerAccount(){
   const base=resolveApiBase();
   if(!base){ toast(T('syncNeedServer','Enter the server address first')); return; }
