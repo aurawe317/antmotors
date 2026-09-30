@@ -962,6 +962,7 @@
           <div class="form-row"><label data-i18n="fBody">Body Type</label><select id="afBody" onchange="liveZh()"><option>SUV</option><option>Sedan</option><option>Pickup</option><option>Hatchback</option></select></div>
           <div class="form-row"><label data-i18n="color">Color</label><select id="afColor" onchange="liveZh()"><option>Black</option><option>White</option><option>Silver</option><option>Gray</option><option>Red</option><option>Blue</option><option>Brown</option><option>Other</option></select></div>
           <div class="form-row"><label data-i18n="fDays">Days in stock</label><input type="number" id="afDays" placeholder="auto" min="0"></div>
+          <div class="form-row"><label data-i18n="fStock">Stock quantity</label><input type="number" id="afStock" placeholder="1" min="1" value="1"></div>
         </div>
 
         <div class="form-row"><label data-i18n="fBranch">Branch</label><input type="text" id="afBranch" list="afBranchList" autocomplete="off" placeholder="Select or type a new location" style="width:100%;"><datalist id="afBranchList"></datalist></div>
@@ -1529,7 +1530,16 @@ const COLORS={};
 function carColor(k){ return (CARS[k]&&CARS[k].color)||COLORS[k]||"Other"; }
 function carYear(c){ const m=String(c.name).match(/(\d{4})/); return m?+m[1]:null; }
 function carMileage(c){ const s=(c.specs||[]).find(x=>x[0]==="Mileage"); if(!s) return null; const m=String(s[1]).match(/([\d,]+)/); return m?+m[1].replace(/,/g,""):null; }
-function stockBadge(k){ if(curRole==='customer') return ''; const d=daysInStock(k); if(d===null) return ''; const over=d>90; return ' <span class="stock-days'+(over?' over':'')+'">'+T('inStockDays','In stock')+' '+d+' '+T('days','days')+(over?(' · '+T('overstock','overstock')):'')+'</span>'; }
+function stockBadge(k){
+  if(curRole==='customer') return '';
+  const c=CARS[k]; if(!c) return '';
+  const d=daysInStock(k);
+  const stock=Math.max(1, parseInt(c.stock)||1);
+  const over=d!==null && d>90;
+  let txt=T('stockCount','Stock')+' '+stock+' '+T('units','units');
+  if(d!==null) txt += ' · '+T('inStockDays','In stock')+' '+d+' '+T('days','days')+(over?(' · '+T('overstock','overstock')):'');
+  return ' <span class="stock-days'+(over?' over':'')+'">'+txt+'</span>';
+}
 const SHOWROOMS = [];
 const SALES = {};
 // Tier-classification maps. NOTE: there is intentionally NO 'boss' key here. A literal
@@ -1586,7 +1596,7 @@ const I18N = {
       workbenchTitle:"Sales Workbench",wbLeads:"Customer Leads",wbLinks:"Share Links",wbNotifs:"Booking Alerts",wbMyCars:"My Cars",wbFeatOrder:"Featured Order",noFeat:"No featured cars yet. Mark a car as featured from its ⋯ menu.",wbAdmin:"Admin Actions",addNewCar:"+ Add New Car",
       wbStatLeads:"Leads",wbStatClicks:"Link clicks",wbStatConv:"Conversion",
       adminTitle:"Add New Car",fBrand:"Brand",fModel:"Model",fYear:"Year",fCond:"Condition",fBody:"Body Type",fBranch:"Branch",
-      fSpecs:"Specs (comma-separated)",fHighlights:"Highlights (comma-separated)",fDays:"Days in stock",priceTiers:"Price Tiers",
+      fSpecs:"Specs (comma-separated)",fHighlights:"Highlights (comma-separated)",fDays:"Days in stock",fStock:"Stock quantity",priceTiers:"Price Tiers",
       fCost:"Cost",fFloorA:"Floor A (Senior)",fFloorB:"Floor B (Junior)",fQuote:"Quote (Customer Price)",
       fPhotos:"Photos",fPhotosHint:"Tap to upload car photos",fVideos:"Videos",fVideosHint:"Tap to add a car video (max 25MB)",preview:"Preview",saveCar:"Save Car",zhAuto:"Chinese preview (auto)",zhName:"Name",zhSub:"Sub",zhSpec:"Specs",zhHl:"Highlights",
       favTitle:"Saved & Recent",favSaved:"Saved",favRecent:"Recently viewed",favEmptyHint:"Tap the heart on any car to save it here",
@@ -1634,7 +1644,7 @@ const I18N = {
       workbenchTitle:"销售工作台",wbLeads:"客户线索",wbLinks:"分享链接",wbNotifs:"预约提醒",wbMyCars:"我的车源",wbFeatOrder:"精选排序",noFeat:"还没有精选车辆。在车辆右上角 ⋯ 菜单中设为精选即可。",wbAdmin:"管理操作",addNewCar:"+ 新增车辆",
       wbStatLeads:"线索数",wbStatClicks:"链接点击",wbStatConv:"转化率",
       adminTitle:"新增车辆",fBrand:"品牌",fModel:"型号",fYear:"年份",fCond:"车况",fBody:"车型",fBranch:"门店",
-      fSpecs:"规格（逗号分隔）",fHighlights:"亮点（逗号分隔）",fDays:"在库时长（天）",priceTiers:"价格分级",
+      fSpecs:"规格（逗号分隔）",fHighlights:"亮点（逗号分隔）",fDays:"在库时长（天）",fStock:"库存数量",priceTiers:"价格分级",
       fCost:"成本",fFloorA:"底价A（高级）",fFloorB:"底价B（初级）",fQuote:"报价（客户价）",
       fPhotos:"照片",fPhotosHint:"点击上传车辆照片",fVideos:"视频",fVideosHint:"点击添加车辆视频（最大 25MB）",preview:"预览",saveCar:"保存车辆",zhAuto:"中文预览（自动生成）",zhName:"名称",zhSub:"副标",zhSpec:"配置",zhHl:"亮点",
       favTitle:"收藏与历史",favSaved:"已收藏",favRecent:"最近浏览",favEmptyHint:"点击任意车辆的爱心即可收藏",
@@ -1671,7 +1681,7 @@ const I18N = {
       pvR_partnerB:"合伙人B",pvR_partnerB_sub:"共同业主 · 同老板",
       pvS_kwame:"Kwame A. · 阿克拉",pvS_ama:"Ama K. · 特马",pvS_kwasi:"Kwasi O. · 库马西",
       prTitle:"💰 价格机制",prHint:"同一辆车，按角色最多三档价格。价格按你设置的显示货币展示。业主与两位合伙人看成本；销售看分级底价；客户看报价。",
-      priceSetByTop:"客户报价及销售底价仅由老板/业主和合伙人设定。",loginAs:"登录为",pvLogin:"登录身份（仅管理员）",pvL_boss:"老板 / 业主",pvL_partnerA:"合伙人A",pvL_partnerB:"合伙人B",boundLink:"绑定链接 · 客户只能联系你",noSwitchRole:"角色由管理员统一分配，你不能切换",noSwitchSales:"分享链接已绑定你的账号",viewingAs:"当前查看",loggedInAs:"已登录为",sortDefault:"默认",sortPriceAsc:"价格升序",sortPriceDesc:"价格降序",sortNewest:"上架最新",sortOldest:"上架最早",inStockDays:"在库",days:"天",overstock:"积压预警",settingsTitle:"设置",myContact:"我的联系方式（客户联系你）",fWhatsApp:"WhatsApp 号码",fPhone:"电话",saveContact:"保存",installTitle:"安装 App（员工）",installHint:"iOS：Safari 打开 → 分享 → 添加到主屏幕。Android：Chrome 打开 → ⋮ → 安装应用。客户只需打开分享链接，无需安装。",staffMgmt:"员工与角色（管理员）",addStaff:"+ 新增员工",staffId:"员工账号",staffName:"姓名",staffRole:"角色",staffBranch:"门店",staffWa:"WhatsApp",staffPhone:"电话",staffPin:"密码 PIN（4-8 位）",staffCreate:"创建并邀请",staffCreated:"员工已创建",contactSaved:"联系方式已保存",tierAssigned:"已分配 ",pvEditContact:"编辑我的 WhatsApp 与电话",pvLockNote:"你的分享链接已绑定本账号——客户只能联系你。角色切换由管理员统一分配。",close:"关闭",edit:"编辑",noContact:"尚未设置联系方式",shoppingAs:"正在以",cap_cost:"查看成本价",cap_floors:"查看所有底价",cap_ownfloor:"查看本人底价",cap_quote:"查看销售报价",cap_editcar:"编辑车辆信息（配置、亮点）",cap_editprice:"编辑价格（成本/底价/报价）",cap_photocar:"上传车辆照片",cap_photoshowroom:"上传门店照片",cap_addcar:"上架/下架车辆",cap_managestaff:"管理销售人员",cap_sharelinks:"生成分享链接",cap_leads:"查看客户线索",permNote:"<b>老板 + 合伙人A + 合伙人B</b> 拥有相同的最高权限——成本、定价、全面编辑。&nbsp; <b>*</b> 经理：仅限本门店。&nbsp; <b>**</b> 销售A：仅限其负责的车辆。",memNone:"尚无会员",memUpgrade:"升级会员",memActive:"生效中",ph_paste:"智能粘贴：把整段车辆信息贴进来，系统自动识别并填入下方。例如：Toyota Camry 2021, SUV, Black, Accra, 2.5L Auto, 45,000 km, Sunroof Leather seats",bilingualPrev:"双语预览（可手动修改）",featuredCars:"精选车辆",browseAll:"浏览全部",markFeat:"设为精选",unmarkFeat:"取消精选",markedFeat:"已设为精选",unmarkedFeat:"已取消精选",noPermBranch:"该车辆属于其他门店",addShowroom:"+ 添加销售点",shName:"名称",shAddr:"地址",shPhone:"电话",shHours:"营业时间",shDist:"距离",shSave:"保存",del:"删除",showroomsTitle:"门店网点",shDelConfirm:"删除门店",unassigned:"未分配",shSettingsTitle:"销售点/门店管理",wbStatLeads:"线索",wbStatClicks:"链接点击",wbStatConv:"转化率",noLeads:"暂无线索",noBookings:"暂无新预约",clicksLbl:"次",leadsLbl:"条",back:"返回"},
+      priceSetByTop:"客户报价及销售底价仅由老板/业主和合伙人设定。",loginAs:"登录为",pvLogin:"登录身份（仅管理员）",pvL_boss:"老板 / 业主",pvL_partnerA:"合伙人A",pvL_partnerB:"合伙人B",boundLink:"绑定链接 · 客户只能联系你",noSwitchRole:"角色由管理员统一分配，你不能切换",noSwitchSales:"分享链接已绑定你的账号",viewingAs:"当前查看",loggedInAs:"已登录为",sortDefault:"默认",sortPriceAsc:"价格升序",sortPriceDesc:"价格降序",sortNewest:"上架最新",sortOldest:"上架最早",inStockDays:"在库",days:"天",overstock:"积压预警",stockCount:"库存",units:"辆",settingsTitle:"设置",myContact:"我的联系方式（客户联系你）",fWhatsApp:"WhatsApp 号码",fPhone:"电话",saveContact:"保存",installTitle:"安装 App（员工）",installHint:"iOS：Safari 打开 → 分享 → 添加到主屏幕。Android：Chrome 打开 → ⋮ → 安装应用。客户只需打开分享链接，无需安装。",staffMgmt:"员工与角色（管理员）",addStaff:"+ 新增员工",staffId:"员工账号",staffName:"姓名",staffRole:"角色",staffBranch:"门店",staffWa:"WhatsApp",staffPhone:"电话",staffPin:"密码 PIN（4-8 位）",staffCreate:"创建并邀请",staffCreated:"员工已创建",contactSaved:"联系方式已保存",tierAssigned:"已分配 ",pvEditContact:"编辑我的 WhatsApp 与电话",pvLockNote:"你的分享链接已绑定本账号——客户只能联系你。角色切换由管理员统一分配。",close:"关闭",edit:"编辑",noContact:"尚未设置联系方式",shoppingAs:"正在以",cap_cost:"查看成本价",cap_floors:"查看所有底价",cap_ownfloor:"查看本人底价",cap_quote:"查看销售报价",cap_editcar:"编辑车辆信息（配置、亮点）",cap_editprice:"编辑价格（成本/底价/报价）",cap_photocar:"上传车辆照片",cap_photoshowroom:"上传门店照片",cap_addcar:"上架/下架车辆",cap_managestaff:"管理销售人员",cap_sharelinks:"生成分享链接",cap_leads:"查看客户线索",permNote:"<b>老板 + 合伙人A + 合伙人B</b> 拥有相同的最高权限——成本、定价、全面编辑。&nbsp; <b>*</b> 经理：仅限本门店。&nbsp; <b>**</b> 销售A：仅限其负责的车辆。",memNone:"尚无会员",memUpgrade:"升级会员",memActive:"生效中",ph_paste:"智能粘贴：把整段车辆信息贴进来，系统自动识别并填入下方。例如：Toyota Camry 2021, SUV, Black, Accra, 2.5L Auto, 45,000 km, Sunroof Leather seats",bilingualPrev:"双语预览（可手动修改）",featuredCars:"精选车辆",browseAll:"浏览全部",markFeat:"设为精选",unmarkFeat:"取消精选",markedFeat:"已设为精选",unmarkedFeat:"已取消精选",noPermBranch:"该车辆属于其他门店",addShowroom:"+ 添加销售点",shName:"名称",shAddr:"地址",shPhone:"电话",shHours:"营业时间",shDist:"距离",shSave:"保存",del:"删除",showroomsTitle:"门店网点",shDelConfirm:"删除门店",unassigned:"未分配",shSettingsTitle:"销售点/门店管理",wbStatLeads:"线索",wbStatClicks:"链接点击",wbStatConv:"转化率",noLeads:"暂无线索",noBookings:"暂无新预约",clicksLbl:"次",leadsLbl:"条",back:"返回"},
 };
 I18N.en.advanced="Advanced"; I18N.en.mileage="Mileage (km)"; I18N.en.priceRangeLbl="Price range (₵)"; I18N.en.color="Color"; I18N.en.year="Year"; I18N.en.advBranch="Sales point"; I18N.en.advHint="Combine multiple filters — options auto-detected from your listed cars."; I18N.en.resetFilters="Reset"; I18N.en.applyFilters="Apply"; I18N.en.allBranches="All branches"; I18N.en.allBrands="All brands"; I18N.en.needServer="Please enter your server address in Settings to load inventory.";
 I18N.zh.advanced="高级筛选"; I18N.zh.mileage="公里数 (km)"; I18N.zh.priceRangeLbl="价格区间 (₵)"; I18N.zh.color="颜色"; I18N.zh.year="年份"; I18N.zh.advBranch="销售点"; I18N.zh.advHint="可同时叠加多个条件——筛选项根据在售车辆自动识别。"; I18N.zh.resetFilters="重置"; I18N.zh.applyFilters="应用"; I18N.zh.allBranches="全部门店"; I18N.zh.allBrands="全部品牌"; I18N.zh.needServer="请在设置中填写服务器地址以加载库存。";
@@ -5352,6 +5362,7 @@ async function openEditCar(key){
   set('afSpecs', (c.specs||[]).map(s=>s[0]).join(', '));
   set('afHighlights', (c.hl||[]).join(', '));
   set('afDays', c.inStockDays);
+  set('afStock', c.stock!=null ? c.stock : 1);
   set('afCost', c.price&&c.price.cost); set('afFloorA', c.price&&c.price.floorA); set('afFloorB', c.price&&c.price.floorB); set('afQuote', c.price&&c.price.quote);
   set('pvNameEn', c.name); set('pvNameZh', c.nameZh); set('pvSubEn', c.sub); set('pvSubZh', c.subZh);
   set('pvSpecEn', (c.specs||[]).map(s=>s[0]).join(', ')); set('pvSpecZh', (c.specs||[]).map(s=>s[1]||'').join(', '));
@@ -5402,6 +5413,8 @@ function submitNewCar(){
   if(quote===0){ toast(T('afNeedQuote','Please enter a customer quote price')); return; }
   const daysVal=document.getElementById('afDays').value.trim();
   const inStockDays = daysVal!=='' ? parseInt(daysVal) : null;
+  const stockVal=document.getElementById('afStock').value.trim();
+  const stock = stockVal!=='' ? Math.max(1, parseInt(stockVal)||1) : 1;
   let showroom=SHOWROOMS.find(s=>s.name===branch);
   if(!showroom && branch){            // brand-new location typed by user → save it as an option
     showroom={name:branch, grad:'g3'};
@@ -5425,6 +5438,7 @@ function submitNewCar(){
     cond:cond,body:body,color:color,brand:brand,model:model,year:year,branch:showroom.name,
     grad:prev.grad||'g3',loc:prev.loc||showroom,sold:prev.sold||false,featured:prev.featured||false,
     inStockDays:inStockDays,
+    stock:stock,
     specs:specsArr,hl:hlArr,
     price:{cost:cost||floorA-5000,floorA:floorA||quote-5000,floorB:floorB||floorA+1500,quote:quote}};
   CAR_PHOTOS[targetKey]=ADMIN_PHOTOS.slice();
