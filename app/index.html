@@ -386,13 +386,6 @@
   .tabbar .tab.on{color:var(--gold);}
   .tabbar .tab svg{display:block; width:24px; height:24px;}
 
-  /* persistent Add-Car floating button (owner/staff only) */
-  .fab-add{position:absolute; right:16px; bottom:78px; width:56px; height:56px; border-radius:50%; background:linear-gradient(140deg,var(--gold),#b9842c); color:#0F0E0E; border:none; display:none; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 8px 22px rgba(0,0,0,.45); z-index:40;}
-  #scr-admin.active ~ .fab-add{display:none !important;}
-  .fab-add.show{display:flex;}
-  .fab-add svg{display:block;}
-  .fab-add:active{transform:scale(.94);}
-
   .demo{width:300px; flex:0 0 300px; background:var(--surface); border:1px solid var(--border-strong); border-radius:18px; padding:18px; align-self:flex-start;}
   .demo h3{font-size:14px; font-weight:800; letter-spacing:.4px; display:flex; align-items:center; gap:8px;}
   .demo .hint{font-size:11px; color:var(--text-dim); margin-top:8px; line-height:1.6;}
@@ -588,7 +581,7 @@
   .fav-toggle{position:absolute;top:8px;right:8px;width:28px;height:28px;border-radius:50%;background:rgba(0,0,0,.4);color:#fff;font-size:14px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:3;}
   .fav-toggle.on{color:#E8C268;background:rgba(0,0,0,.6);}
 
-  .admin-head{padding:18px 16px 6px;}
+  .admin-head{padding:18px var(--page-pad) 6px;}
   .admin-head h2{font-size:17px;font-weight:800;}
   .admin-head p{font-size:12px;color:var(--text-dim);margin-top:6px;line-height:1.6;}
   .perm-table{margin:8px 16px 0;border:1px solid var(--border);border-radius:12px;overflow-x:auto;}
@@ -644,18 +637,24 @@
   .wb-link .url{font-size:10px;color:var(--text-dim);font-family:monospace;}
   .wb-link button{font-size:10px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--text);cursor:pointer;}
 
-  .admin-form{padding:0 2px;}
-  .af-paste{width:100%;min-height:62px;resize:vertical;background:var(--surface-2);border:1px solid var(--border);border-radius:10px;padding:16px 12px;color:var(--text);font-size:13px;font-family:inherit;outline:none;margin-bottom:12px;line-height:1.5;text-align:center;}
-  .af-paste::placeholder{text-align:center;color:var(--text-dim);opacity:.7;font-size:12px;}
-  .af-paste:focus{text-align:left;border-color:var(--gold);}
+  .admin-form{padding:0 var(--page-pad);}
+  .af-edit-banner{margin:0 var(--page-pad) 14px; padding:10px 12px; border-radius:var(--r-card); background:var(--gold-soft); border:1px solid var(--gold-line); font-size:12px; display:flex; align-items:center; gap:8px;}
+  .af-edit-banner span{flex:1; color:var(--gold); font-weight:700;}
+  .af-edit-banner .submit{margin:0; padding:6px 12px;}
+  .af-card{background:var(--surface); border:1px solid var(--border); border-radius:var(--r-card); padding:var(--card-pad); margin-bottom:var(--gap-md); box-shadow:var(--shadow-soft);}
+  .af-card-h{font-size:12px; font-weight:800; color:var(--text); letter-spacing:.5px; margin-bottom:12px; text-transform:uppercase;}
+  .af-paste{width:100%;min-height:120px;resize:vertical;background:var(--surface-2);border:1px solid var(--border);border-radius:var(--r-btn);padding:16px 14px;color:var(--text);font-size:14px;font-family:inherit;outline:none;margin-bottom:12px;line-height:1.6;text-align:center; transition:border-color .15s ease;}
+  .af-paste::placeholder{text-align:center;color:var(--text-faint);opacity:.8;font-size:13px;}
+  .af-paste:focus{text-align:left;border-color:var(--gold-line);}
   .af-paste:focus::placeholder{text-align:left;}
-  .af-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 12px;}
-  #scr-admin .form-row{margin-bottom:11px;}
-  #scr-admin .form-row input,#scr-admin .form-row select{padding:9px 10px;font-size:13px;}
-  .af-price-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px;}
-  .af-price-field{display:flex;flex-direction:column;gap:2px;}
-  .af-price-field label{font-size:10px;font-weight:600;color:var(--text-dim);}
-  .af-price-field input{padding:8px 10px;border-radius:7px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:13px;outline:none;width:100%;box-sizing:border-box;}
+  .af-grid{display:grid;grid-template-columns:1fr;gap:0 12px;}
+  @media(min-width:480px){ .af-grid{grid-template-columns:1fr 1fr;} }
+  #scr-admin .form-row{margin-bottom:12px;}
+  #scr-admin .form-row input,#scr-admin .form-row select{height:var(--row-h); padding:0 12px;font-size:14px; border-radius:var(--r-btn);}
+  .af-price-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:0;}
+  .af-price-field{display:flex;flex-direction:column;gap:2px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:10px 12px;}
+  .af-price-field label{font-size:11px;font-weight:600;color:var(--text-dim);}
+  .af-price-field input{padding:0; border:none; background:transparent; color:var(--text); font-size:15px; font-weight:700; outline:none; height:28px;}
   .zhp-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;}
   .zhp-edit{display:flex;flex-direction:column;gap:3px;}
   .zhp-edit label{font-size:10px;font-weight:700;color:var(--text-dim);letter-spacing:.4px;}
@@ -689,13 +688,17 @@
   .role-tag{font-size:9px;padding:2px 6px;border-radius:3px;font-weight:700;}
   .role-tag.boss{background:rgba(232,194,104,.15);color:var(--gold);}
   .price-tiers-h{font-size:13px;font-weight:800;margin:18px 0 10px;padding-top:14px;border-top:1px solid var(--border);}
-  .zh-preview{margin:4px 0 2px;padding:12px 14px;border-radius:10px;background:rgba(232,194,104,.08);border:1px solid var(--border);font-size:12px;}
-  .zh-preview .zhp-h{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:8px;}
-  .zh-preview .zhp-row{display:flex;gap:8px;line-height:1.6;padding:2px 0;}
-  .zh-preview .zhp-row span{flex:0 0 44px;color:var(--text-dim);}
-  .zh-preview .zhp-row b{flex:1;font-weight:600;color:var(--text);}
-  .photo-upload-area{border:2px dashed var(--border);border-radius:12px;padding:24px;text-align:center;color:var(--text-dim);font-size:12px;cursor:pointer;transition:border-color .15s;}
-  .photo-upload-area:hover{border-color:var(--gold);}
+  .zh-preview{margin:0; padding:var(--card-pad); border-radius:var(--r-card); background:var(--surface); border:1px solid var(--border); font-size:12px; box-shadow:var(--shadow-soft);}
+  .zh-preview .zhp-h{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);font-weight:700;margin-bottom:10px;}
+  .zh-preview .zhp-grid{display:grid; grid-template-columns:1fr; gap:10px;}
+  @media(min-width:480px){ .zh-preview .zhp-grid{grid-template-columns:1fr 1fr;} }
+  .zh-preview .zhp-edit{display:flex; flex-direction:column; gap:3px;}
+  .zh-preview .zhp-edit label{font-size:10px; font-weight:700; color:var(--gold); letter-spacing:.4px;}
+  .zh-preview .zhp-edit input{background:var(--surface-2); border:1px solid var(--border); border-radius:8px; padding:8px 10px; color:var(--text); font-size:13px; outline:none;}
+  .zh-preview .zhp-edit input:focus{border-color:var(--gold);}
+  .photo-upload-area{height:120px; border:2px dashed var(--border-strong);border-radius:var(--r-card);padding:24px;text-align:center;color:var(--text-dim);font-size:13px;cursor:pointer;transition:border-color .15s, background .15s; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px;}
+  .photo-upload-area:hover{border-color:var(--gold-line); color:var(--gold);}
+  .photo-upload-area:active{background:var(--surface-2);}
   /* ---- photo cropper ---- */
   .crop-overlay{position:fixed; inset:0; z-index:200; background:rgba(0,0,0,.78); display:flex; align-items:center; justify-content:center; padding:14px;}
   .crop-modal{width:100%; max-width:420px; background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; box-shadow:0 20px 60px rgba(0,0,0,.5);}
@@ -717,8 +720,8 @@
   .crop-ok{background:var(--gold); color:#0F0E0E;}
   .af-thumbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
   .af-thumbs img{width:60px;height:60px;object-fit:cover;border-radius:8px;}
-  .form-preview{margin-top:18px;padding:14px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);}
-  .form-preview h4{font-size:12px;font-weight:700;margin-bottom:10px;color:var(--text-dim);}
+  .form-preview{margin-top:0;padding:var(--card-pad);border-radius:var(--r-card);border:1px solid var(--border);background:var(--surface); box-shadow:var(--shadow-soft);}
+  .form-preview h4{font-size:12px;font-weight:800;margin-bottom:10px;color:var(--text); text-transform:uppercase; letter-spacing:.5px;}
 
   .fav-tabs{display:flex;gap:0;margin-bottom:14px;border-bottom:1px solid var(--border);}
   .fav-tab{padding:10px 16px;font-size:13px;font-weight:600;color:var(--text-dim);border:none;background:transparent;border-bottom:2px solid transparent;cursor:pointer;}
@@ -972,32 +975,66 @@
 
     <!-- ADMIN CAR ENTRY -->
     <section class="screen" id="scr-admin">
-      <div id="afEditBanner" style="display:none;margin:0 0 14px;padding:10px 12px;border-radius:10px;background:var(--gold-soft);border:1px solid var(--gold-line);font-size:12px;align-items:center;gap:8px;">
-        <span id="afEditName" style="flex:1;color:var(--gold);font-weight:700;"></span>
-        <button class="submit" style="margin:0;padding:6px 12px;background:var(--surface);color:var(--text);border:1px solid var(--border);" onclick="cancelEdit()" data-i18n="cancel">Cancel</button>
+      <div id="afEditBanner" class="af-edit-banner" style="display:none;">
+        <span id="afEditName"></span>
+        <button class="submit ghost" onclick="cancelEdit()" data-i18n="cancel">Cancel</button>
       </div>
       <div class="sec-head" style="margin-bottom:14px;">
         <h2 data-i18n="adminTitle">Add New Car</h2>
       </div>
       <div class="admin-form">
-        <textarea id="afPaste" class="af-paste" data-ph="ph_paste" placeholder="Smart paste: drop a full vehicle description and fields fill automatically. e.g. Toyota Camry 2021, SUV, Black, Accra, 2.5L Auto, 45,000 km, Sunroof Leather seats" oninput="parsePaste()"></textarea>
+        <div class="af-card">
+          <div class="af-card-h" data-i18n="basicInfo">Basic Information</div>
+          <textarea id="afPaste" class="af-paste" data-ph="ph_paste" placeholder="Smart paste: drop a full vehicle description and fields fill automatically. e.g. Toyota Camry 2021, SUV, Black, Accra, 2.5L Auto, 45,000 km, Sunroof Leather seats" oninput="parsePaste()"></textarea>
 
-        <div class="af-grid">
-          <div class="form-row"><label data-i18n="fBrand">Brand</label><input type="text" id="afBrand" placeholder="Toyota" oninput="liveZh()"></div>
-          <div class="form-row"><label data-i18n="fModel">Model</label><input type="text" id="afModel" placeholder="Camry" oninput="liveZh()"></div>
-          <div class="form-row"><label data-i18n="fYear">Year</label><input type="number" id="afYear" placeholder="2023" oninput="liveZh()"></div>
-          <div class="form-row"><label data-i18n="fCond">Condition</label><select id="afCond" onchange="liveZh()"><option>NEW</option><option>USED</option></select></div>
-          <div class="form-row"><label data-i18n="fBody">Body Type</label><select id="afBody" onchange="liveZh()"><option>SUV</option><option>Sedan</option><option>Pickup</option><option>Hatchback</option></select></div>
-          <div class="form-row"><label data-i18n="color">Color</label><select id="afColor" onchange="liveZh()"><option>Black</option><option>White</option><option>Silver</option><option>Gray</option><option>Red</option><option>Blue</option><option>Brown</option><option>Other</option></select></div>
-          <div class="form-row"><label data-i18n="fDays">Days in stock</label><input type="number" id="afDays" placeholder="auto" min="0"></div>
-          <div class="form-row"><label data-i18n="fStock">Stock quantity</label><input type="number" id="afStock" placeholder="1" min="1" value="1"></div>
+          <div class="af-grid">
+            <div class="form-row"><label data-i18n="fBrand">Brand</label><input type="text" id="afBrand" placeholder="Toyota" oninput="liveZh()"></div>
+            <div class="form-row"><label data-i18n="fModel">Model</label><input type="text" id="afModel" placeholder="Camry" oninput="liveZh()"></div>
+            <div class="form-row"><label data-i18n="fYear">Year</label><input type="number" id="afYear" placeholder="2023" oninput="liveZh()"></div>
+            <div class="form-row"><label data-i18n="fCond">Condition</label><select id="afCond" onchange="liveZh()"><option>NEW</option><option>USED</option></select></div>
+            <div class="form-row"><label data-i18n="fBody">Body Type</label><select id="afBody" onchange="liveZh()"><option>SUV</option><option>Sedan</option><option>Pickup</option><option>Hatchback</option></select></div>
+            <div class="form-row"><label data-i18n="color">Color</label><select id="afColor" onchange="liveZh()"><option>Black</option><option>White</option><option>Silver</option><option>Gray</option><option>Red</option><option>Blue</option><option>Brown</option><option>Other</option></select></div>
+            <div class="form-row"><label data-i18n="fDays">Days in stock</label><input type="number" id="afDays" placeholder="auto" min="0"></div>
+            <div class="form-row"><label data-i18n="fStock">Stock quantity</label><input type="number" id="afStock" placeholder="1" min="1" value="1"></div>
+          </div>
+
+          <div class="form-row"><label data-i18n="fBranch">Branch</label><input type="text" id="afBranch" list="afBranchList" autocomplete="off" placeholder="Select or type a new location" style="width:100%;"><datalist id="afBranchList"></datalist></div>
+          <div class="form-row"><label data-i18n="fSpecs">Specs (comma-separated)</label><input type="text" id="afSpecs" placeholder="2.5L, Auto, Diesel, 45,000 km" oninput="liveZh()"></div>
+          <div class="form-row"><label data-i18n="fHighlights">Highlights (comma-separated)</label><input type="text" id="afHighlights" placeholder="Sunroof, Leather seats, Reverse camera" oninput="liveZh()"></div>
         </div>
 
-        <div class="form-row"><label data-i18n="fBranch">Branch</label><input type="text" id="afBranch" list="afBranchList" autocomplete="off" placeholder="Select or type a new location" style="width:100%;"><datalist id="afBranchList"></datalist></div>
-        <div class="form-row"><label data-i18n="fSpecs">Specs (comma-separated)</label><input type="text" id="afSpecs" placeholder="2.5L, Auto, Diesel, 45,000 km" oninput="liveZh()"></div>
-        <div class="form-row"><label data-i18n="fHighlights">Highlights (comma-separated)</label><input type="text" id="afHighlights" placeholder="Sunroof, Leather seats, Reverse camera" oninput="liveZh()"></div>
+        <div class="af-card">
+          <div class="af-card-h" data-i18n="priceTiers">Price Tiers (GHS)</div>
+          <p class="price-auth-note" data-i18n="priceSetByTop">Only Boss/Owner &amp; Partners can set price tiers.</p>
+          <div class="af-price-grid">
+            <div class="af-price-field" id="costRow"><label data-i18n="fCost">Cost <span class="role-tag boss">Boss</span></label><input type="number" id="afCost" placeholder="28000"></div>
+            <div class="af-price-field"><label data-i18n="fFloorA">Floor A</label><input type="number" id="afFloorA" placeholder="33000"></div>
+            <div class="af-price-field"><label data-i18n="fFloorB">Floor B</label><input type="number" id="afFloorB" placeholder="34500"></div>
+            <div class="af-price-field"><label data-i18n="fQuote">Quote</label><input type="number" id="afQuote" placeholder="38500"></div>
+          </div>
+        </div>
 
-        <div class="zh-preview" id="afZhPreview" style="display:none;">
+        <div class="af-card">
+          <div class="af-card-h" data-i18n="media">Photos &amp; Videos</div>
+          <div class="form-row"><label data-i18n="fPhotos">Photos</label>
+            <div class="photo-upload-area" onclick="document.getElementById('afPhotoInput').click()">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="opacity:.7;"><path d="M21 19V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2z" stroke="currentColor" stroke-width="1.6"/><path d="M3 16l5-5 4 4 5-6 4 4" stroke="currentColor" stroke-width="1.6"/></svg>
+              <span data-i18n="fPhotosHint">Tap to upload car photos</span>
+            </div>
+            <input type="file" id="afPhotoInput" accept="image/*" multiple style="display:none;" onchange="handleAdminPhotos(event)">
+            <div class="af-thumbs" id="afThumbs"></div>
+          </div>
+          <div class="form-row"><label data-i18n="fVideos">Videos</label>
+            <div class="photo-upload-area" onclick="document.getElementById('afVideoInput').click()">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" style="opacity:.7;"><path d="M21 7.5v9a2 2 0 01-2 2H5a2 2 0 01-2-2v-9a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.6"/><path d="M10 9.5l6 3-6 3v-6z" fill="currentColor"/></svg>
+              <span data-i18n="fVideosHint">Tap to add a car video (max 25MB)</span>
+            </div>
+            <input type="file" id="afVideoInput" accept="video/*" style="display:none;" onchange="handleAdminVideo(event)">
+            <div class="af-thumbs" id="afVideoThumbs"></div>
+          </div>
+        </div>
+
+        <div class="af-card zh-preview" id="afZhPreview" style="display:none;">
           <div class="zhp-h"><span data-i18n="bilingualPrev">Bilingual preview (editable)</span></div>
           <div class="zhp-grid">
             <div class="zhp-edit"><label>EN</label><input id="pvNameEn" placeholder="Name (EN)" oninput="this.dataset.touched=1"></div>
@@ -1010,33 +1047,13 @@
             <div class="zhp-edit"><label>中文</label><input id="pvHlZh" placeholder="亮点（中文）" oninput="this.dataset.touched=1;revExtract('pvHlZh','pvHlEn','hl')"></div>
           </div>
         </div>
-        <h4 class="price-tiers-h" data-i18n="priceTiers">Price Tiers (GHS)</h4>
-        <p class="price-auth-note" data-i18n="priceSetByTop">Only Boss/Owner &amp; Partners can set price tiers.</p>
-        <div class="af-price-grid">
-          <div class="af-price-field" id="costRow"><label data-i18n="fCost">Cost <span class="role-tag boss">Boss</span></label><input type="number" id="afCost" placeholder="28000"></div>
-          <div class="af-price-field"><label data-i18n="fFloorA">Floor A</label><input type="number" id="afFloorA" placeholder="33000"></div>
-          <div class="af-price-field"><label data-i18n="fFloorB">Floor B</label><input type="number" id="afFloorB" placeholder="34500"></div>
-          <div class="af-price-field"><label data-i18n="fQuote">Quote</label><input type="number" id="afQuote" placeholder="38500"></div>
-        </div>
-        <div class="form-row"><label data-i18n="fPhotos">Photos</label>
-          <div class="photo-upload-area" onclick="document.getElementById('afPhotoInput').click()">
-            <span data-i18n="fPhotosHint">Tap to upload car photos</span>
-          </div>
-          <input type="file" id="afPhotoInput" accept="image/*" multiple style="display:none;" onchange="handleAdminPhotos(event)">
-          <div class="af-thumbs" id="afThumbs"></div>
-        </div>
-        <div class="form-row"><label data-i18n="fVideos">Videos</label>
-          <div class="photo-upload-area" onclick="document.getElementById('afVideoInput').click()">
-            <span data-i18n="fVideosHint">Tap to add a car video (max 25MB)</span>
-          </div>
-          <input type="file" id="afVideoInput" accept="video/*" style="display:none;" onchange="handleAdminVideo(event)">
-          <div class="af-thumbs" id="afVideoThumbs"></div>
-        </div>
-        <div class="form-preview" id="afPreview" style="display:none;">
+
+        <div class="af-card form-preview" id="afPreview" style="display:none;">
           <h4 data-i18n="preview">Preview</h4>
           <div id="afPreviewCard"></div>
         </div>
-        <button class="submit" id="afSaveBtn" onclick="submitNewCar()" data-i18n="saveCar" style="margin-top:16px;">Save Car</button>
+
+        <button class="submit" id="afSaveBtn" onclick="submitNewCar()" data-i18n="saveCar" style="margin-top:6px;">Save Car</button>
       </div>
     </section>
 
@@ -1412,9 +1429,6 @@
       <button class="wa" onclick="waTap('consult')">WhatsApp</button>
       <button class="call" onclick="callTap()" data-i18n="call">Call</button>
     </div>
-    <button class="fab-add" id="addFab" onclick="go('scr-admin')" title="Add Car">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
-    </button>
   </div>
 
   <!-- DEMO CONTROL DRAWER (desktop) -->
@@ -2674,8 +2688,6 @@ function updateRoleUI(){
   const up=document.getElementById('uploadBanner');
   const carOk = curCar ? canEditThisCar(curCar) : true;
   if(up) up.style.display = (canUploadCarPhotos() && carOk) ? 'flex' : 'none';
-  const addFab=document.getElementById('addFab');
-  if(addFab) addFab.classList.toggle('show', canEditCar());
   const lbl=document.getElementById('uploadLabel');
   if(lbl && isTopRole()) lbl.textContent=({boss:T('upBoss','Boss: upload car photos (full access)'),partnerA:T('upPartnerA','Partner A: upload car photos (full access)'),partnerB:T('upPartnerB','Partner B: upload car photos (full access)')}[curRole]);
   if(lbl && curRole==='manager') lbl.textContent=T('upManager','Manager: upload car photos (this branch)');
