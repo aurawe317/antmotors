@@ -434,17 +434,17 @@
   .share-box{display:flex; gap:8px; margin-top:16px; align-items:center; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:10px 12px;}
   .share-url{font-size:11px; color:var(--gold); flex:1; word-break:break-all; font-family:ui-monospace,monospace;}
   /* reusable settings rows + toggle switch + segmented */
-  .ui-row{display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 0; border-bottom:1px solid var(--border);}
+  .ui-row{min-height:56px; display:flex; align-items:center; justify-content:space-between; gap:10px; padding:11px 0; border-bottom:1px solid var(--border);}
   .ui-row:last-child{border-bottom:none;}
-  .ui-row .lab{font-size:13px; font-weight:600; color:var(--text);}
-  .ui-row .sub{font-size:11px; color:var(--text-dim); margin-top:2px; line-height:1.4;}
+  .ui-row .lab{font-size:14px; font-weight:600; color:var(--text);}
+  .ui-row .sub{font-size:12px; color:var(--text-dim); margin-top:2px; line-height:1.4;}
   .form-row .sub{font-size:11px; color:var(--text-dim); margin-top:4px; line-height:1.45;}
   .ui-toggle{position:relative; flex:0 0 auto; width:46px; height:26px; border-radius:999px; background:var(--surface-2); border:1px solid var(--border); cursor:pointer; transition:.2s; padding:0;}
   .ui-toggle::after{content:''; position:absolute; top:2px; left:2px; width:20px; height:20px; border-radius:50%; background:var(--text-dim); transition:.2s;}
   .ui-toggle.on{background:var(--gold); border-color:var(--gold);}
   .ui-toggle.on::after{left:22px; background:#0F0E0E;}
   .seg3{display:flex; gap:4px; background:var(--surface-2); border:1px solid var(--border); border-radius:999px; padding:3px; flex:0 0 auto;}
-  .seg3 .seg{padding:6px 12px; border-radius:999px; font-size:12px; font-weight:700; color:var(--text-dim); cursor:pointer; transition:.15s; white-space:nowrap;}
+  .seg3 .seg{padding:7px 14px; border-radius:999px; font-size:12px; font-weight:700; color:var(--text-dim); cursor:pointer; transition:.15s; white-space:nowrap;}
   .seg3 .seg.on{background:var(--gold); color:#0F0E0E;}
   .feat-chip{font-size:11px;background:var(--gold-soft);color:var(--gold);border:1px solid var(--gold-line);padding:3px 8px;border-radius:999px;white-space:nowrap;}
   .mem-status{background:var(--surface-2);border:1px solid var(--border);border-radius:12px;padding:12px;margin:2px 0 8px;}
@@ -454,7 +454,8 @@
   .plan-card.rec{border-color:var(--gold)!important;}
   .plan-card .pc-rec{display:inline-block;font-size:10px;font-weight:800;letter-spacing:1px;color:#0F0E0E;background:var(--gold);padding:2px 8px;border-radius:999px;margin-left:8px;vertical-align:middle;}
   .plan-card .pc-name{font-weight:800;font-size:15px;color:var(--text);}
-  .pill-select{flex:1; min-width:0; background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:9px; padding:9px 10px; font-size:13px; outline:none;}
+  .pill-select{flex:0 0 auto; min-width:110px; height:36px; background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-radius:999px; padding:0 14px; font-size:13px; font-weight:600; outline:none; -webkit-appearance:none; appearance:none; cursor:pointer;}
+  .pill-select:focus{border-color:var(--gold-line);}
   /* ---------- ME / personal tab ---------- */
   #scr-me{padding-bottom:96px;}
   .me-head{position:relative; margin:12px var(--page-pad) 0; padding:var(--page-pad); border-radius:var(--r-card); background:var(--surface); border:1px solid var(--border); display:flex; align-items:center; gap:13px; box-shadow:var(--shadow-soft);}
@@ -467,7 +468,8 @@
   .me-actions{position:absolute; top:16px; right:14px; display:flex; gap:8px; align-items:center;}
   .me-gear{width:36px; height:36px; border-radius:50%; border:1px solid var(--border); background:var(--surface); color:var(--text); font-size:17px; line-height:1; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:transform .15s;}
   .me-gear:active{transform:scale(.88) rotate(40deg);}
-  #scr-me .grp{margin:12px var(--page-pad) 0; background:var(--surface); border:1px solid var(--border); border-radius:var(--r-card); padding:var(--card-pad); box-shadow:var(--shadow-soft);}
+  .grp{background:var(--surface); border:1px solid var(--border); border-radius:var(--r-card); padding:var(--card-pad); box-shadow:var(--shadow-soft);}
+  #scr-me .grp{margin:12px var(--page-pad) 0;}
   #scr-me .lbl{font-size:12px; font-weight:800; color:var(--text); letter-spacing:.5px; margin-bottom:10px; text-transform:uppercase;}
   #scr-me .sub{font-size:11px; color:var(--text-dim); line-height:1.5;}
   .collapsible{padding:0 15px;}
@@ -1232,8 +1234,8 @@
       </section>
 
     <section class="screen" id="scr-datahelp">
-      <div style="padding:12px 16px 40px;">
-    <div class="grp" id="settingsExtra2" style="margin:0 0 10px;display:none;">
+      <div style="padding:12px var(--page-pad) 40px;">
+    <div class="grp" id="settingsExtra2" style="margin:0 0 var(--gap-md);display:none;">
       <div class="lbl" data-i18n="installTitle">Install the app (employees)</div>
       <p class="sheet-hint" data-i18n="installHint">iOS: open in Safari → Share → Add to Home Screen. Android: open in Chrome → ⋮ → Install app. Customers just open the shared link — no install needed.</p>
     </div>
@@ -1244,7 +1246,7 @@
         <div style="font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.5;" data-i18n="syncServerHint2">This is your account &amp; data-sync server. Leave as-is to use the shared ANT MOTORS backend — every company connects here by default. Change it ONLY if your company runs its own server.</div>
       </div>
     </details>
-    <div class="grp" id="shSettingsGroup" style="margin:0 0 10px;display:none;">
+    <div class="grp" id="shSettingsGroup" style="margin:0 0 var(--gap-md);display:none;">
       <div class="lbl" data-i18n="shSettingsTitle">Sales points / Showrooms</div>
       <div id="shSettingsList"></div>
       <button class="submit" onclick="toggleShForm()" data-i18n="addShowroom" style="margin-top:8px;">+ Add sales point</button>
@@ -1257,14 +1259,14 @@
         <button class="submit" onclick="addShowroom()" data-i18n="shSave">Save</button>
       </div>
     </div>
-    <div class="grp" style="margin:0 0 10px;">
+    <div class="grp" style="margin:0 0 var(--gap-md);">
       <div class="lbl" data-i18n="backupTitle">Data backup (employees)</div>
       <p class="sheet-hint" data-i18n="backupHint">Export all cars, favorites and staff to a file. Re-import after reinstall to avoid any data loss.</p>
       <button class="submit" onclick="exportData()" data-i18n="exportData">Export backup</button>
       <button class="submit" style="margin-top:8px;background:var(--surface-2);color:var(--text);border:1px solid var(--border);" onclick="document.getElementById('importFile').click()" data-i18n="importData">Import backup</button>
       <input type="file" id="importFile" accept="application/json" style="display:none;" onchange="importData(event)" />
     </div>
-    <div class="grp" id="notifGroup" style="margin:0 0 10px;">
+    <div class="grp" id="notifGroup" style="margin:0 0 var(--gap-md);">
       <div class="lbl" data-i18n="notifTitle">Notifications</div>
       <div class="ui-row">
         <div><div class="lab" data-i18n="notifToggle">Allow notifications</div><div class="sub" data-i18n="notifSub">Get alerted on sync, new arrivals &amp; bookings</div></div>
@@ -1283,7 +1285,7 @@
         <a href="/terms.html" target="_blank" rel="noopener" class="share-copy" style="text-decoration:none;">Terms of Service</a>
       </div>
     </div>
-    <div class="grp" id="recoverGroup" style="margin:0 0 10px; display:none;">
+    <div class="grp" id="recoverGroup" style="margin:0 0 var(--gap-md); display:none;">
       <div class="lbl" data-i18n="recoverTitle">Recover missing photos</div>
       <p class="sheet-hint" data-i18n="recoverHint">If photos you uploaded are missing after reopening the app, this re-attaches them from storage. Only affects your company.</p>
       <button class="submit" onclick="recoverPhotos()" data-i18n="recoverBtn">Recover missing photos</button>
@@ -1323,7 +1325,7 @@
         <h2 data-i18n="prefs">Preferences</h2>
         <p data-i18n="prefsDesc">Theme, default salesperson and display currency.</p>
       </div>
-      <div class="grp" style="margin:0 0 12px;">
+      <div class="grp" style="margin:0 0 var(--gap-md);">
         <div class="ui-row">
           <div><div class="lab" data-i18n="themeLbl">Theme</div><div class="sub" data-i18n="themeSub">Follows your phone's system setting by default</div></div>
           <div class="seg3" id="themeSeg">
@@ -1333,7 +1335,7 @@
           </div>
         </div>
       </div>
-      <div class="grp" id="prefGroup" style="margin:0 0 12px;">
+      <div class="grp" id="prefGroup" style="margin:0 0 var(--gap-md);">
         <div class="ui-row">
           <div><div class="lab" data-i18n="curLbl">Display currency</div><div class="sub" data-i18n="curSub">Currency symbol shown on every price (no conversion)</div></div>
           <select class="pill-select" id="curSel" onchange="setCurrency(this.value)"></select>
