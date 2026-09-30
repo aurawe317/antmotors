@@ -335,15 +335,16 @@
   .booking-summary h4{font-size:13px; font-weight:700;}
   .booking-summary p{font-size:11px; color:var(--text-dim); margin-top:2px;}
 
-  .sh-list{padding:8px 16px 0; display:flex; flex-direction:column; gap:14px;}
-  .sh-item{border:1px solid var(--border); border-radius:14px; overflow:hidden; background:var(--surface-2);}
-  .sh-item .ph{height:130px; display:flex; align-items:center; justify-content:center; position:relative;}
-  .sh-item .ph .pin{position:absolute; top:12px; left:12px; color:var(--gold);}
-  .sh-item .body{padding:13px 14px;}
+  .sh-list{padding:8px var(--page-pad) 0; display:flex; flex-direction:column; gap:var(--gap-md);}
+  .sh-item{border:1px solid var(--border); border-radius:var(--r-card); overflow:hidden; background:var(--surface); box-shadow:var(--shadow-soft);}
+  .sh-item .ph{height:130px; display:flex; align-items:center; justify-content:center; position:relative; background:linear-gradient(160deg,#2a2723,#0f0e0e 70%);}
+  .sh-item .ph .pin{position:absolute; top:12px; left:12px; color:var(--gold); font-size:16px;}
+  .sh-item .body{padding:var(--card-pad);}
   .sh-item .body h3{font-size:16px; font-weight:800;}
   .sh-item .body .addr{font-size:12px; color:var(--text-dim); margin-top:4px; line-height:1.5;}
-  .sh-item .body .row{display:flex; gap:10px; margin-top:12px;}
-  .sh-item .body .row button{flex:1; padding:11px; border-radius:var(--r-btn); font-weight:700; font-size:12px; cursor:pointer; border:1px solid var(--border); background:transparent; color:var(--text);}
+  .sh-item .body .row{display:flex; gap:8px; margin-top:12px;}
+  .sh-item .body .row button{flex:1; padding:11px; border-radius:var(--r-btn); font-weight:700; font-size:12px; cursor:pointer; border:1px solid var(--border); background:transparent; color:var(--text); transition:transform .12s ease, background .15s ease;}
+  .sh-item .body .row button:active{transform:scale(var(--active-scale)); background:var(--surface-2);}
   .sh-item .body .row .wa{background:var(--wa); color:#06210f; border-color:var(--wa); display:flex; align-items:center; justify-content:center; gap:6px;}
 
   .filter-group{padding:6px 16px;}
@@ -614,15 +615,15 @@
   .card-dot{position:absolute;top:6px;right:6px;z-index:3;width:28px;height:28px;border-radius:50%;border:none;background:rgba(0,0,0,.45);color:#fff;font-size:18px;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;padding:0;}
   .card-dot:hover{background:var(--gold);color:#111;}
   .wb-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;}
-  .wb-stat{padding:14px 10px;border-radius:12px;border:1px solid var(--border);background:var(--surface-2);text-align:center;}
+  .wb-stat{padding:var(--card-pad) 10px;border-radius:var(--r-card);border:1px solid var(--border);background:var(--surface);text-align:center;box-shadow:var(--shadow-soft);}
   .wb-stat .num{font-size:22px;font-weight:800;color:var(--gold);}
-  .wb-stat .lbl{font-size:10px;color:var(--text-dim);margin-top:4px;}
+  .wb-stat .lbl{font-size:11px;color:var(--text-dim);margin-top:4px;}
   .wb-lead{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);}
-  .wb-lead .av{width:36px;height:36px;border-radius:50%;background:var(--surface-3);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--gold);flex-shrink:0;}
+  .wb-lead .av{width:36px;height:36px;border-radius:50%;background:var(--gold-soft);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--gold);flex-shrink:0;}
   .wb-lead .info{flex:1;min-width:0;}
   .wb-lead .info b{font-size:13px;display:block;}
   .wb-lead .info span{font-size:11px;color:var(--text-dim);}
-  .wb-lead .status{font-size:10px;padding:3px 8px;border-radius:4px;font-weight:600;cursor:pointer;transition:filter .15s;}
+  .wb-lead .status{font-size:10px;padding:3px 10px;border-radius:999px;font-weight:700;cursor:pointer;transition:filter .15s;}
   .wb-lead .status.new{background:rgba(232,194,104,.15);color:var(--gold);}
   .wb-lead .status.contacted{background:rgba(37,211,102,.15);color:#25D366;}
   .wb-lead .status.closed{background:rgba(136,135,128,.15);color:var(--text-dim);}
@@ -725,8 +726,9 @@
   .form-preview{margin-top:0;padding:var(--card-pad);border-radius:var(--r-card);border:1px solid var(--border);background:var(--surface); box-shadow:var(--shadow-soft);}
   .form-preview h4{font-size:12px;font-weight:800;margin-bottom:10px;color:var(--text); text-transform:uppercase; letter-spacing:.5px;}
 
-  .fav-tabs{display:flex;gap:0;margin-bottom:14px;border-bottom:1px solid var(--border);}
-  .fav-tab{padding:10px 16px;font-size:13px;font-weight:600;color:var(--text-dim);border:none;background:transparent;border-bottom:2px solid transparent;cursor:pointer;}
+  .fav-tabs{display:flex;gap:0;margin:0 0 14px;border-bottom:1px solid var(--border);}
+  .fav-tab{padding:12px 16px;font-size:13px;font-weight:600;color:var(--text-dim);border:none;background:transparent;border-bottom:2px solid transparent;cursor:pointer;transition:color .15s ease, transform .12s ease;}
+  .fav-tab:active{transform:scale(var(--active-scale));}
   .fav-tab.on{color:var(--gold);border-bottom-color:var(--gold);}
 
   /* ── Mobile: real full-screen app experience ── */
@@ -929,11 +931,11 @@
     <!-- SHOWROOMS -->
     <section class="screen" id="scr-showrooms">
       <div class="sec-head"><h2 data-i18n="showroomsTitle">Showrooms</h2></div>
-      <div id="shEditBar" style="display:none;padding:0 16px 12px;">
-        <button class="submit" onclick="openShEditor('')" data-i18n="addShowroom" style="margin:0;">+ Add sales point</button>
+      <div id="shEditBar" style="display:none;padding:0 var(--page-pad) var(--gap-md);">
+        <button class="submit ghost" onclick="openShEditor('')" data-i18n="addShowroom" style="margin:0;border:1px dashed var(--gold-line);color:var(--gold);background:transparent;">+ Add sales point</button>
       </div>
-      <div id="shEditor" style="display:none;margin:0 16px 12px;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 15px;">
-        <div id="shEditorTitle" style="font-size:13px;font-weight:800;color:var(--text);margin-bottom:12px;" data-i18n="addShowroom">New sales point</div>
+      <div id="shEditor" class="grp" style="display:none;margin:0 var(--page-pad) var(--gap-md);">
+        <div id="shEditorTitle" class="af-card-h" data-i18n="addShowroom">New sales point</div>
         <div class="form-row"><label data-i18n="shName">Name</label><input type="text" id="shEdName" placeholder="e.g. Main Showroom"></div>
         <div class="form-row"><label data-i18n="shAddr">Address</label><input type="text" id="shEdAddr" placeholder="123 Spintex Rd"></div>
         <div class="form-row"><label data-i18n="shPhone">Phone</label><input type="text" id="shEdPhone" placeholder="+233 20 000 0001"></div>
@@ -943,9 +945,9 @@
         <p class="sheet-hint" data-i18n="shPinHint">Latitude, longitude — or paste a Google Maps link. Used for turn-by-turn directions.</p>
         <div style="display:flex;gap:8px;margin-top:10px;">
           <button class="submit" onclick="saveShEditor()" data-i18n="shSave" style="flex:1;margin:0;">Save</button>
-          <button class="submit" onclick="closeShEditor()" data-i18n="cancel" style="flex:1;margin:0;background:transparent;border:1px solid var(--border);color:var(--text-dim);">Cancel</button>
+          <button class="submit ghost" onclick="closeShEditor()" data-i18n="cancel" style="flex:1;margin:0;">Cancel</button>
         </div>
-        <button class="submit" id="shEdDelete" onclick="deleteShowroomFromEditor()" data-i18n="del" style="display:none;margin-top:8px;background:transparent;border:1px solid var(--danger);color:var(--danger);">Delete</button>
+        <button class="submit danger" id="shEdDelete" onclick="deleteShowroomFromEditor()" data-i18n="del" style="display:none;margin-top:8px;">Delete</button>
       </div>
       <div class="sh-list" id="shList"></div>
     </section>
@@ -1069,9 +1071,9 @@
         <button class="fav-tab" onclick="switchFavTab('recent',this)" data-i18n="favRecent">Recently viewed</button>
       </div>
       <div id="favContent"></div>
-      <div id="favEmpty" style="display:none;text-align:center;padding:40px 20px;color:var(--text-dim);">
-        <div style="font-size:36px;margin-bottom:12px;">♡</div>
-        <p data-i18n="favEmptyHint">Tap the heart on any car to save it here</p>
+      <div id="favEmpty" class="empty-state" style="display:none;">
+        <div class="ic">♡</div>
+        <div class="sub" data-i18n="favEmptyHint">Tap the heart on any car to save it here</div>
       </div>
     </section>
 
@@ -1410,11 +1412,11 @@
     </section>
 
     <section class="screen" id="scr-sold">
-      <div style="padding:14px 16px 40px;">
+      <div style="padding:14px var(--page-pad) 40px;">
         <div id="soldScreenList"></div>
-        <div id="soldEmpty" style="display:none;padding:50px 20px;text-align:center;color:var(--text-dim);font-size:13px;line-height:1.6;">
-          <div style="font-size:34px;margin-bottom:10px;">🚗</div>
-          <div data-i18n="soldEmpty">No sold vehicles yet. Mark a car as sold from its detail page.</div>
+        <div id="soldEmpty" class="empty-state" style="display:none;">
+          <div class="ic">🚗</div>
+          <div class="sub" data-i18n="soldEmpty">No sold vehicles yet. Mark a car as sold from its detail page.</div>
         </div>
       </div>
     </section>
