@@ -504,7 +504,7 @@
   .me-tile:active{transform:scale(var(--active-scale)); background:var(--surface-2);}
   .me-tile svg{width:24px; height:24px; color:var(--gold);}
   .me-tile .tl{font-size:12px; font-weight:700; color:var(--text); white-space:nowrap;}
-  .me-link{height:56px; display:flex; align-items:center; gap:12px; padding:0 4px; margin:0 12px; border:none; border-bottom:1px solid var(--border); background:none; color:var(--text); font-size:14px; font-weight:600; font-family:inherit; text-align:left; cursor:pointer; transition:background .15s ease, transform .12s ease;}
+  .me-link{height:56px; width:calc(100% - 24px); display:flex; align-items:center; gap:12px; padding:0 4px; margin:0 12px; border:none; border-bottom:1px solid var(--border); background:none; color:var(--text); font-size:14px; font-weight:600; font-family:inherit; text-align:left; cursor:pointer; transition:background .15s ease, transform .12s ease;}
   .me-link:last-child{border-bottom:none;}
   .me-link:active{background:var(--surface-2); border-radius:10px;}
   .me-link .ic{flex:0 0 auto; width:30px; height:30px; border-radius:9px; background:var(--gold-soft); display:flex; align-items:center; justify-content:center; font-size:15px;}
@@ -1662,7 +1662,7 @@ const I18N = {
       custQuote:"Customer quote",yourMargin:"Your margin",fullMargin:" · Full Margin",costLbl:"cost",grossProfit:"Gross profit",onSale:"On sale",
       infoBtn:"ℹ How pricing works",
       priceTiersTitle:"Three price tiers",costDesc:"Landed cost paid by the business. Owner + 2 Partners only.",floorADesc:"Lowest price Senior Sales (A) may quote.",floorBDesc:"Lowest price Junior Sales (B) may quote.",quoteDesc:"Public selling price the customer sees.",
-      mgLine:"A sells at quote → ₵{a} over Floor A · B → ₵{b} over Floor B · owner margin over cost → ₵{c}.",mgFixed:"All prices convert to your display currency automatically.",
+      mgLine:"A sells at quote → ₵{a} over Floor A · B → ₵{b} over Floor B · owner margin over cost → ₵{c}.",mgFixed:"All prices convert to your display currency automatically.",mgGeneric:"Add a car to see the exact margins between tiers.",
       pAllVisible:"You see all four tiers (cost, floors, quote).",pCustOnly:"As a customer you only see the public quote.",pHiddenNote:"Cost and other floors are hidden for your role.",
       noLeads:"No leads yet",noBookings:"No new bookings",st_new:"new",st_contacted:"contacted",st_closed:"closed",clicksLbl:"clicks",leadsLbl:"leads",
       upBoss:"Boss: upload car photos (full access)",upPartnerA:"Partner A: upload car photos (full access)",upPartnerB:"Partner B: upload car photos (full access)",upManager:"Manager: upload car photos (this branch)",upSalesA:"Sales A: upload car photos (your cars)",
@@ -1710,7 +1710,7 @@ const I18N = {
       custQuote:"客户报价",yourMargin:"您的毛利",fullMargin:" · 全部毛利",costLbl:"成本",grossProfit:"毛利",onSale:"在售",
       infoBtn:"ℹ 价格机制",
       priceTiersTitle:"三级价格",costDesc:"企业落地成本。仅老板与两位合伙人可见。",floorADesc:"高级销售（A）可报的最低价。",floorBDesc:"初级销售（B）可报的最低价。",quoteDesc:"客户看到的公开售价。",
-      mgLine:"A 按报价售出 → 较底价A 多 ₵{a} · B → 较底价B 多 ₵{b} · 较成本 毛利 ₵{c}。",mgFixed:"所有价格自动按你设置的显示货币换算。",
+      mgLine:"A 按报价售出 → 较底价A 多 ₵{a} · B → 较底价B 多 ₵{b} · 较成本 毛利 ₵{c}。",mgFixed:"所有价格自动按你设置的显示货币换算。",mgGeneric:"添加车辆后即可查看各级价格之间的精确毛利。",
       pAllVisible:"您可看到全部四级（成本、底价、报价）。",pCustOnly:"作为客户您只能看到公开报价。",pHiddenNote:"成本及其他底价对您的角色隐藏。",
       noLeads:"暂无线索",noBookings:"暂无新预约",st_new:"新",st_contacted:"已联系",st_closed:"已成交",clicksLbl:"次点击",leadsLbl:"条线索",
       upBoss:"老板：可上传车辆照片（全部权限）",upPartnerA:"合伙人A：可上传车辆照片（全部权限）",upPartnerB:"合伙人B：可上传车辆照片（全部权限）",upManager:"店长：可上传车辆照片（本店）",upSalesA:"销售A：可上传车辆照片（您的车）",
@@ -3311,10 +3311,19 @@ function deleteCar(k){
 
 /* ---- pricing model sheet ---- */
 function openPricingInfo(){
-  const c=CARS[curCar]; if(!c) return;
-  const p=c.price;
+  // This explainer also lives on the Me tab, where no car is open. Fall back to
+  // the first available car as the example; with no cars at all, show the tier
+  // descriptions without amounts instead of silently doing nothing.
+  let c=CARS[curCar];
+  if(!c){ const k=Object.keys(CARS).find(k=>!CARS[k].sold)||Object.keys(CARS)[0]; if(k){ c=CARS[k]; curCar=k; } }
+  const p=c?c.price:null;
   const tiers=[];
-  if(isTopRole()){
+  if(!p){
+    tiers.push(['cost',T('lblCost','Cost'),T('costDesc','Landed cost paid by the business. Owner + 2 Partners only.'),null]);
+    tiers.push(['floorA',T('lblFloorA','Floor A'),T('floorADesc','Lowest price Senior Sales (A) may quote.'),null]);
+    tiers.push(['floorB',T('lblFloorB','Floor B'),T('floorBDesc','Lowest price Junior Sales (B) may quote.'),null]);
+    tiers.push(['quote',T('quoteLbl','Quote'),T('quoteDesc','Public selling price the customer sees.'),null]);
+  } else if(isTopRole()){
     tiers.push(['cost',T('lblCost','Cost'),T('costDesc','Landed cost paid by the business. Owner + 2 Partners only.'),p.cost]);
     tiers.push(['floorA',T('lblFloorA','Floor A'),T('floorADesc','Lowest price Senior Sales (A) may quote.'),p.floorA]);
     tiers.push(['floorB',T('lblFloorB','Floor B'),T('floorBDesc','Lowest price Junior Sales (B) may quote.'),p.floorB]);
@@ -3334,11 +3343,13 @@ function openPricingInfo(){
   }
   const rows=tiers.map(t=>`<div class="wb-link" style="border-bottom:1px solid var(--border);padding:11px 0;">
     <div style="flex:1;"><b>${t[1]}</b><br><span style="font-size:11px;color:var(--text-dim);">${t[2]}</span></div>
-    <div style="font-weight:800;color:var(--gold);">${fmtMoney(t[3])}</div></div>`).join('');
+    <div style="font-weight:800;color:var(--gold);">${t[3]==null?'—':fmtMoney(t[3])}</div></div>`).join('');
   const hiddenNote = isTopRole() ? T('pAllVisible','You see all four tiers (cost, floors, quote).')
     : (curRole==='customer' ? T('pCustOnly','As a customer you only see the public quote.') : T('pHiddenNote','Cost and other floors are hidden for your role.'));
-  const mg=T('mgLine','A sells at quote → ₵{a} over Floor A · B → ₵{b} over Floor B · owner margin over cost → ₵{c}.')
-    .replace('{a}',fmt(p.quote-p.floorA)).replace('{b}',fmt(p.quote-p.floorB)).replace('{c}',fmt(p.quote-p.cost)).replace(/₵/g, CUR.symbol);
+  const mg=p
+    ? T('mgLine','A sells at quote → ₵{a} over Floor A · B → ₵{b} over Floor B · owner margin over cost → ₵{c}.')
+      .replace('{a}',fmt(p.quote-p.floorA)).replace('{b}',fmt(p.quote-p.floorB)).replace('{c}',fmt(p.quote-p.cost)).replace(/₵/g, CUR.symbol)
+    : T('mgGeneric','Add a car to see the exact margins between tiers.');
   document.getElementById('pricingBody').innerHTML=
     `<div class="price-tiers-h">${T('priceTiersTitle','Three price tiers')}</div>${rows}
      <div style="font-size:11px;color:var(--text-dim);margin-top:10px;line-height:1.6;">${mg} ${T('mgFixed','All prices convert to your display currency automatically.').replace(/₵/g, CUR.symbol)}</div>
