@@ -4486,7 +4486,12 @@ function isSharedView(){
         possible tenant, and the banner stays hidden until bootstrap confirms it
         isn't (then it appears already resolved, so it still never blinks).
 */
-var PLATFORM_HOST_RE=/(\.pages\.dev$|\.workers\.dev$|\.antoto\.app$|^localhost$|^127\.0\.0\.1$|\.agentos-app\.net$|\.railway\.app$|\.workbuddy\.cn$|\.local$|\.test$)/i;
+// EXACT platform hostnames (not a wildcard): any other host — including an unknown
+// *.antoto.app subdomain — may belong to a tenant and gets resolved to one.
+// `\.antoto\.app$` alone silently misses "antoto.app" itself, which would then be
+// treated as a tenant domain and lose its Login / Register entry.
+// Keep in sync with PLATFORM_HOSTS in functions/api/[[route]].js.
+var PLATFORM_HOST_RE=/^(antoto\.app|www\.antoto\.app|app\.antoto\.app|api\.antoto\.app|go\.antoto\.app|localhost|127\.0\.0\.1)$|\.pages\.dev$|\.workers\.dev$|\.agentos-app\.net$|\.railway\.app$|\.workbuddy\.cn$|\.local$|\.test$/i;
 var TENANT_HOST=false;          // exact verdict: this host IS a dealer's own domain
 var TENANT_HOST_PENDING=false;  // still unknown -> keep the login CTA hidden
 function isPlatformHost(){

@@ -597,11 +597,22 @@ function publicCar(row) {
    it, so this never breaks on a database that has not been migrated yet. */
 // Hosts that belong to the PLATFORM itself (staff sign in here), never to a tenant.
 // antoto.app is the platform domain; antmotors.pages.dev is the legacy Pages host.
-const PLATFORM_HOSTS = new Set(['antoto.app', 'www.antoto.app', 'antmotors.pages.dev', 'localhost', '127.0.0.1']);
+// This is an EXACT list (plus the Cloudflare dev suffixes) on purpose: any other
+// host — including an unknown *.antoto.app subdomain — is eligible to be resolved
+// to a tenant via companies.slug, which is how <slug>.antoto.app showrooms work.
+// It must stay in sync with PLATFORM_HOST_RE on the client, otherwise one side
+// treats a host as the platform and the other resolves it to a company, leaving
+// the login entry and the tenant scope disagreeing with each other.
+const PLATFORM_HOSTS = new Set(['antoto.app', 'www.antoto.app', 'app.antoto.app', 'api.antoto.app', 'go.antoto.app', 'localhost', '127.0.0.1']);
+function isPlatformHost(h) {
+  if (!h) return true;
+  if (PLATFORM_HOSTS.has(h)) return true;
+  return /\.pages\.dev$/.test(h) || /\.workers\.dev$/.test(h);
+}
 async function companyByHost(host) {
   if (!host) return null;
   const h = String(host).toLowerCase().split(':')[0].replace(/\.$/, '');
-  if (!h || PLATFORM_HOSTS.has(h)) return null;
+  if (!h || isPlatformHost(h)) return null;
   try {
     const { data } = await sb.from('company_domains').select('company_id').eq('host', h).maybeSingle();
     if (data && data.company_id) return data.company_id;
