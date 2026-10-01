@@ -1,13 +1,24 @@
 -- ============================================================================
--- Ant Motors — 会员档位 / 子域名 / 二维码永久短码
--- 幂等，可重复执行。在 Supabase → SQL Editor 里整段运行。
+-- Antoto 平台 — 租户子域名 / 会员档位 / 二维码永久短码
 --
--- ⚠️ 运行顺序：先跑 supabase-schema-patch.sql（公司会员列：trial_ends_at /
---    plan_started_at / current_period_end / alipay_trade_no / subscription_id /
---    last_paid_at），再跑本文件。
+-- 怎么跑：Supabase 后台 → 左侧 SQL Editor → New query → 整段粘贴 → Run（或 ⌘⏎）
+-- 幂等：可重复执行，不会重复建表也不会覆盖已有数据。
+-- 权限：后端 functions/api/[[route]].js 用 service_role key 访问，绕过 RLS，
+--       建表即可生效，不需要额外授权语句。
+--
+-- ⚠️ 运行顺序：先跑 supabase-schema-patch.sql，再跑本文件。
+--
+-- 域名口径（2026-10-01 定稿，与代码一致）：
+--   平台主域名      antoto.app（另有 www / app / api / go 四个子域）
+--   租户平台子域名  <slug>.antoto.app   例：antmotors.antoto.app
+--   租户自有域名    客户自己买的域名     例：antmotors.autos
+--   ⚠️ 不要用 xxx.antmotors.autos 给别家租户做子域名 —— 会让别家车行的链接
+--      里带上 "antmotors" 字样。antmotors.autos 只是本公司自己的域名。
 -- ============================================================================
 
--- 1) 公司标识 slug —— 子域名用：xxx.antmotors.autos（如 ant.antmotors.autos / valor.antmotors.autos）
+-- 1) 公司标识 slug —— 用于 <slug>.antoto.app
+--    规则：小写字母 / 数字 / 连字符，2~30 位。一旦对外使用就不再改动
+--    （二维码、名片、广告牌上印的都是它）。
 alter table public.companies add column if not exists slug text;
 create unique index if not exists companies_slug_key
   on public.companies (lower(slug)) where slug is not null;
@@ -33,8 +44,13 @@ create index if not exists qr_codes_company_idx on public.qr_codes (company_id);
 create index if not exists qr_codes_car_idx     on public.qr_codes (company_id, car_id);
 
 -- 4) 域名绑定表 —— 「访问域名 → 公司」的唯一真相来源。
---    支持两种形态：平台子域名（ant.antmotors.autos）和客户自有域名（antmotors.autos）。
+--    两种形态都支持：
+--      kind='sub'     平台子域名，如 antmotors.antoto.app
+--      kind='custom'  客户自有域名，如 antmotors.autos
 --    一家公司可绑多个域名；一个域名只能属于一家公司。
+--    ⚠️ 本表只负责「映射」。域名要真正能访问，还得满足：
+--       ① DNS 有解析（平台子域名可用一条通配 CNAME *.antoto.app 一劳永逸）
+--       ② Cloudflare Pages 项目里添加了这个自定义域名（Pages 不支持通配，需逐个加）
 create table if not exists public.company_domains (
   host        text primary key,                  -- 小写、无端口，如 "antmotors.autos"
   company_id  text not null references public.companies(id) on delete cascade,
@@ -43,12 +59,29 @@ create table if not exists public.company_domains (
 );
 create index if not exists company_domains_company_idx on public.company_domains (company_id);
 
--- 4.1) 绑定「Ant motors」—— 已购域名 antmotors.autos 指向 co_a4812811971e
+-- 4.1) 绑定现有公司「Ant motors」= co_a4812811971e
+--      ⚠️ 下面这条 slug 就是该公司的对外标识，会决定 antmotors.antoto.app 这个地址。
+--         想换别的前缀，改这一行的 'antmotors' 即可（改完重跑本文件不会覆盖，
+--         需手动 update，见 4.3）。
 insert into public.company_domains (host, company_id, kind)
 values ('antmotors.autos', 'co_a4812811971e', 'custom')
 on conflict (host) do update set company_id = excluded.company_id;
 
-update public.companies set slug = 'ant' where id = 'co_a4812811971e' and slug is null;
+update public.companies
+   set slug = 'antmotors'
+ where id = 'co_a4812811971e' and slug is null;
+
+-- 4.2) 若该公司 slug 已被设成旧值（例如 'ant'），用这条改过来：
+-- update public.companies set slug = 'antmotors' where id = 'co_a4812811971e';
+
+-- 4.3) 给新租户接域名的模板（按需复制，替换三处占位符）：
+-- insert into public.company_domains (host, company_id, kind)
+-- values ('valor.autos', 'co_xxxxxxxx', 'custom')          -- ① 自有域名
+-- on conflict (host) do update set company_id = excluded.company_id;
+-- insert into public.company_domains (host, company_id, kind)
+-- values ('valor.antoto.app', 'co_xxxxxxxx', 'sub')        -- ② 平台子域名
+-- on conflict (host) do update set company_id = excluded.company_id;
+-- update public.companies set slug = 'valor' where id = 'co_xxxxxxxx';
 
 -- 5) 老账号兜底 —— 新额度规则上线后，别让已有库存的公司被卡住。
 --    下面两条按需执行（把「Ant motors」设成高级/永久）：
@@ -67,8 +100,27 @@ comment on column public.companies.contact_name  is '公司对外联系人姓名
 comment on column public.companies.contact_phone is '公司对外电话（tel: 拨号，建议含国家码如 233xxxx）';
 comment on column public.companies.contact_wa    is '公司对外 WhatsApp 号码（含国家码，不含 +，如 233xxxx）';
 
--- 6.1) 校验：应看到三列已存在
+-- ============================================================================
+-- 7) 跑完后校验 —— 复制这一段单独执行一次，确认结果正确
+-- ============================================================================
+
+-- 7.1) 三列应存在（期望 3 行）
 -- select column_name, data_type from information_schema.columns
 --   where table_schema='public' and table_name='companies'
 --     and column_name in ('contact_name','contact_phone','contact_wa')
 --   order by column_name;
+
+-- 7.2) slug 应为 antmotors（期望 1 行，slug=antmotors）
+-- select id, name, slug, plan from public.companies order by created_at;
+
+-- 7.3) 域名映射应有一条 antmotors.autos → co_a4812811971e
+-- select host, company_id, kind from public.company_domains order by host;
+
+-- 7.4) 所有公司都应有 slug（期望 0 行 —— 有结果说明还有公司没设标识）
+-- select id, name from public.companies where slug is null;
+
+-- ============================================================================
+-- 8) 端到端验证（SQL 跑完后，在浏览器里确认）
+--    https://antmotors.autos/api/public/cars      → company 应为 co_a4812811971e
+--    https://antoto.app/api/public/cars           → company 应为 null（平台不属于任何租户）
+-- ============================================================================
