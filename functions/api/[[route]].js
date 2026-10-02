@@ -819,15 +819,28 @@ export async function onRequest(context) {
       }
       // TEMP diagnostic: when ?diag=1, list each company with its car/employee counts.
       // Lets us confirm whether the 2nd company is a stray empty row or holds teammates' cars.
+      // Also exposes plan / permanent / the EFFECTIVE tier + its car quota — without
+      // these you cannot tell "premium but the trial lapsed" apart from "never set",
+      // which is exactly what made a 14-car company look blocked for no visible reason.
       let companiesDetail = null;
       if (u.searchParams.get('diag')) {
         try {
-          const { data: cos } = await sb.from('companies').select('id,name,code,status,created_at,owner_id');
+          const { data: cos } = await sb.from('companies').select('id,name,code,status,created_at,owner_id,plan,permanent,trial_ends_at,current_period_end');
           if (cos && cos.length) {
             companiesDetail = await Promise.all(cos.map(async (co) => {
               const cars = await sb.from('cars').select('id', { count: 'exact', head: true }).eq('company_id', co.id).eq('deleted', 0);
               const emps = await sb.from('employees').select('id', { count: 'exact', head: true }).eq('company_id', co.id).eq('deleted', 0);
-              return { id: co.id, name: co.name, code: co.code, status: co.status, created_at: co.created_at, cars: cars.count || 0, employees: emps.count || 0 };
+              const mv = membershipView(co);
+              return {
+                id: co.id, name: co.name, code: co.code, status: co.status, created_at: co.created_at,
+                plan: co.plan, permanent: co.permanent,
+                trialEndsAt: co.trial_ends_at || null,
+                periodEnd: co.current_period_end || null,
+                effectivePlan: mv ? mv.plan : null,     // what the limits below actually use
+                carQuota: mv ? mv.quotas.cars : null,   // null = unlimited
+                expired: mv ? !!mv.expired : null,
+                cars: cars.count || 0, employees: emps.count || 0,
+              };
             }));
           }
         } catch (e) { companiesDetail = { error: String((e && e.message) || e) }; }
