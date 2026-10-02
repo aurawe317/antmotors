@@ -117,6 +117,7 @@ input:focus{border-color:var(--gold-line);}
     </div>
     <h1>Platform sign&#8209;in</h1>
     <p class="sub">Only an owner account of a platform company can read tenant conversations.</p>
+    <p class="sub" style="margin-top:-8px;">Signing in here also signs in the main app on this device/browser. Your phone app keeps its own session and must sign in separately.</p>
     <label for="acct">Account (email or employee id)</label>
     <input id="acct" type="text" autocomplete="username" placeholder="boss@company.com" />
     <label for="pw">Password</label>
@@ -177,6 +178,18 @@ async function doLogin(){
   try{
     const r = await api('/api/login', { method:'POST', body:{ account: $('acct').value.trim(), password: $('pw').value } });
     S.token = r.token; S.me = r.employee; save();
+    // Sign the main app in too (same origin, same browser). Without this, signing in
+    // here leaves the app itself logged out — showing the login entry everywhere and
+    // making its "Contact support" POST return 401, which reads as a broken chat.
+    try{
+      const e = r.employee || {};
+      localStorage.setItem('am_session', JSON.stringify({
+        id: e.id, name: e.name, tier: e.tier, role: e.role, roleZh: e.roleZh,
+        branch: e.branch || '', wa: e.wa || '', phone: e.phone || '',
+        company: r.company, token: r.token,
+      }));
+      localStorage.setItem('am_token', r.token);
+    }catch(e){}
     await boot();
   }catch(e){
     err.textContent = /bad_credentials/.test(e.message) ? 'Wrong account or password.' : e.message;
