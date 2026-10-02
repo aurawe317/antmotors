@@ -1513,6 +1513,26 @@
 </div>
 
 <!-- MEMBERSHIP SHEET -->
+<div class="sheet" id="supportSheet">
+  <div class="sheet-handle"></div>
+  <div class="sheet-head">
+    <div class="sheet-head-title"><span data-i18n="mlSupport">Contact support</span></div>
+    <div class="sheet-lang">
+      <span class="seg" id="segEn4" onclick="setLang('en')">EN</span><span class="seg" id="segZh4" onclick="setLang('zh')">中</span>
+    </div>
+  </div>
+  <div class="me-links" style="margin:0 -18px;">
+    <button class="me-link" id="supRow_wa" onclick="supportTap('wa')">
+      <span style="display:flex;align-items:center;gap:10px;"><span style="color:var(--gold);">WhatsApp</span></span><span class="ar">&rsaquo;</span></button>
+    <button class="me-link" id="supRow_phone" onclick="supportTap('phone')">
+      <span data-i18n="supPhone">Call us</span><span class="ar">&rsaquo;</span></button>
+    <button class="me-link" id="supRow_email" onclick="supportTap('email')">
+      <span data-i18n="supEmail">Email us</span><span class="ar">&rsaquo;</span></button>
+  </div>
+  <div class="sheet-hint" data-i18n="supHint">Pick how you'd like to reach the Antoto team.</div>
+  <button class="share-copy" style="width:100%;margin-top:12px;" onclick="closeSupportSheet()" data-i18n="close">Close</button>
+</div>
+
 <div class="sheet" id="membershipSheet">
   <div class="sheet-handle"></div>
   <div class="sheet-head">
@@ -1829,11 +1849,11 @@ I18N.zh.editModeHint="编辑模式：可修改规格、亮点与门店。"; I18N
 I18N.en.bookDone="Booking Confirmed!"; I18N.en.backHome="Back to Home"; I18N.en.waOpening="Opening WhatsApp → ";
 I18N.zh.bookDone="预约成功！"; I18N.zh.backHome="返回首页"; I18N.zh.waOpening="正在打开 WhatsApp → ";
 I18N.en.navMe="Me"; I18N.en.meGuest="Guest"; I18N.en.meGuestSub="Sign in or create a company account"; I18N.en.meSignedIn="Signed in";
-I18N.en.mlFav="My favorites"; I18N.en.mlAdd="Add vehicle"; I18N.en.mlWork="Workbench"; I18N.en.mlAdmin="Car admin"; I18N.en.mlStaff="Staff & roles"; I18N.en.mlPerm="Roles & permissions"; I18N.en.mlSupport="Contact support"; I18N.en.supportUnset="Support is not set up yet. Please email us."; I18N.en.supportMsg="Hi Antoto, I need help with my account."; I18N.en.mlPrice="How pricing works"; I18N.en.mlSettings="App settings"; I18N.en.mlPrem="Membership"; I18N.en.mlCo="Company profile"; I18N.en.soldTitle="Sold vehicles"; I18N.en.soldEmpty="No sold vehicles yet. Mark a car as sold from its detail page.";
+I18N.en.mlFav="My favorites"; I18N.en.mlAdd="Add vehicle"; I18N.en.mlWork="Workbench"; I18N.en.mlAdmin="Car admin"; I18N.en.mlStaff="Staff & roles"; I18N.en.mlPerm="Roles & permissions"; I18N.en.mlSupport="Contact support"; I18N.en.supPhone="Call us"; I18N.en.supEmail="Email us"; I18N.en.supHint="Pick how you would like to reach the Antoto team."; I18N.en.supportSubject="Antoto support"; I18N.en.supportUnset="Support is not set up yet."; I18N.en.supportMsg="Hi Antoto, I need help with my account."; I18N.en.mlPrice="How pricing works"; I18N.en.mlSettings="App settings"; I18N.en.mlPrem="Membership"; I18N.en.mlCo="Company profile"; I18N.en.soldTitle="Sold vehicles"; I18N.en.soldEmpty="No sold vehicles yet. Mark a car as sold from its detail page.";
 I18N.en.tileFav="Saved"; I18N.en.tileRecent="Recent"; I18N.en.tileCars="My cars"; I18N.en.tileShops="Showrooms"; I18N.en.dataHelp="Data & Help"; I18N.en.mlSettingsHint="Settings now live on the Me tab — preferences, data & help are there.";
 I18N.en.shEdit="Edit"; I18N.en.shEditTitle="Edit sales point"; I18N.en.shPin="Map pin"; I18N.en.shPinHint="Latitude, longitude — or paste a Google Maps link. Used for turn-by-turn directions."; I18N.en.shPinBad="Could not read that location"; I18N.en.shSaved="Sales point saved"; I18N.en.shMissing="Sales point not found"; I18N.en.pinSet="Pin set"; I18N.en.pinNone="No map pin";
 I18N.zh.navMe="我的"; I18N.zh.meGuest="访客"; I18N.zh.meGuestSub="登录或创建公司账号"; I18N.zh.meSignedIn="已登录";
-I18N.zh.mlFav="我的收藏"; I18N.zh.mlAdd="添加车辆"; I18N.zh.mlWork="工作台"; I18N.zh.mlAdmin="车辆后台"; I18N.zh.mlStaff="员工与角色"; I18N.zh.mlPerm="角色权限"; I18N.zh.mlSupport="联系客服"; I18N.zh.supportUnset="客服尚未配置，请通过邮件联系我们。"; I18N.zh.supportMsg="你好 Antoto，我需要账号方面的帮助。"; I18N.zh.mlPrice="定价说明"; I18N.zh.mlSettings="应用设置"; I18N.zh.mlPrem="会员权益"; I18N.zh.mlCo="公司资料"; I18N.zh.soldTitle="已售车辆"; I18N.zh.soldEmpty="暂无已售车辆。在车辆详情页把它标记为已售即可。";
+I18N.zh.mlFav="我的收藏"; I18N.zh.mlAdd="添加车辆"; I18N.zh.mlWork="工作台"; I18N.zh.mlAdmin="车辆后台"; I18N.zh.mlStaff="员工与角色"; I18N.zh.mlPerm="角色权限"; I18N.zh.mlSupport="联系客服"; I18N.zh.supPhone="电话联系"; I18N.zh.supEmail="邮件联系"; I18N.zh.supHint="选择您方便的方式联系 Antoto 团队。"; I18N.zh.supportSubject="Antoto 客服"; I18N.zh.supportUnset="客服尚未配置。"; I18N.zh.supportMsg="你好 Antoto，我需要账号方面的帮助。"; I18N.zh.mlPrice="定价说明"; I18N.zh.mlSettings="应用设置"; I18N.zh.mlPrem="会员权益"; I18N.zh.mlCo="公司资料"; I18N.zh.soldTitle="已售车辆"; I18N.zh.soldEmpty="暂无已售车辆。在车辆详情页把它标记为已售即可。";
 I18N.zh.tileFav="收藏"; I18N.zh.tileRecent="最近"; I18N.zh.tileCars="车辆"; I18N.zh.tileShops="门店"; I18N.zh.dataHelp="数据与帮助"; I18N.zh.mlSettingsHint="设置已移到「我的」页——偏好、数据与帮助都在那里。";
 I18N.zh.shEdit="编辑"; I18N.zh.shEditTitle="编辑销售点"; I18N.zh.shPin="地图定位"; I18N.zh.shPinHint="纬度, 经度 —— 或粘贴 Google Maps 链接，用于一键导航。"; I18N.zh.shPinBad="无法识别该定位"; I18N.zh.shSaved="销售点已保存"; I18N.zh.shMissing="未找到该销售点"; I18N.zh.pinSet="已设定位"; I18N.zh.pinNone="未设定位";
 /* v4.1 section headers + workspace link labels */
@@ -1969,7 +1989,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.54';
+const APP_VER='1.2.55';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2146,6 +2166,9 @@ function syncLangUI(){
   const en3=document.getElementById('segEn3'), zh3=document.getElementById('segZh3');
   if(en3) en3.classList.toggle('on',curLang==="en");
   if(zh3) zh3.classList.toggle('on',curLang==="zh");
+  const en4=document.getElementById('segEn4'), zh4=document.getElementById('segZh4');
+  if(en4) en4.classList.toggle('on',curLang==="en");
+  if(zh4) zh4.classList.toggle('on',curLang==="zh");
   document.documentElement.lang = curLang==="zh"?"zh":"en";
 }
 function toggleLang(){ setLang(curLang==="en"?"zh":"en"); }
@@ -3347,17 +3370,53 @@ function deleteCar(k){
 
 /* ---- pricing model sheet ---- */
 /* ---- platform support -------------------------------------------------
-   The WhatsApp number that dealership staff use to reach the Antoto team.
-   Digits only — country code first, no "+", spaces or dashes (e.g. 233201234567).
-   While it is empty the menu entry stays visible but explains that support is
-   not set up yet, instead of opening WhatsApp on a blank/wrong contact. */
-const PLATFORM_SUPPORT_WA = '';
+   How dealership staff reach the Antoto team. WhatsApp converts best in Ghana,
+   but phone and email are offered too — fill in whichever you actually answer.
+   WhatsApp / phone: country code first, digits only (e.g. 233201234567).
+   Channels left blank are hidden from the picker automatically, and if every
+   channel is blank the entry says so instead of opening an empty contact. */
+const PLATFORM_SUPPORT = { wa:'', phone:'', email:'' };
+function supportChannels(){
+  const out=[];
+  if(String(PLATFORM_SUPPORT.wa||'').replace(/[^0-9]/g,'')) out.push('wa');
+  if(String(PLATFORM_SUPPORT.phone||'').replace(/[^0-9]/g,'')) out.push('phone');
+  if(String(PLATFORM_SUPPORT.email||'').indexOf('@')>0) out.push('email');
+  return out;
+}
 function contactSupport(){
-  const wa=String(PLATFORM_SUPPORT_WA||'').replace(/[^0-9]/g,'');
-  if(!wa){ toast(T('supportUnset','Support is not set up yet. Please email us.')); return; }
-  const url='https://wa.me/'+wa+'?text='+encodeURIComponent(T('supportMsg','Hi Antoto, I need help with my account.'));
-  const w=window.open(url,'_blank');
-  if(!w) location.href=url;   // popup blocked (standalone PWA / in-app webview)
+  const chans=supportChannels();
+  if(!chans.length){ toast(T('supportUnset','Support is not set up yet.')); return; }
+  if(chans.length===1){ supportTap(chans[0]); return; }   // one channel = no pointless tap-through
+  ['wa','phone','email'].forEach(function(k){
+    const row=document.getElementById('supRow_'+k);
+    if(row) row.style.display = chans.indexOf(k)>=0 ? 'flex' : 'none';
+  });
+  const m=document.getElementById('sheetMask'), sh=document.getElementById('supportSheet');
+  if(m) m.classList.add('show');
+  if(sh) sh.classList.add('show');
+}
+function closeSupportSheet(){
+  const m=document.getElementById('sheetMask'), sh=document.getElementById('supportSheet');
+  if(m) m.classList.remove('show');
+  if(sh) sh.classList.remove('show');
+}
+function supportTap(kind){
+  closeSupportSheet();
+  const msg=T('supportMsg','Hi Antoto, I need help with my account.');
+  if(kind==='wa'){
+    const wa=String(PLATFORM_SUPPORT.wa||'').replace(/[^0-9]/g,'');
+    if(!wa){ toast(T('supportUnset','Support is not set up yet.')); return; }
+    const url='https://wa.me/'+wa+'?text='+encodeURIComponent(msg);
+    const w=window.open(url,'_blank'); if(!w) location.href=url;   // popup blocked → same-tab fallback
+  } else if(kind==='phone'){
+    const tel=String(PLATFORM_SUPPORT.phone||'').replace(/[^0-9+]/g,'');
+    if(!tel){ toast(T('supportUnset','Support is not set up yet.')); return; }
+    location.href='tel:'+tel;
+  } else if(kind==='email'){
+    const em=String(PLATFORM_SUPPORT.email||'').trim();
+    if(em.indexOf('@')<=0){ toast(T('supportUnset','Support is not set up yet.')); return; }
+    location.href='mailto:'+em+'?subject='+encodeURIComponent(T('supportSubject','Antoto support'))+'&body='+encodeURIComponent(msg);
+  }
 }
 function openPricingInfo(){
   // This explainer also lives on the Me tab, where no car is open. Fall back to
