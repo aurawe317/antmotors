@@ -805,7 +805,29 @@ export async function onRequest(context) {
           }
         }
       } catch (e) { keyWarn = 'key_decode_failed'; }
-      const base = { build: 'app-1.2.46', now: now(), version: 2, backend: APP_VER };
+      // The `build` field is how we answer "did my push actually reach production?".
+// It used to be a hardcoded 'app-1.2.46' that never changed, so it cheerfully
+// reported a stale version for days after a successful deploy. Read the REAL
+// version out of the served index.html (60s module-level cache so a health probe
+// loop doesn't hammer the static asset), and expose the Pages commit sha too.
+let _verCache = { at: 0, val: '' };
+async function liveAppVersion(origin) {
+  const t = Date.now();
+  if (_verCache.val && t - _verCache.at < 60000) return _verCache.val;
+  try {
+    const r = await fetch(origin + '/index.html?cv=' + t, { cache: 'no-store', signal: AbortSignal.timeout(4000) });
+    if (r.ok) {
+      const m = /APP_VER\s*=\s*'([^']+)'/.exec(await r.text());
+      if (m && m[1]) { _verCache = { at: t, val: 'app-' + m[1] }; return _verCache.val; }
+    }
+  } catch (e) { /* fall through to whatever we have */ }
+  return _verCache.val || 'unknown';
+}
+const base = {
+        build: await liveAppVersion(u.origin),
+        commit: (env.CF_PAGES_COMMIT_SHA || '').slice(0, 7) || null,
+        now: now(), version: 2, backend: APP_VER,
+      };
       if (dbErr || authErr || keyWarn) {
         return send(503, Object.assign({
           ok: false, dbError: dbErr, authError: authErr, keyWarn,
