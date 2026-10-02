@@ -80,6 +80,10 @@ input:focus{border-color:var(--gold-line);}
 .phead .meta a{color:var(--gold);text-decoration:none;}
 .msgs{flex:1;overflow:auto;padding:16px 18px;}
 .empty-state{color:var(--text-dim);text-align:center;padding:60px 20px;font-size:13px;}
+.health{margin:0;padding:9px 16px;font-size:12px;display:none;border-bottom:1px solid var(--border);line-height:1.5;}
+.health.on{display:block;}
+.health.ok{background:rgba(138,240,176,.10);color:#8af0b0;}
+.health.bad{background:rgba(255,154,154,.12);color:#ffb3b3;}
 .m{display:flex;margin:8px 0;}
 .m.me{justify-content:flex-end;}
 .bub{max-width:72%;padding:9px 12px;border-radius:14px;font-size:13.5px;line-height:1.5;word-break:break-word;}
@@ -128,6 +132,7 @@ input:focus{border-color:var(--gold-line);}
     <span class="who" id="who"></span>
     <button class="btn sm ghost" onclick="signOut()">Sign out</button>
   </div>
+  <div class="health" id="health"></div>
   <div class="body">
     <div class="side" id="side"></div>
     <div class="pane" id="pane">
@@ -189,6 +194,7 @@ async function boot(){
   $('who').textContent = (S.me && (S.me.name || S.me.id) || '') + ' · ' + ((S.me && S.me.companyId) || '');
   render(); selectThread(Object.keys(grouped())[0] || null);
   startPoll();
+  runSelfTest();
 }
 
 const keyOf = (m) => (m && m.id != null) ? 'id:'+m.id : 'k:'+(m.created_at||0)+':'+(m.side||'')+':'+String(m.body||'').slice(0,24);
@@ -254,6 +260,27 @@ function renderMsgs(){
     + '</div></div>').join('');
 }
 
+// A SELECT on support_messages can pass while INSERT is blocked (RLS / grants).
+// Exercise the real write path once per sign-in so the console states plainly whether
+// the chat works, instead of leaving the user to discover it from a silent failure in
+// the app. The probe row is deleted again, so nothing is left behind.
+async function runSelfTest(){
+  const el = $('health');
+  try{
+    const r = await api('/api/support/admin/selftest', { method:'POST' });
+    if (r && r.ok){
+      el.className = 'health on ok';
+      el.textContent = 'Support chat is working — write path verified just now (' + (r.stage || '') + ').';
+    } else {
+      el.className = 'health on bad';
+      el.textContent = 'Support chat is BROKEN — ' + (r && (r.code || r.stage || r.error || '')) + ' ' + (r && r.message || '')
+        + (r && r.hint ? (' → ' + r.hint) : '');
+    }
+  }catch(e){
+    el.className = 'health on bad';
+    el.textContent = 'Support self-test failed: ' + (e.message || e.status);
+  }
+}
 async function poll(){
   try{
     const r = await api('/api/support/admin?since=' + S.since);

@@ -1288,6 +1288,26 @@ const base = {
           : { data: [] };
         return send(200, { messages: data || [], companies: cos || [], now: now() });
       }
+      if (p === '/api/support/admin/selftest' && method === 'POST') {
+        // Actually try the write path (insert then delete) instead of only checking
+        // that the table can be read. A SELECT can succeed while INSERT is blocked by
+        // RLS/grants, and that is exactly the class of failure that makes the chat
+        // "do nothing" with no visible reason. Never leaves data behind.
+        const stamp = now();
+        try {
+          const { data: probeRow, error: insErr } = await sb.from('support_messages').insert({
+            company_id: emp.companyId, user_id: emp.id, user_name: 'selftest',
+            side: 'support', body: '__selftest__', photo: null, read: 1, created_at: stamp,
+          }).select('id').maybeSingle();
+          if (insErr) {
+            return send(200, { ok: false, stage: 'insert', code: insErr.code || '', message: insErr.message || String(insErr), hint: insErr.code === '42501' ? 'Privileges missing — run supabase-grants.sql' : (insErr.code === '42P01' ? 'Table missing — run supabase-schema-support.sql' : '') });
+          }
+          if (probeRow && probeRow.id != null) await sb.from('support_messages').delete().eq('id', probeRow.id);
+          return send(200, { ok: true, stage: 'insert+delete', message: 'write path works' });
+        } catch (e) {
+          return send(200, { ok: false, stage: 'insert', error: String((e && e.message) || e) });
+        }
+      }
       if (p === '/api/support/admin/reply' && method === 'POST') {
         const b = await readBody(req);
         const companyId = String(b.companyId || '');
