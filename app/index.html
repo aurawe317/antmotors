@@ -1517,8 +1517,12 @@
   <div class="sheet-handle"></div>
   <div class="sheet-head">
     <div class="sheet-head-title"><span data-i18n="mlSupport">Contact support</span></div>
+    <div class="sheet-lang">
+      <span class="seg" id="segEn4" onclick="setLang('en')">EN</span><span class="seg" id="segZh4" onclick="setLang('zh')">&#20013;</span>
+    </div>
     <button class="sheet-x" onclick="closeSupportSheet()" aria-label="Close">&times;</button>
   </div>
+  <div class="sup-error" id="supError" style="display:none;"></div>
   <div class="sup-empty" id="supEmpty" data-i18n="supIntro">Messages to the Antoto team land here. Ask anything about your account, plan or data.</div>
   <div id="supThread" class="sup-thread"></div>
   <div id="supPending" class="sup-pending" style="display:none;"></div>
@@ -1532,11 +1536,6 @@
     <a id="supAltWa" onclick="supportTap('wa')" style="display:none;">WhatsApp</a>
     <a id="supAltPhone" onclick="supportTap('phone')" style="display:none;" data-i18n="supPhone">Call us</a>
     <a id="supAltEmail" onclick="supportTap('email')" style="display:none;" data-i18n="supEmail">Email us</a>
-  </div>
-  <div class="sup-foot">
-    <span class="sup-lang">
-      <span class="seg" id="segEn4" onclick="setLang('en')">EN</span><span class="seg" id="segZh4" onclick="setLang('zh')">&#20013;</span>
-    </span>
   </div>
 </div>
 
@@ -1570,6 +1569,7 @@
 /* ---- in-app support chat ---- */
 #supportSheet{ max-width:520px; margin:0 auto; }
 .sup-thread{ min-height:170px; max-height:46vh; overflow:auto; padding:2px 0 6px; }
+.sup-error{ margin:0 0 10px; padding:9px 11px; border-radius:10px; font-size:12px; line-height:1.5; background:rgba(255,154,154,.10); border:1px solid rgba(255,154,154,.32); color:#ffb3b3; word-break:break-word; }
 .sup-empty{ font-size:12px; color:var(--text-dim); line-height:1.6; padding:14px 12px 10px; text-align:center; }
 .sup-msg{ display:flex; margin:7px 0; }
 .sup-msg.me{ justify-content:flex-end; }
@@ -2025,7 +2025,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.58';
+const APP_VER='1.2.59';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3435,7 +3435,7 @@ function contactSupport(){
   const sh=document.getElementById('supportSheet'), mk=document.getElementById('sheetMask');
   if(mk) mk.classList.add('show');
   if(sh) sh.classList.add('show');
-  syncSupportAlt(); loadSupport(true); startSupportPoll();
+  syncSupportAlt(); supShowError(''); loadSupport(true); startSupportPoll();
 }
 function closeSupportSheet(){
   const mk=document.getElementById('sheetMask'), sh=document.getElementById('supportSheet');
@@ -3451,6 +3451,16 @@ function syncSupportAlt(){
   });
 }
 function supKey(m){ return m&&m.id!=null ? 'id:'+m.id : 'k:'+(m.created_at||0)+':'+(m.side||'')+':'+String(m.body||'').slice(0,24); }
+function supShowError(msg){
+  const el=document.getElementById('supError'); if(!el) return;
+  if(msg){ el.textContent=msg; el.style.display='block'; } else { el.style.display='none'; el.textContent=''; }
+}
+function supErrorText(e){
+  if(!e) return '';
+  if(e.detail) return String(e.detail);
+  if(e.status===503) return T('supNotReady','Support chat is not available yet.');
+  return String(e.message||T('supSendFail','Could not send.'));
+}
 function supEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
 function supBubble(m,me){
   const img=m.photo?('<img src="'+supEsc(m.photo)+'" alt="" />'):'';
@@ -3485,7 +3495,9 @@ async function loadSupport(reset){
       if(r.now) SUP_SINCE=Math.max(SUP_SINCE,r.now);
     }else if(reset){ renderSupport(); }
   }catch(e){
-    if(e && e.status===503) toast(T('supNotReady','Support chat is not available yet.')+' '+String(e.message||''));
+    // Loading is where a missing table surfaces first — show it persistently so the
+    // user can act on it instead of a toast that vanishes in 2 seconds.
+    supShowError(supErrorText(e));
   }
 }
 function startSupportPoll(){ stopSupportPoll(); SUP_TIMER=setInterval(function(){ loadSupport(false); },6000); }
@@ -3509,14 +3521,14 @@ async function sendSupportMsg(){
   const btn=document.getElementById('supSendBtn'); if(btn) btn.disabled=true;
   try{
     const r=await api('/api/support',{method:'POST',body:{body:body,photo:photo}});
+    supShowError('');
     if(r && r.message){ SUP_MSGS.push(r.message); renderSupport(); } else { await loadSupport(true); }
   }catch(e){
     // Surface the server's own reason. A generic "check your connection" hides the
     // one failure that actually matters here — support_messages not created yet
     // (503 support_not_migrated) — which reads as "the button is broken".
-    var why=String((e && e.message) || '');
-    if(e && e.status===503) why=T('supNotReady','Support chat is not available yet.')+' '+why;
-    toast(T('supSendFail','Could not send.')+' '+(why || T('checkConn','Check your connection.')));
+    supShowError(supErrorText(e));
+    toast(T('supSendFail','Could not send.')+' '+supErrorText(e));
     if(inp) inp.value=body;
   }finally{ if(btn) btn.disabled=false; }
 }
@@ -4374,6 +4386,10 @@ async function api(p,o){
   /* only an expired/invalid session clears the token — a wrong password must not */
   if(r.status===401 && code==='unauthorized'){ SYNC.token=''; localStorage.removeItem('am_token'); }
   const err=new Error(code); err.status=r.status; err.data=j||{};
+  // Keep the server's human-readable `detail` reachable. err.message only ever
+  // carries `j.error` (a machine code like 'support_not_migrated'), so any UI that
+  // wants to tell the user WHAT went wrong has to look here.
+  if(j && j.detail) err.detail=String(j.detail);
   throw err;
 }
 /* public API works without a token, and without SYNC.base when the page is served from the same origin */
