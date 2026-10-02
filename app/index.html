@@ -1553,6 +1553,39 @@
 .feat-chip{ display:inline-flex; align-items:center; gap:4px; background:rgba(138,240,176,.12); color:#8af0b0; border:1px solid rgba(138,240,176,.25); font-size:11px; padding:3px 9px; border-radius:999px; }
 #payBox{ border-top:1px dashed var(--border); padding-top:12px; margin-top:6px; }
 #payLink.submit{ display:block!important; text-align:center; }
+
+/* ---- plan cards inside the membership sheet: stack vertically, CTA full width
+   The global `.plan-card` (line ~549) is a HORIZONTAL flex row — name/price on
+   the left, action on the right — used by the pricing selector. The membership
+   cards stack vertically, and the inline style only overrode the border/background,
+   so every child (price, quota, feature chips, button) became a flex item on one
+   line and the Subscribe button got crushed to a sliver. Reset the display only
+   within this sheet, and pin the CTA to its own full-width row so it can never be
+   squeezed or pushed out of the card. */
+#membershipSheet .plan-card{ display:block; padding:13px 14px; margin:9px 0; }
+#membershipSheet .pc-name{ display:flex; align-items:center; flex-wrap:wrap; gap:8px; font-size:14px; font-weight:800; }
+#membershipSheet .pc-price{ margin:6px 0 0; font-size:20px; font-weight:800; }
+#membershipSheet .pc-quota{ margin-top:5px; font-size:12px; color:var(--text-dim); }
+#membershipSheet .pc-feats{ display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; }
+#membershipSheet .pc-cta{ display:block; width:100%; min-height:44px; margin-top:11px; }
+/* trim the status block so both plans AND their CTAs fit without scrolling */
+#membershipSheet .mem-status{ padding:11px 13px; margin-bottom:2px; }
+#membershipSheet .ms-plan{ font-size:14px; }
+#membershipSheet .ms-sub{ font-size:11px; }
+#membershipSheet #memCycle{ margin:4px 0 2px!important; }
+#membershipSheet .share-copy[onclick="closeSheets()"]{ margin-top:10px!important; }
+/* Short screens (SE / older iPhones, 88vh ≈ 580px): trim the vertical rhythm so
+   the second plan's CTA still lands above the fold instead of below it. */
+@media (max-height:700px){
+  #membershipSheet{ padding-bottom:12px; }
+  #membershipSheet .mem-status{ padding:9px 12px; }
+  #membershipSheet .ms-plan{ font-size:13px; }
+  #membershipSheet .pc-price{ font-size:18px; }
+  #membershipSheet .plan-card{ padding:11px 12px; margin:6px 0; }
+  #membershipSheet .pc-feats{ margin-top:6px; }
+  #membershipSheet .pc-cta{ margin-top:9px; min-height:42px; }
+  #membershipSheet .share-copy[onclick="closeSheets()"]{ margin-top:6px!important; }
+}
 </style>
 
 <div class="toast" id="toast"></div>
@@ -1782,12 +1815,12 @@ I18N.en.loginTab="Sign in"; I18N.en.regTab="Create account"; I18N.en.regHasAccou
 I18N.en.joinTitle="Join your company"; I18N.en.joinHint="Enter the invitation code from your boss, or scan the QR they share. Pick your role, then you get full access."; I18N.en.joinCode="Invitation code"; I18N.en.joinScan="Scan"; I18N.en.joinRole="Your role"; I18N.en.jrPartner="Partner (co-owner)"; I18N.en.jrManager="Manager"; I18N.en.jrSalesA="Senior Sales"; I18N.en.jrSalesB="Sales"; I18N.en.joinBranch="Branch"; I18N.en.joinBind="Bind & activate"; I18N.en.joinNeedCode="Enter or scan the invitation code"; I18N.en.joinSuccess="You are now part of the company"; I18N.en.joinBadCode="Invitation code does not match"; I18N.en.joinBadTier="Pick a role"; I18N.en.joinNotFound="Account not found";
 I18N.en.codeTitle="Company invitation code"; I18N.en.codeHint="Share this with partners & staff. They enter or scan it to join your company and get access."; I18N.en.codeCopy="Copy code"; I18N.en.codeRegen="Regenerate"; I18N.en.codeCopied="Code copied"; I18N.en.codeRegenConfirm="Regenerate the code? Old shares will stop working."; I18N.en.codeRegenOk="New code generated"; I18N.en.scanNoCam="Camera not available"; I18N.en.scanOk="Code scanned";
 I18N.en.memTitle="Membership"; I18N.en.memManage="Manage membership"; I18N.en.memActive="Active"; I18N.en.memExpired="Expired"; I18N.en.memTrial="Trial"; I18N.en.memUntil="Valid until"; I18N.en.memExpiredMsg="Your membership has expired. Renew to add or edit cars and keep staff synced."; I18N.en.memPick="Choose a plan"; I18N.en.memScan="Scan this with Alipay to pay"; I18N.en.memOpenAlipay="Open Alipay"; I18N.en.memSimPay="（测试）模拟支付成功"; I18N.en.memPaying="Creating order…"; I18N.en.memPaid="Payment received — membership activated"; I18N.en.memPayFailed="Payment failed, please retry"; I18N.en.memSimNote="DEV mode: Alipay is simulated — use the test button to activate.";
-I18N.en.memNeedServer="Connect to a server to subscribe"; I18N.en.memNeedLogin="Sign in as the company owner to subscribe"; I18N.en.memSubscribe="Subscribe"; I18N.en.memOwnerOnly="Owner only"; I18N.en.memActive="Active"; I18N.en.perMonth="/mo"; I18N.en.perYear="/yr"; I18N.en.memRenew="Renew now"; I18N.en.memCurrent="Current plan"; I18N.en.memLifetime="Lifetime"; I18N.en.memLifetimeMsg="You have lifetime membership — active forever, no subscription needed."; I18N.en.memFeatDomain="Own domain (e.g. yourcompany.autos)"; I18N.en.memFeatQr="Exclusive QR code"; I18N.en.unlimited="Unlimited"; I18N.en.carsUnit2="cars"; I18N.en.staffUnit="staff"; I18N.en.shopsUnit="shops"; I18N.en.memUpgrade="Upgrade"; I18N.en.memLifetimeMsgShort="Lifetime — no subscription needed"; I18N.en.memTrialLeft="Trial left: "; I18N.en.daysUnit=" days"; I18N.en.free2="Free"; I18N.en.memDevOrder="DEV order created — use the test button"; I18N.en.memDevMode="DEV mode — no real payment gateway connected. This button simulates a successful payment for testing."; I18N.en.memPayGateway="Payment gateway"; I18N.en.memPayVia="Pay via "; I18N.en.memPayNow="Complete payment";
+I18N.en.memNeedServer="Connect to a server to subscribe"; I18N.en.memNeedLogin="Sign in as the company owner to subscribe"; I18N.en.memSubscribe="Subscribe"; I18N.en.memOwnerOnly="Owner only"; I18N.en.memActive="Active"; I18N.en.perMonth="/mo"; I18N.en.perYear="/yr"; I18N.en.memRenew="Renew now"; I18N.en.memCurrent="Current plan"; I18N.en.memLifetime="Lifetime"; I18N.en.memLifetimeMsg="You have lifetime membership — active forever, no subscription needed."; I18N.en.memFeatDomain="Own domain (e.g. yourcompany.autos)"; I18N.en.memFeatQr="Exclusive QR code"; I18N.en.unlimited="Unlimited"; I18N.en.unlimited="Unlimited"; I18N.en.memQuotaUnlimited="Unlimited vehicles, staff & branches"; I18N.en.carsUnit2="cars"; I18N.en.staffUnit="staff"; I18N.en.shopsUnit="shops"; I18N.en.memUpgrade="Upgrade"; I18N.en.memLifetimeMsgShort="Lifetime — no subscription needed"; I18N.en.memTrialLeft="Trial left: "; I18N.en.daysUnit=" days"; I18N.en.free2="Free"; I18N.en.memDevOrder="DEV order created — use the test button"; I18N.en.memDevMode="DEV mode — no real payment gateway connected. This button simulates a successful payment for testing."; I18N.en.memPayGateway="Payment gateway"; I18N.en.memPayVia="Pay via "; I18N.en.memPayNow="Complete payment";
 I18N.zh.loginTab="登录"; I18N.zh.regTab="注册账号"; I18N.zh.regHasAccount="新用户？注册账号"; I18N.zh.regSwitchToLogin="已有账号？去登录"; I18N.zh.regId="账号 ID"; I18N.zh.regName="你的姓名";I18N.zh.regIdSub="登录账号 — 简短、唯一、小写。同事用它 @ 你、分配客户（如 ama、kwame）。"; I18N.zh.regNameSub="展示给客户的姓名，出现在报价单、聊天与预约里（如 Ama K.、Kwame Asante）。"; I18N.zh.regWa="WhatsApp"; I18N.zh.regPhone="电话"; I18N.zh.regPin="密码 PIN（4-8 位）"; I18N.zh.regCreate="创建账号"; I18N.zh.regCreating="创建中…"; I18N.zh.regSuccess="账号已创建"; I18N.zh.regExists="该账号 ID 已被占用"; I18N.zh.regHint="先填写服务器地址，再在下方填写你的资料即可创建账号。如果已有账号，点“已有账号？去登录”。"; I18N.zh.regModeCreate="创建公司"; I18N.zh.regModeJoin="加入公司"; I18N.zh.regCoName="公司名称"; I18N.zh.regCoLogo="公司 Logo"; I18N.zh.regCode="邀请码"; I18N.zh.coTitle="公司"; I18N.zh.coSave="保存公司"; I18N.zh.coEdit="编辑公司"; I18N.zh.reqField="必填"; I18N.zh.coSaved="公司已保存";
 I18N.zh.joinTitle="加入公司"; I18N.zh.joinHint="输入老板给你的邀请码，或扫描对方分享的二维码，选择你的角色即可获得权限。"; I18N.zh.joinCode="邀请码"; I18N.zh.joinScan="扫描"; I18N.zh.joinRole="你的角色"; I18N.zh.jrPartner="合伙人（共同所有者）"; I18N.zh.jrManager="经理"; I18N.zh.jrSalesA="高级销售"; I18N.zh.jrSalesB="销售"; I18N.zh.joinBranch="门店"; I18N.zh.joinBind="绑定并激活"; I18N.zh.joinNeedCode="请填写或扫描邀请码"; I18N.zh.joinSuccess="你已加入公司"; I18N.zh.joinBadCode="邀请码不匹配"; I18N.zh.joinBadTier="请选择角色"; I18N.zh.joinNotFound="未找到账号";
 I18N.zh.codeTitle="公司邀请码"; I18N.zh.codeHint="把这个码发给合伙人和员工，他们输入或扫码即可加入公司并获得权限。"; I18N.zh.codeCopy="复制邀请码"; I18N.zh.codeRegen="重新生成"; I18N.zh.codeCopied="邀请码已复制"; I18N.zh.codeRegenConfirm="重新生成邀请码？旧的分享将失效。"; I18N.zh.codeRegenOk="已生成新邀请码"; I18N.zh.scanNoCam="无法使用摄像头"; I18N.zh.scanOk="已扫描到邀请码";
 I18N.zh.memTitle="会员"; I18N.zh.memManage="管理会员"; I18N.zh.memActive="生效中"; I18N.zh.memExpired="已过期"; I18N.zh.memTrial="试用"; I18N.zh.memUntil="有效期至"; I18N.zh.memExpiredMsg="会员已过期，续费后可继续添加/编辑车辆并保持员工同步。"; I18N.zh.memPick="选择套餐"; I18N.zh.memScan="用支付宝扫描此码付款"; I18N.zh.memOpenAlipay="打开支付宝"; I18N.zh.memSimPay="（测试）模拟支付成功"; I18N.zh.memPaying="正在创建订单…"; I18N.zh.memPaid="已收到付款 — 会员已开通"; I18N.zh.memPayFailed="支付失败，请重试"; I18N.zh.memSimNote="开发模式：支付宝为模拟支付 — 点击测试按钮即可激活。";
-I18N.zh.memNeedServer="连接服务器后可订阅套餐"; I18N.zh.memNeedLogin="请以公司所有者身份登录后再订阅"; I18N.zh.memSubscribe="订阅"; I18N.zh.memOwnerOnly="仅所有者"; I18N.zh.memRenew="立即续费"; I18N.zh.memCurrent="当前套餐"; I18N.zh.perMonth="/月"; I18N.zh.perYear="/年"; I18N.zh.memLifetime="永久会员"; I18N.zh.memLifetimeMsg="您已拥有永久会员，永久有效，无需订阅。"; I18N.zh.memFeatDomain="独立域名（如 yourcompany.autos）"; I18N.zh.memFeatQr="专属二维码"; I18N.zh.unlimited="不限"; I18N.zh.carsUnit2="辆车"; I18N.zh.staffUnit="名员工"; I18N.zh.shopsUnit="家门店"; I18N.zh.memUpgrade="升级"; I18N.zh.memLifetimeMsgShort="永久有效，无需订阅"; I18N.zh.memTrialLeft="试用剩余 "; I18N.zh.daysUnit=" 天"; I18N.zh.free2="免费"; I18N.zh.memDevOrder="已创建开发订单 — 请使用测试按钮"; I18N.zh.memDevMode="开发模式 — 未接入真实支付网关。此按钮用于模拟支付成功以便测试。"; I18N.zh.memPayGateway="支付网关"; I18N.zh.memPayVia="通过 "; I18N.zh.memPayNow="完成支付";
+I18N.zh.memNeedServer="连接服务器后可订阅套餐"; I18N.zh.memNeedLogin="请以公司所有者身份登录后再订阅"; I18N.zh.memSubscribe="订阅"; I18N.zh.memOwnerOnly="仅所有者"; I18N.zh.memRenew="立即续费"; I18N.zh.memCurrent="当前套餐"; I18N.zh.perMonth="/月"; I18N.zh.perYear="/年"; I18N.zh.memLifetime="永久会员"; I18N.zh.memLifetimeMsg="您已拥有永久会员，永久有效，无需订阅。"; I18N.zh.memFeatDomain="独立域名（如 yourcompany.autos）"; I18N.zh.memFeatQr="专属二维码"; I18N.zh.unlimited="不限"; I18N.zh.unlimited="无限"; I18N.zh.memQuotaUnlimited="车辆、员工、门店均不限"; I18N.zh.carsUnit2="辆车"; I18N.zh.staffUnit="名员工"; I18N.zh.shopsUnit="家门店"; I18N.zh.memUpgrade="升级"; I18N.zh.memLifetimeMsgShort="永久有效，无需订阅"; I18N.zh.memTrialLeft="试用剩余 "; I18N.zh.daysUnit=" 天"; I18N.zh.free2="免费"; I18N.zh.memDevOrder="已创建开发订单 — 请使用测试按钮"; I18N.zh.memDevMode="开发模式 — 未接入真实支付网关。此按钮用于模拟支付成功以便测试。"; I18N.zh.memPayGateway="支付网关"; I18N.zh.memPayVia="通过 "; I18N.zh.memPayNow="完成支付";
 /* ---- toast/inline messages that were previously hardcoded English ---- */
 I18N.en.editModeHint="Edit mode: specs, highlights, branch can be modified."; I18N.en.videoTooLarge="Video too large — max 25MB"; I18N.en.max3Videos="Max 3 videos per car"; I18N.en.videoAdded="Video added for"; I18N.en.viewingPhoto="Viewing photo"; I18N.en.shareLinkCopied="Share link copied"; I18N.en.staffIdFmt="Staff ID: 2-20 letters/numbers/_"; I18N.en.pinFmt="PIN must be 4-8 digits"; I18N.en.linkCopiedRef="Link copied · ref"; I18N.en.backupExported="Backup exported"; I18N.en.backupRestored="Backup restored"; I18N.en.invalidBackup="Invalid backup file"; I18N.en.qrLibOffline="QR library unavailable offline"; I18N.en.createFailed="create failed"; I18N.en.reqFieldX="required"; I18N.en.regNeedMode="Choose a mode and fill the company field"; I18N.en.afNeedFields="Please fill brand, model and year"; I18N.en.afNeedQuote="Please enter a customer quote price"; I18N.en.mBoss="Boss"; I18N.en.mPA="P.A"; I18N.en.mPB="P.B"; I18N.en.mMgr="Mgr"; I18N.en.mSA="S.A"; I18N.en.mSB="S.B";
 I18N.zh.editModeHint="编辑模式：可修改规格、亮点与门店。"; I18N.zh.videoTooLarge="视频过大——最大 25MB"; I18N.zh.max3Videos="每辆车最多 3 个视频"; I18N.zh.videoAdded="已添加视频："; I18N.zh.viewingPhoto="正在查看照片"; I18N.zh.shareLinkCopied="分享链接已复制"; I18N.zh.staffIdFmt="员工账号：2-20 位字母/数字/_"; I18N.zh.pinFmt="PIN 必须为 4-8 位数字"; I18N.zh.linkCopiedRef="链接已复制 · 引用"; I18N.zh.backupExported="备份已导出"; I18N.zh.backupRestored="备份已恢复"; I18N.zh.invalidBackup="备份文件无效"; I18N.zh.qrLibOffline="离线时二维码库不可用"; I18N.zh.createFailed="创建失败"; I18N.zh.reqFieldX="必填"; I18N.zh.regNeedMode="请选择注册方式并填写对应公司信息"; I18N.zh.afNeedFields="请填写品牌、型号与年份"; I18N.zh.afNeedQuote="请填写对客户报价"; I18N.zh.mBoss="老板"; I18N.zh.mPA="合伙人A"; I18N.zh.mPB="合伙人B"; I18N.zh.mMgr="店长"; I18N.zh.mSA="销售A"; I18N.zh.mSB="销售B";
@@ -1935,7 +1968,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.50';
+const APP_VER='1.2.51';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3956,7 +3989,14 @@ function renderPlanList(plans, simulate){
   el.dataset.rendered='1';
   const top=isTopEmployee();
   const featsOf=(f)=>{ const a=[]; if(f&&f.domain) a.push(T('memFeatDomain','Own domain (e.g. yourcompany.autos)')); if(f&&f.qr) a.push(T('memFeatQr','Exclusive QR code')); return a; };
-  const quotaOf=(q)=>{ if(!q) return ''; const parts=[]; if(q.cars!=null) parts.push(q.cars===null?T('unlimited','Unlimited'):(q.cars+' '+T('carsUnit2','cars'))); if(q.employees!=null) parts.push(q.employees===null?T('unlimited','Unlimited'):(q.employees+' '+T('staffUnit','staff'))); if(q.showrooms!=null) parts.push(q.showrooms===null?T('unlimited','Unlimited'):(q.showrooms+' '+T('shopsUnit','shops'))); return parts.join(' · '); };
+  const quotaOf=(q)=>{ if(!q) return ''; const parts=[]; const u=T('unlimited','Unlimited');
+    // NOTE: a null value is how "unlimited" is encoded, so the guard must be
+    // `!== undefined` — testing `!= null` silently dropped the whole line and
+    // premium (cars/employees/showrooms all null) rendered with NO quota at all.
+    const add=(v,unit)=>{ if(v===null) parts.push(u); else if(v!==undefined) parts.push(v+' '+unit); };
+    add(q.cars,T('carsUnit2','cars')); add(q.employees,T('staffUnit','staff')); add(q.showrooms,T('shopsUnit','shops'));
+    if(parts.length===3 && parts.every(p=>p===u)) return T('memQuotaUnlimited','Unlimited vehicles, staff & branches');
+    return parts.join(' · '); };
   const m=MEMBERSHIP;
   el.innerHTML = (plans.filter(p=>p.id!=='free').map(p=>{
     const price = (MEM_CYCLE==='yearly'? p.yearly : p.monthly) || {cny:0,usd:0};
@@ -3968,13 +4008,13 @@ function renderPlanList(plans, simulate){
     const priceStr = price.cny>0 ? ('¥'+price.cny+' <span style="font-size:12px;color:var(--text-dim);font-weight:600;">'+(MEM_CYCLE==='yearly'?T('perYear','/yr'):T('perMonth','/mo'))+'</span>') : T('free2','Free');
     const usdStr = price.usd>0 ? (' <span style="font-size:12px;color:var(--text-dim);font-weight:600;">· ≈ $'+price.usd+'</span>') : '';
     let btn;
-    if(isCurrent) btn='<button class="share-copy" style="margin-top:8px;opacity:.7;" disabled>'+(curLang==='zh'?'当前套餐':'Current')+'</button>';
-    else { const lbl = (m && !m.isPermanent && (m.onTrial || m.plan==='free')) ? T('memUpgrade','Upgrade') : T('memSubscribe','Subscribe'); btn='<button class="submit" style="margin-top:8px;" '+(canBuy?'':'disabled style="opacity:.5;"')+' onclick="subscribePlan(\''+p.id+'\',this)">'+lbl+'</button>'; }
-    return '<div class="plan-card'+(rec?' rec':'')+'" style="border:1px solid var(--border);border-radius:12px;padding:14px;margin:10px 0;background:var(--surface-2);">'
+    if(isCurrent) btn='<button class="share-copy pc-cta" style="opacity:.7;" disabled>'+(curLang==='zh'?'当前套餐':'Current')+'</button>';
+    else { const lbl = (m && !m.isPermanent && (m.onTrial || m.plan==='free')) ? T('memUpgrade','Upgrade') : T('memSubscribe','Subscribe'); btn='<button class="submit pc-cta" '+(canBuy?'':'disabled style="opacity:.5;"')+' onclick="subscribePlan(\''+p.id+'\',this)">'+lbl+'</button>'; }
+    return '<div class="plan-card'+(rec?' rec':'')+'">'
       +'<div class="pc-name">'+p.nameEn+' · '+p.name+(rec?'<span class="pc-rec">'+(curLang==='zh'?'推荐':'RECOMMENDED')+'</span>':'')+'</div>'
       +'<div class="pc-price">'+priceStr+usdStr+'</div>'
-      +(quotas?'<div style="font-size:12px;color:var(--text-dim);">'+quotas+'</div>':'')
-      +(feats.length?'<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;">'+feats.map(f=>'<span class="feat-chip">✓ '+f+'</span>').join('')+'</div>':'')
+      +(quotas?'<div class="pc-quota">'+quotas+'</div>':'')
+      +(feats.length?'<div class="pc-feats">'+feats.map(f=>'<span class="feat-chip">✓ '+f+'</span>').join('')+'</div>':'')
       +btn
       +'</div>';
   }).join(''))
