@@ -34,10 +34,18 @@ comment on column public.support_messages.side   is 'user=车行发出，support
 comment on column public.support_messages.photo   is '图片的 Supabase Storage URL（与车辆照片同 bucket）';
 comment on column public.support_messages.read    is '客服侧是否已读（后台未读筛选用）';
 
--- 2) 建议给 service_role 之外的读取路径加一层默认收紧。
---    后端全部走 service_role（绕过 RLS），这里开启 RLS 后 anon key 无法直接读，
---    避免有人拿 anon key 拉到全站客户的聊天内容。
-alter table public.support_messages enable row level security;
+-- 2) 保持与其它表一致：不开启 RLS。
+--    ⚠️ 这里曾一度 `enable row level security`，结果 42501「new row violates
+--    row-level security policy」把**唯一合法的写入路径堵死了** —— 因为本项目的
+--    访问模型是「service_role 只在 Cloudflare 后端使用，浏览器端不持有任何
+--    Supabase 凭据」，cars / photos / employees 等表**全部都没有开 RLS**。
+--    在这套模型里 RLS 起不到保护作用（匿名用户没有 key，请求根本到不了
+--    PostgREST），只会把 service_role 的正常写入拒之门外。
+--    需要纵深防御时，用下面「显式放行 service_role」的方式，不要开裸 RLS：
+--      drop policy if exists "support_service_role_all" on public.support_messages;
+--      create policy "support_service_role_all" on public.support_messages
+--        for all to service_role using (true) with check (true);
+alter table public.support_messages disable row level security;
 
 -- 3) 校验：期望 id / company_id / side / body / photo / read / created_at 七列
 -- select column_name, data_type from information_schema.columns

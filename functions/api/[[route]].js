@@ -1300,7 +1300,14 @@ const base = {
             side: 'support', body: '__selftest__', photo: null, read: 1, created_at: stamp,
           }).select('id').maybeSingle();
           if (insErr) {
-            return send(200, { ok: false, stage: 'insert', code: insErr.code || '', message: insErr.message || String(insErr), hint: insErr.code === '42501' ? 'Privileges missing — run supabase-grants.sql' : (insErr.code === '42P01' ? 'Table missing — run supabase-schema-support.sql' : '') });
+            // 42501 here is almost never a missing GRANT in this project — it is RLS.
+            // Every other table (cars/photos/employees) is deliberately RLS-free, and
+            // support_messages once had it enabled, which blocked the only legitimate
+            // writer. Point at the real cause instead of a misleading grants.sql hint.
+            const hint = insErr.code === '42501'
+              ? 'Row-level security is blocking the write. Every other table here is RLS-free by design — re-run supabase-schema-support.sql (it now disables RLS on support_messages), or add an explicit "for all to service_role" policy.'
+              : (insErr.code === '42P01' ? 'Table missing — run supabase-schema-support.sql' : '');
+            return send(200, { ok: false, stage: 'insert', code: insErr.code || '', message: insErr.message || String(insErr), hint });
           }
           if (probeRow && probeRow.id != null) await sb.from('support_messages').delete().eq('id', probeRow.id);
           return send(200, { ok: true, stage: 'insert+delete', message: 'write path works' });
