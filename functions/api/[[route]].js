@@ -1236,8 +1236,12 @@ const base = {
        supabase-schema-support.sql to have been run once. */
     if (p === '/api/support' || p.startsWith('/api/support/')) {
       const noTable = (e) => /42P01|does not exist|not found/i.test(String((e && (e.code + ' ' + e.message)) || e));
-      if (!isPlatformSupport(emp)) {
+      {
         // --- tenant side: send / read own thread ---
+        // NOTE: deliberately NOT gated on isPlatformSupport. The platform owner is also
+        // an ordinary staff member of their own company and uses the same in-app chat;
+        // gating this used to send their own messages straight to `404 no_route`, which
+        // looked exactly like "the chat is broken" even though the write path was fine.
         if (p === '/api/support' && method === 'POST') {
           const b = await readBody(req);
           const body = String(b.body == null ? '' : b.body).trim().slice(0, 2000);
@@ -1273,7 +1277,8 @@ const base = {
         }
         return send(404, { error: 'no_route' });
       }
-      // --- platform support side: every tenant's threads ---
+      // --- platform support side: every tenant's threads (admin-only) ---
+      if (!isPlatformSupport(emp)) return send(403, { error: 'forbidden' });
       if (p === '/api/support/admin' && method === 'GET') {
         const since = +u.searchParams.get('since') || 0;
         const { data, error } = await sb.from('support_messages').select('*')
