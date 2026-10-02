@@ -1517,9 +1517,7 @@
   <div class="sheet-handle"></div>
   <div class="sheet-head">
     <div class="sheet-head-title"><span data-i18n="mlSupport">Contact support</span></div>
-    <div class="sheet-lang">
-      <span class="seg" id="segEn4" onclick="setLang('en')">EN</span><span class="seg" id="segZh4" onclick="setLang('zh')">中</span>
-    </div>
+    <button class="sheet-x" onclick="closeSupportSheet()" aria-label="Close">&times;</button>
   </div>
   <div class="sup-empty" id="supEmpty" data-i18n="supIntro">Messages to the Antoto team land here. Ask anything about your account, plan or data.</div>
   <div id="supThread" class="sup-thread"></div>
@@ -1534,6 +1532,12 @@
     <a id="supAltWa" onclick="supportTap('wa')" style="display:none;">WhatsApp</a>
     <a id="supAltPhone" onclick="supportTap('phone')" style="display:none;" data-i18n="supPhone">Call us</a>
     <a id="supAltEmail" onclick="supportTap('email')" style="display:none;" data-i18n="supEmail">Email us</a>
+  </div>
+  <div class="sup-foot">
+    <span class="sup-lang">
+      <span class="seg" id="segEn4" onclick="setLang('en')">EN</span><span class="seg" id="segZh4" onclick="setLang('zh')">&#20013;</span>
+    </span>
+    <button class="sup-close" onclick="closeSupportSheet()" data-i18n="close">Close</button>
   </div>
 </div>
 
@@ -1585,6 +1589,14 @@
 .sup-send:disabled{ opacity:.5; }
 .sup-alt{ display:flex; gap:16px; justify-content:center; margin-top:10px; font-size:12px; }
 .sup-alt a{ color:var(--gold); cursor:pointer; }
+.sheet-x{ flex:0 0 auto; width:30px; height:30px; border-radius:50%; border:1px solid var(--border); background:var(--surface-2); color:var(--text-dim); font-size:19px; line-height:1; cursor:pointer; }
+.sheet-x:active{ transform:scale(.92); }
+.sup-foot{ display:flex; align-items:center; justify-content:space-between; margin-top:12px; padding-top:10px; border-top:1px solid var(--border); }
+.sup-lang{ display:flex; gap:4px; background:var(--surface-2); border:1px solid var(--border); border-radius:999px; padding:3px; }
+.sup-lang .seg{ font-size:11px; padding:4px 11px; border-radius:999px; cursor:pointer; color:var(--text-dim); font-weight:700; }
+.sup-lang .seg.on{ background:var(--gold); color:#0F0E0E; }
+.sup-close{ height:32px; padding:0 16px; border-radius:999px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:12.5px; font-weight:600; cursor:pointer; }
+.sup-close:active{ transform:scale(.96); }
 .mem-status{ background:linear-gradient(135deg,rgba(255,198,92,.10),rgba(255,198,92,.02)); border:1px solid var(--border); border-radius:14px; padding:14px 15px; margin-bottom:6px; }
 .ms-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .ms-plan{ font-size:15px; font-weight:800; }
@@ -2014,7 +2026,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.56';
+const APP_VER='1.2.57';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3350,7 +3362,7 @@ function closeSettings(){
   const ph=document.getElementById('phone'); if(ph) ph.classList.toggle('subpage-mode', isSub);
   updateAttrBanner();
 }
-function closeSheets(){ closeSettings(); document.getElementById('sheetMask').classList.remove('show'); document.getElementById('previewSheet').classList.remove('show'); const ps=document.getElementById('pricingSheet'); if(ps) ps.classList.remove('show'); const ms=document.getElementById('membershipSheet'); if(ms) ms.classList.remove('show'); const ca=document.getElementById('carActionsSheet'); if(ca) ca.classList.remove('show'); const ns=document.getElementById('navSheet'); if(ns) ns.classList.remove('show'); }
+function closeSheets(){ closeSettings(); document.getElementById('sheetMask').classList.remove('show'); document.getElementById('previewSheet').classList.remove('show'); const ps=document.getElementById('pricingSheet'); if(ps) ps.classList.remove('show'); const ms=document.getElementById('membershipSheet'); if(ms) ms.classList.remove('show'); const ca=document.getElementById('carActionsSheet'); if(ca) ca.classList.remove('show'); const ns=document.getElementById('navSheet'); if(ns) ns.classList.remove('show'); const ss=document.getElementById('supportSheet'); if(ss) ss.classList.remove('show'); try{ stopSupportPoll(); }catch(e){} }
 let NAV_ADDR='', NAV_NAME='', NAV_LL='';
 function openNavSheet(name){ const s=SHOWROOMS.find(x=>x.name===name); if(!s) return; NAV_NAME=s.name; NAV_ADDR=(s.addr||'').trim(); NAV_LL=(s.lat!=null&&s.lng!=null&&s.lat!==''&&s.lng!=='')?(s.lat+','+s.lng):''; const t=document.getElementById('navSheetTitle'); if(t) t.textContent=T('dirTo','Directions to')+' '+bName(s.name); const a=document.getElementById('navSheetAddr'); if(a) a.textContent=NAV_ADDR||NAV_LL||T('noAddr','No address set for this showroom'); const m=document.getElementById('sheetMask'), n=document.getElementById('navSheet'); if(m) m.classList.add('show'); if(n) n.classList.add('show'); }
 function closeNavSheet(){ const m=document.getElementById('sheetMask'), n=document.getElementById('navSheet'); if(m) m.classList.remove('show'); if(n) n.classList.remove('show'); }
