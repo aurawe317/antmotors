@@ -1765,6 +1765,7 @@ I18N.en.syncPending="change(s) waiting to upload"; I18N.en.syncedAt="Synced"; I1
 I18N.en.syncQueued="Offline — changes queued"; I18N.en.syncBadCreds="Wrong staff ID or PIN"; I18N.en.syncNeedServer="Enter the server address first";
 I18N.en.syncSignedIn="Signed in as"; I18N.en.syncSignedOut="Signed out";
 I18N.en.syncRejPrice="price can only be set by owner/partners"; I18N.en.syncRejTier="only owner/partners can change roles";
+I18N.en.syncRejQuotaCars="vehicle limit reached — this car was NOT uploaded"; I18N.en.syncRejQuotaEmp="staff limit reached — this member was NOT added"; I18N.en.syncRejQuotaRoom="branch limit reached — this location was NOT added"; I18N.en.syncRejUpgrade="upgrade your plan to add more";
 I18N.en.syncRejAcct="you can only edit your own account"; I18N.en.syncRejEmp="unknown staff account";
 I18N.zh.syncTitle="云同步（所有设备共用一份库存）"; I18N.zh.syncServer="服务器地址"; I18N.zh.syncEmpId="员工账号"; I18N.zh.syncPin="密码 PIN";
 I18N.zh.syncSignIn="登录并同步"; I18N.zh.syncNowBtn="立即同步"; I18N.zh.syncSignOut="退出登录"; I18N.zh.syncServerHint="后台地址（登录与同步需要）"; I18N.zh.syncServerHint2="这是保存你账号、并在各设备间同步车辆与价格数据的后台服务器。保持默认即使用 ANT MOTORS 共享后台——所有公司默认都连这里。仅当贵公司自建服务器时才需要修改。"; I18N.zh.ph_setApi="https://你的服务器.up.railway.app"; I18N.zh.ph_fgCode="6 位数字"; I18N.zh.ph_regCoName="例如 安特汽车"; I18N.zh.ph_regId="例如 ama"; I18N.zh.ph_regName="例如 张伟"; I18N.zh.syncConnected="已连接 ANT MOTORS 共享后台——无需配置，各公司数据相互独立、互不可见。"; I18N.zh.advServerTitle="高级：后台地址";
@@ -1774,6 +1775,7 @@ I18N.zh.syncPending="条修改待上传"; I18N.zh.syncedAt="已同步"; I18N.zh.
 I18N.zh.syncQueued="离线——修改已排队，联网后自动上传"; I18N.zh.syncBadCreds="员工账号或密码错误"; I18N.zh.syncNeedServer="请先填写服务器地址";
 I18N.zh.syncSignedIn="已登录："; I18N.zh.syncSignedOut="已退出登录";
 I18N.zh.syncRejPrice="价格只能由老板/合伙人设置"; I18N.zh.syncRejTier="只有老板/合伙人可以调整等级";
+I18N.zh.syncRejQuotaCars="车辆数量已达上限 — 这辆车没有上传成功"; I18N.zh.syncRejQuotaEmp="员工数量已达上限 — 该成员没有添加成功"; I18N.zh.syncRejQuotaRoom="门店数量已达上限 — 该门店没有添加成功"; I18N.zh.syncRejUpgrade="升级会员后可继续添加";
 I18N.zh.syncRejAcct="只能修改自己的账号"; I18N.zh.syncRejEmp="未知员工账号";
 /* --- self-registration & company binding --- */
 I18N.en.loginTab="Sign in"; I18N.en.regTab="Create account"; I18N.en.regHasAccount="New here? Create an account"; I18N.en.regSwitchToLogin="Have an account? Sign in"; I18N.en.regId="Account ID"; I18N.en.regName="Your name";I18N.en.regIdSub="Login handle — short, unique, lowercase. Teammates use it to @-mention you and assign leads (e.g. ama, kwame)."; I18N.en.regNameSub="Display name shown to customers on quotes, chats and bookings (e.g. Ama K., Kwame Asante)."; I18N.en.regWa="WhatsApp"; I18N.en.regPhone="Phone"; I18N.en.regPin="PIN (4-8 digits)"; I18N.en.regCreate="Create account"; I18N.en.regCreating="Creating…"; I18N.en.regSuccess="Account created"; I18N.en.regExists="That account ID is taken"; I18N.en.regHint="Fill in the server address, then your details below to create your own account. If you already have one, tap “Have an account? Sign in”."; I18N.en.regModeCreate="Start a company"; I18N.en.regModeJoin="Join a company"; I18N.en.regCoName="Company name"; I18N.en.regCoLogo="Company logo"; I18N.en.regCode="Invitation code"; I18N.en.coTitle="Company"; I18N.en.coSave="Save company"; I18N.en.coEdit="Edit company"; I18N.en.reqField="required"; I18N.en.coSaved="Company saved";
@@ -1933,7 +1935,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.49';
+const APP_VER='1.2.50';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -5144,7 +5146,18 @@ async function syncNow(silent, withPhotos){
                  not_your_account:T('syncRejAcct','you can only edit your own account'),
                  unknown_employee:T('syncRejEmp','unknown staff account'),
                  sample_cleared:T('syncRejSample','sample car cleared')};
-      toast('⚠ '+bad.map(r=>r.id+': '+(why[r.reason]||r.reason)).join('<br>'));
+      // quota rejections carry {quota, used} from the server — spell out what hit
+      // the ceiling and how many are allowed, otherwise the raw "quota_cars"
+      // reason reads like gibberish and looks like a bug rather than a plan limit.
+      const qLabel={cars:T('syncRejQuotaCars','vehicle limit reached'), employees:T('syncRejQuotaEmp','staff limit reached'), showrooms:T('syncRejQuotaRoom','branch limit reached')};
+      const msg=bad.map(function(r){
+        if(r.reason==='quota_cars'||r.reason==='quota_employees'||r.reason==='quota_showrooms'){
+          const n=r.used!=null&&r.quota!=null ? '（'+r.used+' / '+r.quota+'）' : '';
+          return (qLabel[r.reason]||r.reason)+n+' — '+T('syncRejUpgrade','upgrade your plan to add more');
+        }
+        return r.id+': '+(why[r.reason]||r.reason);
+      }).join('<br>');
+      toast('⚠ '+msg);
     }
     setSyncState('ok',T('syncedAt','Synced')+' · '+new Date().toLocaleTimeString());
     try{ localStorage.setItem('am_last_sync', String(Date.now())); }catch(e){}

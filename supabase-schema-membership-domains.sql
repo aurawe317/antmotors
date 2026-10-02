@@ -101,6 +101,29 @@ comment on column public.companies.contact_phone is '公司对外电话（tel: �
 comment on column public.companies.contact_wa    is '公司对外 WhatsApp 号码（含国家码，不含 +，如 233xxxx）';
 
 -- ============================================================================
+-- 9) 【重要】解除「Ant motors」的车辆上限（建议执行）
+--
+-- 背景：各档位车辆额度 —— free=7 辆 / standard=30 辆 / premium=无限。
+--       新公司前 14 天按 standard 用，到期自动回落到 free。
+--       Ant motors 创建于 2026-09-13，试用期 2026-09-27 已过期 → 额度降到 7 辆，
+--       而实际已有 14 辆车，于是所有新车都被服务端拒绝（reason: quota_cars）。
+--
+-- 下面两条执行后：membershipView() 识别 permanent=1 → 直接按 premium 处理，
+-- 额度全部为 null（无限），且 active=true 永不过期。
+--
+-- ⚠️ 只想立刻解锁的话，单独跑这两行就够了，不必跑整个文件：
+--    update public.companies set plan = 'premium'        where id = 'co_a4812811971e';
+--    update public.companies set permanent = 1           where id = 'co_a4812811971e';
+-- ============================================================================
+
+update public.companies set plan = 'premium' where id = 'co_a4812811971e';
+update public.companies set permanent = 1    where id = 'co_a4812811971e';
+
+-- 9.1) 确认生效（期望：plan=premium, permanent=1）
+-- select id, name, plan, permanent, status, current_period_end from public.companies
+--  where id = 'co_a4812811971e';
+
+-- ============================================================================
 -- 7) 跑完后校验 —— 复制这一段单独执行一次，确认结果正确
 -- ============================================================================
 
