@@ -62,7 +62,7 @@ const PLANS = {
   standard: {
     id: 'standard', name: '普通会员', nameEn: 'Standard', rank: 1,
     monthly: { cny: 31, usd: toUsd(31) }, yearly: { cny: 310, usd: toUsd(310) },
-    quotas: { cars: 30, employees: 5, showrooms: 3 },
+    quotas: { cars: 50, employees: 8, showrooms: 2 },
     features: { domain: false, qr: false }
   },
   premium: {
@@ -659,6 +659,12 @@ async function applyPush(emp, payload) {
     const { count } = await sb.from('cars').select('id', { count: 'exact', head: true }).eq('company_id', cid).eq('deleted', 0);
     carUsed = count || 0;
   }
+  const showroomLimit = mv ? mv.quotas.showrooms : null;
+  let showroomUsed = 0;
+  if (showroomLimit != null) {
+    const { count } = await sb.from('showrooms').select('id', { count: 'exact', head: true }).eq('company_id', cid);
+    showroomUsed = count || 0;
+  }
   for (const c of (payload.cars || [])) {
     if (!c || !c.id) continue;
     const { data: cur } = await sb.from('cars').select('*').eq('id', c.id).eq('company_id', cid).maybeSingle();
@@ -721,6 +727,61 @@ async function applyPush(emp, payload) {
     await sb.from('employees').update({ data: next, updated_at: ts }).eq('id', e.id).eq('company_id', cid);
     applied.push(e.id);
   }
+  /* ---- showrooms ---------------------------------------------------------
+     Showrooms used to live ONLY in the browser's localStorage: /api/push never
+     carried them, so a branch (and its photos) was invisible to every other
+     device and to customers browsing the company domain. A dealership has a
+     handful of branches at most, so the client always sends the FULL list and we
+     upsert by name, then delete whatever the client no longer has. Photos ride
+     along in `data.photos` and go through the same Storage pipeline as car
+     photos, so nothing base64 ever lands in the database. */
+  if (Array.isArray(payload.showrooms)) {
+    const { data: exRows } = await sb.from('showrooms').select('id,data').eq('company_id', cid);
+    const byName = new Map();
+    for (const r of (exRows || [])) {
+      const n = r.data && r.data.name;
+      if (n) byName.set(String(n), r);
+    }
+    const keep = new Set();
+    for (const s of payload.showrooms) {
+      if (!s) continue;
+      const data = Object.assign({}, s.data || {});
+      const nm = String(data.name || '').trim().slice(0, 60);
+      if (!nm) continue;
+      keep.add(nm);
+      if (Array.isArray(s.photos)) {
+        const urls = [];
+        for (const p of s.photos) {
+          const v = (p && typeof p === 'object') ? p.url : p;
+          if (typeof v !== 'string' || !v) continue;
+          if (/^https?:\/\//.test(v)) { urls.push(v); continue; }        // already in Storage
+          if (/^data:/.test(v)) {                                        // legacy base64 -> upload
+            try { urls.push(await uploadToStorage(v, cid, 'sh-' + nm.replace(/[^a-z0-9-]/gi, '_').slice(0, 24))); }
+            catch (e) { /* skip an unreadable image rather than failing the whole sync */ }
+          }
+        }
+        data.photos = urls;
+      }
+      const cur = byName.get(nm);
+      const ts = now();
+      if (cur) {
+        await sb.from('showrooms').update({ data, updated_at: ts }).eq('id', cur.id).eq('company_id', cid);
+      } else {
+        if (showroomLimit != null && showroomUsed >= showroomLimit) {
+          rejected.push({ id: nm, reason: 'quota_showrooms', quota: showroomLimit, used: showroomUsed });
+          continue;
+        }
+        showroomUsed++;
+        await sb.from('showrooms').insert({ id: 'sh_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8), company_id: cid, data, updated_at: ts });
+      }
+      applied.push(nm);
+    }
+    // Branches the user deleted on this device disappear from the server too.
+    for (const r of (exRows || [])) {
+      const n = r.data && r.data.name ? String(r.data.name) : null;
+      if (n && !keep.has(n)) await sb.from('showrooms').delete().eq('id', r.id).eq('company_id', cid);
+    }
+  }
   return { applied, rejected };
 }
 async function pull(since, withPhotos, companyId) {
@@ -738,7 +799,12 @@ async function pull(since, withPhotos, companyId) {
   }));
   const { data: emps } = await sb.from('employees').select('*').eq('company_id', companyId).gt('updated_at', s).order('updated_at', { ascending: true });
   const empList = (emps || []).map(r => ({ id: r.id, companyId: r.company_id, data: stripPw(r.data), updatedAt: r.updated_at, deleted: !!r.deleted }));
-  return { now: now(), cars: carList, employees: empList };
+  // Showrooms are always returned in FULL (a dealership has a handful) rather than by
+  // `since`: they are hard-deleted on the server, so an incremental cursor could never
+  // tell a client that a branch it still had locally was removed.
+  const { data: shs } = await sb.from('showrooms').select('*').eq('company_id', companyId).order('updated_at', { ascending: true });
+  const showroomList = (shs || []).map(r => ({ id: r.id, companyId: r.company_id, data: r.data, updatedAt: r.updated_at }));
+  return { now: now(), cars: carList, employees: empList, showrooms: showroomList };
 }
 
 /* --------------------------------------------------------------------- router */
