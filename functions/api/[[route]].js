@@ -949,7 +949,17 @@ const base = {
           }
         } catch (e) { companiesDetail = { error: String((e && e.message) || e) }; }
       }
-      return send(200, Object.assign({ ok: true, cars, companies, companiesDetail }, base));
+      // Does the in-app support chat have its table yet? Answering this from the
+      // server removes the most common dead-end (the feature "does nothing" and the
+      // only symptom used to be a toast that vanished before it could be read).
+      let supportTable = null;
+      try {
+        const probe = await sb.from('support_messages').select('id', { count: 'exact', head: true }).limit(1);
+        supportTable = probe.error
+          ? { exists: false, code: probe.error.code || '', message: probe.error.message || String(probe.error) }
+          : { exists: true, rows: probe.count || 0 };
+      } catch (e) { supportTable = { exists: false, error: String((e && e.message) || e) }; }
+      return send(200, Object.assign({ ok: true, cars, companies, companiesDetail, supportTable }, base));
     }
 
     /* login (Supabase Auth) */
