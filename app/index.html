@@ -1521,16 +1521,20 @@
       <span class="seg" id="segEn4" onclick="setLang('en')">EN</span><span class="seg" id="segZh4" onclick="setLang('zh')">中</span>
     </div>
   </div>
-  <div class="me-links" style="margin:0 -18px;">
-    <button class="me-link" id="supRow_wa" onclick="supportTap('wa')">
-      <span style="display:flex;align-items:center;gap:10px;"><span style="color:var(--gold);">WhatsApp</span></span><span class="ar">&rsaquo;</span></button>
-    <button class="me-link" id="supRow_phone" onclick="supportTap('phone')">
-      <span data-i18n="supPhone">Call us</span><span class="ar">&rsaquo;</span></button>
-    <button class="me-link" id="supRow_email" onclick="supportTap('email')">
-      <span data-i18n="supEmail">Email us</span><span class="ar">&rsaquo;</span></button>
+  <div class="sup-empty" id="supEmpty" data-i18n="supIntro">Messages to the Antoto team land here. Ask anything about your account, plan or data.</div>
+  <div id="supThread" class="sup-thread"></div>
+  <div id="supPending" class="sup-pending" style="display:none;"></div>
+  <div class="sup-inputbar">
+    <button class="sup-ic" id="supPhotoBtn" onclick="document.getElementById('supFile').click()" aria-label="Photo">&plus;</button>
+    <input id="supInput" type="text" data-ph="supPlaceholder" placeholder="Type a message…" onkeydown="if(event.key==='Enter')sendSupportMsg();" />
+    <button class="sup-send" id="supSendBtn" onclick="sendSupportMsg()" data-i18n="supSend">Send</button>
+    <input type="file" id="supFile" accept="image/*" style="display:none;" onchange="onSupportPhoto(this)" />
   </div>
-  <div class="sheet-hint" data-i18n="supHint">Pick how you'd like to reach the Antoto team.</div>
-  <button class="share-copy" style="width:100%;margin-top:12px;" onclick="closeSupportSheet()" data-i18n="close">Close</button>
+  <div class="sup-alt">
+    <a id="supAltWa" onclick="supportTap('wa')" style="display:none;">WhatsApp</a>
+    <a id="supAltPhone" onclick="supportTap('phone')" style="display:none;" data-i18n="supPhone">Call us</a>
+    <a id="supAltEmail" onclick="supportTap('email')" style="display:none;" data-i18n="supEmail">Email us</a>
+  </div>
 </div>
 
 <div class="sheet" id="membershipSheet">
@@ -1560,6 +1564,27 @@
 <style>
 /* ---- Membership sheet polish (Antoto) ---- */
 #membershipSheet{ max-width:520px; margin:0 auto; }
+/* ---- in-app support chat ---- */
+#supportSheet{ max-width:520px; margin:0 auto; }
+.sup-thread{ min-height:170px; max-height:46vh; overflow:auto; padding:2px 0 6px; }
+.sup-empty{ font-size:12px; color:var(--text-dim); line-height:1.6; padding:14px 12px 10px; text-align:center; }
+.sup-msg{ display:flex; margin:7px 0; }
+.sup-msg.me{ justify-content:flex-end; }
+.sup-bubble{ max-width:78%; padding:9px 12px; border-radius:14px; font-size:13px; line-height:1.5; word-break:break-word; }
+.sup-msg.me .sup-bubble{ background:var(--gold); color:#0F0E0E; border-bottom-right-radius:4px; }
+.sup-msg.them .sup-bubble{ background:var(--surface-2); color:var(--text); border:1px solid var(--border); border-bottom-left-radius:4px; }
+.sup-bubble img{ display:block; max-width:100%; border-radius:10px; margin-top:7px; }
+.sup-time{ font-size:10px; opacity:.55; margin-top:4px; }
+.sup-pending{ display:flex; align-items:center; gap:8px; margin:8px 0 0; font-size:11px; color:var(--text-dim); }
+.sup-pending img{ width:40px; height:40px; border-radius:8px; object-fit:cover; }
+.sup-inputbar{ display:flex; gap:8px; align-items:center; margin-top:10px; }
+.sup-ic{ flex:0 0 auto; width:36px; height:36px; border-radius:50%; border:1px solid var(--border); background:var(--surface-2); color:var(--gold); font-size:19px; line-height:1; cursor:pointer; }
+.sup-inputbar input{ flex:1; min-width:0; height:36px; padding:0 12px; border-radius:999px; border:1px solid var(--border); background:var(--surface-2); color:var(--text); font-size:13px; outline:none; }
+.sup-inputbar input:focus{ border-color:var(--gold-line); }
+.sup-send{ flex:0 0 auto; height:36px; padding:0 14px; border-radius:999px; border:none; background:var(--gold); color:#0F0E0E; font-weight:700; font-size:13px; cursor:pointer; }
+.sup-send:disabled{ opacity:.5; }
+.sup-alt{ display:flex; gap:16px; justify-content:center; margin-top:10px; font-size:12px; }
+.sup-alt a{ color:var(--gold); cursor:pointer; }
 .mem-status{ background:linear-gradient(135deg,rgba(255,198,92,.10),rgba(255,198,92,.02)); border:1px solid var(--border); border-radius:14px; padding:14px 15px; margin-bottom:6px; }
 .ms-row{ display:flex; align-items:center; justify-content:space-between; gap:12px; }
 .ms-plan{ font-size:15px; font-weight:800; }
@@ -1849,11 +1874,11 @@ I18N.zh.editModeHint="编辑模式：可修改规格、亮点与门店。"; I18N
 I18N.en.bookDone="Booking Confirmed!"; I18N.en.backHome="Back to Home"; I18N.en.waOpening="Opening WhatsApp → ";
 I18N.zh.bookDone="预约成功！"; I18N.zh.backHome="返回首页"; I18N.zh.waOpening="正在打开 WhatsApp → ";
 I18N.en.navMe="Me"; I18N.en.meGuest="Guest"; I18N.en.meGuestSub="Sign in or create a company account"; I18N.en.meSignedIn="Signed in";
-I18N.en.mlFav="My favorites"; I18N.en.mlAdd="Add vehicle"; I18N.en.mlWork="Workbench"; I18N.en.mlAdmin="Car admin"; I18N.en.mlStaff="Staff & roles"; I18N.en.mlPerm="Roles & permissions"; I18N.en.mlSupport="Contact support"; I18N.en.supPhone="Call us"; I18N.en.supEmail="Email us"; I18N.en.supHint="Pick how you would like to reach the Antoto team."; I18N.en.supportSubject="Antoto support"; I18N.en.supportUnset="Support is not set up yet."; I18N.en.supportMsg="Hi Antoto, I need help with my account."; I18N.en.mlPrice="How pricing works"; I18N.en.mlSettings="App settings"; I18N.en.mlPrem="Membership"; I18N.en.mlCo="Company profile"; I18N.en.soldTitle="Sold vehicles"; I18N.en.soldEmpty="No sold vehicles yet. Mark a car as sold from its detail page.";
+I18N.en.mlFav="My favorites"; I18N.en.mlAdd="Add vehicle"; I18N.en.mlWork="Workbench"; I18N.en.mlAdmin="Car admin"; I18N.en.mlStaff="Staff & roles"; I18N.en.mlPerm="Roles & permissions"; I18N.en.mlSupport="Contact support"; I18N.en.supIntro="Messages to the Antoto team land here. Ask anything about your account, plan or data."; I18N.en.supPlaceholder="Type a message…"; I18N.en.supSend="Send"; I18N.en.supAttached="Photo attached"; I18N.en.supNewReply="New reply from support"; I18N.en.supNotReady="Support chat is not available yet."; I18N.en.supSendFail="Could not send. Check your connection."; I18N.en.supPhone="Call us"; I18N.en.supEmail="Email us"; I18N.en.supHint="Pick how you would like to reach the Antoto team."; I18N.en.supportSubject="Antoto support"; I18N.en.supportUnset="Support is not set up yet."; I18N.en.supportMsg="Hi Antoto, I need help with my account."; I18N.en.mlPrice="How pricing works"; I18N.en.mlSettings="App settings"; I18N.en.mlPrem="Membership"; I18N.en.mlCo="Company profile"; I18N.en.soldTitle="Sold vehicles"; I18N.en.soldEmpty="No sold vehicles yet. Mark a car as sold from its detail page.";
 I18N.en.tileFav="Saved"; I18N.en.tileRecent="Recent"; I18N.en.tileCars="My cars"; I18N.en.tileShops="Showrooms"; I18N.en.dataHelp="Data & Help"; I18N.en.mlSettingsHint="Settings now live on the Me tab — preferences, data & help are there.";
 I18N.en.shEdit="Edit"; I18N.en.shEditTitle="Edit sales point"; I18N.en.shPin="Map pin"; I18N.en.shPinHint="Latitude, longitude — or paste a Google Maps link. Used for turn-by-turn directions."; I18N.en.shPinBad="Could not read that location"; I18N.en.shSaved="Sales point saved"; I18N.en.shMissing="Sales point not found"; I18N.en.pinSet="Pin set"; I18N.en.pinNone="No map pin";
 I18N.zh.navMe="我的"; I18N.zh.meGuest="访客"; I18N.zh.meGuestSub="登录或创建公司账号"; I18N.zh.meSignedIn="已登录";
-I18N.zh.mlFav="我的收藏"; I18N.zh.mlAdd="添加车辆"; I18N.zh.mlWork="工作台"; I18N.zh.mlAdmin="车辆后台"; I18N.zh.mlStaff="员工与角色"; I18N.zh.mlPerm="角色权限"; I18N.zh.mlSupport="联系客服"; I18N.zh.supPhone="电话联系"; I18N.zh.supEmail="邮件联系"; I18N.zh.supHint="选择您方便的方式联系 Antoto 团队。"; I18N.zh.supportSubject="Antoto 客服"; I18N.zh.supportUnset="客服尚未配置。"; I18N.zh.supportMsg="你好 Antoto，我需要账号方面的帮助。"; I18N.zh.mlPrice="定价说明"; I18N.zh.mlSettings="应用设置"; I18N.zh.mlPrem="会员权益"; I18N.zh.mlCo="公司资料"; I18N.zh.soldTitle="已售车辆"; I18N.zh.soldEmpty="暂无已售车辆。在车辆详情页把它标记为已售即可。";
+I18N.zh.mlFav="我的收藏"; I18N.zh.mlAdd="添加车辆"; I18N.zh.mlWork="工作台"; I18N.zh.mlAdmin="车辆后台"; I18N.zh.mlStaff="员工与角色"; I18N.zh.mlPerm="角色权限"; I18N.zh.mlSupport="联系客服"; I18N.zh.supIntro="发送给 Antoto 团队的消息会显示在这里，账号、套餐、数据问题都可以问。"; I18N.zh.supPlaceholder="输入消息…"; I18N.zh.supSend="发送"; I18N.zh.supAttached="已附上图片"; I18N.zh.supNewReply="客服有新回复"; I18N.zh.supNotReady="客服功能尚未启用。"; I18N.zh.supSendFail="发送失败，请检查网络。"; I18N.zh.supPhone="电话联系"; I18N.zh.supEmail="邮件联系"; I18N.zh.supHint="选择您方便的方式联系 Antoto 团队。"; I18N.zh.supportSubject="Antoto 客服"; I18N.zh.supportUnset="客服尚未配置。"; I18N.zh.supportMsg="你好 Antoto，我需要账号方面的帮助。"; I18N.zh.mlPrice="定价说明"; I18N.zh.mlSettings="应用设置"; I18N.zh.mlPrem="会员权益"; I18N.zh.mlCo="公司资料"; I18N.zh.soldTitle="已售车辆"; I18N.zh.soldEmpty="暂无已售车辆。在车辆详情页把它标记为已售即可。";
 I18N.zh.tileFav="收藏"; I18N.zh.tileRecent="最近"; I18N.zh.tileCars="车辆"; I18N.zh.tileShops="门店"; I18N.zh.dataHelp="数据与帮助"; I18N.zh.mlSettingsHint="设置已移到「我的」页——偏好、数据与帮助都在那里。";
 I18N.zh.shEdit="编辑"; I18N.zh.shEditTitle="编辑销售点"; I18N.zh.shPin="地图定位"; I18N.zh.shPinHint="纬度, 经度 —— 或粘贴 Google Maps 链接，用于一键导航。"; I18N.zh.shPinBad="无法识别该定位"; I18N.zh.shSaved="销售点已保存"; I18N.zh.shMissing="未找到该销售点"; I18N.zh.pinSet="已设定位"; I18N.zh.pinNone="未设定位";
 /* v4.1 section headers + workspace link labels */
@@ -1989,7 +2014,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.55';
+const APP_VER='1.2.56';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3383,31 +3408,109 @@ function supportChannels(){
   if(String(PLATFORM_SUPPORT.email||'').indexOf('@')>0) out.push('email');
   return out;
 }
+/* ---- in-app support chat (App <-> platform) ----
+   The PRIMARY way to reach the platform: no WhatsApp install and the conversation
+   stays in the app. Cloudflare Pages has no WebSocket support, so the sheet polls
+   every 6s while it is open — a reply lands within a few seconds. */
+let SUP_MSGS=[], SUP_SINCE=0, SUP_TIMER=null, SUP_PENDING=null;
+function supportChannels(){
+  const out=[];
+  if(String(PLATFORM_SUPPORT.wa||'').replace(/[^0-9]/g,'')) out.push('wa');
+  if(String(PLATFORM_SUPPORT.phone||'').replace(/[^0-9]/g,'')) out.push('phone');
+  if(String(PLATFORM_SUPPORT.email||'').indexOf('@')>0) out.push('email');
+  return out;
+}
 function contactSupport(){
-  const chans=supportChannels();
-  if(!chans.length){ toast(T('supportUnset','Support is not set up yet.')); return; }
-  if(chans.length===1){ supportTap(chans[0]); return; }   // one channel = no pointless tap-through
-  ['wa','phone','email'].forEach(function(k){
-    const row=document.getElementById('supRow_'+k);
-    if(row) row.style.display = chans.indexOf(k)>=0 ? 'flex' : 'none';
-  });
-  const m=document.getElementById('sheetMask'), sh=document.getElementById('supportSheet');
-  if(m) m.classList.add('show');
+  const sh=document.getElementById('supportSheet'), mk=document.getElementById('sheetMask');
+  if(mk) mk.classList.add('show');
   if(sh) sh.classList.add('show');
+  syncSupportAlt(); loadSupport(true); startSupportPoll();
 }
 function closeSupportSheet(){
-  const m=document.getElementById('sheetMask'), sh=document.getElementById('supportSheet');
-  if(m) m.classList.remove('show');
+  const mk=document.getElementById('sheetMask'), sh=document.getElementById('supportSheet');
+  if(mk) mk.classList.remove('show');
   if(sh) sh.classList.remove('show');
+  stopSupportPoll();
+}
+function syncSupportAlt(){
+  const ch=supportChannels();
+  const map={wa:'supAltWa',phone:'supAltPhone',email:'supAltEmail'};
+  Object.keys(map).forEach(function(k){
+    const el=document.getElementById(map[k]); if(el) el.style.display=ch.indexOf(k)>=0?'inline':'none';
+  });
+}
+function supKey(m){ return m&&m.id!=null ? 'id:'+m.id : 'k:'+(m.created_at||0)+':'+(m.side||'')+':'+String(m.body||'').slice(0,24); }
+function supEsc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+function supBubble(m,me){
+  const img=m.photo?('<img src="'+supEsc(m.photo)+'" alt="" />'):'';
+  const d=new Date(m.created_at||0);
+  const hh=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+  return '<div class="sup-msg '+(me?'me':'them')+'"><div class="sup-bubble">'
+    +(m.body?supEsc(m.body):'')+img
+    +'<div class="sup-time">'+hh+(me?'':' · '+supEsc(m.user_name||'Antoto'))+'</div>'
+    +'</div></div>';
+}
+function renderSupport(){
+  const box=document.getElementById('supThread'); if(!box) return;
+  const empty=document.getElementById('supEmpty');
+  if(empty) empty.style.display=SUP_MSGS.length?'none':'block';
+  box.innerHTML=SUP_MSGS.map(function(m){ return supBubble(m,m.side==='user'); }).join('');
+  box.scrollTop=box.scrollHeight;
+}
+async function loadSupport(reset){
+  try{
+    const r=await api('/api/support?since='+(reset?0:SUP_SINCE));
+    if(r && r.messages && r.messages.length){
+      // De-dupe: a retried request or an overlapping poll can hand back rows we
+      // already hold, and blindly concatenating would duplicate bubbles forever.
+      const seen=new Set(SUP_MSGS.map(supKey));
+      const fresh=r.messages.filter(function(m){ const k=supKey(m); if(seen.has(k)) return false; seen.add(k); return true; });
+      if(fresh.length){
+        SUP_MSGS=SUP_MSGS.concat(fresh);
+        const incoming=fresh.filter(function(m){ return m.side==='support'; });
+        if(!reset && incoming.length) toast(T('supNewReply','New reply from support'));
+        renderSupport();
+      }
+      if(r.now) SUP_SINCE=Math.max(SUP_SINCE,r.now);
+    }else if(reset){ renderSupport(); }
+  }catch(e){
+    if(e && e.status===503) toast(T('supNotReady','Support chat is not available yet.'));
+  }
+}
+function startSupportPoll(){ stopSupportPoll(); SUP_TIMER=setInterval(function(){ loadSupport(false); },6000); }
+function stopSupportPoll(){ if(SUP_TIMER){ clearInterval(SUP_TIMER); SUP_TIMER=null; } }
+function onSupportPhoto(input){
+  const f=input.files && input.files[0]; if(input) input.value=''; if(!f) return;
+  openCropper(f,1,function(dataUrl){
+    SUP_PENDING=dataUrl;
+    const box=document.getElementById('supPending');
+    if(box){ box.style.display='flex'; box.innerHTML='<img src="'+dataUrl+'" alt="" /><span>'+T('supAttached','Photo attached')+'</span>'; }
+  });
+}
+async function sendSupportMsg(){
+  const inp=document.getElementById('supInput');
+  const body=inp?String(inp.value||'').trim():'';
+  const photo=SUP_PENDING||null;
+  if(!body && !photo) return;
+  if(inp) inp.value='';
+  SUP_PENDING=null;
+  const pb=document.getElementById('supPending'); if(pb){ pb.style.display='none'; pb.innerHTML=''; }
+  const btn=document.getElementById('supSendBtn'); if(btn) btn.disabled=true;
+  try{
+    const r=await api('/api/support',{method:'POST',body:{body:body,photo:photo}});
+    if(r && r.message){ SUP_MSGS.push(r.message); renderSupport(); } else { await loadSupport(true); }
+  }catch(e){
+    toast(T('supSendFail','Could not send. Check your connection.'));
+    if(inp) inp.value=body;
+  }finally{ if(btn) btn.disabled=false; }
 }
 function supportTap(kind){
-  closeSupportSheet();
   const msg=T('supportMsg','Hi Antoto, I need help with my account.');
   if(kind==='wa'){
     const wa=String(PLATFORM_SUPPORT.wa||'').replace(/[^0-9]/g,'');
     if(!wa){ toast(T('supportUnset','Support is not set up yet.')); return; }
     const url='https://wa.me/'+wa+'?text='+encodeURIComponent(msg);
-    const w=window.open(url,'_blank'); if(!w) location.href=url;   // popup blocked → same-tab fallback
+    const w=window.open(url,'_blank'); if(!w) location.href=url;
   } else if(kind==='phone'){
     const tel=String(PLATFORM_SUPPORT.phone||'').replace(/[^0-9+]/g,'');
     if(!tel){ toast(T('supportUnset','Support is not set up yet.')); return; }
@@ -3418,8 +3521,7 @@ function supportTap(kind){
     location.href='mailto:'+em+'?subject='+encodeURIComponent(T('supportSubject','Antoto support'))+'&body='+encodeURIComponent(msg);
   }
 }
-function openPricingInfo(){
-  // This explainer also lives on the Me tab, where no car is open. Fall back to
+function openPricingInfo(){  // This explainer also lives on the Me tab, where no car is open. Fall back to
   // the first available car as the example; with no cars at all, show the tier
   // descriptions without amounts instead of silently doing nothing.
   let c=CARS[curCar];

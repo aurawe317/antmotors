@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Antoto — Support console</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='26'>🐜</text></svg>" />
+<style>
+:root{
+  --gold:#e8c268; --gold-soft:rgba(232,194,104,.12); --gold-line:rgba(232,194,104,.32);
+  --bg:#0c0b0a; --surface:#151412; --surface-2:#1e1c19; --surface-3:#262320;
+  --border:rgba(232,194,104,.16); --border-2:rgba(232,194,104,.28);
+  --text:#f2ece1; --text-dim:#9a9186;
+  --r:12px; --r-btn:10px;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  margin:0; background:var(--bg); color:var(--text);
+  font:15px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",Roboto,sans-serif;
+}
+button{font-family:inherit;}
+/* ---------- login ---------- */
+#login{min-height:100%;display:flex;align-items:center;justify-content:center;padding:24px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:26px 24px;width:100%;max-width:380px;}
+.brand{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.brand .mk{width:34px;height:34px;border-radius:9px;background:var(--gold-soft);border:1px solid var(--gold-line);display:grid;place-items:center;font-size:17px;}
+.brand b{font-size:17px;font-weight:800;letter-spacing:.3px;}
+.brand small{display:block;color:var(--text-dim);font-size:11px;font-weight:400;letter-spacing:.5px;}
+h1{font-size:15px;margin:18px 0 4px;}
+.sub{color:var(--text-dim);font-size:12px;margin:0 0 16px;}
+label{display:block;font-size:12px;color:var(--text-dim);margin:12px 0 5px;}
+input[type=text],input[type=password]{
+  width:100%;height:42px;padding:0 13px;border-radius:var(--r-btn);
+  border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:14px;outline:none;
+}
+input:focus{border-color:var(--gold-line);}
+.btn{
+  width:100%;height:44px;margin-top:18px;border:none;border-radius:var(--r-btn);
+  background:var(--gold);color:#0F0E0E;font-weight:800;font-size:14px;cursor:pointer;
+}
+.btn:disabled{opacity:.55;cursor:default;}
+.btn.ghost{background:transparent;color:var(--gold);border:1px solid var(--gold-line);}
+.btn.sm{width:auto;height:34px;padding:0 14px;margin:0;font-size:12.5px;border-radius:8px;}
+.err{color:#ff9a9a;font-size:12px;margin-top:12px;min-height:16px;}
+/* ---------- shell ---------- */
+#app{display:none;height:100%;flex-direction:column;}
+.top{
+  flex:0 0 auto;display:flex;align-items:center;gap:12px;padding:12px 16px;
+  border-bottom:1px solid var(--border);background:var(--surface);
+}
+.top h2{font-size:15px;margin:0;flex:1;}
+.dot{width:7px;height:7px;border-radius:50%;background:#8af0b0;display:inline-block;margin-right:6px;}
+.top .who{font-size:11px;color:var(--text-dim);}
+.body{flex:1;display:flex;min-height:0;}
+/* ---------- thread list ---------- */
+.side{
+  flex:0 0 280px;border-right:1px solid var(--border);overflow:auto;background:var(--surface);
+}
+.side .grp{padding:9px 14px 5px;font-size:10.5px;letter-spacing:1px;color:var(--text-dim);text-transform:uppercase;}
+.th{
+  display:block;width:100%;text-align:left;border:none;background:transparent;color:var(--text);
+  padding:11px 14px;border-bottom:1px solid rgba(232,194,104,.08);cursor:pointer;
+}
+.th:hover{background:var(--surface-2);}
+.th.on{background:var(--gold-soft);box-shadow:inset 2px 0 0 var(--gold);}
+.th .r1{display:flex;align-items:center;gap:8px;}
+.th .nm{flex:1;font-size:13.5px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.th .tm{font-size:10.5px;color:var(--text-dim);flex:0 0 auto;}
+.th .pv{font-size:11.5px;color:var(--text-dim);margin-top:3px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.badge{
+  flex:0 0 auto;min-width:18px;height:18px;padding:0 5px;border-radius:9px;background:var(--gold);
+  color:#0F0E0E;font-size:10.5px;font-weight:800;display:grid;place-items:center;
+}
+/* ---------- chat ---------- */
+.pane{flex:1;display:flex;flex-direction:column;min-width:0;}
+.phead{flex:0 0 auto;padding:12px 18px;border-bottom:1px solid var(--border);background:var(--surface);}
+.phead b{font-size:14px;}
+.phead .meta{font-size:11.5px;color:var(--text-dim);margin-top:3px;line-height:1.5;}
+.phead .meta a{color:var(--gold);text-decoration:none;}
+.msgs{flex:1;overflow:auto;padding:16px 18px;}
+.empty-state{color:var(--text-dim);text-align:center;padding:60px 20px;font-size:13px;}
+.m{display:flex;margin:8px 0;}
+.m.me{justify-content:flex-end;}
+.bub{max-width:72%;padding:9px 12px;border-radius:14px;font-size:13.5px;line-height:1.5;word-break:break-word;}
+.m.me .bub{background:var(--gold);color:#0F0E0E;border-bottom-right-radius:4px;}
+.m.them .bub{background:var(--surface-2);border:1px solid var(--border);border-bottom-left-radius:4px;}
+.bub img{display:block;max-width:100%;border-radius:10px;margin-top:7px;}
+.bub .t{font-size:10px;opacity:.55;margin-top:4px;}
+.composer{flex:0 0 auto;display:flex;gap:8px;align-items:center;padding:12px 16px;border-top:1px solid var(--border);background:var(--surface);}
+.composer .att{flex:0 0 auto;width:36px;height:36px;border-radius:50%;border:1px solid var(--border);background:var(--surface-2);color:var(--gold);font-size:19px;cursor:pointer;}
+.composer input{flex:1;min-width:0;height:36px;padding:0 12px;border-radius:999px;border:1px solid var(--border);background:var(--surface-2);color:var(--text);font-size:13.5px;outline:none;}
+.composer input:focus{border-color:var(--gold-line);}
+.composer .send{flex:0 0 auto;height:36px;padding:0 16px;border:none;border-radius:999px;background:var(--gold);color:#0F0E0E;font-weight:800;font-size:13px;cursor:pointer;}
+.composer .send:disabled{opacity:.55;}
+.pending{display:none;align-items:center;gap:8px;padding:0 18px 8px;font-size:11.5px;color:var(--text-dim);}
+.pending img{width:40px;height:40px;border-radius:8px;object-fit:cover;}
+@media (max-width:760px){
+  .side{flex-basis:100%;}
+  .pane{display:none;}
+  .pane.on{display:flex;}
+  .side.hidden{display:none;}
+}
+</style>
+</head>
+<body>
+
+<div id="login">
+  <div class="card">
+    <div class="brand">
+      <div class="mk">&#129419;</div>
+      <div><b>Antoto</b><small>SUPPORT CONSOLE</small></div>
+    </div>
+    <h1>Platform sign&#8209;in</h1>
+    <p class="sub">Only an owner account of a platform company can read tenant conversations.</p>
+    <label for="acct">Account (email or employee id)</label>
+    <input id="acct" type="text" autocomplete="username" placeholder="boss@company.com" />
+    <label for="pw">Password</label>
+    <input id="pw" type="password" autocomplete="current-password" placeholder="••••••••" />
+    <button class="btn" id="loginBtn" onclick="doLogin()">Sign in</button>
+    <div class="err" id="loginErr"></div>
+  </div>
+</div>
+
+<div id="app">
+  <div class="top">
+    <h2><span class="dot"></span>Support console</h2>
+    <span class="who" id="who"></span>
+    <button class="btn sm ghost" onclick="signOut()">Sign out</button>
+  </div>
+  <div class="body">
+    <div class="side" id="side"></div>
+    <div class="pane" id="pane">
+      <div class="phead" id="phead"></div>
+      <div class="msgs" id="msgs"></div>
+      <div class="pending" id="pending"></div>
+      <div class="composer">
+        <button class="att" onclick="document.getElementById('file').click()" aria-label="Attach photo">+</button>
+        <input id="reply" type="text" placeholder="Type a reply…" onkeydown="if(event.key==='Enter')sendReply();" />
+        <button class="send" id="sendBtn" onclick="sendReply()">Send</button>
+        <input type="file" id="file" accept="image/*" style="display:none;" onchange="onFile(this)" />
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const S = { token:null, me:null, msgs:[], sel:null, since:0, cos:{}, pending:null, timer:null };
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s==null?'':s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function save(){ try{ localStorage.setItem('am_support_token', S.token||''); }catch(e){} }
+function loadTok(){ try{ return localStorage.getItem('am_support_token')||''; }catch(e){ return ''; } }
+
+async function api(path, opts){
+  opts = opts || {};
+  const r = await fetch(path, {
+    method: opts.method || 'GET',
+    headers: { 'Content-Type':'application/json', ...(S.token?{Authorization:'Bearer '+S.token}:{}) },
+    body: opts.body ? JSON.stringify(opts.body) : undefined,
+  });
+  let j = null; try { j = await r.json(); } catch(e){}
+  if (!r.ok) { const e = new Error((j && (j.detail||j.error)) || ('HTTP '+r.status)); e.status = r.status; throw e; }
+  return j;
+}
+
+function signOut(){ S.token=null; try{ localStorage.removeItem('am_support_token'); }catch(e){} stopPoll(); $('app').style.display='none'; $('login').style.display='flex'; }
+
+async function doLogin(){
+  const btn=$('loginBtn'), err=$('loginErr');
+  err.textContent=''; btn.disabled=true; btn.textContent='Signing in…';
+  try{
+    const r = await api('/api/login', { method:'POST', body:{ account: $('acct').value.trim(), password: $('pw').value } });
+    S.token = r.token; S.me = r.employee; save();
+    await boot();
+  }catch(e){
+    err.textContent = /bad_credentials/.test(e.message) ? 'Wrong account or password.' : e.message;
+  }finally{ btn.disabled=false; btn.textContent='Sign in'; }
+}
+
+async function boot(){
+  // Probe the admin endpoint — a non-platform owner gets 403 here, which is the
+  // only place that actually proves "this account may read every tenant".
+  const probe = await api('/api/support/admin?since=0');
+  S.msgs = probe.messages || [];
+  S.cos = {}; (probe.companies || []).forEach(c => S.cos[c.id] = c);
+  S.since = probe.now || 0;
+  $('login').style.display='none'; $('app').style.display='flex';
+  $('who').textContent = (S.me && (S.me.name || S.me.id) || '') + ' · ' + ((S.me && S.me.companyId) || '');
+  render(); selectThread(Object.keys(grouped())[0] || null);
+  startPoll();
+}
+
+const keyOf = (m) => (m && m.id != null) ? 'id:'+m.id : 'k:'+(m.created_at||0)+':'+(m.side||'')+':'+String(m.body||'').slice(0,24);
+// Merge without duplicates: a retried request or an overlapping poll can hand back
+// rows we already hold, and blind concatenation would duplicate bubbles forever.
+function merge(list){
+  const seen = new Set(S.msgs.map(keyOf));
+  const fresh = (list||[]).filter(m => { const k = keyOf(m); if (seen.has(k)) return false; seen.add(k); return true; });
+  if (fresh.length) S.msgs = S.msgs.concat(fresh);
+  return fresh.length;
+}
+function grouped(){
+  const g = {};
+  S.msgs.forEach(m => { (g[m.company_id] = g[m.company_id] || []).push(m); });
+  return g;
+}
+function unreadOf(cid){ return (grouped()[cid]||[]).filter(m => m.side==='user' && !m.read).length; }
+function lastOf(cid){ const a = grouped()[cid]||[]; return a[a.length-1]; }
+function hhmm(ts){ const d=new Date(ts||0); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+
+function render(){
+  const g = grouped(), ids = Object.keys(g).sort((a,b)=> (lastOf(b)?lastOf(b).created_at:0) - (lastOf(a)?lastOf(a).created_at:0));
+  const box = $('side');
+  if (!ids.length){ box.innerHTML = '<div class="empty-state" style="padding:40px 16px">No conversations yet.</div>'; return; }
+  box.innerHTML = '<div class="grp">Conversations · '+ids.length+'</div>' + ids.map(cid => {
+    const c = S.cos[cid] || {};
+    const last = lastOf(cid) || {};
+    const un = unreadOf(cid);
+    return '<button class="th'+(S.sel===cid?' on':'')+'" onclick="selectThread(\''+cid+'\')">'
+      + '<div class="r1"><span class="nm">'+esc(c.name || cid)+'</span>'
+      + (un ? '<span class="badge">'+un+'</span>' : '')
+      + '<span class="tm">'+hhmm(last.created_at)+'</span></div>'
+      + '<div class="pv">'+esc((last.side==='user'?'↩ ':'')+(last.body || (last.photo?'[photo]':'')) || '—')+'</div>'
+      + '</button>';
+  }).join('');
+}
+
+function selectThread(cid){
+  S.sel = cid; S.pending = null;
+  $('pending').style.display='none'; $('pending').innerHTML='';
+  document.querySelectorAll('.th').forEach(b=>b.classList.remove('on'));
+  render();
+  const c = S.cos[cid] || {};
+  const bits = ['id ' + cid];
+  if (c.plan) bits.push('plan ' + c.plan + (c.permanent ? ' · permanent' : ''));
+  if (c.contact_name) bits.push('contact ' + c.contact_name);
+  if (c.contact_phone) bits.push('call ' + c.contact_phone);
+  if (c.contact_wa) bits.push('<a href="https://wa.me/'+String(c.contact_wa).replace(/[^0-9]/g,'')+'" target="_blank" rel="noopener">WhatsApp ' + esc(c.contact_wa) + '</a>');
+  $('phead').innerHTML = '<b>'+esc(c.name || cid)+'</b><div class="meta">'+bits.join(' · ')+'</div>'
+    + '<button class="btn sm ghost" style="margin-top:10px" onclick="backToList()">&#8592; All conversations</button>';
+  renderMsgs();
+  $('msgs').scrollTop = $('msgs').scrollHeight;
+  if (window.innerWidth <= 760){ $('side').classList.add('hidden'); $('pane').classList.add('on'); }
+}
+function backToList(){ $('pane').classList.remove('on'); $('side').classList.remove('hidden'); }
+function renderMsgs(){
+  const list = (grouped()[S.sel] || []);
+  $('msgs').innerHTML = list.map(m =>
+    '<div class="m '+(m.side==='support'?'me':'them')+'"><div class="bub">'
+    + (m.body ? esc(m.body) : '')
+    + (m.photo ? '<img src="'+esc(m.photo)+'" alt="" />' : '')
+    + '<div class="t">'+hhmm(m.created_at)+' · '+esc(m.user_name || (m.side==='support'?'Antoto':'')) +'</div>'
+    + '</div></div>').join('');
+}
+
+async function poll(){
+  try{
+    const r = await api('/api/support/admin?since=' + S.since);
+    if (r.messages && r.messages.length){
+      const fresh = merge(r.messages);
+      if (r.now) S.since = r.now;
+      (r.companies || []).forEach(c => S.cos[c.id] = c);
+      if (fresh.length){
+        render();
+        if (S.sel){ renderMsgs(); $('msgs').scrollTop = $('msgs').scrollHeight; }
+      }
+    }
+  }catch(e){ /* transient network — next tick retries */ }
+}
+function startPoll(){ stopPoll(); S.timer = setInterval(poll, 5000); }
+function stopPoll(){ if (S.timer){ clearInterval(S.timer); S.timer = null; } }
+
+function onFile(input){
+  const f = input.files && input.files[0]; input.value=''; if (!f) return;
+  const fr = new FileReader();
+  fr.onload = () => {
+    const img = new Image();
+    img.onload = () => {
+      // square centre-crop, 720px, JPEG q0.82 — keeps a chat attachment small
+      const side = Math.min(img.width, img.height);
+      const cv = document.createElement('canvas');
+      cv.width = cv.height = 720;
+      const cx = cv.getContext('2d');
+      cx.fillStyle = '#fff'; cx.fillRect(0,0,720,720);
+      cx.drawImage(img, (img.width-side)/2, (img.height-side)/2, side, side, 0, 0, 720, 720);
+      S.pending = cv.toDataURL('image/jpeg', 0.82);
+      $('pending').style.display = 'flex';
+      $('pending').innerHTML = '<img src="'+S.pending+'" alt="" /> Photo attached — press Send';
+    };
+    img.src = fr.result;
+  };
+  fr.readAsDataURL(f);
+}
+
+async function sendReply(){
+  if (!S.sel) return;
+  const inp = $('reply');
+  const body = inp.value.trim();
+  const photo = S.pending;
+  if (!body && !photo) return;
+  inp.value=''; S.pending=null; $('pending').style.display='none'; $('pending').innerHTML='';
+  const btn=$('sendBtn'); btn.disabled=true;
+  try{
+    const r = await api('/api/support/admin/reply', { method:'POST', body:{ companyId:S.sel, body, photo } });
+    S.since = Math.max(S.since, r.now || 0);
+    S.msgs.push({ id:Date.now(), company_id:S.sel, side:'support', body, photo, user_name:(S.me&&S.me.name)||'Antoto', created_at:r.now||Date.now(), read:1 });
+    render(); renderMsgs(); $('msgs').scrollTop = $('msgs').scrollHeight;
+  }catch(e){
+    alert('Send failed: ' + e.message);
+    inp.value = body;
+  }finally{ btn.disabled=false; }
+}
+
+(async function init(){
+  const t = loadTok();
+  if (!t) return;
+  S.token = t;
+  try{ await boot(); }catch(e){ if (e.status === 401 || e.status === 403) signOut(); }
+})();
+</script>
+</body>
+</html>

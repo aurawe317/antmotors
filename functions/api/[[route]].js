@@ -40,6 +40,12 @@ function getSb(env) {
 }
 
 const TOP_TIERS = ['boss', 'partnerA', 'partnerB'];
+// Companies whose owner accounts may act as PLATFORM SUPPORT, i.e. sign in at
+// /admin.html and read/reply to the in-app support chats of every tenant. Kept as
+// an allow-list so an ordinary dealership owner can never read another company's
+// conversation, and so no new Cloudflare secret has to be provisioned.
+const PLATFORM_ADMIN_COMPANIES = new Set(['co_a4812811971e']);
+const isPlatformSupport = (emp) => !!(emp && isTop(emp) && PLATFORM_ADMIN_COMPANIES.has(emp.companyId));
 const TOKEN_TTL_MS = 30 * 24 * 3600 * 1000;
 const TRIAL_DAYS = 14;
 const APP_VER = 'cf-supabase-1';
@@ -1203,6 +1209,93 @@ const base = {
       const co = await companyById(emp.companyId);
       return send(200, { employee: emp, canEditPrices: isTop(emp), company: await publicCompanyWithDomain(co), membership: co ? membershipView(co) : null, mustChangePassword: false });
     }
+    /* ---- in-app support chat (App ↔ platform) -----------------------------
+       Lets dealership staff reach the platform without leaving the app (no
+       WhatsApp install required). Messages are scoped per company; only
+       PLATFORM_ADMIN_COMPANIES owners get the cross-tenant read/reply. Requires
+       supabase-schema-support.sql to have been run once. */
+    if (p === '/api/support' || p.startsWith('/api/support/')) {
+      const noTable = (e) => /42P01|does not exist|not found/i.test(String((e && (e.code + ' ' + e.message)) || e));
+      if (!isPlatformSupport(emp)) {
+        // --- tenant side: send / read own thread ---
+        if (p === '/api/support' && method === 'POST') {
+          const b = await readBody(req);
+          const body = String(b.body == null ? '' : b.body).trim().slice(0, 2000);
+          let photo = null;
+          const raw = b.photo;
+          if (typeof raw === 'string' && raw) {
+            if (/^https?:\/\//.test(raw)) photo = raw;
+            else if (/^data:/.test(raw)) { try { photo = await uploadToStorage(raw, emp.companyId, 'support'); } catch (e) { /* keep text-only */ } }
+          }
+          if (!body && !photo) return send(400, { error: 'empty_message' });
+          const ts = now();
+          const { data, error } = await sb.from('support_messages').insert({
+            company_id: emp.companyId, user_id: emp.id,
+            user_name: (emp.data && emp.data.name) || emp.id,
+            side: 'user', body, photo, read: 0, created_at: ts,
+          }).select('*').maybeSingle();
+          if (error) {
+            if (noTable(error)) return send(503, { error: 'support_not_migrated', detail: 'Please run supabase-schema-support.sql in the Supabase SQL Editor.' });
+            return send(500, { error: 'insert_failed', detail: String(error.message || error) });
+          }
+          return send(200, { message: data, now: ts });
+        }
+        if (p === '/api/support' && method === 'GET') {
+          const since = +u.searchParams.get('since') || 0;
+          const { data, error } = await sb.from('support_messages').select('*')
+            .eq('company_id', emp.companyId).gt('created_at', since)
+            .order('created_at', { ascending: true }).limit(200);
+          if (error) {
+            if (noTable(error)) return send(503, { error: 'support_not_migrated', detail: 'Please run supabase-schema-support.sql in the Supabase SQL Editor.' });
+            return send(500, { error: 'query_failed', detail: String(error.message || error) });
+          }
+          return send(200, { messages: data || [], now: now() });
+        }
+        return send(404, { error: 'no_route' });
+      }
+      // --- platform support side: every tenant's threads ---
+      if (p === '/api/support/admin' && method === 'GET') {
+        const since = +u.searchParams.get('since') || 0;
+        const { data, error } = await sb.from('support_messages').select('*')
+          .gt('created_at', since).order('created_at', { ascending: true }).limit(300);
+        if (error) {
+          if (noTable(error)) return send(503, { error: 'support_not_migrated', detail: 'Please run supabase-schema-support.sql in the Supabase SQL Editor.' });
+          return send(500, { error: 'query_failed', detail: String(error.message || error) });
+        }
+        const ids = [...new Set((data || []).map(m => m.company_id))];
+        const { data: cos } = ids.length
+          ? await sb.from('companies').select('id,name,plan,permanent,status,contact_name,contact_phone,contact_wa,created_at').in('id', ids)
+          : { data: [] };
+        return send(200, { messages: data || [], companies: cos || [], now: now() });
+      }
+      if (p === '/api/support/admin/reply' && method === 'POST') {
+        const b = await readBody(req);
+        const companyId = String(b.companyId || '');
+        const body = String(b.body == null ? '' : b.body).trim().slice(0, 2000);
+        let photo = null;
+        const raw = b.photo;
+        if (typeof raw === 'string' && raw) {
+          if (/^https?:\/\//.test(raw)) photo = raw;
+          else if (/^data:/.test(raw)) { try { photo = await uploadToStorage(raw, emp.companyId, 'support'); } catch (e) { /* keep text-only */ } }
+        }
+        if (!companyId || (!body && !photo)) return send(400, { error: 'bad_request' });
+        const ts = now();
+        const { error } = await sb.from('support_messages').insert({
+          company_id: companyId, user_id: emp.id,
+          user_name: (emp.data && emp.data.name) || 'Platform support',
+          side: 'support', body, photo, read: 1, created_at: ts,
+        });
+        if (error) {
+          if (noTable(error)) return send(503, { error: 'support_not_migrated', detail: 'Please run supabase-schema-support.sql in the Supabase SQL Editor.' });
+          return send(500, { error: 'insert_failed', detail: String(error.message || error) });
+        }
+        // everything from that company is now handled
+        await sb.from('support_messages').update({ read: 1 }).eq('company_id', companyId).eq('side', 'user').eq('read', 0);
+        return send(200, { ok: true, now: ts });
+      }
+      return send(404, { error: 'no_route' });
+    }
+
     if (p === '/api/company' && method === 'GET') {
       if (!isTop(emp)) return send(403, { error: 'forbidden' });
       const co = await companyById(emp.companyId);
