@@ -882,18 +882,28 @@ export async function onRequest(context) {
 // reported a stale version for days after a successful deploy. Read the REAL
 // version out of the served index.html (60s module-level cache so a health probe
 // loop doesn't hammer the static asset), and expose the Pages commit sha too.
-let _verCache = { at: 0, val: '' };
+let _verCache = { at: 0, val: '', why: '' };
 async function liveAppVersion(origin) {
   const t = Date.now();
   if (_verCache.val && t - _verCache.at < 60000) return _verCache.val;
+  // Report WHY it failed instead of a bare "unknown" — a silent fallback cost us a
+  // whole round of "is it deployed yet?" guessing. The cache-busting query string is
+  // enough to bypass the edge cache, so no special fetch options are used (workers
+  // runtimes differ on cache/signal support and a rejected option throws outright).
   try {
-    const r = await fetch(origin + '/index.html?cv=' + t, { cache: 'no-store', signal: AbortSignal.timeout(4000) });
-    if (r.ok) {
-      const m = /APP_VER\s*=\s*'([^']+)'/.exec(await r.text());
-      if (m && m[1]) { _verCache = { at: t, val: 'app-' + m[1] }; return _verCache.val; }
+    let r = null;
+    try { r = await fetch(origin + '/index.html?cv=' + t); }
+    catch (e) { _verCache.why = 'fetch:' + String((e && e.message) || e); }
+    if (r && r.ok) {
+      const txt = await r.text();
+      const m = /APP_VER\s*=\s*['"]([^'"]+)['"]/.exec(txt);
+      if (m && m[1]) { _verCache = { at: t, val: 'app-' + m[1], why: '' }; return _verCache.val; }
+      _verCache.why = 'no_match(len=' + txt.length + ')';
+    } else if (r) {
+      _verCache.why = 'http_' + r.status;
     }
-  } catch (e) { /* fall through to whatever we have */ }
-  return _verCache.val || 'unknown';
+  } catch (e) { _verCache.why = 'outer:' + String((e && e.message) || e); }
+  return _verCache.val || ('unknown(' + _verCache.why + ')');
 }
 const base = {
         build: await liveAppVersion(u.origin),
