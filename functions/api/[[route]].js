@@ -986,7 +986,33 @@ const base = {
           }
         }
       } catch (e) { contactColsError = String((e && e.message) || e); }
-      return send(200, Object.assign({ ok: true, cars, companies, companiesDetail, supportTable, publicContacts: contactCols, publicContactsError: contactColsError }, base));
+      // Which employees actually have a wa/phone ON THE SERVER? Reported as booleans
+      // only — the numbers themselves are never echoed back. A salesperson who typed
+      // their number into an app that is signed out never uploads it, and the symptom
+      // ("customer sees no contact") points at the browser, not at the missing sync.
+      let empContacts = null;
+      let empContactsError = null;
+      try {
+        const { data: emps, error: empErr } = await sb.from('employees')
+          .select('id,company_id,data').eq('deleted', 0).limit(200);
+        if (empErr) empContactsError = String(empErr.message || empErr);
+        else {
+          empContacts = {};
+          for (const e of (emps || [])) {
+            const d = e.data || {};
+            const cid = e.company_id;
+            if (!empContacts[cid]) empContacts[cid] = [];
+            empContacts[cid].push({
+              id: e.id,
+              name: d.name || e.id,
+              tier: d.tier || '',
+              hasWa: !!String(d.wa || '').trim(),
+              hasPhone: !!String(d.phone || '').trim(),
+            });
+          }
+        }
+      } catch (e) { empContactsError = String((e && e.message) || e); }
+      return send(200, Object.assign({ ok: true, cars, companies, companiesDetail, supportTable, publicContacts: contactCols, publicContactsError: contactColsError, empContacts, empContactsError }, base));
     }
 
     /* login (Supabase Auth) */
