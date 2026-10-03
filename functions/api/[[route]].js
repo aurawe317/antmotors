@@ -437,7 +437,12 @@ async function verifyViaSupabase(email, password) {
 }
 async function issueToken(empId, companyId) {
   const token = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '');
-  await sb.from('tokens').insert({ token, emp_id: empId, company_id: companyId, created_at: now(), expires_at: now() + TOKEN_TTL_MS });
+  // The insert result used to be ignored: if the write failed (RLS, missing grants, a
+  // full table, …) the client still received a token that the server had never heard
+  // of, so the very next request 401'd and the user was "signed out seconds after
+  // signing in" with no clue why. Fail the sign-in loudly instead.
+  const { error } = await sb.from('tokens').insert({ token, emp_id: empId, company_id: companyId, created_at: now(), expires_at: now() + TOKEN_TTL_MS });
+  if (error) throw new Error('token_issue_failed: ' + (error.message || error));
   return token;
 }
 async function authOf(req) {
@@ -1183,7 +1188,11 @@ const base = {
       const fullEmp = authUser
         ? await ensureEmployeeForUser(authUser, companyId, 'boss')
         : { id: emp.id, company_id: companyId, email: emp.email, data: emp.data };
-      const token = await issueToken(fullEmp.id, companyId);
+      let token;
+      try { token = await issueToken(fullEmp.id, companyId); }
+      catch (e) {
+        return send(500, { error: 'token_issue_failed', detail: 'Signed-in identity is fine, but the server could not store your session token, so the app would sign you straight back out. Check the tokens table: ' + String((e && e.message) || e) });
+      }
       const co = await companyById(companyId);
       const eObj = stripPw(fullEmp.data || {}); eObj.id = fullEmp.id; eObj.companyId = companyId; eObj.email = fullEmp.email || email;
       return send(200, { token, employee: eObj, company: await publicCompanyWithDomain(co), mustChangePassword: false });
@@ -1261,7 +1270,11 @@ const base = {
       }
       const { error: empErr } = await sb.from('employees').upsert({ id, company_id: companyId, user_id: authUserId, data, email: email || null, updated_at: now(), deleted: 0 }, { onConflict: 'id,company_id' });
       if (empErr) return send(500, { error: 'employee_create_failed', detail: empErr.message });
-      const token = await issueToken(id, companyId);
+      let token;
+      try { token = await issueToken(id, companyId); }
+      catch (e) {
+        return send(500, { error: 'token_issue_failed', detail: 'Account created, but the server could not store your session token, so the app would sign you straight back out. Check the tokens table: ' + String((e && e.message) || e) });
+      }
       return send(200, { token, employee: Object.assign({ id, companyId, email }, stripPw(data)), company: await publicCompanyWithDomain(company), authWarn });
     }
 
