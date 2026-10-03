@@ -2037,7 +2037,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.83';
+const APP_VER='1.2.84';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -4098,9 +4098,10 @@ try{
    local IP. Override this single constant when migrating to plan A (own VPS). */
 const DEFAULT_API='';
 function resolveApiBase(){
-  const inp=document.getElementById('setApi');
-  const v=(inp?inp.value:'').trim().replace(/\/+$/,'');
-  if(v) return v;
+  // Requests must follow the CONFIRMED base (SYNC.base), never whatever happens to be
+  // typed in the "server address" box. That box is an edit draft: a stale value left in
+  // it silently re-routed every API call to a dead server, which answers 405 because
+  // there is no Functions there. A base only changes when the user explicitly saves.
   if(SYNC.base) return SYNC.base;
   return (DEFAULT_API||'');
 }
@@ -5034,7 +5035,10 @@ async function syncLogin(){
   }catch(e){
     setSyncState('err', pwErrText(e));
     renderSyncUI();
-    toast(pwErrText(e));
+    // Always name the server we actually talked to. A wrong/stale base shows up as a
+    // bare "405" with no explanation, and today that cost a long guessing game.
+    const where='['+String(resolveApiBase()||location.origin).replace(/^https?:\/\//,'')+']';
+    toast(pwErrText(e)+' '+where);
   }
 }
 
