@@ -2025,7 +2025,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.73';
+const APP_VER='1.2.74';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -4064,6 +4064,11 @@ try{
   if(!SYNC.token){
     var _ss=JSON.parse(localStorage.getItem('am_session')||'null');
     if(_ss && _ss.token){ SYNC.token=String(_ss.token); localStorage.setItem('am_token', SYNC.token); }
+    // A session with no token is not a signed-in state, it is a corpse. Keeping it made
+    // the app hide the sign-in form (isSignedIn() saw a session) while every sync failed
+    // ("please sign in to sync") — a dead end the user cannot reason their way out of.
+    // Drop it so the UI returns to a clean, actionable logged-out state.
+    else if(_ss){ try{ localStorage.removeItem('am_session'); localStorage.removeItem('am_me'); }catch(e){} }
   }
 }catch(e){}
 /* Shared backend for ALL companies. Every company uses the SAME address by
@@ -4383,7 +4388,13 @@ function saveSession(emp, company, token){
   try{
     const s={ id:emp.id, name:emp.name, tier:emp.tier, role:emp.role, roleZh:emp.roleZh, branch:emp.branch||'', wa:emp.wa||'', phone:emp.phone||'' };
     if(company) s.company=company;
-    if(token) s.token=token;
+    // Always carry a token, and never drop an existing one. This is called after every
+    // sync with the *current* SYNC.token, and a single moment where that is empty (a 401
+    // just cleared it, or boot-restore hasn't run yet) used to overwrite the cached
+    // session with NO token — leaving "signed in" (isSignedIn sees the session) but
+    // unable to sync, and no way back except signing in again from scratch.
+    const prev=loadSession();
+    s.token=String(token || (prev && prev.token) || '');
     localStorage.setItem('am_session', JSON.stringify(s));
   }catch(e){}
 }
