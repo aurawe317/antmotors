@@ -998,7 +998,7 @@
             <div class="form-row"><label data-i18n="fModel">Model</label><input type="text" id="afModel" placeholder="Camry" oninput="liveZh()"></div>
             <div class="form-row"><label data-i18n="fYear">Year</label><input type="number" id="afYear" placeholder="2023" oninput="liveZh()"></div>
             <div class="form-row"><label data-i18n="fCond">Condition</label><select id="afCond" onchange="liveZh()"><option>NEW</option><option>USED</option></select></div>
-            <div class="form-row"><label data-i18n="fBody">Body Type</label><select id="afBody" onchange="liveZh()"><option>SUV</option><option>Sedan</option><option>Pickup</option><option>Hatchback</option></select></div>
+            <div class="form-row"><label data-i18n="fBody">Body Type</label><select id="afBody" onchange="liveZh()"><option>SUV</option><option>MPV</option><option>Sedan</option><option>Pickup</option><option>Other</option></select></div>
             <div class="form-row"><label data-i18n="color">Color</label><select id="afColor" onchange="liveZh()"><option>Black</option><option>White</option><option>Silver</option><option>Gray</option><option>Red</option><option>Blue</option><option>Brown</option><option>Other</option></select></div>
             <div class="form-row"><label data-i18n="fDays">Days in stock</label><input type="number" id="afDays" placeholder="auto" min="0"></div>
             <div class="form-row"><label data-i18n="fStock">Stock quantity</label><input type="number" id="afStock" placeholder="1" min="1" value="1"></div>
@@ -1946,12 +1946,24 @@ const ZH = {
   brand:{"Toyota":"丰田","Hyundai":"现代","Kia":"起亚","Honda":"本田","Nissan":"日产","Mazda":"马自达","Ford":"福特","BMW":"宝马","Mercedes-Benz":"奔驰","Volkswagen":"大众","Chevrolet":"雪佛兰","Subaru":"斯巴鲁"},
   model:{"Land Cruiser":"兰德酷路泽","Camry":"凯美瑞","Tucson":"途胜","Sportage":"狮跑","CR-V":"CR-V","Hilux":"海拉克斯","RAV4":"RAV4","Navara":"纳瓦拉","Elantra":"伊兰特","Corolla":"卡罗拉","Prado":"普拉多","Civic":"思域","Accord":"雅阁","Santa Fe":"胜达","Sorento":"索兰托"},
   cond:{"NEW":"全新","USED":"二手"},
-  body:{"SUV":"SUV","Sedan":"轿车","Pickup":"皮卡","Hatchback":"两厢车","Van":"商务车"},
+  body:{"SUV":"SUV","MPV":"MPV","Sedan":"轿车","Pickup":"皮卡","Other":"其他","Hatchback":"其他","Van":"MPV"},
   branch:{},
   specLabel:{"Engine":"发动机","Transmission":"变速箱","Mileage":"里程","Fuel":"燃料","Drivetrain":"驱动方式","Seats":"座位数","Power":"动力","Color":"颜色","Year":"年份","Top Speed":"最高车速"},
   specVal:{"Automatic":"自动","Manual":"手动","CVT":"无级变速","DCT":"双离合","Petrol":"汽油","Diesel":"柴油","FWD":"前驱","RWD":"后驱","AWD":"四驱","4WD":"四驱","Hybrid":"混动","Electric":"纯电","Turbo":"涡轮"},
   hl:{"Leather Seats":"真皮座椅","Sunroof":"天窗","360 Camera":"360°全景影像","Adaptive Cruise":"自适应巡航","3rd Row":"第三排座椅","Apple CarPlay":"苹果CarPlay","Blind Spot":"盲点监测","Heated Seats":"座椅加热","Lane Assist":"车道保持辅助","Brand New":"全新车","Panoramic Roof":"全景天窗","Smart Key":"智能钥匙","Wireless Charge":"无线充电","Reliable":"皮实耐用","Low Fuel":"省油","Backup Camera":"倒车影像","Bluetooth":"蓝牙","AWD":"四驱","Cargo Space":"大储物空间","Honda Sensing":"本田SENSING","Workhorse":"耐造实用","Tow Pack":"拖拽套件","Heavy Duty":"重载版","Toyota Safety":"丰田TSS安全","Smart Entry":"智能进入","Reverse Cam":"倒车影像","Dual Cab":"双排座舱","Bed Liner":"货箱防护垫","Tow Bar":"拖车钩","Fuel Efficient":"省油经济","Lane Keep":"车道保持","Warranty Left":"质保期内","Keyless":"无钥匙进入","Reverse Camera":"倒车影像"}
 };
+/* Body types are now SUV / MPV / Sedan / Pickup / Other. Cars saved before this change
+   still carry "Hatchback" or "Van"; fold them into the closest current value when the
+   record is opened for editing, otherwise the <select> (which has no such option) would
+   come up blank and the car would silently be re-saved with no body type at all. */
+const CAR_BODIES=['SUV','MPV','Sedan','Pickup','Other'];
+function normBody(v){
+  const s=String(v==null?'':v).trim();
+  if(s==='Van'||/^(van|mpv|minivan|商务车)$/i.test(s)) return 'MPV';
+  if(s==='Hatchback'||/^(hatchback|hatch|两厢车|掀背)$/i.test(s)) return 'Other';
+  for(const b of CAR_BODIES){ if(s.toLowerCase()===b.toLowerCase()) return b; }
+  return s? 'Other' : 'SUV';
+}
 const REV={};
 for(const cat in ZH){ for(const k in ZH[cat]){ if(!REV[ZH[cat][k]]) REV[ZH[cat][k]]=k; } }
 /* Learning dictionary: user manually corrects a Chinese→English pair, app remembers it.
@@ -2025,7 +2037,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.74';
+const APP_VER='1.2.75';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -5861,7 +5873,7 @@ async function openEditCar(key){
   if(!y){ const mm=String(c.name||'').match(/\b(19|20)\d{2}\b/); if(mm) y=mm[0]; }
   if(!m){ let rest=String(c.name||'').replace(String(c.brand||''),'').replace(y,'').trim(); m=rest; }
   set('afBrand', c.brand); set('afModel', m); set('afYear', y);
-  set('afCond', c.cond||'USED'); set('afBody', c.body||'SUV'); set('afColor', c.color||'Black');
+  set('afCond', c.cond||'USED'); set('afBody', normBody(c.body||'SUV')); set('afColor', c.color||'Black');
   set('afBranch', c.branch||'');
   set('afSpecs', (c.specs||[]).map(s=>s[0]).join(', '));
   set('afHighlights', (c.hl||[]).join(', '));
@@ -6027,8 +6039,11 @@ function parsePaste(){
   // condition
   let cond=''; if(/\bnew\b/i.test(txt)||txt.includes('全新')) cond='NEW'; else if(/\bused\b/i.test(txt)||txt.includes('二手')) cond='USED';
   // body type
-  const bodies=['SUV','Sedan','Pickup','Hatchback','Van'];
-  const bodyZh={'SUV':'SUV','轿车':'Sedan','皮卡':'Pickup','两厢车':'Hatchback','商务车':'Van'};
+  const bodies=['SUV','MPV','Sedan','Pickup','Other'];
+  // Kept the retired values as ALIASES so existing cars still resolve: "Van" folds into
+  // MPV (same thing) and "Hatchback" into Other. Without them a pasted description or an
+  // older record would silently lose its body type.
+  const bodyZh={'SUV':'SUV','MPV':'MPV','轿车':'Sedan','皮卡':'Pickup','其他':'Other','两厢车':'Other','商务车':'MPV','Hatchback':'Other','Van':'MPV'};
   let body='';
   for(const b of bodies){ if(new RegExp('\\b'+b+'\\b','i').test(txt)){ body=b; break; } }
   if(!body){ for(const z in bodyZh){ if(txt.includes(z)){ body=bodyZh[z]; break; } } }
