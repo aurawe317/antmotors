@@ -345,6 +345,26 @@ async function genCompanyCode() {
       "SunnyA"/"SunnyX" and could blow up rule 1. Try the literal id and its case variants
       first and only fall back to a pattern match as a last resort.
    3) E-mail is globally unique, so it can still use an exact match. */
+/* The staff id IS the login account, and sign-in lookup is global (it does not filter
+   by company) and case-insensitive — so `boss` and `Boss` are the SAME account. The id
+   therefore has to be unique across ALL companies. The database enforces this too, via
+   supabase-schema-employee-unique-id.sql; this layer exists to return a clear message
+   instead of a raw unique-violation, and to cover rows that predate the index. */
+async function findIdConflict(id) {
+  const raw = String(id == null ? '' : id).trim();
+  if (!raw) return null;
+  const head = raw.charAt(0), tail = raw.slice(1);
+  const variants = [...new Set([raw, raw.toLowerCase(), raw.toUpperCase(),
+    head.toUpperCase() + tail.toLowerCase(), head.toLowerCase() + tail.toUpperCase()])];
+  const { data } = await sb.from('employees').select('id,company_id').in('id', variants).eq('deleted', 0).limit(1);
+  if (data && data.length) return data[0];
+  try {
+    const safe = raw.replace(/([\\%_])/g, '\\$1');
+    const { data: pat } = await sb.from('employees').select('id,company_id').ilike('id', safe).eq('deleted', 0).limit(1);
+    if (pat && pat.length) return pat[0];
+  } catch (e) { /* ignore */ }
+  return null;
+}
 async function resolveEmployee(account) {
   const a = String(account || '').trim();
   if (!a) return null;
@@ -1167,6 +1187,13 @@ const base = {
       }
 
       const data = { name, av: name.charAt(0).toUpperCase(), tier, role, roleZh, wa, phone, branch: joinBranch, _pw: await makePwRecord(pw) };
+      // Staff id = login account, so it must be free across every company. Check before
+      // writing, otherwise `upsert` silently overwrites the other company's row and two
+      // tenants end up sharing one account.
+      const regClash = await findIdConflict(id);
+      if (regClash) {
+        return send(409, { error: 'id_taken', detail: 'That staff id is already used by another company (' + regClash.company_id + '). Choose a different one — the id is the login name and must be unique.' });
+      }
       const { error: empErr } = await sb.from('employees').upsert({ id, company_id: companyId, user_id: authUserId, data, email: email || null, updated_at: now(), deleted: 0 }, { onConflict: 'id,company_id' });
       if (empErr) return send(500, { error: 'employee_create_failed', detail: empErr.message });
       const token = await issueToken(id, companyId);
@@ -1612,6 +1639,8 @@ const base = {
       const ROLE = { boss: 'Boss / Owner', partnerA: 'Co-owner', partnerB: 'Co-owner', manager: 'Manager', salesA: 'Senior Sales', salesB: 'Sales' };
       const ROLE_ZH = { boss: '老板 / 所有者', partnerA: '合伙人', partnerB: '合伙人', manager: '经理', salesA: '高级销售', salesB: '销售' };
       const data = { name, av: (name || id).charAt(0).toUpperCase(), tier, role: ROLE[tier] + (branch ? ' · ' + branch : ''), roleZh: ROLE_ZH[tier] + (branch ? ' · ' + branch : ''), wa, phone, branch, _pw: await makePwRecord(staffPw) };
+      const clash = await findIdConflict(id);
+      if (clash) return send(409, { error: 'id_taken', detail: 'That staff id is already used (id ' + clash.id + '). Ids are login names and must be unique across all companies.' });
       const { error } = await sb.from('employees').insert({ id, company_id: emp.companyId, data, email: staffEmail || null, updated_at: now(), deleted: 0 });
       if (error) return send(400, { error: error.message });
       // best-effort: also provision a Supabase Auth account (ignored when Auth is unreachable)
