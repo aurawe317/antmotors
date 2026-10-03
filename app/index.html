@@ -2037,7 +2037,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.77';
+const APP_VER='1.2.78';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -4780,6 +4780,13 @@ function renderSyncUI(){
   const signed=isSignedIn();
   if(box) box.style.display=(signed||fgOpen||rgOpen)?'none':'block';
   if(out) out.style.display=signed?'flex':'none';
+  // The Sign in / Create account tabs live OUTSIDE #syncLoginBox, so hiding the box
+  // left them on screen — the account panel looked permanently "not signed in" even
+  // after a successful login. Hide them together with the form they belong to.
+  if(tabs) tabs.style.display=signed?'none':'flex';
+  // The register blurb sits next to those tabs and can be left visible by setAuthMode,
+  // so fold it into the same gate.
+  const rh=document.getElementById('regHint'); if(rh && signed) rh.style.display='none';
   // show/hide extra sections (contact, install) based on login
   const xt=document.getElementById('settingsExtra'), xt2=document.getElementById('settingsExtra2');
   if(xt) xt.style.display=signed?'':'none';
