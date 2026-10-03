@@ -1033,7 +1033,19 @@ const base = {
       if (!emp && email) emp = await resolveEmployee(email);
       const localOk = emp ? await checkPwRecord(password, (emp.data || {})._pw) : false;
       const authUser = email ? await verifyViaSupabase(email, password) : null;
-      if (!authUser && !localOk) return send(401, { error: 'bad_credentials' });
+      if (!authUser && !localOk) {
+        // Distinguish "wrong password" from "this account has no way to sign in".
+        // Both used to answer a bare bad_credentials, which sends people hunting for a
+        // typo when the real problem is that no credential path is configured at all.
+        const hasLocalPw = !!(emp && (emp.data || {})._pw);
+        if (emp && !hasLocalPw && !String(email || '').trim()) {
+          return send(401, { error: 'no_login_method', detail: 'This account has no password on file and no e-mail to verify against. Ask the company owner to reset the password from the Staff page.' });
+        }
+        if (emp && !hasLocalPw) {
+          return send(401, { error: 'no_local_password', detail: 'No local password is set for this account. Sign in with the e-mail address instead, or ask the owner to reset the password.' });
+        }
+        return send(401, { error: 'bad_credentials' });
+      }
       if (!email && !emp) return send(401, { error: 'bad_credentials' });
       // find company: from employee's company, or from company_members of this auth user
       let companyId = emp ? emp.company_id : null;
