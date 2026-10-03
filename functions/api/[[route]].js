@@ -336,15 +336,43 @@ async function genCompanyCode() {
 }
 
 /* --------------------------------------------------------------------- auth */
+/* Resolve a sign-in identifier to an employee.
+   Three correctness rules, all learned the hard way:
+   1) NEVER use maybeSingle() here. It returns null (not an error the caller can see) as soon
+      as two rows match, which surfaced to the user as "no such account" — the exact
+      opposite of the truth. We now read up to 3 rows and report ambiguity explicitly.
+   2) `ilike` treats `_` as a single-char wildcard, so looking up "Sunny_" also matched
+      "SunnyA"/"SunnyX" and could blow up rule 1. Try the literal id and its case variants
+      first and only fall back to a pattern match as a last resort.
+   3) E-mail is globally unique, so it can still use an exact match. */
 async function resolveEmployee(account) {
   const a = String(account || '').trim();
   if (!a) return null;
+  const q = () => sb.from('employees').select('*').eq('deleted', 0);
+
   if (a.includes('@')) {
-    const { data } = await sb.from('employees').select('*').eq('email', a.toLowerCase()).eq('deleted', 0).maybeSingle();
-    return data;
+    const { data } = await q().eq('email', a.toLowerCase()).limit(1);
+    return (data && data[0]) || null;
   }
-  const { data } = await sb.from('employees').select('*').ilike('id', a).eq('deleted', 0).maybeSingle();
-  return data;
+
+  const { data: exact } = await q().eq('id', a).limit(1);
+  if (exact && exact.length) return exact[0];
+
+  // Case variants cover "sunny_" / "SUNNY_" / "Sunny_" without relying on LIKE escaping.
+  const head = a.charAt(0), tail = a.slice(1);
+  const variants = [...new Set([a.toLowerCase(), a.toUpperCase(), head.toUpperCase() + tail.toLowerCase(), head.toLowerCase() + tail.toUpperCase()])];
+  const { data: ci } = await q().in('id', variants).limit(3);
+  if (ci && ci.length === 1) return ci[0];
+  if (ci && ci.length > 1) return { __ambiguous: true, count: ci.length };
+
+  // Last resort: pattern match with LIKE wildcards escaped.
+  try {
+    const safe = a.replace(/([\\%_])/g, '\\$1');
+    const { data: pat } = await q().ilike('id', safe).limit(3);
+    if (pat && pat.length === 1) return pat[0];
+    if (pat && pat.length > 1) return { __ambiguous: true, count: pat.length };
+  } catch (e) { /* fall through */ }
+  return null;
 }
 /* verify password via Supabase Auth using the employee's e-mail (best-effort, never fatal) */
 async function verifyViaSupabase(email, password) {
@@ -1031,6 +1059,12 @@ const base = {
       else { emp = await resolveEmployee(account); if (emp) email = (emp.email || (emp.data && emp.data.email) || '').toLowerCase(); }
       // resolve by e-mail too, so the local-hash fallback below can find the record
       if (!emp && email) emp = await resolveEmployee(email);
+      // The same employee id can exist under more than one company (ids are only unique
+      // per company). Say so explicitly — otherwise it falls through to "wrong password",
+      // which is both wrong and unactionable.
+      if (emp && emp.__ambiguous) {
+        return send(409, { error: 'ambiguous_account', detail: 'That employee id exists in ' + emp.count + ' different companies. Sign in with your e-mail address instead so we know which company you mean.' });
+      }
       const localOk = emp ? await checkPwRecord(password, (emp.data || {})._pw) : false;
       const authUser = email ? await verifyViaSupabase(email, password) : null;
       if (!authUser && !localOk) {
