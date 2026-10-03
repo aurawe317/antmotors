@@ -932,8 +932,12 @@ const base = {
       let companiesDetail = null;
       if (u.searchParams.get('diag')) {
         try {
-          const { data: cos, error: cosErr } = await sb.from('companies')
-            .select('id,name,code,status,created_at,owner_id,plan,permanent,trial_ends_at,current_period_end,contact_name,contact_phone,contact_wa');
+          // Deliberately does NOT select contact_* : if those columns were never
+          // created, PostgREST rejects the WHOLE query and this diagnostic endpoint
+          // dies — taking the car counts, plan, quota and supportTable with it.
+          // They are probed separately, below, in their own try/catch.
+          const { data: cos } = await sb.from('companies')
+            .select('id,name,code,status,created_at,owner_id,plan,permanent,trial_ends_at,current_period_end');
           if (cos && cos.length) {
             companiesDetail = await Promise.all(cos.map(async (co) => {
               const cars = await sb.from('cars').select('id', { count: 'exact', head: true }).eq('company_id', co.id).eq('deleted', 0);
@@ -947,7 +951,6 @@ const base = {
                 effectivePlan: mv ? mv.plan : null,     // what the limits below actually use
                 carQuota: mv ? mv.quotas.cars : null,   // null = unlimited
                 expired: mv ? !!mv.expired : null,
-                contactName: co.contact_name || null, contactPhone: co.contact_phone || null, contactWa: co.contact_wa || null,
                 cars: cars.count || 0, employees: emps.count || 0,
               };
             }));
@@ -967,13 +970,23 @@ const base = {
       // Did the public-contact columns ever get created? They live in
       // supabase-schema-membership-domains.sql, which is easy to forget; when it is
       // missing, customers hit "no contact" no matter what the company typed in.
-      const contactCols = {};
-      for (const c of (companiesDetail || [])) {
-        if (c && c.contact_name !== undefined) {
-          contactCols[c.id] = { name: c.contact_name || null, phone: c.contact_phone || null, wa: c.contact_wa || null };
+      // NOTE: probe the columns directly instead of trusting a variable from the diag
+      // block — that one is block-scoped, and referencing it here threw
+      // "cosErr is not defined", which turned this whole endpoint into a 500.
+      let contactCols = null;
+      let contactColsError = null;
+      try {
+        const probeCols = await sb.from('companies')
+          .select('id,contact_name,contact_phone,contact_wa').limit(50);
+        if (probeCols.error) contactColsError = String(probeCols.error.message || probeCols.error);
+        else {
+          contactCols = {};
+          for (const c of (probeCols.data || [])) {
+            contactCols[c.id] = { name: c.contact_name || null, phone: c.contact_phone || null, wa: c.contact_wa || null };
+          }
         }
-      }
-      return send(200, Object.assign({ ok: true, cars, companies, companiesDetail, supportTable, publicContacts: contactCols, companiesError: cosErr ? String(cosErr.message || cosErr) : null }, base));
+      } catch (e) { contactColsError = String((e && e.message) || e); }
+      return send(200, Object.assign({ ok: true, cars, companies, companiesDetail, supportTable, publicContacts: contactCols, publicContactsError: contactColsError }, base));
     }
 
     /* login (Supabase Auth) */
