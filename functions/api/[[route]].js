@@ -365,6 +365,34 @@ async function findIdConflict(id) {
   } catch (e) { /* ignore */ }
   return null;
 }
+// Cheap edit distance for "did you mean" hints on sign-in. Bounded so it stays free
+// even with a few hundred staff rows.
+function editDistance(a, b) {
+  const m = a.length, n = b.length;
+  if (!m) return n; if (!n) return m;
+  let prev = Array.from({ length: n + 1 }, (_, j) => j);
+  for (let i = 1; i <= m; i++) {
+    const cur = [i];
+    for (let j = 1; j <= n; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    prev = cur;
+  }
+  return prev[n];
+}
+async function nearestAccountIds(input, max) {
+  const a = String(input || '').toLowerCase();
+  if (!a) return [];
+  try {
+    const { data } = await sb.from('employees').select('id').eq('deleted', 0).limit(500);
+    return (data || [])
+      .map((r) => ({ id: r.id, d: editDistance(a, String(r.id).toLowerCase()) }))
+      .filter((x) => x.d <= Math.max(2, Math.floor(a.length / 3)))
+      .sort((x, y) => x.d - y.d)
+      .slice(0, max || 3)
+      .map((x) => x.id);
+  } catch (e) { return []; }
+}
 async function resolveEmployee(account) {
   const a = String(account || '').trim();
   if (!a) return null;
@@ -1065,7 +1093,30 @@ const base = {
           }
         }
       } catch (e) { empContactsError = String((e && e.message) || e); }
-      return send(200, Object.assign({ ok: true, cars, companies, companiesDetail, supportTable, publicContacts: contactCols, publicContactsError: contactColsError, empContacts, empContactsError }, base));
+      // Token health. A duplicated token row makes authOf()'s maybeSingle() bail out and
+      // return 401 for EVERY request — the app then "logs the user out" seconds after a
+      // successful sign-in with no visible cause. Report duplicates and leftovers so
+      // this can be settled without guessing.
+      let tokenHealth = null;
+      try {
+        const { data: tks, error: tkErr } = await sb.from('tokens')
+          .select('token,emp_id,company_id,expires_at').limit(1000);
+        if (tkErr) tokenHealth = { error: String(tkErr.message || tkErr) };
+        else {
+          const seen = new Map();
+          for (const t of (tks || [])) seen.set(t.token, (seen.get(t.token) || 0) + 1);
+          const dup = [...seen.entries()].filter(([, n]) => n > 1).map(([tok, n]) => ({ dupCount: n, tail: String(tok).slice(-6) }));
+          const t = Date.now();
+          tokenHealth = {
+            total: (tks || []).length,
+            distinct: seen.size,
+            duplicates: dup.length,
+            duplicateDetail: dup.slice(0, 5),
+            expired: (tks || []).filter(x => x.expires_at && x.expires_at < t).length,
+          };
+        }
+      } catch (e) { tokenHealth = { error: String((e && e.message) || e) }; }
+      return send(200, Object.assign({ ok: true, cars, companies, companiesDetail, supportTable, publicContacts: contactCols, publicContactsError: contactColsError, empContacts, empContactsError, tokenHealth }, base));
     }
 
     /* login (Supabase Auth) */
@@ -1103,7 +1154,14 @@ const base = {
         // sends people hunting for a typo that isn't one. This is an internal dealership
         // tool, not a public signup, so the enumeration risk is acceptable here.
         if (!emp) {
-          return send(401, { error: 'no_such_account', detail: 'No active account matches that id or e-mail. Staff sign-in uses the exact employee id shown in the Staff page (capitalisation is ignored, but an underscore is not).' });
+          // "No such account" with no hint is a dead end. Offer the closest ids so a
+          // near-miss (Sunny vs Sunny_ vs SunnyA) is self-serveable.
+          const suggestion = await nearestAccountIds(a, 3);
+          return send(401, {
+            error: 'no_such_account',
+            detail: 'No active account matches that id or e-mail. Staff sign-in uses the exact employee id shown in the Staff page (capitalisation is ignored, but an underscore is not).',
+            didYouMean: suggestion,
+          });
         }
         return send(401, { error: 'bad_credentials' });
       }

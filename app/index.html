@@ -2037,7 +2037,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.79';
+const APP_VER='1.2.80';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -4972,13 +4972,14 @@ function pwErrText(err){
   if(err&&err.message==='weak_password') return pwIssueText(d.detail);
   /* surface the real upstream reason so the user can copy it back to us */
   if(err&&err.message==='auth_create_failed') return 'Account creation failed: '+(d.detail||'check Supabase service_role key and project status');
+  const dm=(d&&Array.isArray(d.didYouMean)&&d.didYouMean.length)?(' Did you mean: '+d.didYouMean.join(' / ')+'?'):'';
   const m={locked:T('pwLocked','Too many attempts — account locked, try again in')+' '+Math.ceil((d.retryAfter||900)/60)+' '+T('pwMinutes','min'),
     bad_credentials:T('syncBadCreds','Wrong account or password'),
     // "No password on file" is a different problem from "wrong password" — telling a
     // user to retype a password that was never set just wastes their time.
     no_login_method:T('loginNoMethod','This account has no password on file and no e-mail to verify. Ask the company owner to reset it from the Staff page.'),
     no_local_password:T('loginNoLocalPw','No password is set for this account. Sign in with your e-mail address, or ask the owner to reset the password.'),
-    no_such_account:T('loginNoAccount','No account matches that id. Check the exact employee id on the Staff page — capitalisation is ignored, but a trailing underscore is not.'),
+    no_such_account:T('loginNoAccount','No account matches that id. Check the exact employee id on the Staff page — capitalisation is ignored, but a trailing underscore is not.')+dm,
     ambiguous_account:T('loginAmbiguous','This employee id exists in several companies. Sign in with your e-mail address instead.'),
     id_taken:T('staffIdTaken','That staff id is already used by another company. The id is the login name, so it must be unique.'),
     bad_code:T('fgBadCode','Wrong verification code'),
