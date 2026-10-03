@@ -2037,7 +2037,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.78';
+const APP_VER='1.2.79';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -4080,12 +4080,12 @@ const SYNC={
 try{
   if(!SYNC.token){
     var _ss=JSON.parse(localStorage.getItem('am_session')||'null');
-    if(_ss && _ss.token){ SYNC.token=String(_ss.token); localStorage.setItem('am_token', SYNC.token); }
+    if(_ss && _ss.token && !_ss.tokenInvalid){ SYNC.token=String(_ss.token); localStorage.setItem('am_token', SYNC.token); }
     // A session with no token is not a signed-in state, it is a corpse. Keeping it made
     // the app hide the sign-in form (isSignedIn() saw a session) while every sync failed
     // ("please sign in to sync") — a dead end the user cannot reason their way out of.
     // Drop it so the UI returns to a clean, actionable logged-out state.
-    else if(_ss){ try{ localStorage.removeItem('am_session'); localStorage.removeItem('am_me'); }catch(e){} }
+    else if(_ss && !_ss.token && !_ss.tokenInvalid){ try{ localStorage.removeItem('am_session'); localStorage.removeItem('am_me'); }catch(e){} }
   }
 }catch(e){}
 /* Shared backend for ALL companies. Every company uses the SAME address by
@@ -4416,7 +4416,16 @@ function saveSession(emp, company, token){
   }catch(e){}
 }
 function loadSession(){ try{ return JSON.parse(localStorage.getItem('am_session')||'null'); }catch(e){ return null; } }
-function isSignedIn(){ return !!(SYNC.token || loadSession()); }
+function isSignedIn(){
+  // A session whose token was rejected is still a valid IDENTITY (we keep it so a
+  // refresh doesn't wipe the local inventory), but it is NOT a valid credential —
+  // counting it as "signed in" is what produced the endless loop: boot restored the
+  // dead token from the session, the next request 401'd, and the user got
+  // "Session expired" on every single refresh while the app looked logged in.
+  const s=loadSession();
+  if(s && s.tokenInvalid) return !!SYNC.token;
+  return !!(SYNC.token || s);
+}
 function restoreSession(){
   const s=loadSession();
   // A legacy build stored the literal "boss" placeholder as the signed-in id; treat
@@ -4432,8 +4441,17 @@ function onSessionExpired(){
   // (am_session) so the owner's identity + local inventory stay visible on a refresh
   // and don't get mass-wiped by the public-branch eviction. The user simply re-signs
   // in to resume syncing.
+  //
+  // The session is FLAGGED as token-invalid rather than left as-is: the boot-time
+  // restore would otherwise pick the same dead token up again on every reload, 401 in
+  // a loop, and re-show "Session expired" forever. Identity survives; the credential
+  // stops being resurrected.
   try{ localStorage.removeItem('am_token'); }catch(e){}
   SYNC.token='';
+  try{
+    const s=loadSession();
+    if(s){ s.tokenInvalid=true; localStorage.setItem('am_session', JSON.stringify(s)); }
+  }catch(e){}
   try{ toast(T('syncExpired','Session expired — please sign in again')); }catch(e){}
   try{ renderSyncUI(); updateAuthCTA(); renderMe(); updateRoleUI(); }catch(e){}
 }
