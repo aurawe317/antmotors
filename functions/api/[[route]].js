@@ -1044,6 +1044,13 @@ const base = {
         if (emp && !hasLocalPw) {
           return send(401, { error: 'no_local_password', detail: 'No local password is set for this account. Sign in with the e-mail address instead, or ask the owner to reset the password.' });
         }
+        // Say "no such account" separately. Employee ids differ only in case and
+        // trailing characters (Sunny_ vs Sunny), so a merged "wrong account or password"
+        // sends people hunting for a typo that isn't one. This is an internal dealership
+        // tool, not a public signup, so the enumeration risk is acceptable here.
+        if (!emp) {
+          return send(401, { error: 'no_such_account', detail: 'No active account matches that id or e-mail. Staff sign-in uses the exact employee id shown in the Staff page (capitalisation is ignored, but an underscore is not).' });
+        }
         return send(401, { error: 'bad_credentials' });
       }
       if (!email && !emp) return send(401, { error: 'bad_credentials' });
