@@ -2025,7 +2025,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.70';
+const APP_VER='1.2.71';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -4457,11 +4457,20 @@ async function bootstrap(){
   // Clean up legacy "boss" placeholder keys that some old devices still carry in
   // localStorage — they caused the account banner to render as the fake "boss" on every refresh.
   try{ const _m=localStorage.getItem('am_me'); if(_m){ const _id=(function(){try{return JSON.parse(_m).id}catch(e){return _m}}()); if(_id==='boss') localStorage.removeItem('am_me'); } }catch(e){}
-  try{ const _s=loadSession(); if(_s&&_s.id==='boss') clearSession(); }catch(e){}
+  // Only drop a `boss` session that has NO token. Such a record is a leftover of the
+  // old seed placeholder, not a real sign-in. Clearing unconditionally meant a genuine
+  // employee whose id happens to be "boss" was signed out on every single launch —
+  // the app then showed the login bar again while the cached company data stayed put.
+  try{ const _s=loadSession(); if(_s && _s.id==='boss' && !String(_s.token||'').trim()) clearSession(); }catch(e){}
   // the cleanup above removed the stored key but restoreSession() may already have
   // copied the literal "boss" into the in-memory curEmployee — drop it so the banner
   // never paints the fake "Boss" on a refresh.
   if(curEmployee==='boss') curEmployee='';
+  // The boot-time cleanup above can change whether we are signed in, but this runs
+  // AFTER the initial synchronous render at the end of the file. Without a re-render
+  // the UI keeps whatever it painted earlier — which is how you ended up seeing the
+  // sign-out row and the login bar at the same time. Re-sync now that state settled.
+  try{ renderSyncUI(); updateAuthCTA(); }catch(e){}
   // Drop any stale demo showrooms (Accra/Tema/Kumasi Branch) lingering in the local
   // cache from older builds. Showrooms are kept only in localStorage — the client never
   // syncs them to the server — so these seeded defaults would otherwise never clear.
