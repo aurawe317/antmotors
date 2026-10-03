@@ -1088,6 +1088,10 @@ const base = {
               // _pw hash cannot authenticate at all: /api/login needs one of the two.
               // Presence only — never echo the email or the hash itself.
               hasEmail: !!String(e.email || '').trim(),
+              // Masked so sign-in can be self-served when "my phone number is rejected":
+              // shows the shape (length / leading +) without disclosing the address.
+              emailShape: e.email ? (String(e.email).length + 'ch' + (String(e.email)[0] === '+' ? ',+' : '') +
+                ':' + String(e.email).slice(0, 2) + '…' + String(e.email).slice(-2)) : null,
               hasLocalPw: !!String(d._pw || '').trim(),
             });
           }
@@ -1156,7 +1160,10 @@ const base = {
         if (!emp) {
           // "No such account" with no hint is a dead end. Offer the closest ids so a
           // near-miss (Sunny vs Sunny_ vs SunnyA) is self-serveable.
-          const suggestion = await nearestAccountIds(a, 3);
+          // NOTE: the local here is `account` — this used to read a stray `a` (copied from
+          // resolveEmployee) and threw "a is not defined", turning every unknown-account
+          // sign-in attempt into a 500 instead of a helpful message.
+          const suggestion = await nearestAccountIds(account, 3);
           return send(401, {
             error: 'no_such_account',
             detail: 'No active account matches that id or e-mail. Staff sign-in uses the exact employee id shown in the Staff page (capitalisation is ignored, but an underscore is not).',
