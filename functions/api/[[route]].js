@@ -994,7 +994,7 @@ const base = {
       let empContactsError = null;
       try {
         const { data: emps, error: empErr } = await sb.from('employees')
-          .select('id,company_id,data').eq('deleted', 0).limit(200);
+          .select('id,company_id,email,data').eq('deleted', 0).limit(200);
         if (empErr) empContactsError = String(empErr.message || empErr);
         else {
           empContacts = {};
@@ -1008,6 +1008,11 @@ const base = {
               tier: d.tier || '',
               hasWa: !!String(d.wa || '').trim(),
               hasPhone: !!String(d.phone || '').trim(),
+              // Login readiness. An account with neither a Supabase email nor a local
+              // _pw hash cannot authenticate at all: /api/login needs one of the two.
+              // Presence only — never echo the email or the hash itself.
+              hasEmail: !!String(e.email || '').trim(),
+              hasLocalPw: !!String(d._pw || '').trim(),
             });
           }
         }
