@@ -245,6 +245,9 @@ async function companyById(id) {
   return data;
 }
 function publicCompany(row) {
+  // `contact` belongs here too: the app reads the company-wide contact from /api/company
+  // as the fallback for a salesperson who shared a link but left no number of their own.
+  // Without it that fallback silently never populated and customers saw "no contact".
   return { id: row.id, name: row.name, logo: row.logo || null, bio: row.bio || '', code: row.code, plan: row.plan, status: row.status, permanent: !!row.permanent, contact: contactOf(row) };
 }
 // Company-level public contact (name / phone / WhatsApp). Shown on a tenant's own
@@ -929,7 +932,8 @@ const base = {
       let companiesDetail = null;
       if (u.searchParams.get('diag')) {
         try {
-          const { data: cos } = await sb.from('companies').select('id,name,code,status,created_at,owner_id,plan,permanent,trial_ends_at,current_period_end');
+          const { data: cos, error: cosErr } = await sb.from('companies')
+            .select('id,name,code,status,created_at,owner_id,plan,permanent,trial_ends_at,current_period_end,contact_name,contact_phone,contact_wa');
           if (cos && cos.length) {
             companiesDetail = await Promise.all(cos.map(async (co) => {
               const cars = await sb.from('cars').select('id', { count: 'exact', head: true }).eq('company_id', co.id).eq('deleted', 0);
@@ -943,6 +947,7 @@ const base = {
                 effectivePlan: mv ? mv.plan : null,     // what the limits below actually use
                 carQuota: mv ? mv.quotas.cars : null,   // null = unlimited
                 expired: mv ? !!mv.expired : null,
+                contactName: co.contact_name || null, contactPhone: co.contact_phone || null, contactWa: co.contact_wa || null,
                 cars: cars.count || 0, employees: emps.count || 0,
               };
             }));
@@ -959,7 +964,16 @@ const base = {
           ? { exists: false, code: probe.error.code || '', message: probe.error.message || String(probe.error) }
           : { exists: true, rows: probe.count || 0 };
       } catch (e) { supportTable = { exists: false, error: String((e && e.message) || e) }; }
-      return send(200, Object.assign({ ok: true, cars, companies, companiesDetail, supportTable }, base));
+      // Did the public-contact columns ever get created? They live in
+      // supabase-schema-membership-domains.sql, which is easy to forget; when it is
+      // missing, customers hit "no contact" no matter what the company typed in.
+      const contactCols = {};
+      for (const c of (companiesDetail || [])) {
+        if (c && c.contact_name !== undefined) {
+          contactCols[c.id] = { name: c.contact_name || null, phone: c.contact_phone || null, wa: c.contact_wa || null };
+        }
+      }
+      return send(200, Object.assign({ ok: true, cars, companies, companiesDetail, supportTable, publicContacts: contactCols, companiesError: cosErr ? String(cosErr.message || cosErr) : null }, base));
     }
 
     /* login (Supabase Auth) */
