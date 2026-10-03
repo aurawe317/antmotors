@@ -1441,6 +1441,37 @@ const base = {
     const emp = await authOf(req);
     if (!emp) return send(401, { error: 'unauthorized' });
 
+    /* ---- owner-only: reset a staff member's password -----------------------
+       Password recovery depends on a working e-mail round-trip through Supabase
+       Auth, which many staff accounts were never provisioned for — so "I forgot my
+       password" becomes a dead end. Owners can set a new password directly. */
+    if (p === '/api/employee/reset-password' && method === 'POST') {
+      if (!isTop(emp)) return send(403, { error: 'forbidden' });
+      const b = await readBody(req);
+      const targetId = String(b.id || '').trim();
+      const npw = String(b.password == null ? '' : b.password);
+      if (!targetId) return send(400, { error: 'bad_request', detail: 'id is required' });
+      // Mirror the server-side rule used when creating staff (pwIssue/pwIssueText live
+      // in the client bundle only — they are not available here).
+      if (npw.length < 8) return send(400, { error: 'weak_password', detail: 'Password must be at least 8 characters.' });
+      const { data: target } = await sb.from('employees').select('*')
+        .eq('id', targetId).eq('company_id', emp.companyId).eq('deleted', 0).maybeSingle();
+      if (!target) return send(404, { error: 'not_found', detail: 'No such staff id in your company' });
+      const next = Object.assign({}, target.data || {}, { _pw: await makePwRecord(npw) });
+      const { error: upErr } = await sb.from('employees')
+        .update({ data: next, updated_at: now() })
+        .eq('id', targetId).eq('company_id', emp.companyId);
+      if (upErr) return send(500, { error: 'reset_failed', detail: String(upErr.message || upErr) });
+      // If they also have an Auth account, keep the two in step so the e-mail route keeps working.
+      let authNote = 'password set (sign in with your staff id)';
+      const em = String(target.email || '').trim();
+      if (em && !authDown) {
+        try { await sb.auth.admin.updateUserById(target.user_id || em, { password: npw }); authNote = 'password set for both id and e-mail sign-in'; }
+        catch (e) { authNote += ' — e-mail sign-in not updated (' + String((e && e.message) || e) + ')'; }
+      }
+      return send(200, { ok: true, detail: authNote });
+    }
+
     if (p === '/api/me') {
       const co = await companyById(emp.companyId);
       return send(200, { employee: emp, canEditPrices: isTop(emp), company: await publicCompanyWithDomain(co), membership: co ? membershipView(co) : null, mustChangePassword: false });
