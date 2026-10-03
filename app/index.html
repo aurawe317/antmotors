@@ -2025,7 +2025,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.65';
+const APP_VER='1.2.66';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3279,25 +3279,29 @@ function handleShowroomPhoto(e,showroomName){
 //  - browsing the company's own domain directly       -> the company-level contact
 //    (set in the app backend). Falls back to a generic "Contact us" when neither
 //    is available, so the bottom bar never shows the legacy "kwame" placeholder.
+// The card must ALWAYS answer "who is helping me" and "how do I reach them" as two
+// separate questions. Whoever shared the link stays named even when we fall back to
+// the company number — swapping in the company name made it look as if the dealer
+// itself had shared the link, which is both wrong and untrustworthy for the customer.
 function customerContact(){
-  // 1) Salesperson who shared the link — but ONLY when they actually left a way to
-  //    reach them. Previously we returned their record the moment it resolved, even
-  //    with empty wa/phone, which showed the customer a named consultant they could
-  //    not contact ("no contact number") while a perfectly good company-wide number
-  //    was sitting in the database unused.
+  const roleOf=(s)=> (typeof salesRoleLabel==='function'?salesRoleLabel(s):(s.role||''));
+  const cc = companyContact;
+  const ccHas = !!(cc && (String(cc.wa||'').trim() || String(cc.phone||'').trim()));
+
   if(attributedSalesRef && curSales){
     const s=empOf(curSales);
     if(s){
       const wa=String(s.wa||'').trim(), ph=String(s.phone||'').trim();
-      if(wa || ph){
-        return { name:s.name||'', av:s.av||'', role:(typeof salesRoleLabel==='function'?salesRoleLabel(s):(s.role||'')), wa:wa, phone:ph };
-      }
+      // 1) salesperson left their own number  -> their name + their number
+      if(wa || ph) return { name:s.name||'', av:s.av||'', role:roleOf(s), wa:wa, phone:ph };
+      // 2) salesperson left none -> KEEP their name/role, borrow the company number
+      if(ccHas) return { name:s.name||'', av:s.av||'', role:roleOf(s), wa:cc.wa||'', phone:cc.phone||'', viaCompany:true };
+      // 3) nobody reachable at all -> still credit the salesperson, just no number
+      return { name:s.name||'', av:s.av||'', role:roleOf(s), wa:'', phone:'' };
     }
   }
-  // 2) Company-level contact (set in Company settings → Public contact)
-  if(companyContact && (String(companyContact.wa||'').trim() || String(companyContact.phone||'').trim())){
-    return { name:companyContact.name||T('contactUs','Contact us'), av:(companyContact.name||'C').charAt(0).toUpperCase(), role:'', wa:companyContact.wa||'', phone:companyContact.phone||'' };
-  }
+  // No salesperson attribution (opened the domain directly) -> company contact
+  if(ccHas) return { name:cc.name||T('contactUs','Contact us'), av:(cc.name||'C').charAt(0).toUpperCase(), role:'', wa:cc.wa||'', phone:cc.phone||'' };
   return { name:T('contactUs','Contact us'), av:'C', role:'', wa:'', phone:'' };
 }
 function renderAttrBanner(){
