@@ -2025,7 +2025,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.69';
+const APP_VER='1.2.70';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -4055,6 +4055,17 @@ const SYNC={
   cars:jload('am_dirty_cars',{}), emps:jload('am_dirty_emps',{}),
   busy:false, state:'local', msg:''
 };
+/* Not every sign-in path writes `am_token` (a few only wrote the `am_session`
+   record, which itself carries the token). After a reload that left SYNC.token
+   empty while the session existed — so the app reported "signed in" (isSignedIn
+   reads the session) yet the sign-out row stayed hidden AND scheduleSync() bailed
+   out early, silently freezing every upload. Fall back to the session's token. */
+try{
+  if(!SYNC.token){
+    var _ss=JSON.parse(localStorage.getItem('am_session')||'null');
+    if(_ss && _ss.token){ SYNC.token=String(_ss.token); localStorage.setItem('am_token', SYNC.token); }
+  }
+}catch(e){}
 /* Shared backend for ALL companies. Every company uses the SAME address by
    default; data is isolated server-side by company_id. When the app is opened
    from a host that also serves the API (e.g. your own Railway/Render/self-host
@@ -4407,7 +4418,13 @@ async function api(p,o){
   let j=null; try{ j=await r.json(); }catch(e){}
   const code=(j&&j.error)||(r.status===401?'unauthorized':'HTTP '+r.status);
   /* only an expired/invalid session clears the token — a wrong password must not */
-  if(r.status===401 && code==='unauthorized'){ SYNC.token=''; localStorage.removeItem('am_token'); }
+  if(r.status===401 && code==='unauthorized'){
+    // A rejected token is a dead session: drop the whole thing, not just the header
+    // token. Clearing only `am_token` left `am_session` behind, which produced the
+    // split state "looks signed in, yet no sign-out row and uploads silently frozen".
+    if(typeof onSessionExpired==='function') onSessionExpired();
+    else { SYNC.token=''; try{ localStorage.removeItem('am_token'); localStorage.removeItem('am_session'); }catch(e){} updateAuthCTA(); }
+  }
   const err=new Error(code); err.status=r.status; err.data=j||{};
   // Keep the server's human-readable `detail` reachable. err.message only ever
   // carries `j.error` (a machine code like 'support_not_migrated'), so any UI that
@@ -4721,12 +4738,15 @@ function renderSyncUI(){
   const box=document.getElementById('syncLoginBox'), out=document.getElementById('signOutGroup');
   const fg=document.getElementById('forgotBox'), rg=document.getElementById('regBox'), tabs=document.getElementById('authSegTabs');
   const fgOpen=fg&&fg.style.display!=='none', rgOpen=rg&&rg.style.display!=='none';
-  if(box) box.style.display=(SYNC.token||fgOpen||rgOpen)?'none':'block';
-  if(out) out.style.display=SYNC.token?'flex':'none';
+  // Gate on isSignedIn(), not the raw SYNC.token: a valid session with the token
+  // restored from storage must show the sign-out row exactly like a live token.
+  const signed=isSignedIn();
+  if(box) box.style.display=(signed||fgOpen||rgOpen)?'none':'block';
+  if(out) out.style.display=signed?'flex':'none';
   // show/hide extra sections (contact, install) based on login
   const xt=document.getElementById('settingsExtra'), xt2=document.getElementById('settingsExtra2');
-  if(xt) xt.style.display=SYNC.token?'':'none';
-  if(xt2) xt2.style.display=SYNC.token?'':'none';
+  if(xt) xt.style.display=signed?'':'none';
+  if(xt2) xt2.style.display=signed?'':'none';
   // once signed in, hide the register/forgot entry points
   if(SYNC.token){
     if(fg) fg.style.display='none';
