@@ -2037,7 +2037,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.84';
+const APP_VER='1.2.85';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -4066,7 +4066,15 @@ function clearLocalInventory(){
 function jload(k,d){ try{ const v=JSON.parse(localStorage.getItem(k)||'null'); return v||d; }catch(e){ return d; } }
 function jsave(k,v){ try{ localStorage.setItem(k,JSON.stringify(v)); }catch(e){} }
 const SYNC={
-  base:(localStorage.getItem('am_api')||'').replace(/\/+$/,''),
+  // A stored server address must be a real http(s) origin. Anything else (a phone
+  // number typed into the wrong box, a truncated string, a leftover host) used to be
+  // adopted verbatim, and every API call then went to a non-existent server — which
+  // answers 405 because no Functions live there. Drop it and fall back to auto-detect.
+  base:(function(){
+    let v=(localStorage.getItem('am_api')||'').trim();
+    if(v && !/^https?:\/\/[^\s/]+/i.test(v)){ try{ localStorage.removeItem('am_api'); }catch(e){} v=''; }
+    return v.replace(/\/+$/,'');
+  })(),
   token:localStorage.getItem('am_token')||'',
   since:+(localStorage.getItem('am_since')||0),
   cars:jload('am_dirty_cars',{}), emps:jload('am_dirty_emps',{}),
@@ -5006,11 +5014,15 @@ async function syncLogin(){
   const pw=(document.getElementById('setPin').value||'');
   if(!base){ toast(T('syncNeedServer','Enter the server address first')); return; }
   if(!id||!pw){ toast(T('syncNeedCreds','Enter your account and password')); return; }
-  if(base!==DEFAULT_API){ SYNC.base=base; localStorage.setItem('am_api',base); } else { SYNC.base=''; try{localStorage.removeItem('am_api');}catch(e){} }
+  // Never persist something that is not a real origin — a phone number typed into the
+  // address box used to be saved here and then re-read on every later request, so the
+  // app got permanently pinned to a server that answers 405.
+  if(base!==DEFAULT_API && /^https?:\/\/[^\s/]+/i.test(base)){ SYNC.base=base; localStorage.setItem('am_api',base); }
+  else { SYNC.base=''; try{localStorage.removeItem('am_api');}catch(e){} }
   SYNC.since=0; localStorage.setItem('am_since','0');
   try{
     setSyncState('pending',T('syncSigningIn','Signing in…')); renderSyncUI();
-    const r=await api('/api/login',{method:'POST',body:{account:id,password:pw}});
+    let r=await api('/api/login',{method:'POST',body:{account:id,password:pw}});
     SYNC.token=r.token;
     const remember=document.getElementById('rememberMe');
     localStorage.setItem('am_token',r.token); localStorage.setItem('am_me',r.employee.id);
@@ -5033,6 +5045,31 @@ async function syncLogin(){
     updateAuthCTA();
     if(r.mustChangePassword) setTimeout(()=>toast('⚠️ '+T('pwUpgradeHint','Your account still uses an old PIN — set a real password via “Forgot password?”')),2600);
   }catch(e){
+    // Self-heal: if the stored base is not this page's own origin and the attempt failed,
+    // retry once against the current origin. That silently rescues a device whose
+    // address got corrupted, without ever touching a legitimately configured server
+    // (if the retry fails too, the original base is kept and reported as-is).
+    const triedBase=base;
+    if(SYNC.base && SYNC.base!==location.origin){
+      SYNC.base=''; try{localStorage.removeItem('am_api');}catch(x){}
+      try{
+        setSyncState('pending',T('syncSigningIn','Signing in…')); renderSyncUI();
+        const r2=await api('/api/login',{method:'POST',body:{account:id,password:pw}});
+        SYNC.token=r2.token;
+        const remember2=document.getElementById('rememberMe');
+        localStorage.setItem('am_token',r2.token); localStorage.setItem('am_me',r2.employee.id);
+        saveSession(r2.employee, r2.company, r2.token);
+        if(r2.company){ localStorage.setItem('am_company',JSON.stringify(r2.company)); applyCompanyLogo(); }
+        upsertEmp(r2.employee.id,r2.employee); curEmployee=r2.employee.id; applyEmployeeScope();
+        await syncNow(true); await refreshMembership();
+        updateRoleUI(); renderHome(); renderStock(); renderSyncUI(); updateAuthCTA();
+        toast(T('syncSignedIn','Signed in as')+' <b>'+r2.employee.name+'</b>');
+        toast('⚠ 已自动改用当前服务器 ['+location.host+']');
+        return;
+      }catch(e2){
+        SYNC.base=triedBase; try{localStorage.setItem('am_api',triedBase);}catch(x){}
+      }
+    }
     setSyncState('err', pwErrText(e));
     renderSyncUI();
     // Always name the server we actually talked to. A wrong/stale base shows up as a
