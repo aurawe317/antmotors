@@ -30,6 +30,24 @@ create index if not exists auth_events_account_idx on public.auth_events (accoun
 create index if not exists auth_events_ok_idx on public.auth_events (ok, at desc);
 
 -- ============================================================================
+-- 登录失败限流表（同一份 SQL，一次跑齐）
+--
+-- 为什么不在后端用内存计数？因为 Cloudflare Pages 每次请求可能落在不同 isolate，
+-- 内存里的失败次数不会被共享 —— 实测同一个账号连错 9 次，9 次都是 401、一次都没锁，
+-- 攻击者只要把请求打散到不同实例就完全绕过了限流。计数必须放在共享的 Postgres。
+-- ============================================================================
+
+create table if not exists public.auth_throttle (
+  k     text primary key,                              -- 账号(小写) | IP
+  n     integer not null default 0,                    -- 连续失败次数
+  until bigint,                                        -- 锁到哪个毫秒时间戳；null = 没锁
+  at    bigint not null default (extract(epoch from now())::bigint*1000),
+  ip    text
+);
+-- 清理已过期的锁（限流表比日志小得多，但一样会涨）
+create index if not exists auth_throttle_until_idx on public.auth_throttle (until);
+
+-- ============================================================================
 -- 查询示例（只读，随时可用）
 -- ============================================================================
 

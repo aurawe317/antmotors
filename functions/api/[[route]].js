@@ -354,36 +354,50 @@ function pwStrengthIssue(pw) {
 }
 
 /* --------------------------------------------------------------------- rate limit
-   First line of defence against credential stuffing. Kept in memory on purpose: it
-   costs nothing and stops the naive case. It is NOT a hard guarantee — Workers are
-   ephemeral and there are many instances, so an attacker spread across them can
-   exceed the budget. That is why the audit log (below) matters: rate limit blunts,
-   audit tells us what actually happened. */
+   First line of defence against credential stuffing.
+
+   The counters live in Postgres (table `auth_throttle`, created by
+   supabase-schema-auth-audit.sql), NOT in memory. Measured on 2026-10-04 against
+   the live Cloudflare Pages build: an account failed sign-in nine times in a row
+   and every single attempt answered 401 — the in-memory Map never survived between
+   requests, because Pages may run each request on a different isolate. A counter
+   that resets itself is worse than no counter: it looked like protection while
+   letting everything through. Shared storage is what makes the lock real.
+
+   It fails OPEN on purpose: if the table is missing, the lock is skipped instead
+   of locking out real people. The audit log above still records every attempt, so
+   nothing is invisible — it is only less neatly blocked. */
 const AUTH_FAIL_LIMIT = 8;                 // consecutive failures before a lock
 const AUTH_LOCK_MS = 15 * 60 * 1000;       // lock duration
-const _authFails = new Map();
 
 function authFailKey(account, ip) {
   return String(account || '').trim().toLowerCase() + '|' + String(ip || 'unknown');
 }
-function authLocked(key) {
-  const rec = _authFails.get(key);
-  if (!rec) return null;
-  if (!rec.until || rec.until <= now()) { _authFails.delete(key); return null; }
-  return rec;
+async function authLocked(key) {
+  try {
+    const { data } = await sb.from('auth_throttle').select('n,until').eq('k', key).limit(1);
+    const row = data && data[0];
+    if (!row) return null;
+    const until = Number(row.until || 0);
+    if (!until || until <= now()) {
+      await sb.from('auth_throttle').delete().eq('k', key);
+      return null;
+    }
+    return { n: Number(row.n || 0), until };
+  } catch (e) { return null; }   // table missing / db down -> fail open
 }
-function authFail(key) {
-  const rec = _authFails.get(key) || { n: 0, until: 0 };
-  rec.n = (rec.n || 0) + 1;
-  if (rec.n >= AUTH_FAIL_LIMIT) rec.until = now() + AUTH_LOCK_MS;
-  _authFails.set(key, rec);
-  // Opportunistic sweep so the map cannot grow without bound on a long-lived isolate.
-  if (_authFails.size > 500) {
-    for (const [k, v] of _authFails) if (!v.until || v.until <= now()) _authFails.delete(k);
-  }
-  return rec;
+async function authFail(key) {
+  try {
+    const { data } = await sb.from('auth_throttle').select('n').eq('k', key).limit(1);
+    const n = Number(((data && data[0]) || {}).n || 0) + 1;
+    // Concurrent failures can both read the same n and write n+1; that only ever
+    // makes the lock fire one attempt late, never skip it entirely.
+    await sb.from('auth_throttle').upsert({ k: key, n, until: n >= AUTH_FAIL_LIMIT ? now() + AUTH_LOCK_MS : null, at: now() });
+  } catch (e) { /* counting is best-effort; the audit log still records the attempt */ }
 }
-function authPass(key) { _authFails.delete(key); }
+async function authPass(key) {
+  try { await sb.from('auth_throttle').delete().eq('k', key); } catch (e) {}
+}
 
 /* --------------------------------------------------------------------- auth audit
    Every sign-in outcome, good or bad. Writes are fire-and-forget: an audit outage
@@ -1192,6 +1206,20 @@ async function liveAppVersion(origin) {
           ? { exists: false, code: probe.error.code || '', message: probe.error.message || String(probe.error) }
           : { exists: true, rows: probe.count || 0 };
       } catch (e) { supportTable = { exists: false, error: String((e && e.message) || e) }; }
+      // Do the P1 auth tables actually exist? Without this the only way to find out
+      // was to open the audit endpoint and get "forbidden" — which says nothing at
+      // all about the schema. Same lesson as tokenMode: surface the state that is
+      // actually in force, not the state we intended to have. A missing table here
+      // means the audit log records nothing and the sign-in lock never fires.
+      let authTables = null;
+      try {
+        const ae = await sb.from('auth_events').select('id', { count: 'exact', head: true }).limit(1);
+        const at = await sb.from('auth_throttle').select('k').limit(1);
+        authTables = {
+          events: ae.error ? { exists: false, code: ae.error.code || '' } : { exists: true, rows: ae.count || 0 },
+          throttle: at.error ? { exists: false, code: at.error.code || '' } : { exists: true, rows: (at.data || []).length > 0 ? 1 : 0 },
+        };
+      } catch (e) { authTables = { events: { exists: false, error: String((e && e.message) || e) }, throttle: { exists: false } }; }
       // Did the public-contact columns ever get created? They live in
       // supabase-schema-membership-domains.sql, which is easy to forget; when it is
       // missing, customers hit "no contact" no matter what the company typed in.
@@ -1269,7 +1297,7 @@ async function liveAppVersion(origin) {
           };
         }
       } catch (e) { tokenHealth = { error: String((e && e.message) || e) }; }
-      return send(200, Object.assign({ ok: true, cars, companies, companiesDetail, supportTable, publicContacts: contactCols, publicContactsError: contactColsError, empContacts, empContactsError, tokenHealth }, base));
+      return send(200, Object.assign({ ok: true, cars, companies, companiesDetail, supportTable, authTables, publicContacts: contactCols, publicContactsError: contactColsError, empContacts, empContactsError, tokenHealth }, base));
     }
 
     /* login (Supabase Auth) */
@@ -1278,7 +1306,7 @@ async function liveAppVersion(origin) {
       const account = String(b.account || b.id || '').trim();
       const password = String(b.password != null ? b.password : (b.pin || ''));
       const failKey = authFailKey(account, req.headers.get('cf-connecting-ip'));
-      const lockedRec = authLocked(failKey);
+      const lockedRec = await authLocked(failKey);
       if (lockedRec) {
         await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'locked' });
         return send(429, { error: 'too_many_attempts', retryAfter: Math.max(1, Math.ceil((lockedRec.until - now()) / 1000)),
@@ -1304,11 +1332,11 @@ async function liveAppVersion(origin) {
         // typo when the real problem is that no credential path is configured at all.
         const hasLocalPw = !!(emp && (emp.data || {})._pw);
         if (emp && !hasLocalPw && !String(email || '').trim()) {
-          authFail(failKey); await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'no_login_method' });
+          await authFail(failKey); await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'no_login_method' });
           return send(401, { error: 'no_login_method', detail: 'This account has no password on file and no e-mail to verify against. Ask the company owner to reset the password from the Staff page.' });
         }
         if (emp && !hasLocalPw) {
-          authFail(failKey); await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'no_local_password' });
+          await authFail(failKey); await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'no_local_password' });
           return send(401, { error: 'no_local_password', detail: 'No local password is set for this account. Sign in with the e-mail address instead, or ask the owner to reset the password.' });
         }
         // Say "no such account" separately. Employee ids differ only in case and
@@ -1316,7 +1344,7 @@ async function liveAppVersion(origin) {
         // sends people hunting for a typo that isn't one. This is an internal dealership
         // tool, not a public signup, so the enumeration risk is acceptable here.
         if (!emp) {
-          authFail(failKey); await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'no_such_account' });
+          await authFail(failKey); await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'no_such_account' });
           // "No such account" with no hint is a dead end. Offer the closest ids so a
           // near-miss (Sunny vs Sunny_ vs SunnyA) is self-serveable.
           // NOTE: the local here is `account` — this used to read a stray `a` (copied from
@@ -1329,10 +1357,10 @@ async function liveAppVersion(origin) {
             didYouMean: suggestion,
           });
         }
-        authFail(failKey); await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'bad_credentials' });
+        await authFail(failKey); await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'bad_credentials' });
         return send(401, { error: 'bad_credentials' });
       }
-      if (!email && !emp) { authFail(failKey); await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'no_account' }); return send(401, { error: 'no_such_account' }); }
+      if (!email && !emp) { await authFail(failKey); await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'no_account' }); return send(401, { error: 'no_such_account' }); }
       // find company: from employee's company, or from company_members of this auth user
       let companyId = emp ? emp.company_id : null;
       if (!companyId && authUser) {
@@ -1350,7 +1378,7 @@ async function liveAppVersion(origin) {
       }
       const co = await companyById(companyId);
       const eObj = stripPw(fullEmp.data || {}); eObj.id = fullEmp.id; eObj.companyId = companyId; eObj.email = fullEmp.email || email;
-      authPass(failKey);
+      await authPass(failKey);
       await logAuthEvent(req, { account, companyId, event: 'signin', ok: true, code: 'ok' });
       return send(200, { token, tokenMode: tokenSecret(env) ? 'stateless' : 'table-fallback', employee: eObj, company: await publicCompanyWithDomain(co), mustChangePassword: false });
     }
