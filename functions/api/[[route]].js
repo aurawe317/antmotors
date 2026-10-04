@@ -725,7 +725,28 @@ async function coverOf(id, cid) {
   const v = data[0].data;
   return (typeof v === 'string' && /^https?:\/\//.test(v)) ? v : null;
 }
-async function writePhotos(id, arr, cid) {
+// Persisting a tombstone is what makes a deletion STICK. The bytes are one request, but
+// without this line another device that still holds a pre-deletion photo list would push
+// it back and the "deleted" photo would silently reappear.
+async function persistPhotoTombs(id, cid, idxs) {
+  try {
+    const { data: rc } = await sb.from('cars').select('photos_deleted').eq('id', id).eq('company_id', cid).maybeSingle();
+    const prev = (rc && Array.isArray(rc.photos_deleted)) ? rc.photos_deleted : [];
+    const merged = Array.from(new Set(prev.concat(idxs)))
+      .filter(v => typeof v === 'number' && isFinite(v)).sort((a, b) => a - b).slice(-200);
+    await sb.from('cars').update({ photos_deleted: merged }).eq('id', id).eq('company_id', cid);
+  } catch (e) {
+    // `photos_deleted` only exists once the tiny ALTER TABLE has run. Without it the
+    // deletion STILL lands (the row is removed in this request) — it just can't survive
+    // a later push from a device that hadn't seen the deletion yet.
+    console.error('photo_tomb_persist_skipped:', (e && e.message) || e);
+  }
+}
+// Photos are MERGED, not replaced. Two staff adding a photo to the same car used to wipe
+// each other's: a row that simply wasn't named in the incoming list was treated as a
+// deletion. Now the only deletion signal is an explicit tombstone (`photoTombs`).
+// Legacy clients (plain URL strings, no ids) keep the old "replace by value" behaviour.
+async function writePhotos(id, arr, cid, tombs) {
   if (!Array.isArray(arr)) return;
   const { data: existing, error: selErr } = await sb.from('photos').select('*').eq('car_id', id).eq('company_id', cid);
   if (selErr) throw new Error('photos_select_failed: ' + (selErr.message || selErr));
@@ -738,14 +759,26 @@ async function writePhotos(id, arr, cid) {
     else if (d && typeof d.url === 'string' && d.url) items.push({ id: (typeof d.id === 'number' ? d.id : null), url: d.url });
   }
   const existingRows = existing || [];
+  const tombSet = new Set();
+  for (const t of (Array.isArray(tombs) ? tombs : [])) if (typeof t === 'number' && isFinite(t)) tombSet.add(t);
+  if (!tombSet.size) {
+    // Also honour tombstones this car already carries — a teammate deleted that photo an
+    // hour ago; a device still holding a pre-deletion list must not push it back.
+    try {
+      const { data: rc } = await sb.from('cars').select('photos_deleted').eq('id', id).eq('company_id', cid).maybeSingle();
+      const prev = rc && Array.isArray(rc.photos_deleted) ? rc.photos_deleted : null;
+      if (prev) for (const v of prev) if (typeof v === 'number' && isFinite(v)) tombSet.add(v);
+    } catch (e) { /* column not migrated yet — nothing to honour */ }
+  }
   const idAware = items.some(it => it.id !== null);
   let keep = [], toRemove = [];
-  if (idAware) {
-    // Stable-id path: keep EXACTLY the rows the client named; every other row is a deletion.
-    // This is unambiguous — it cannot be confused by a value that drifted on either side.
-    const keepIds = new Set(items.filter(it => it.id !== null).map(it => it.id));
-    toRemove = existingRows.filter(r => !keepIds.has(r.idx));
-    keep = existingRows.filter(r => keepIds.has(r.idx));
+  if (idAware || tombSet.size) {
+    // Stable-id path (and/or tombstones): MERGE. Keep every row the client didn't
+    // tombstone, even if it never mentions it — that row may well belong to a teammate,
+    // and "absent from my list" only ever meant "unknown to me".
+    if (tombSet.size) await persistPhotoTombs(id, cid, Array.from(tombSet));
+    keep = existingRows.filter(r => !tombSet.has(r.idx));
+    toRemove = existingRows.filter(r => tombSet.has(r.idx));
   } else {
     // Legacy value path: keep the rows whose value the client still wants, and collapse any
     // duplicate-value rows (two rows sharing a value can never be value-matched for deletion).
@@ -777,6 +810,9 @@ async function writePhotos(id, arr, cid) {
     const value = /^https?:\/\//.test(it.url) ? it.url : (await uploadToStorage(it.url, cid, id, 'photo').catch(() => null));
     if (!value || seenVals.has(value)) continue;
     seenVals.add(value);
+    // A tombstoned id must never come back — this is what stops a device holding a
+    // pre-deletion photo list from resurrecting a photo someone else deleted.
+    if (it.id !== null && tombSet.has(it.id)) continue;
     if (it.id !== null && haveById.has(it.id)) {
       // Row kept by id — refresh its stored value if the client's URL for it changed.
       if (haveById.get(it.id) !== value) {
@@ -960,12 +996,15 @@ async function applyPush(emp, payload) {
       // as orphans in the bucket forever (and re-creating the same brand+model car would instantly
       // resurrect the "old photos"). purgeCarMedia removes both the DB rows and the Storage files.
       await purgeCarMedia(cid, c.id);
+      // Clear its tombstones too, so re-listing the same car isn't blocked by indices
+      // that no longer own a photo. Best-effort — the column may not exist yet.
+      try { await sb.from('cars').update({ photos_deleted: [] }).eq('id', c.id).eq('company_id', cid); } catch (e) {}
       applied.push(c.id);
       continue;
     }
     // Use Array.isArray (not truthy) so an empty array [] — i.e. "user deleted ALL
     // photos" — still reaches writePhotos and actually clears the rows on the server.
-    if (Array.isArray(c.photos)) { try { await writePhotos(c.id, c.photos, cid); } catch (e) { rejected.push({ id: c.id, reason: 'photos_' + ((e && e.message) || e) }); } }
+    if (Array.isArray(c.photos)) { try { await writePhotos(c.id, c.photos, cid, Array.isArray(c.photoTombs) ? c.photoTombs : null); } catch (e) { rejected.push({ id: c.id, reason: 'photos_' + ((e && e.message) || e) }); } }
     if (Array.isArray(c.videos)) { try { await writeVideos(c.id, c.videos, cid); } catch (e) { rejected.push({ id: c.id, reason: 'videos_' + ((e && e.message) || e) }); } }
     applied.push(c.id);
   }
