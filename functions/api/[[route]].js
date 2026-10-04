@@ -356,61 +356,35 @@ function pwStrengthIssue(pw) {
 /* --------------------------------------------------------------------- rate limit
    First line of defence against credential stuffing.
 
-   The counters live in Postgres (table `auth_throttle`, created by
-   supabase-schema-auth-audit.sql), NOT in memory. Measured on 2026-10-04 against
-   the live Cloudflare Pages build: an account failed sign-in nine times in a row
-   and every single attempt answered 401 — the in-memory Map never survived between
-   requests, because Pages may run each request on a different isolate. A counter
-   that resets itself is worse than no counter: it looked like protection while
-   letting everything through. Shared storage is what makes the lock real.
+   Measured on 2026-10-04 against the live Cloudflare Pages build: an account failed
+   sign-in nine times in a row and answered 401 every single time. Three designs,
+   all of them passing their own unit tests and all of them letting that through.
 
-   It fails OPEN on purpose: if the table is missing, the lock is skipped instead
-   of locking out real people. The audit log above still records every attempt, so
-   nothing is invisible — it is only less neatly blocked. */
-const AUTH_FAIL_LIMIT = 8;                 // consecutive failures before a lock
+   FIRST ATTEMPT: an in-memory Map. Pages may run each request on a different
+   isolate, so the counters were never shared — nine failed tries in a row online
+   answered 401 nine times and the lock never fired.
+   SECOND ATTEMPT: a row in `auth_throttle`, bumped with upsert. The counter stuck at
+   1 — every attempt inserted, none ever updated — so the eighth failure still did
+   not lock, even though a self-check proved that insert+upsert on the same key works.
+   THIRD, the one shipped: count the failed attempts already written to the audit
+   log. Every failure is inserted there anyway, so counting those rows costs nothing
+   extra and uses the only two operations proven reliable here (insert, plain select).
+
+   The window slides, so stale attempts scroll out on their own — no sweep job, no
+   "unlock at" column to get wrong. Fails OPEN: if the audit insert is unavailable
+   the count stays low; the attempts are still recorded, so nothing is invisible. */
+const AUTH_FAIL_LIMIT = 8;                 // failures inside the window before a lock
 const AUTH_LOCK_MS = 15 * 60 * 1000;       // lock duration
 
-function authFailKey(account, ip) {
-  return String(account || '').trim().toLowerCase() + '|' + String(ip || 'unknown');
-}
 async function authLocked(key) {
   try {
-    const { data } = await sb.from('auth_throttle').select('n,until').eq('k', key).limit(1);
-    const row = data && data[0];
-    if (!row) return null;
-    const until = Number(row.until || 0);
-    if (!until || until <= now()) {
-      await sb.from('auth_throttle').delete().eq('k', key);
-      return null;
-    }
-    return { n: Number(row.n || 0), until };
-  } catch (e) { return null; }   // table missing / db down -> fail open
-}
-let _authFailErr = null;      // last swallowed failure, surfaced by the ?diag probe
-let _lastFailKey = null;      // the exact key the last failure counted under
-async function authFail(key) {
-  _authFailErr = null; _lastFailKey = key;
-  try {
-    const { data } = await sb.from('auth_throttle').select('n').eq('k', key).limit(1);
-    const n = Number(((data && data[0]) || {}).n || 0) + 1;
-    const row = { k: key, n, until: n >= AUTH_FAIL_LIMIT ? now() + AUTH_LOCK_MS : null, at: now() };
-    // Concurrent failures can both read the same n and write n+1; that only ever
-    // makes the lock fire one attempt late, never skip it entirely.
-    // onConflict is spelled out on purpose: the key itself contains a "|" (it is
-    // `account|ip`), and PostgREST treats "|" as OR-syntax — letting it infer the
-    // conflict target from the row left the upsert falling back to insert every
-    // time, so the counter stuck at 1 and the eighth failure never locked. The
-    // update below is the belt to that suspenders: if upsert still declines to
-    // refresh the row, force it.
-    const res = await sb.from('auth_throttle').upsert(row, { onConflict: 'k' });
-    if (res && res.error) {
-      _authFailErr = 'upsert:' + String((res.error.message || res.error.code || res.error) || '');
-      await sb.from('auth_throttle').update({ n: row.n, until: row.until, at: row.at }).eq('k', key);
-    }
-  } catch (e) { _authFailErr = String((e && e.message) || e); /* counting is best-effort; the audit log still records the attempt */ }
-}
-async function authPass(key) {
-  try { await sb.from('auth_throttle').delete().eq('k', key); } catch (e) {}
+    const { data, error } = await sb.from('auth_events')
+      .select('at').eq('account', key).eq('event', 'signin').eq('ok', 0)
+      .gte('at', now() - AUTH_LOCK_MS).limit(32);
+    if (error) return null;
+    const n = (data && data.length) || 0;
+    return n >= AUTH_FAIL_LIMIT ? { n, until: now() + AUTH_LOCK_MS } : null;
+  } catch (e) { return null; }   // audit unavailable -> count stays low -> fail open
 }
 
 /* --------------------------------------------------------------------- auth audit
@@ -421,7 +395,10 @@ async function logAuthEvent(req, ev) {
   try {
     await sb.from('auth_events').insert({
       at: now(),
-      account: String(ev.account || '').slice(0, 80) || null,
+      // Lower-cased, because the rate limit counts these rows and counts by `account`.
+      // Storing "Marina" alongside "marina" would have made the two of them two
+      // separate counters, and an attacker need only vary the casing to stay under.
+      account: String(ev.account || '').trim().toLowerCase().slice(0, 80) || null,
       company_id: ev.companyId || null,
       ip: (req.headers.get('cf-connecting-ip') || 'unknown').slice(0, 64),
       ua: String(req.headers.get('user-agent') || '').slice(0, 160) || null,
@@ -1239,7 +1216,9 @@ async function liveAppVersion(origin) {
         const evErr = codeOf(ae), thErr = codeOf(at);
         authTables = {
           events: evErr ? { exists: false, code: evErr } : { exists: true, readable: true },
-          throttle: thErr ? { exists: false, code: thErr } : { exists: true, readable: true },
+          // auth_throttle is no longer used for counting — see the rate limit block.
+          // It is reported only so the table is not silently left behind.
+          throttle: thErr ? { exists: false, code: thErr } : { exists: true, unused: true },
         };
       } catch (e) { authTables = { events: { exists: false, error: String((e && e.message) || e) }, throttle: { exists: false } }; }
       // Self-check: can the server actually WRITE to the audit log? Reading a table
@@ -1251,56 +1230,40 @@ async function liveAppVersion(origin) {
       // Does upsert REALLY update an existing row? The lock depends on it: with a
       // counter that only ever inserts, n stays at 1 forever and the eighth failure
       // never trips the lock. Cheaper to find out here than to watch sign-ins stay open.
-      let upsertCheck = null;
+      // End-to-end check of the lock: write eight failed sign-in rows the way a real
+      // attempt does, then ask the SHIPPED authLocked() whether that account is now
+      // locked. An earlier probe here exercised upsert against the throttle table and
+      // reported "ok" while the real lock still never fired — a check that can pass
+      // independently of the code it is meant to cover is worse than no check. Probe
+      // rows are deleted afterwards.
+      let throttleFlow = null;
       if (u.searchParams.get('diag')) {
-        const K0 = '__diag_upsert__@t', K1 = '__diag_upsert__@t|1.2.3.4';
+        const A = '__diag_flow__@t';
         try {
-          // Run the same insert/upsert/read cycle twice: once with a plain key and
-          // once with a key containing the "|" that a real throttle key carries.
-          const run = async (K) => {
-            try { await sb.from('auth_throttle').delete().eq('k', K); } catch (e0) {}
-            const ins = await sb.from('auth_throttle').insert({ k: K, n: 1, until: null, at: now() });
-            const up = await sb.from('auth_throttle').upsert({ k: K, n: 5, until: null, at: now() }, { onConflict: 'k' });
-            const chk = await sb.from('auth_throttle').select('n').eq('k', K).limit(1);
-            const out = {
-              insert: ins.error ? { ok: false, code: ins.error.code || '' } : { ok: true },
-              upsert: up.error ? { ok: false, code: up.error.code || '', message: String(up.error.message || up.error) } : { ok: true },
-              nAfter: chk.error ? null : ((chk.data && chk.data[0] && chk.data[0].n) || null),
-            };
-            try { await sb.from('auth_throttle').delete().eq('k', K); } catch (e2) {}
-            return out;
-          };
-          upsertCheck = { plainKey: await run(K0), pipeKey: await run(K1) };
-          // Drive the REAL authFail() eight times, like a password cracker would, then
-          // read the counter back. This is the only test that exercises the shipped
-          // path end to end; the ad-hoc insert/upsert above can pass while the real
-          // handler still fails.
-          const simKey = authFailKey('__diag_flow__@t', '9.9.9.9');
-          try { await sb.from('auth_throttle').delete().eq('k', simKey); } catch (e0) {}
-          for (let i = 0; i < 8; i++) await authFail(simKey);
-          const chk = await sb.from('auth_throttle').select('n,until').eq('k', simKey).limit(1);
-          try { await sb.from('auth_throttle').delete().eq('k', simKey); } catch (e2) {}
-          upsertCheck.flow = {
-            n: chk.error ? 'select_error' : ((chk.data && chk.data[0] && chk.data[0].n) || null),
-            until: chk.error ? null : ((chk.data && chk.data[0] && chk.data[0].until) || null),
-            lastAuthFailErr: _authFailErr,
-            lastFailKey: _lastFailKey,   // what a REAL failed sign-in counted under
-            key: simKey,
-          };
-        } catch (e) { upsertCheck = { error: String((e && e.message) || e) }; }
+          try { await sb.from('auth_events').delete().eq('account', A); } catch (e0) {}
+          for (let i = 0; i < AUTH_FAIL_LIMIT; i++) {
+            await sb.from('auth_events').insert({ at: now() - i * 1000, account: A, event: 'signin', ok: 0, code: 'diag_flow' });
+          }
+          const lk = await authLocked(A);
+          throttleFlow = { written: AUTH_FAIL_LIMIT, locked: !!lk, counted: lk ? lk.n : 0, limit: AUTH_FAIL_LIMIT };
+          try { await sb.from('auth_events').delete().eq('account', A); } catch (e2) {}
+        } catch (e) { throttleFlow = { error: String((e && e.message) || e) }; }
       }
       let throttleProbe = null;
       if (u.searchParams.get('diag')) {
         try {
-          const tp = await sb.from('auth_throttle').select('k,n,until,at').order('at', { ascending: false }).limit(10);
+          // Who is failing right now, and how often — exactly the set authLocked() counts.
+          const tp = await sb.from('auth_events')
+            .select('account').eq('event', 'signin').eq('ok', 0)
+            .gte('at', now() - AUTH_LOCK_MS).limit(60);
+          const tally = {};
+          for (const r of (tp.data || [])) { const a = String(r.account || '(none)'); tally[a] = (tally[a] || 0) + 1; }
           throttleProbe = {
-            // The server's own view of the caller. Included because a key is
-            // account|ip: if the caller's IP rotates, every attempt lands on a fresh
-            // key and the lock can never fire, no matter how correct the counter is.
             clientIp: String(req.headers.get('cf-connecting-ip') || 'unknown'),
+            windowMs: AUTH_LOCK_MS,
             table: tp.error ? { ok: false, code: tp.error.code || '' } : { ok: true },
-            rows: tp.error ? null : (tp.data || []).length,
-            keys: tp.error ? null : (tp.data || []).map(r => ({ k: String(r.k).slice(0, 40), n: r.n, until: r.until || null })),
+            topFailingAccounts: Object.entries(tally).sort((a, b) => b[1] - a[1]).slice(0, 5)
+              .map(([a, n]) => ({ account: a.slice(0, 40), fails: n, locked: n >= AUTH_FAIL_LIMIT })),
           };
         } catch (e) { throttleProbe = { error: String((e && e.message) || e) }; }
       }
@@ -1398,7 +1361,7 @@ async function liveAppVersion(origin) {
           };
         }
       } catch (e) { tokenHealth = { error: String((e && e.message) || e) }; }
-      return send(200, Object.assign({ ok: true, cars, companies, companiesDetail, supportTable, authTables, throttleProbe, upsertCheck, auditWrite, publicContacts: contactCols, publicContactsError: contactColsError, empContacts, empContactsError, tokenHealth }, base));
+      return send(200, Object.assign({ ok: true, cars, companies, companiesDetail, supportTable, authTables, throttleProbe, throttleFlow, auditWrite, publicContacts: contactCols, publicContactsError: contactColsError, empContacts, empContactsError, tokenHealth }, base));
     }
 
     /* login (Supabase Auth) */
@@ -1406,7 +1369,9 @@ async function liveAppVersion(origin) {
       const b = await readBody(req);
       const account = String(b.account || b.id || '').trim();
       const password = String(b.password != null ? b.password : (b.pin || ''));
-      const failKey = authFailKey(account, req.headers.get('cf-connecting-ip'));
+      // The lock counts failures per account inside a sliding window; the attempts
+      // themselves are recorded by logAuthEvent() below, and those rows are the count.
+      const failKey = String(account || '').trim().toLowerCase().slice(0, 80);
       const lockedRec = await authLocked(failKey);
       if (lockedRec) {
         await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'locked' });
@@ -1433,11 +1398,11 @@ async function liveAppVersion(origin) {
         // typo when the real problem is that no credential path is configured at all.
         const hasLocalPw = !!(emp && (emp.data || {})._pw);
         if (emp && !hasLocalPw && !String(email || '').trim()) {
-          await authFail(failKey); await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'no_login_method' });
+          await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'no_login_method' });
           return send(401, { error: 'no_login_method', detail: 'This account has no password on file and no e-mail to verify against. Ask the company owner to reset the password from the Staff page.' });
         }
         if (emp && !hasLocalPw) {
-          await authFail(failKey); await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'no_local_password' });
+          await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'no_local_password' });
           return send(401, { error: 'no_local_password', detail: 'No local password is set for this account. Sign in with the e-mail address instead, or ask the owner to reset the password.' });
         }
         // Say "no such account" separately. Employee ids differ only in case and
@@ -1445,7 +1410,7 @@ async function liveAppVersion(origin) {
         // sends people hunting for a typo that isn't one. This is an internal dealership
         // tool, not a public signup, so the enumeration risk is acceptable here.
         if (!emp) {
-          await authFail(failKey); await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'no_such_account' });
+          await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'no_such_account' });
           // "No such account" with no hint is a dead end. Offer the closest ids so a
           // near-miss (Sunny vs Sunny_ vs SunnyA) is self-serveable.
           // NOTE: the local here is `account` — this used to read a stray `a` (copied from
@@ -1458,10 +1423,10 @@ async function liveAppVersion(origin) {
             didYouMean: suggestion,
           });
         }
-        await authFail(failKey); await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'bad_credentials' });
+        await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'bad_credentials' });
         return send(401, { error: 'bad_credentials' });
       }
-      if (!email && !emp) { await authFail(failKey); await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'no_account' }); return send(401, { error: 'no_such_account' }); }
+      if (!email && !emp) { await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'no_account' }); return send(401, { error: 'no_such_account' }); }
       // find company: from employee's company, or from company_members of this auth user
       let companyId = emp ? emp.company_id : null;
       if (!companyId && authUser) {
@@ -1479,7 +1444,6 @@ async function liveAppVersion(origin) {
       }
       const co = await companyById(companyId);
       const eObj = stripPw(fullEmp.data || {}); eObj.id = fullEmp.id; eObj.companyId = companyId; eObj.email = fullEmp.email || email;
-      await authPass(failKey);
       await logAuthEvent(req, { account, companyId, event: 'signin', ok: true, code: 'ok' });
       return send(200, { token, tokenMode: tokenSecret(env) ? 'stateless' : 'table-fallback', employee: eObj, company: await publicCompanyWithDomain(co), mustChangePassword: false });
     }
