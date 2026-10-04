@@ -37,6 +37,11 @@ create index if not exists auth_events_ok_idx on public.auth_events (ok, at desc
 -- 攻击者只要把请求打散到不同实例就完全绕过了限流。计数必须放在共享的 Postgres。
 -- ============================================================================
 
+-- ⚠️ 这张表已经不用了，留在这里只是为了不让你白跑一次。
+-- 计数最终落在 auth_events 上（失败次数 = 该账号 15 分钟内 ok=0 的行数），
+-- 原因见文件末尾说明；本表会一直空着。如果你不留着做别的用途，直接：
+--   drop table if exists public.auth_throttle;
+
 create table if not exists public.auth_throttle (
   k     text primary key,                              -- 账号(小写) | IP
   n     integer not null default 0,                    -- 连续失败次数
@@ -85,6 +90,26 @@ grant all on sequence public.auth_events_id_seq to anon, authenticated, service_
 -- group by ip order by 2 desc limit 10;
 
 -- ============================================================================
+-- 限流为什么最后落在 auth_events 上（两次失败的尝试，别再踩）
+--
+-- 1) 后端用内存 Map 计数：Cloudflare Pages 每次请求可能落在不同 isolate，计数不共享。
+--    实测同一个账号连错 9 次，9 次都是 401、一次都没锁 —— 看起来有防护，实际全放过去。
+-- 2) 改成上面 auth_throttle 用 upsert 累加：计数永远停在 1（每次都 insert、从不 update），
+--    第 8 次失败照样不锁。单独自测 insert+upsert 又是通过的，所以函数本身不像有问题。
+--
+-- 于是干脆不维护第二份计数：失败次数 = auth_events 里"该账号近 15 分钟 ok=0 的行数"。
+-- 每次失败本来就要记一行，计数就是它，零额外写入，也不再依赖 upsert。
+-- 窗口是滑动的，旧记录自己滑出去，不需要清理任务，也没有"解锁时间"字段会算错。
+--
+-- 登录成功的那一瞬间会清掉该账号窗口内的失败行（authPass），
+-- 免得某人输错 7 次、第 8 次登进去了，还要因为那 7 次被锁。
+-- ============================================================================
+
+-- ============================================================================
 -- 清理：日志会无限增长，建议每月执行一次（保留 90 天）
 --   delete from public.auth_events where at < extract(epoch from now())::bigint*1000 - 90*86400*1000;
+--
+-- 顺带一提：登录成功也会写一行，所以这张表涨得比想象快。
+-- 如果只想保留失败记录（限流和排障只看失败），把成功行也清掉：
+--   delete from public.auth_events where ok = 1 and at < extract(epoch from now())::bigint*1000 - 30*86400*1000;
 -- ============================================================================
