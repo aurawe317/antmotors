@@ -47,6 +47,15 @@ create table if not exists public.auth_throttle (
 -- 清理已过期的锁（限流表比日志小得多，但一样会涨）
 create index if not exists auth_throttle_until_idx on public.auth_throttle (until);
 
+-- 显式授权。缺 GRANT 时 PostgREST 会把这张表从 schema cache 里整个藏起来，
+-- 查询和写入都回 PGRST205「Could not find the table … in the schema cache」——
+-- 看起来像"表没建"，其实是"建了但当前 role 没权限"。PGRST205 就出自这里。
+grant usage on schema public to anon, authenticated, service_role;
+grant all on public.auth_events to anon, authenticated, service_role;
+grant all on public.auth_throttle to anon, authenticated, service_role;
+-- auth_events.id 是 bigserial，取序列值同样需要授权
+grant all on sequence public.auth_events_id_seq to anon, authenticated, service_role;
+
 -- ============================================================================
 -- 查询示例（只读，随时可用）
 -- ============================================================================

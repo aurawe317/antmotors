@@ -1229,11 +1229,17 @@ async function liveAppVersion(origin) {
       let auditWrite = null;
       if (u.searchParams.get('diag')) {
         try {
+          // A table the role cannot write to is invisible to PostgREST, which answers
+          // "Could not find the table … in the schema cache" (PGRST205) for BOTH read
+          // and write — so reporting read+write separately is what tells "table missing"
+          // apart from "table exists but this role has no grant".
+          const sel = await sb.from('auth_events').select('id').limit(1);
           const ins = await sb.from('auth_events')
             .insert({ at: now(), account: '__health_probe__', event: 'probe', ok: 0, code: 'health_check' });
-          auditWrite = ins.error
-            ? { ok: false, code: ins.error.code || '', message: String(ins.error.message || ins.error) }
-            : { ok: true };
+          auditWrite = {
+            read: sel.error ? { ok: false, code: sel.error.code || '' } : { ok: true },
+            write: ins.error ? { ok: false, code: ins.error.code || '', message: String(ins.error.message || ins.error) } : { ok: true },
+          };
           try { await sb.from('auth_events').delete().eq('account', '__health_probe__').eq('event', 'probe'); } catch (e2) {}
         } catch (e) { auditWrite = { ok: false, message: String((e && e.message) || e) }; }
       }
