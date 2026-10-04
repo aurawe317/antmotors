@@ -1220,6 +1220,23 @@ async function liveAppVersion(origin) {
           throttle: at.error ? { exists: false, code: at.error.code || '' } : { exists: true, rows: (at.data || []).length > 0 ? 1 : 0 },
         };
       } catch (e) { authTables = { events: { exists: false, error: String((e && e.message) || e) }, throttle: { exists: false } }; }
+      // Self-check: can the server actually WRITE to the audit log? Reading a table
+      // proves nothing about inserting into it, and a failed insert is swallowed by
+      // logAuthEvent() — by design, so an audit outage never blocks a sign-in. That
+      // same swallow is why "the audit log is empty" was un-explainable: it looked
+      // identical to "nobody failed to sign in". Only runs on ?diag=1 so a routine
+      // health probe cannot pollute the log; the probe row is deleted again.
+      let auditWrite = null;
+      if (u.searchParams.get('diag')) {
+        try {
+          const ins = await sb.from('auth_events')
+            .insert({ at: now(), account: '__health_probe__', event: 'probe', ok: 0, code: 'health_check' });
+          auditWrite = ins.error
+            ? { ok: false, code: ins.error.code || '', message: String(ins.error.message || ins.error) }
+            : { ok: true };
+          try { await sb.from('auth_events').delete().eq('account', '__health_probe__').eq('event', 'probe'); } catch (e2) {}
+        } catch (e) { auditWrite = { ok: false, message: String((e && e.message) || e) }; }
+      }
       // Did the public-contact columns ever get created? They live in
       // supabase-schema-membership-domains.sql, which is easy to forget; when it is
       // missing, customers hit "no contact" no matter what the company typed in.
@@ -1297,7 +1314,7 @@ async function liveAppVersion(origin) {
           };
         }
       } catch (e) { tokenHealth = { error: String((e && e.message) || e) }; }
-      return send(200, Object.assign({ ok: true, cars, companies, companiesDetail, supportTable, authTables, publicContacts: contactCols, publicContactsError: contactColsError, empContacts, empContactsError, tokenHealth }, base));
+      return send(200, Object.assign({ ok: true, cars, companies, companiesDetail, supportTable, authTables, auditWrite, publicContacts: contactCols, publicContactsError: contactColsError, empContacts, empContactsError, tokenHealth }, base));
     }
 
     /* login (Supabase Auth) */
