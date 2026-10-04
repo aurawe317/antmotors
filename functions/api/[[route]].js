@@ -335,6 +335,75 @@ async function genCompanyCode() {
   }
 }
 
+/* Password policy, enforced server-side. The client has its own checks but they are a
+   suggestion, not a control — anyone can POST straight to /api/register. Kept
+   deliberately simple for a dealership in the field: long enough, mixed letters AND
+   digits, and not one of the handful of passwords that get guessed first.
+   Applies only when SETTING a password — existing accounts can still sign in with
+   whatever they already have. */
+const PW_WEAK_LIST = ['password', '12345678', '123456789', 'qwerty123', 'admin123',
+  '11111111', 'abc12345', 'password1', 'letmein1', 'welcome1', 'iloveyou1'];
+function pwStrengthIssue(pw) {
+  const s = String(pw == null ? '' : pw);
+  if (s.length < 8) return { code: 'too_short', detail: 'Password must be at least 8 characters.' };
+  if (s.length > 128) return { code: 'too_long', detail: 'Password must be under 128 characters.' };
+  if (/^\d+$/.test(s)) return { code: 'digits_only', detail: 'Password cannot be all digits.' };
+  if (!/[a-zA-Z]/.test(s) || !/\d/.test(s)) return { code: 'needs_mixed', detail: 'Password must mix letters and numbers.' };
+  if (PW_WEAK_LIST.includes(s.toLowerCase())) return { code: 'weak_common', detail: 'That password is too common — pick something less guessable.' };
+  return null;
+}
+
+/* --------------------------------------------------------------------- rate limit
+   First line of defence against credential stuffing. Kept in memory on purpose: it
+   costs nothing and stops the naive case. It is NOT a hard guarantee — Workers are
+   ephemeral and there are many instances, so an attacker spread across them can
+   exceed the budget. That is why the audit log (below) matters: rate limit blunts,
+   audit tells us what actually happened. */
+const AUTH_FAIL_LIMIT = 8;                 // consecutive failures before a lock
+const AUTH_LOCK_MS = 15 * 60 * 1000;       // lock duration
+const _authFails = new Map();
+
+function authFailKey(account, ip) {
+  return String(account || '').trim().toLowerCase() + '|' + String(ip || 'unknown');
+}
+function authLocked(key) {
+  const rec = _authFails.get(key);
+  if (!rec) return null;
+  if (!rec.until || rec.until <= now()) { _authFails.delete(key); return null; }
+  return rec;
+}
+function authFail(key) {
+  const rec = _authFails.get(key) || { n: 0, until: 0 };
+  rec.n = (rec.n || 0) + 1;
+  if (rec.n >= AUTH_FAIL_LIMIT) rec.until = now() + AUTH_LOCK_MS;
+  _authFails.set(key, rec);
+  // Opportunistic sweep so the map cannot grow without bound on a long-lived isolate.
+  if (_authFails.size > 500) {
+    for (const [k, v] of _authFails) if (!v.until || v.until <= now()) _authFails.delete(k);
+  }
+  return rec;
+}
+function authPass(key) { _authFails.delete(key); }
+
+/* --------------------------------------------------------------------- auth audit
+   Every sign-in outcome, good or bad. Writes are fire-and-forget: an audit outage
+   must never stop people from working. Requires supabase-schema-auth-audit.sql;
+   until that is run the insert simply fails and is swallowed. */
+async function logAuthEvent(req, ev) {
+  try {
+    await sb.from('auth_events').insert({
+      at: now(),
+      account: String(ev.account || '').slice(0, 80) || null,
+      company_id: ev.companyId || null,
+      ip: (req.headers.get('cf-connecting-ip') || 'unknown').slice(0, 64),
+      ua: String(req.headers.get('user-agent') || '').slice(0, 160) || null,
+      event: ev.event || 'signin',
+      ok: ev.ok ? 1 : 0,
+      code: ev.code || null,
+    });
+  } catch (e) { /* never block auth on audit failure */ }
+}
+
 /* --------------------------------------------------------------------- auth */
 /* Resolve a sign-in identifier to an employee.
    Three correctness rules, all learned the hard way:
@@ -1208,6 +1277,13 @@ async function liveAppVersion(origin) {
       const b = await readBody(req);
       const account = String(b.account || b.id || '').trim();
       const password = String(b.password != null ? b.password : (b.pin || ''));
+      const failKey = authFailKey(account, req.headers.get('cf-connecting-ip'));
+      const lockedRec = authLocked(failKey);
+      if (lockedRec) {
+        await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'locked' });
+        return send(429, { error: 'too_many_attempts', retryAfter: Math.max(1, Math.ceil((lockedRec.until - now()) / 1000)),
+          detail: 'Too many failed sign-in attempts. Try again in ' + Math.max(1, Math.ceil((lockedRec.until - now()) / 60000)) + ' minute(s).' });
+      }
       let email = '';
       let emp = null;
       if (account.includes('@')) email = account.toLowerCase();
@@ -1228,9 +1304,11 @@ async function liveAppVersion(origin) {
         // typo when the real problem is that no credential path is configured at all.
         const hasLocalPw = !!(emp && (emp.data || {})._pw);
         if (emp && !hasLocalPw && !String(email || '').trim()) {
+          authFail(failKey); await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'no_login_method' });
           return send(401, { error: 'no_login_method', detail: 'This account has no password on file and no e-mail to verify against. Ask the company owner to reset the password from the Staff page.' });
         }
         if (emp && !hasLocalPw) {
+          authFail(failKey); await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'no_local_password' });
           return send(401, { error: 'no_local_password', detail: 'No local password is set for this account. Sign in with the e-mail address instead, or ask the owner to reset the password.' });
         }
         // Say "no such account" separately. Employee ids differ only in case and
@@ -1238,6 +1316,7 @@ async function liveAppVersion(origin) {
         // sends people hunting for a typo that isn't one. This is an internal dealership
         // tool, not a public signup, so the enumeration risk is acceptable here.
         if (!emp) {
+          authFail(failKey); await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'no_such_account' });
           // "No such account" with no hint is a dead end. Offer the closest ids so a
           // near-miss (Sunny vs Sunny_ vs SunnyA) is self-serveable.
           // NOTE: the local here is `account` — this used to read a stray `a` (copied from
@@ -1250,9 +1329,10 @@ async function liveAppVersion(origin) {
             didYouMean: suggestion,
           });
         }
+        authFail(failKey); await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'bad_credentials' });
         return send(401, { error: 'bad_credentials' });
       }
-      if (!email && !emp) return send(401, { error: 'bad_credentials' });
+      if (!email && !emp) { authFail(failKey); await logAuthEvent(req, { account, event: 'signin', ok: false, code: 'no_account' }); return send(401, { error: 'no_such_account' }); }
       // find company: from employee's company, or from company_members of this auth user
       let companyId = emp ? emp.company_id : null;
       if (!companyId && authUser) {
@@ -1270,6 +1350,8 @@ async function liveAppVersion(origin) {
       }
       const co = await companyById(companyId);
       const eObj = stripPw(fullEmp.data || {}); eObj.id = fullEmp.id; eObj.companyId = companyId; eObj.email = fullEmp.email || email;
+      authPass(failKey);
+      await logAuthEvent(req, { account, companyId, event: 'signin', ok: true, code: 'ok' });
       return send(200, { token, tokenMode: tokenSecret(env) ? 'stateless' : 'table-fallback', employee: eObj, company: await publicCompanyWithDomain(co), mustChangePassword: false });
     }
 
@@ -1280,7 +1362,8 @@ async function liveAppVersion(origin) {
       const pw = String(b.password != null ? b.password : (b.pin || ''));
       const email = String(b.email || '').trim().toLowerCase().slice(0, 120);
       if (!/^[A-Za-z0-9_]{2,20}$/.test(id)) return send(400, { error: 'bad_id', detail: 'id: 2-20 letters/numbers/_' });
-      if (pw.length < 8) return send(400, { error: 'weak_password', detail: 'password >= 8 chars' });
+      const pwIssue = pwStrengthIssue(pw);
+      if (pwIssue) return send(400, { error: 'weak_password', reason: pwIssue.code, detail: pwIssue.detail });
       if (email && !/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(email)) return send(400, { error: 'bad_email' });
       const { data: existing } = await sb.from('employees').select('id').ilike('id', id).eq('deleted', 0).maybeSingle();
       if (existing) return send(409, { error: 'exists', detail: 'account id already used' });
@@ -1520,6 +1603,35 @@ async function liveAppVersion(origin) {
        Password recovery depends on a working e-mail round-trip through Supabase
        Auth, which many staff accounts were never provisioned for — so "I forgot my
        password" becomes a dead end. Owners can set a new password directly. */
+    if (p === '/api/auth-events' && method === 'GET') {
+      if (!isPlatformSupport(emp)) return send(403, { error: 'forbidden' });
+      const since = +u.searchParams.get('since') || 0;
+      const limit = Math.min(500, Math.max(1, +u.searchParams.get('limit') || 100));
+      const { data, error } = await sb.from('auth_events')
+        .select('at,account,company_id,ip,ua,event,ok,code')
+        .gt('at', since).order('at', { ascending: false }).limit(limit);
+      if (error) {
+        // 42P01 = table missing → the audit SQL has not been run yet. Say so plainly
+        // instead of returning a bare 500 the operator cannot act on.
+        if (/42P01|does not exist/i.test(String(error.code + ' ' + error.message))) {
+          return send(503, { error: 'audit_not_migrated', detail: 'Run supabase-schema-auth-audit.sql in the Supabase SQL Editor.' });
+        }
+        return send(500, { error: 'query_failed', detail: String(error.message || error) });
+      }
+      const rows = data || [];
+      return send(200, {
+        events: rows,
+        summary: {
+          total: rows.length,
+          failed: rows.filter(r => !r.ok).length,
+          locked: rows.filter(r => r.code === 'locked').length,
+          topFailedIps: Object.entries(rows.filter(r => !r.ok && r.ip).reduce((m, r) => (m[r.ip] = (m[r.ip] || 0) + 1, m), {}))
+            .sort((a, b) => b[1] - a[1]).slice(0, 5).map(([ip, n]) => ({ ip, failures: n })),
+        },
+        now: now(),
+      });
+    }
+
     if (p === '/api/employee/reset-password' && method === 'POST') {
       if (!isTop(emp)) return send(403, { error: 'forbidden' });
       const b = await readBody(req);
@@ -1528,7 +1640,8 @@ async function liveAppVersion(origin) {
       if (!targetId) return send(400, { error: 'bad_request', detail: 'id is required' });
       // Mirror the server-side rule used when creating staff (pwIssue/pwIssueText live
       // in the client bundle only — they are not available here).
-      if (npw.length < 8) return send(400, { error: 'weak_password', detail: 'Password must be at least 8 characters.' });
+      const npwIssue = pwStrengthIssue(npw);
+      if (npwIssue) return send(400, { error: 'weak_password', reason: npwIssue.code, detail: npwIssue.detail });
       const { data: target } = await sb.from('employees').select('*')
         .eq('id', targetId).eq('company_id', emp.companyId).eq('deleted', 0).maybeSingle();
       if (!target) return send(404, { error: 'not_found', detail: 'No such staff id in your company' });
@@ -1811,7 +1924,8 @@ async function liveAppVersion(origin) {
       if (!/^[A-Za-z0-9_]{2,20}$/.test(id)) return send(400, { error: 'bad_id' });
       if (!TIERS.includes(tier)) return send(400, { error: 'bad_tier' });
       const staffPw = String(b.password != null ? b.password : (b.pin || ''));
-      if (staffPw.length < 8) return send(400, { error: 'weak_password' });
+      const staffPwIssue = pwStrengthIssue(staffPw);
+      if (staffPwIssue) return send(400, { error: 'weak_password', reason: staffPwIssue.code, detail: staffPwIssue.detail });
       const staffEmail = String(b.email || '').trim().toLowerCase().slice(0, 120);
       if (staffEmail && !/^[^@\s]+@[^@\s]+\.[^@\s]{2,}$/.test(staffEmail)) return send(400, { error: 'bad_email' });
       const { data: existing } = await sb.from('employees').select('id').ilike('id', id).eq('company_id', emp.companyId).eq('deleted', 0).maybeSingle();
@@ -1852,7 +1966,8 @@ async function liveAppVersion(origin) {
     if (p === '/api/password/change' && method === 'POST') {
       const b = await readBody(req);
       const npw = String(b.password != null ? b.password : (b.pin || ''));
-      if (npw.length < 8) return send(400, { error: 'weak_password', detail: 'password >= 8 chars' });
+      const npwIssue2 = pwStrengthIssue(npw);
+      if (npwIssue2) return send(400, { error: 'weak_password', reason: npwIssue2.code, detail: npwIssue2.detail });
       const { data: row } = await sb.from('employees').select('*').eq('id', emp.id).eq('company_id', emp.companyId).eq('deleted', 0).maybeSingle();
       if (!row) return send(404, { error: 'not_found' });
       const d = row.data || {};
