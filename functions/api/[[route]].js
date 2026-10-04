@@ -1213,11 +1213,19 @@ async function liveAppVersion(origin) {
       // means the audit log records nothing and the sign-in lock never fires.
       let authTables = null;
       try {
-        const ae = await sb.from('auth_events').select('id', { count: 'exact', head: true }).limit(1);
+        // Plain selects, no count/head. The earlier version used
+        // { count: 'exact', head: true } and reported exists:true while the very next
+        // query in the same response failed with PGRST205 — a diagnostic that says
+        // "fine" and "no such table" at once is worse than none. One shape of query,
+        // one verdict. Row counts are not reported: they can only be had through the
+        // count option that proved unreliable here.
+        const ae = await sb.from('auth_events').select('id').limit(1);
         const at = await sb.from('auth_throttle').select('k').limit(1);
+        const codeOf = (r) => (r && r.error && (r.error.code || '')) || null;
+        const evErr = codeOf(ae), thErr = codeOf(at);
         authTables = {
-          events: ae.error ? { exists: false, code: ae.error.code || '' } : { exists: true, rows: ae.count || 0 },
-          throttle: at.error ? { exists: false, code: at.error.code || '' } : { exists: true, rows: (at.data || []).length > 0 ? 1 : 0 },
+          events: evErr ? { exists: false, code: evErr } : { exists: true, readable: true },
+          throttle: thErr ? { exists: false, code: thErr } : { exists: true, readable: true },
         };
       } catch (e) { authTables = { events: { exists: false, error: String((e && e.message) || e) }, throttle: { exists: false } }; }
       // Self-check: can the server actually WRITE to the audit log? Reading a table
