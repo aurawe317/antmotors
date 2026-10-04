@@ -537,17 +537,20 @@
   .toast{position:fixed; left:50%; bottom:90px; transform:translateX(-50%) translateY(20px); background:var(--surface); border:1px solid var(--gold-line); color:var(--text); padding:12px 16px; border-radius:10px; font-size:12px; max-width:340px; opacity:0; transition:.25s ease; pointer-events:none; z-index:50; box-shadow:0 12px 30px rgba(0,0,0,.5); line-height:1.5;}
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
 
-  /* membership badge + expiry banner */
-  .mem-banner{display:flex; align-items:center; justify-content:center; gap:8px; background:linear-gradient(90deg,#5a3a00,#7a5200); color:#ffd87a; font-size:12px; font-weight:700; padding:7px 12px; border-radius:10px; margin:0 0 8px; cursor:pointer; border:1px solid #b8841f;}
-  .mem-banner::before{content:"⚠";}
-  /* 已用/上限 用量条（动态插入在横幅下方）—— 超额用红色，一眼能看出还欠几辆 */
-  .mem-strip{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 8px;padding:7px 10px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border);font-size:11px;color:var(--text-dim);}
-  .mem-strip .ms-lbl{font-weight:700;color:var(--text);font-size:11px;letter-spacing:.3px;}
-  .mem-strip .ms-cell b{color:var(--text);font-size:12px;}
-  .mem-strip .ms-cell i{font-style:normal;opacity:.65;}
-  .mem-strip .ms-over,.mem-strip .ms-over b{color:#ff9a9a;}
+  /* membership badge + expiry banner — ONE thin line, never a block.
+     The text must stay a single row: an earlier build let it wrap, which grew
+     the appbar into a big slab. Ellipsis instead; the sheet holds the detail. */
+  .mem-banner{display:flex; align-items:center; justify-content:center; gap:6px; background:linear-gradient(90deg,#5a3a00,#7a5200); color:#ffd87a; font-size:11.5px; font-weight:700; padding:6px 10px; border-radius:8px; margin:0 0 6px; cursor:pointer; border:1px solid #b8841f; white-space:nowrap; overflow:hidden;}
+  .mem-banner::before{content:"⚠"; flex:none;}
+  .mem-banner>span{overflow:hidden; text-overflow:ellipsis;}
   .mem-banner-soft{background:linear-gradient(90deg,#3a3a00,#4f4a12);border-color:#8a7d2a;}
   .mem-banner-soft::before{content:"⏳";}
+  /* 已用/上限 只出现在会员页内部（客户/游客永远看不到），不占 appbar */
+  .mem-usage{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 8px;padding:6px 9px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);font-size:11px;color:var(--text-dim);}
+  .mem-usage .mu-lbl{font-weight:700;color:var(--text);font-size:11px;letter-spacing:.3px;}
+  .mem-usage .mu-cell b{color:var(--text);font-size:12px;}
+  .mem-usage .mu-cell i{font-style:normal;opacity:.65;}
+  .mem-usage .mu-over,.mem-usage .mu-over b{color:#ff9a9a;}
   .mem-card{background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:10px;}
   .mem-card-top{display:flex; align-items:center; justify-content:space-between; gap:10px;}
   .mem-plan{font-size:15px; font-weight:800; color:var(--text);}
@@ -1556,6 +1559,8 @@
     </div>
   </div>
   <div id="memStatus" class="mem-status"></div>
+  <!-- 已用/上限：内部经营信息，只在这张会员页里出现（客户/游客永不可见） -->
+  <div id="memUsageRow" class="mem-usage" style="display:none;"></div>
   <div id="memCycle" class="seg3" style="display:none;margin:6px 0 2px;">
     <span class="seg on" id="segMonthly" onclick="setMemCycle('monthly',this)"><span data-i18n="perMonth">Monthly</span></span>
     <span class="seg" id="segYearly" onclick="setMemCycle('yearly',this)"><span data-i18n="perYear">Yearly</span> · <span id="memYearSave" style="opacity:.85;font-weight:700;"></span></span>
@@ -2051,7 +2056,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.96';
+const APP_VER='1.2.97';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3811,8 +3816,6 @@ function renderMe(){
   const tc=document.getElementById('tileCars'); if(tc) tc.style.display=staff?'flex':'none';
   const pm=document.getElementById('mlPermBtn'); if(pm) pm.style.display=(loggedIn&&top)?'flex':'none';
   const vr=document.getElementById('meVer'); if(vr) vr.textContent=brandName()+' \u00B7 v'+(typeof APP_VER!=='undefined'?APP_VER:'1.0.0');
-  // membership strip (moved out of companyGroup -> sits right under the header)
-  const ms=document.getElementById('memStrip'); if(ms) ms.style.display=(loggedIn&&co)?'block':'none';
   // settings UI now lives on the Me tab (preferences + data & help collapsibles)
   try{ applyTheme(); }catch(err){}
   try{ fillCurrencyUI(); }catch(err){}
@@ -4215,25 +4218,24 @@ async function refreshMembership(){
    (2) The plan/badge/info card painted into #memPlan / #memBadge / #memInfo —
        none of which exist in the DOM any more (the strip was "moved under the
        header" and never re-added), so every plan line silently vanished.
-   The strip is now created on demand by ensureMemStrip(). */
+   The "used/limit" meter is painted into #memUsageRow inside the membership
+   sheet (internal staff only) — it must never sit in the appbar or a quote. */
 function memUsage(){
   let cars=0; for(const k in CARS) if(CARS[k]) cars++;
   let staff=0; for(const k in ALL_EMP){ const e=ALL_EMP[k]; if(e && !e.deleted) staff++; }
   return { cars:cars, staff:staff, shops:SHOWROOMS.length };
 }
-function ensureMemStrip(){
-  const ex=document.getElementById('memStrip');
-  if(ex) return ex;
-  const host=document.getElementById('memBanner')||document.getElementById('appbar');
-  const ms=document.createElement('div');
-  ms.id='memStrip'; ms.className='mem-strip';
-  if(host&&host.parentNode) host.parentNode.insertBefore(ms, host.nextSibling);
-  else if(document.body) document.body.insertBefore(ms, document.body.firstChild);
-  return ms;
+/* Internal-only: quota / upgrade notices are business data, never customer-facing.
+   Customers (curRole==='customer'), guests and anyone without a live token must
+   never see "you are over your limit, upgrade to add cars" — that is nonsense
+   printed on a quote a buyer opens. */
+function memInternalOnly(){
+  return !!(SYNC.token && curRole && curRole!=='customer');
 }
 function renderMemBanner(){
   const banner=document.getElementById('memBanner');
   if(!banner) return;
+  if(!memInternalOnly()){ banner.style.display='none'; return; }
   const m=MEMBERSHIP||{}, zh=(curLang==='zh');
   const cap=(m.freeQuota==null)?0:m.freeQuota;
   const cars=memUsage().cars;
@@ -4243,27 +4245,27 @@ function renderMemBanner(){
   // can't rely on the newest server having run its fix.
   // (a lapsed PREMIUM subscription must still show its expired banner)
   if(m.isPermanent || (m.plan==='premium' && !m.expired)){ banner.style.display='none'; return; }
+  // SHORT on purpose: this is a one-line banner. Full wording lives in the sheet.
   if(m.expired){
-    html=(m.planName||T('memTitle','Membership'))+' · '+(zh?T('memExpired','已过期'):'expired')
-        +(zh?'，请续费以继续使用':' — renew to continue');
+    html=zh? '会员已过期 · 续费后可继续加车' : 'Membership expired — renew to keep adding cars';
   } else if(m.trialExpired){
     // Grace is a CUSHION, not an unlock — adding stays blocked the whole time,
     // exactly as the owner asked. What grace buys is the seller still showing
     // and selling their existing cars, plus a clear reason why new ones stop.
     html = m.inGrace
-      ? (zh? '试用已到期 · 宽限还剩 '+(m.graceDaysLeft||0)+' 天：已上架的车照常展示销售，加新车请先升级'
-            : 'Trial ended — '+(m.graceDaysLeft||0)+' day(s) of grace left. Listed cars keep selling; upgrade to add new ones')
-      : (zh? '已达免费档上限（'+cars+' / '+cap+' 辆）· 超出车辆照常展示，加新车请先升级'
-            : 'Free plan full ('+cars+'/'+cap+' vehicles) — existing cars stay listed, upgrade to add more');
+      ? (zh? '试用已到期 · 宽限还剩 '+(m.graceDaysLeft||0)+' 天 · 已上架照常卖，加新车请升级'
+            : 'Trial ended — '+(m.graceDaysLeft||0)+'d grace left · add cars after upgrade')
+      : (zh? '已达免费额度 '+cars+'/'+cap+' 辆 · 超出的照常卖，加新车请升级'
+            : 'Free plan full ('+cars+'/'+cap+') — upgrade to add more');
   } else if(m.onTrial && m.daysLeft!=null && m.daysLeft<=3){
     soft=true;
-    html = zh? '试用还剩 '+m.daysLeft+' 天 · 到期后免费档只能放 '+cap+' 辆车（你现在 '+cars+' 辆）· 想继续加车请升级'
-             : 'Trial ends in '+m.daysLeft+' day(s) — after that the free plan allows '+cap+' vehicles (you have '+cars+'). Upgrade to keep adding';
+    html = zh? '试用还剩 '+m.daysLeft+' 天 · 到期后最多 '+cap+' 辆' : 'Trial ends in '+m.daysLeft+'d · '+cap+' car limit after that';
   }
   if(html==null){ banner.style.display='none'; return; }
   banner.style.display='flex';
   banner.className='mem-banner'+(soft?' mem-banner-soft':'');
-  banner.innerHTML='<span>'+html+'</span>';   // tapping anywhere opens the plan sheet
+  banner.title=html;                       // long text is truncated; hold for the rest
+  banner.innerHTML='<span>'+html+'</span>'; // tapping anywhere opens the plan sheet
 }
 function renderMembershipUI(){
   renderMemBanner();
@@ -4272,20 +4274,21 @@ function renderMembershipUI(){
   const info=document.getElementById('memInfo');
   if(grp && SYNC.token && isTopRole()) grp.style.display = 'block'; // v70: show company+member block to boss/partner (was gated on an undefined global `co`, so it never showed)
   const m=MEMBERSHIP;
-  /* Usage meter — rebuilt because the old card it painted into (#memPlan/#memBadge/
-     #memInfo) is gone from the DOM, so this used to be dead code too. */
-  const strip=ensureMemStrip();
-  if(strip){
-    const owned=!!SYNC.token && isTopRole();
-    strip.style.display=owned?'flex':'none';
+  /* Usage meter — lives INSIDE the membership sheet now (it used to be injected
+     under the header, where it read as a big slab and leaked quota talk into a
+     customer-facing header). Internal staff only. */
+  const urow=document.getElementById('memUsageRow');
+  if(urow){
+    const owned=memInternalOnly();
+    urow.style.display=owned?'flex':'none';
     if(owned){
       const q=(m&&m.quotas)||{};
       const u=memUsage();
       const cells=[[u.cars,q.cars,'vehicles'],[u.staff,q.employees,'staff'],[u.shops,q.showrooms,'shops']];
-      strip.innerHTML='<span class="ms-lbl">'+(curLang==='zh'?'已用 / 上限':'Used / limit')+'</span>'
+      urow.innerHTML='<span class="mu-lbl">'+(curLang==='zh'?'已用 / 上限':'Used / limit')+'</span>'
         +cells.map(function(c){
             const over=(c[1]!=null && c[0]>c[1]);
-            return '<span class="ms-cell'+(over?' ms-over':'')+'"><b>'+c[0]+'</b>/'+(c[1]==null?'∞':c[1])+' <i>'+c[2]+'</i></span>';
+            return '<span class="mu-cell'+(over?' mu-over':'')+'"><b>'+c[0]+'</b>/'+(c[1]==null?'∞':c[1])+' <i>'+c[2]+'</i></span>';
           }).join('');
     }
   }
