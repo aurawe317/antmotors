@@ -53,6 +53,10 @@ const APP_VER = 'cf-supabase-1';
 // 会员宽限期（天）：宽限期内服务照常，只是不能再生成新码。
 const GRACE_QR_DAYS = 30;      // 二维码：30 天
 const GRACE_DOMAIN_DAYS = 60;  // 专属域名：60 天
+// 试用到期后的宽限：期内已上架的车辆照常展示和销售（canSell 不变），但加新车/加人/加门店
+// 一律照旧被额度拦下。宽限纯粹是「缓冲 + 明说」，不是解锁——用户明确要求过这一点，
+// 别把它改成"宽限期内可以继续加车"，那会直接冲掉升级付费的动机。
+const GRACE_TRIAL_DAYS = 7;
 
 // 定价：**以人民币为基准**，美元按固定汇率 6.8 换算（保留 2 位小数，不随市价波动）。
 const FX_CNY_PER_USD = 6.8;
@@ -299,11 +303,23 @@ function membershipView(row) {
     else { effective = raw; active = (row.status === 'active') && t < periodEnd; }
   } else { effective = null; active = true; }   // 老档位：不限额、不锁功能（绝不卡住老客户）
   const onTrial = (raw === 'free') && (t < trialEnd);
+  // 试用已过（免费档回落到 free 额度）。注意：此时 active 仍为 true —— 免费档刻意永不过期，
+  // 已上架的车要照常卖。但这正是前端那句「已过期，请续费」横幅一直不出现的原因（它判的是
+  // expired），所以这里单独给出 trialExpired / inGrace / daysLeft 供前端预警，
+  // 而不是去动 active —— 一改就会把正在做生意的车行的前台整个掐掉。
+  // A lifetime member keeps `plan='free'` in the row, so without this guard they would
+  // be told their trial expired — and, worse, could have been styled as "over limit".
+  const trialExpired = !isPermanent && (raw === 'free') && (t >= trialEnd);
+  const graceEndsAt = trialExpired ? trialEnd + GRACE_TRIAL_DAYS * 864e5 : 0;
+  const inGrace = trialExpired && t < graceEndsAt;
   const m = PLANS[effective] || { name: '会员', nameEn: 'Member' };
   return {
     plan: effective, rawPlan: raw, planName: m.name, planNameEn: m.nameEn,
     status: row.status, active, expired: !active, periodEnd,
-    canSell: active, isPermanent, onTrial,
+    canSell: active, isPermanent, onTrial, trialExpired, inGrace,
+    graceEndsAt, graceDaysLeft: inGrace ? Math.max(0, Math.ceil((graceEndsAt - t) / 864e5)) : 0,
+    daysLeft: (onTrial && !isPermanent) ? Math.max(0, Math.ceil((trialEnd - t) / 864e5)) : 0,
+    freeQuota: quotasOf('free').cars,      // 试用到期后会掉到这个上限，前端预警要用
     quotas: quotasOf(effective), features: featuresOf(effective),
     graceDays: { qr: GRACE_QR_DAYS, domain: GRACE_DOMAIN_DAYS }
   };

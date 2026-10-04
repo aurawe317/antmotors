@@ -540,6 +540,14 @@
   /* membership badge + expiry banner */
   .mem-banner{display:flex; align-items:center; justify-content:center; gap:8px; background:linear-gradient(90deg,#5a3a00,#7a5200); color:#ffd87a; font-size:12px; font-weight:700; padding:7px 12px; border-radius:10px; margin:0 0 8px; cursor:pointer; border:1px solid #b8841f;}
   .mem-banner::before{content:"⚠";}
+  /* 已用/上限 用量条（动态插入在横幅下方）—— 超额用红色，一眼能看出还欠几辆 */
+  .mem-strip{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 8px;padding:7px 10px;border-radius:10px;background:var(--surface-2);border:1px solid var(--border);font-size:11px;color:var(--text-dim);}
+  .mem-strip .ms-lbl{font-weight:700;color:var(--text);font-size:11px;letter-spacing:.3px;}
+  .mem-strip .ms-cell b{color:var(--text);font-size:12px;}
+  .mem-strip .ms-cell i{font-style:normal;opacity:.65;}
+  .mem-strip .ms-over,.mem-strip .ms-over b{color:#ff9a9a;}
+  .mem-banner-soft{background:linear-gradient(90deg,#3a3a00,#4f4a12);border-color:#8a7d2a;}
+  .mem-banner-soft::before{content:"⏳";}
   .mem-card{background:var(--surface-2); border:1px solid var(--border); border-radius:12px; padding:12px 14px; margin-bottom:10px;}
   .mem-card-top{display:flex; align-items:center; justify-content:space-between; gap:10px;}
   .mem-plan{font-size:15px; font-weight:800; color:var(--text);}
@@ -2043,7 +2051,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.95';
+const APP_VER='1.2.96';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -4199,18 +4207,87 @@ async function refreshMembership(){
   renderMembershipUI();
 }
 /* paint the Settings membership card + the global expiry banner */
-function renderMembershipUI(){
-  const grp=document.getElementById('companyGroup');
+/* ---- membership: warning banner + "used/limit" meter ---------------------
+   Two bugs lived in here.
+   (1) The "expired, renew" banner keys off m.expired — but membershipView()
+       deliberately keeps free-plan companies `active` forever, so a trial that
+       ran out never lit it. A dealer whose trial lapsed got zero warning.
+   (2) The plan/badge/info card painted into #memPlan / #memBadge / #memInfo —
+       none of which exist in the DOM any more (the strip was "moved under the
+       header" and never re-added), so every plan line silently vanished.
+   The strip is now created on demand by ensureMemStrip(). */
+function memUsage(){
+  let cars=0; for(const k in CARS) if(CARS[k]) cars++;
+  let staff=0; for(const k in ALL_EMP){ const e=ALL_EMP[k]; if(e && !e.deleted) staff++; }
+  return { cars:cars, staff:staff, shops:SHOWROOMS.length };
+}
+function ensureMemStrip(){
+  const ex=document.getElementById('memStrip');
+  if(ex) return ex;
+  const host=document.getElementById('memBanner')||document.getElementById('appbar');
+  const ms=document.createElement('div');
+  ms.id='memStrip'; ms.className='mem-strip';
+  if(host&&host.parentNode) host.parentNode.insertBefore(ms, host.nextSibling);
+  else if(document.body) document.body.insertBefore(ms, document.body.firstChild);
+  return ms;
+}
+function renderMemBanner(){
   const banner=document.getElementById('memBanner');
+  if(!banner) return;
+  const m=MEMBERSHIP||{}, zh=(curLang==='zh');
+  const cap=(m.freeQuota==null)?0:m.freeQuota;
+  const cars=memUsage().cars;
+  let html=null, soft=false;
+  // A lifetime member's row still says plan='free', so an older server build reports
+  // trialExpired / daysLeft for them. Guard here too: service-worker cached clients
+  // can't rely on the newest server having run its fix.
+  // (a lapsed PREMIUM subscription must still show its expired banner)
+  if(m.isPermanent || (m.plan==='premium' && !m.expired)){ banner.style.display='none'; return; }
+  if(m.expired){
+    html=(m.planName||T('memTitle','Membership'))+' · '+(zh?T('memExpired','已过期'):'expired')
+        +(zh?'，请续费以继续使用':' — renew to continue');
+  } else if(m.trialExpired){
+    // Grace is a CUSHION, not an unlock — adding stays blocked the whole time,
+    // exactly as the owner asked. What grace buys is the seller still showing
+    // and selling their existing cars, plus a clear reason why new ones stop.
+    html = m.inGrace
+      ? (zh? '试用已到期 · 宽限还剩 '+(m.graceDaysLeft||0)+' 天：已上架的车照常展示销售，加新车请先升级'
+            : 'Trial ended — '+(m.graceDaysLeft||0)+' day(s) of grace left. Listed cars keep selling; upgrade to add new ones')
+      : (zh? '已达免费档上限（'+cars+' / '+cap+' 辆）· 超出车辆照常展示，加新车请先升级'
+            : 'Free plan full ('+cars+'/'+cap+' vehicles) — existing cars stay listed, upgrade to add more');
+  } else if(m.onTrial && m.daysLeft!=null && m.daysLeft<=3){
+    soft=true;
+    html = zh? '试用还剩 '+m.daysLeft+' 天 · 到期后免费档只能放 '+cap+' 辆车（你现在 '+cars+' 辆）· 想继续加车请升级'
+             : 'Trial ends in '+m.daysLeft+' day(s) — after that the free plan allows '+cap+' vehicles (you have '+cars+'). Upgrade to keep adding';
+  }
+  if(html==null){ banner.style.display='none'; return; }
+  banner.style.display='flex';
+  banner.className='mem-banner'+(soft?' mem-banner-soft':'');
+  banner.innerHTML='<span>'+html+'</span>';   // tapping anywhere opens the plan sheet
+}
+function renderMembershipUI(){
+  renderMemBanner();
+  const grp=document.getElementById('companyGroup');
   const badge=document.getElementById('memBadge');
   const info=document.getElementById('memInfo');
   if(grp && SYNC.token && isTopRole()) grp.style.display = 'block'; // v70: show company+member block to boss/partner (was gated on an undefined global `co`, so it never showed)
   const m=MEMBERSHIP;
-  if(banner){
-    if(m && m.expired){
-      banner.style.display='flex';
-      banner.textContent=' '+(m.planName||T('memTitle','Membership'))+' · '+(curLang==='zh'?T('memExpired','Expired'):'expired')+(curLang==='zh'?'，请续费以继续使用':' — renew to continue');
-    } else banner.style.display='none';
+  /* Usage meter — rebuilt because the old card it painted into (#memPlan/#memBadge/
+     #memInfo) is gone from the DOM, so this used to be dead code too. */
+  const strip=ensureMemStrip();
+  if(strip){
+    const owned=!!SYNC.token && isTopRole();
+    strip.style.display=owned?'flex':'none';
+    if(owned){
+      const q=(m&&m.quotas)||{};
+      const u=memUsage();
+      const cells=[[u.cars,q.cars,'vehicles'],[u.staff,q.employees,'staff'],[u.shops,q.showrooms,'shops']];
+      strip.innerHTML='<span class="ms-lbl">'+(curLang==='zh'?'已用 / 上限':'Used / limit')+'</span>'
+        +cells.map(function(c){
+            const over=(c[1]!=null && c[0]>c[1]);
+            return '<span class="ms-cell'+(over?' ms-over':'')+'"><b>'+c[0]+'</b>/'+(c[1]==null?'∞':c[1])+' <i>'+c[2]+'</i></span>';
+          }).join('');
+    }
   }
   if(badge && info){
     const planEl=document.getElementById('memPlan');
@@ -5749,6 +5826,9 @@ async function syncNow(silent, withPhotos){
       toast('⚠ '+msg);
     }
     setSyncState('ok',T('syncedAt','Synced')+' · '+new Date().toLocaleTimeString());
+    // Keep the used/limit meter honest right after a sync — refreshMembership() runs
+    // at boot BEFORE the first pull, so the numbers would otherwise lag a whole session.
+    try{ renderMembershipUI(); }catch(e){}
     try{ localStorage.setItem('am_last_sync', String(Date.now())); }catch(e){}
     if(!silent){ toast(T('syncDone','Sync complete')+' · '+n+' '+T('syncItems','item(s)')); pushNotif(T('synced','Synced'), n+' '+T('syncItems','item(s)')+' · '+new Date().toLocaleTimeString(), '🔄'); }
   }catch(e){
