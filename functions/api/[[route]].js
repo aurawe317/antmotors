@@ -959,6 +959,42 @@ const SEED_CAR_IDS = new Set();   // 演示车 id（无种子文件时为空，�
 const DEMO_EMP_IDS = new Set();
 const DEMO_SHOWROOM_NAMES = ['Accra Branch', 'Tema Branch', 'Kumasi Branch'];
 
+/* ---- three-way (field-level) merge ----------------------------------------
+   A car is ONE row whose content is a single JSONB blob, so the old push did a
+   whole-blob overwrite: two teammates editing different fields of the same car
+   silently destroyed each other's edit depending on who pushed second.
+
+   The client now ships `baseData` — the version it based its edit on. Compare
+   three snapshots field by field:
+
+     incoming === base   → this device never touched the field → keep the server's
+     incoming !== base,
+     server   === base   → only this device changed it          → take the incoming
+     both changed        → genuine conflict → keep the server's copy; it is what the
+                           earlier writer already pushed, and the client reconciles
+                           on its next pull (deterministic, always converges).
+
+   No `baseData` (older client, or a car this device just created) → plain overwrite,
+   exactly as before. */
+function eqJSON(a, b) {
+  const x = a === undefined ? null : a, y = b === undefined ? null : b;
+  try { return JSON.stringify(x) === JSON.stringify(y); } catch (e) { return x === y; }
+}
+function mergeCarData(base, incoming, server) {
+  try {
+    const out = JSON.parse(JSON.stringify(server || {}));
+    const b = base || {}, i = incoming || {};
+    for (const k of Object.keys(i)) {
+      if (eqJSON(i[k], b[k])) continue;               // untouched here → server wins
+      if (eqJSON(out[k], b[k])) { out[k] = i[k]; continue; }  // untouched there → take it
+      /* both sides moved this field: leave the server's version in place */
+    }
+    return out;
+  } catch (e) {
+    return null;                                       // never let a merge break a sync
+  }
+}
+
 async function applyPush(emp, payload) {
   const applied = [], rejected = [];
   const top = isTop(emp);
@@ -999,15 +1035,26 @@ async function applyPush(emp, payload) {
     // guard below is effectively a no-op (it only rejects updated_at strictly > server now).
     if (cur && cur.updated_at > ts + 1000) { rejected.push({ id: c.id, reason: 'stale' }); continue; }
     const incoming = c.data || {};
+    // Merge instead of clobber whenever the client tells us what it edited FROM.
+    // A car with no server row yet (new car, or a soft-deleted row being restored)
+    // has nothing to merge against → written as-is.
+    let dataToWrite = incoming;
+    // An empty object base carries no comparison point at all — treat it exactly like
+    // "no base" (whole-blob overwrite) rather than "every field is mine".
+    const base = (c.baseData && typeof c.baseData === 'object' && !Array.isArray(c.baseData) && Object.keys(c.baseData).length) ? c.baseData : null;
+    if (base && cur && !cur.deleted && !c.deleted) {
+      const merged = mergeCarData(base, incoming, cur.data || {});
+      if (merged) dataToWrite = merged;
+    }
     if (!top) {
       const oldPrice = cur ? (cur.data || {}).price : null;
-      const newPrice = incoming.price || null;
+      const newPrice = dataToWrite.price || null;
       if (JSON.stringify(oldPrice) !== JSON.stringify(newPrice)) {
-        if (cur) { incoming.price = oldPrice; rejected.push({ id: c.id, reason: 'price_forbidden' }); }
+        if (cur) { dataToWrite = Object.assign({}, dataToWrite); dataToWrite.price = oldPrice; rejected.push({ id: c.id, reason: 'price_forbidden' }); }
         else { rejected.push({ id: c.id, reason: 'price_forbidden' }); continue; }
       }
     }
-    const { error: carErr } = await sb.from('cars').upsert({ id: c.id, company_id: cid, data: incoming, listed_at: c.listedAt || null, updated_at: ts, updated_by: emp.id, deleted: c.deleted ? 1 : 0 }, { onConflict: 'id,company_id' });
+    const { error: carErr } = await sb.from('cars').upsert({ id: c.id, company_id: cid, data: dataToWrite, listed_at: c.listedAt || null, updated_at: ts, updated_by: emp.id, deleted: c.deleted ? 1 : 0 }, { onConflict: 'id,company_id' });
     if (carErr) { rejected.push({ id: c.id, reason: carErr.message || 'upsert_failed' }); continue; }
     if (occupies) carUsed++;
     if (c.deleted) {

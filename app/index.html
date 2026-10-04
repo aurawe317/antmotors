@@ -1658,6 +1658,12 @@ const SAMPLE_CAR_IDS = new Set(['lc','tuc','son','cam','hil','hilux','rav4','nav
 // linger in the browser cache forever. Purged at startup so they can't resurface.
 const DEMO_SHOWROOM_NAMES = new Set(['Accra Branch','Tema Branch','Kumasi Branch']);
 const LISTED_AT={};
+// What the server last confirmed for each car (deep copies taken from pull, or from
+// our own successful push). Shipped with every push as `baseData`; the server merges
+// field-by-field against it, so two people editing different fields of the SAME car
+// no longer overwrite each other. Empty = this device never saw the car's server copy
+// (old build / brand-new car) → the server falls back to a plain overwrite.
+const CAR_BASE={};
 function daysInStock(k){
   const c=CARS[k];
   // Prefer a real listing date so the count keeps growing over time.
@@ -2037,7 +2043,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.93';
+const APP_VER='1.2.94';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3456,7 +3462,7 @@ function confirmDeleteCar(){
 function deleteCar(k){
   if(!CARS[k]) return;
   CAR_DELETED[k]=Date.now();
-  delete CARS[k]; delete LISTED_AT[k]; delete CAR_PHOTOS[k]; delete CAR_VIDEOS[k];
+  delete CARS[k]; delete LISTED_AT[k]; delete CAR_PHOTOS[k]; delete CAR_VIDEOS[k]; delete CAR_BASE[k];
   SYNC.cars[k]=CAR_DELETED[k]; jsave('am_dirty_cars',SYNC.cars);
   jsave('am_car_deleted',CAR_DELETED);
   saveCars(); saveListed(); saveEmps();
@@ -4078,6 +4084,25 @@ function saveRecent(){ try{ localStorage.setItem('am_recent',JSON.stringify(RECE
 /* ---- inventory persistence: added cars survive reload (in native app this lives in the app sandbox, not a browser cache) ---- */
 function saveCars(){ try{ localStorage.setItem('am_cars', JSON.stringify(CARS)); }catch(e){} }
 function loadCars(){ try{ const raw=localStorage.getItem('am_cars'); if(raw){ const o=JSON.parse(raw); for(const k in o) CARS[k]=o[k]; } }catch(e){} }
+/* ---- base snapshots: persisted so a reload doesn't lose the merge context ----
+   Without these, the very first edit after an app start would ship no baseData and the
+   server would do a full overwrite — the exact clobber this whole mechanism prevents.
+   Capped at ~1.5MB: car metadata is tiny, but a legacy car may still carry base64
+   inside its `data`, and localStorage dies on a QuotaExceededError. Oldest/largest
+   entries get dropped first; dropping the base only costs one overwrite, never data. */
+function saveCarBases(){
+  let size=0;
+  for(const k in CAR_BASE){ if(Object.prototype.hasOwnProperty.call(CAR_BASE,k)) size += JSON.stringify(CAR_BASE[k]||{}).length; }
+  while(size>1500000){
+    let bk=null, bl=-1;
+    for(const k in CAR_BASE){ if(!Object.prototype.hasOwnProperty.call(CAR_BASE,k)) continue; const l=JSON.stringify(CAR_BASE[k]||{}).length; if(l>bl){ bl=l; bk=k; } }
+    if(bk===null) break;
+    size-=bl; delete CAR_BASE[bk];
+  }
+  try{ localStorage.setItem('am_car_base', JSON.stringify(CAR_BASE)); }catch(e){ try{ localStorage.setItem('am_car_base','{}'); }catch(e2){} }
+}
+function loadCarBases(){ try{ const raw=localStorage.getItem('am_car_base'); if(raw){ const o=JSON.parse(raw); if(o&&typeof o==='object') for(const k in o) CAR_BASE[k]=o[k]; } }catch(e){} }
+function cloneObj(o){ try{ return JSON.parse(JSON.stringify(o)); }catch(e){ return null; } }   // snapshot for the merge base
 /* Is the page opened via a shared car/company deep link? (customer preview mode) */
 function hasSharedLink(){
   try{ const u=new URL(location.href); return !!(u.searchParams.get('ref')||u.searchParams.get('c')||u.searchParams.get('car')||u.searchParams.get('company')); }catch(e){ return false; }
@@ -4089,11 +4114,12 @@ function clearLocalInventory(){
   for(const k in LISTED_AT) delete LISTED_AT[k];
   for(const k in CAR_PHOTOS) delete CAR_PHOTOS[k];
   for(const k in CAR_VIDEOS) delete CAR_VIDEOS[k];
+  for(const k in CAR_BASE) delete CAR_BASE[k];
   for(const k in SALES) delete SALES[k];
   for(const k in OWNERS) delete OWNERS[k];
   for(const k in ALL_EMP) delete ALL_EMP[k];
   SHOWROOMS.length=0;
-  ['am_cars','am_listed','am_car_photos','am_car_photo_ids','am_car_videos','am_emps','am_showrooms','am_dirty_cars','am_dirty_emps','am_car_deleted','am_server_cars','am_since'].forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
+  ['am_cars','am_listed','am_car_photos','am_car_photo_ids','am_car_videos','am_emps','am_showrooms','am_dirty_cars','am_dirty_emps','am_car_deleted','am_server_cars','am_since','am_car_base'].forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
 }
 
 /* ================== cloud sync: one inventory across all devices ==================
@@ -4541,7 +4567,7 @@ async function apiPublic(p,o){
 async function bootstrap(){
   let loaded=false, error=null;
   // 1) local cache first (instant UI)
-  loadCars(); loadListed(); loadEmps(); restoreSession(); loadShowrooms(); loadCarVideos(); loadCarPhotos(); loadShowroomPhotos(); loadMembership(); try{ await refreshMembership(); }catch(e){ console.error('membership refresh failed', e); }
+  loadCars(); loadCarBases(); loadListed(); loadEmps(); restoreSession(); loadShowrooms(); loadCarVideos(); loadCarPhotos(); loadShowroomPhotos(); loadMembership(); try{ await refreshMembership(); }catch(e){ console.error('membership refresh failed', e); }
   // Clear any legacy base64 video cache old builds wrote into localStorage. Photos are now
   // persisted to am_car_photos (see saveCarPhotos), so we must NOT wipe that key on boot.
   try{ localStorage.removeItem('am_car_videos'); }catch(e){}
@@ -4575,7 +4601,7 @@ async function bootstrap(){
   // never re-appear on the homepage / shared link even if an older service-worker
   // served stale JS that lacked the later eviction logic.
   SAMPLE_CAR_IDS.forEach(function(id){
-    if(CARS[id]){ delete CARS[id]; delete LISTED_AT[id]; delete CAR_PHOTOS[id]; delete CAR_VIDEOS[id]; }
+    if(CARS[id]){ delete CARS[id]; delete LISTED_AT[id]; delete CAR_PHOTOS[id]; delete CAR_VIDEOS[id]; delete CAR_BASE[id]; }
     SAVED_CARS.delete(id); // SAVED_CARS is a Set — use delete, not array indexOf/splice
     const ri=RECENT_CARS.indexOf(id); if(ri>=0) RECENT_CARS.splice(ri,1);
     delete SYNC.cars[id]; delete CAR_DELETED[id];
@@ -4724,7 +4750,7 @@ async function bootstrap(){
         // startup pull). Only evict when we are genuinely signed out AND have no
         // cached session AND nothing locally — otherwise a transient failure would
         // mass-delete the owner's cars and force a manual re-sync every refresh.
-        if(!SYNC.token && !loadSession() && Object.keys(CARS).length===0){ for(const id of Object.keys(CARS)){ if(!serverIds.has(id)) delete CARS[id]; } }
+        if(!SYNC.token && !loadSession() && Object.keys(CARS).length===0){ for(const id of Object.keys(CARS)){ if(!serverIds.has(id)){ delete CARS[id]; delete CAR_BASE[id]; } } }
         if(rooms.showrooms && rooms.showrooms.length){
           const serverNames=new Set(rooms.showrooms.map(x=>x.name));
           const localOnly=SHOWROOMS.filter(s=>!serverNames.has(s.name)); // keep user-added locations not yet on server
@@ -5510,6 +5536,7 @@ async function syncNow(silent, withPhotos){
     // pictures still reach the server and appear on shared links.
     const pushIds=new Set();
     const tombSent={};   // carId -> tombstone ids shipped in THIS push (cleared once acked)
+    const sentBase={};   // carId -> the merge base shipped in THIS push
     for(const id in SYNC.cars) pushIds.add(id);
     for(const id of pushIds){
       if(CAR_DELETED[id]){ payload.cars.push({id:id,updatedAt:CAR_DELETED[id],deleted:true}); continue; }
@@ -5534,7 +5561,19 @@ async function syncNow(silent, withPhotos){
       // rows and keeps every photo it hasn't been told about (a teammate's, for one).
       const _tomb=(CAR_PHOTO_TOMBS[id]||[]).slice();
       if(_tomb.length) tombSent[id]=_tomb;
-      payload.cars.push({id:id,updatedAt:SYNC.cars[id]||Date.now(),listedAt:LISTED_AT[id]||null,data:CARS[id],photos:_ph,videos:_vd,photoTombs:_tomb.length?_tomb:undefined,videoTombs:_vts}); }   // always present (may be []) — that presence IS the merge signal
+      // THREE-WAY MERGE: send the version this edit was based on. The server merges
+      // field-by-field, so a teammate's edit to a different field survives. A car this
+      // device never saw (no base) is written wholesale, exactly like older builds.
+      // Photos/videos are synced separately (by identity) and must never ride in the
+      // merge base: a legacy car may still carry base64 inside `data`, and shipping it
+      // on every push would double the payload. Their absence only makes the server
+      // treat those fields as "not mine" → it keeps its own copy, which is correct.
+      const _raw=CAR_BASE[id]?cloneObj(CAR_BASE[id]):null;
+      let _base=null;
+      if(_raw){ delete _raw.photos; delete _raw.videos; delete _raw.photo; delete _raw.video;
+        if(JSON.stringify(_raw).length<200000) _base=_raw; }
+      if(_base) sentBase[id]=_base;
+      payload.cars.push({id:id,updatedAt:SYNC.cars[id]||Date.now(),listedAt:LISTED_AT[id]||null,data:CARS[id],baseData:_base||undefined,photos:_ph,videos:_vd,photoTombs:_tomb.length?_tomb:undefined,videoTombs:_vts}); }   // always present (may be []) — that presence IS the merge signal
     for(const id in SYNC.emps){ const e=ALL_EMP[id]; if(!e) continue;
       payload.employees.push({id:id,updatedAt:SYNC.emps[id],data:e}); }
     // Showrooms go up as the FULL list every time (a company has a handful at most). The
@@ -5550,6 +5589,23 @@ async function syncNow(silent, withPhotos){
       rejected=pr.rejected||[];
       // The server acked the deletions and stored its own copy — this device is done with them.
       for(const tid in tombSent){ clearPhotoTombs(tid); clearVideoTombs(tid); }
+      /* Base bookkeeping. For every car we pushed:
+         · accepted  → what we sent IS what the server stores, so it becomes the new base.
+                       Editing again before the pull comes back then still merges
+                       correctly instead of looking like a conflict.
+         · rejected  → the server did NOT store our version; keeping the stale base would
+                       make the next push merge against a history the server never had,
+                       so drop it and fall back to a plain overwrite. */
+      if(Object.keys(sentBase).length){
+        const bad={};
+        (rejected||[]).forEach(function(r){ if(r&&r.id) bad[r.id]=1; });
+        let n=0;
+        for(const sid in sentBase){
+          if(bad[sid]){ delete CAR_BASE[sid]; n++; }
+          else if(CARS[sid]){ CAR_BASE[sid]=cloneObj(CARS[sid]); n++; }
+        }
+        if(n) saveCarBases();
+      }
       SYNC.cars={}; SYNC.emps={}; jsave('am_dirty_cars',{}); jsave('am_dirty_emps',{});
       CAR_DELETED={}; jsave('am_car_deleted',CAR_DELETED);
       localStorage.removeItem('am_dirty_cars'); localStorage.removeItem('am_dirty_emps');
@@ -5558,10 +5614,15 @@ async function syncNow(silent, withPhotos){
     const wasFull=!(+SYNC.since);   // since=0 → this pull returns the WHOLE company inventory
     const p=await api('/api/pull?photos='+(withPhotos!==false?1:0)+'&since='+SYNC.since);
     let n=0;
+    let baseDirty=false;
     (p.cars||[]).forEach(c=>{
-      if(c.deleted){ delete CARS[c.id]; delete LISTED_AT[c.id]; delete CAR_PHOTOS[c.id]; delete CAR_VIDEOS[c.id]; }
+      if(c.deleted){ delete CARS[c.id]; delete LISTED_AT[c.id]; delete CAR_PHOTOS[c.id]; delete CAR_VIDEOS[c.id]; delete CAR_BASE[c.id]; baseDirty=true; }
       else{
         CARS[c.id]=c.data;
+        // Remember the server's copy as the merge base: the next edit on this device
+        // is then compared against it instead of blindly overwriting the row.
+        const _base=cloneObj(c.data);
+        if(_base){ CAR_BASE[c.id]=_base; baseDirty=true; }
         if(c.listedAt) LISTED_AT[c.id]=c.listedAt;
         if(Array.isArray(c.photos)){
           const srv=[], imap={};
@@ -5577,6 +5638,7 @@ async function syncNow(silent, withPhotos){
       }
       n++;
     });
+    if(baseDirty) saveCarBases();
     /* Showrooms — the server sends the full authoritative list (it hard-deletes, so there
        is no per-row tombstone to merge). Photos live in data.photos as Storage URLs.
        Any local base64 image is still pending upload, so it is kept in front of the
@@ -5603,7 +5665,7 @@ async function syncNow(silent, withPhotos){
     // Belt-and-suspenders: never let a demo/sample car (known seed id) linger in
     // the local cache after a sync — it was cleared on the server but may have
     // missed the deletion event if the sync cursor predated it.
-    SAMPLE_CAR_IDS.forEach(function(id){ if(CARS[id]){ delete CARS[id]; delete LISTED_AT[id]; delete CAR_PHOTOS[id]; delete CAR_VIDEOS[id]; } });
+    SAMPLE_CAR_IDS.forEach(function(id){ if(CARS[id]){ delete CARS[id]; delete LISTED_AT[id]; delete CAR_PHOTOS[id]; delete CAR_VIDEOS[id]; delete CAR_BASE[id]; } });
     // Full pull = authoritative inventory for this company (server wins). Drop local cars that
     // were server-sourced before but are no longer returned (ghosts), while NEVER touching a car
     // created locally that hasn't reached the server yet, or one still queued for push.
@@ -5615,7 +5677,7 @@ async function syncNow(silent, withPhotos){
         if(gotIds.has(id)) return;                         // still on the server → keep
         if(pendingIds.has(id) || CAR_DELETED[id]) return;   // queued locally → keep
         if(SAMPLE_CAR_IDS.indexOf(id)>=0) return;           // seeds are handled just above
-        delete CARS[id]; delete LISTED_AT[id]; delete CAR_PHOTOS[id]; delete CAR_VIDEOS[id];
+        delete CARS[id]; delete LISTED_AT[id]; delete CAR_PHOTOS[id]; delete CAR_VIDEOS[id]; delete CAR_BASE[id];
         purged++;
       });
       SYNC.purged=purged; n+=purged;
@@ -6089,6 +6151,10 @@ function submitNewCar(){
     stock:stock,
     specs:specsArr,hl:hlArr,
     price:{cost:cost||floorA-5000,floorA:floorA||quote-5000,floorB:floorB||floorA+1500,quote:quote}};
+  // Seed the merge base: a brand-new car has no server copy yet, but giving it one means
+  // the very first edit afterwards merges instead of writing over whatever the server
+  // already stored for this id (someone else listing the same variant meanwhile).
+  CAR_BASE[targetKey]=cloneObj(CARS[targetKey]); saveCarBases();
   CAR_PHOTOS[targetKey]=ADMIN_PHOTOS.slice();
   if(ADMIN_VIDEOS.length>0) CAR_VIDEOS[targetKey]=ADMIN_VIDEOS.slice(); else delete CAR_VIDEOS[targetKey];
   saveCarPhotos();
