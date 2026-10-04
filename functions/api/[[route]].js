@@ -1234,6 +1234,25 @@ async function liveAppVersion(origin) {
       // same swallow is why "the audit log is empty" was un-explainable: it looked
       // identical to "nobody failed to sign in". Only runs on ?diag=1 so a routine
       // health probe cannot pollute the log; the probe row is deleted again.
+      // Does upsert REALLY update an existing row? The lock depends on it: with a
+      // counter that only ever inserts, n stays at 1 forever and the eighth failure
+      // never trips the lock. Cheaper to find out here than to watch sign-ins stay open.
+      let upsertCheck = null;
+      if (u.searchParams.get('diag')) {
+        const K = '__diag_upsert__@t';
+        try {
+          try { await sb.from('auth_throttle').delete().eq('k', K); } catch (e0) {}
+          const ins = await sb.from('auth_throttle').insert({ k: K, n: 1, until: null, at: now() });
+          const up = await sb.from('auth_throttle').upsert({ k: K, n: 5, until: null, at: now() });
+          const chk = await sb.from('auth_throttle').select('n').eq('k', K).limit(1);
+          upsertCheck = {
+            insert: ins.error ? { ok: false, code: ins.error.code || '' } : { ok: true },
+            upsert: up.error ? { ok: false, code: up.error.code || '', message: String(up.error.message || up.error) } : { ok: true },
+            nAfter: chk.error ? null : ((chk.data && chk.data[0] && chk.data[0].n) || null),
+          };
+          try { await sb.from('auth_throttle').delete().eq('k', K); } catch (e2) {}
+        } catch (e) { upsertCheck = { error: String((e && e.message) || e) }; }
+      }
       let throttleProbe = null;
       if (u.searchParams.get('diag')) {
         try {
@@ -1343,7 +1362,7 @@ async function liveAppVersion(origin) {
           };
         }
       } catch (e) { tokenHealth = { error: String((e && e.message) || e) }; }
-      return send(200, Object.assign({ ok: true, cars, companies, companiesDetail, supportTable, authTables, throttleProbe, auditWrite, publicContacts: contactCols, publicContactsError: contactColsError, empContacts, empContactsError, tokenHealth }, base));
+      return send(200, Object.assign({ ok: true, cars, companies, companiesDetail, supportTable, authTables, throttleProbe, upsertCheck, auditWrite, publicContacts: contactCols, publicContactsError: contactColsError, empContacts, empContactsError, tokenHealth }, base));
     }
 
     /* login (Supabase Auth) */
