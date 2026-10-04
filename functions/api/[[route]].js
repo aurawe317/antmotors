@@ -435,7 +435,56 @@ async function verifyViaSupabase(email, password) {
     return null;
   }
 }
-async function issueToken(empId, companyId) {
+/* --------------------------------------------------------------------- tokens
+   PHASE 1 (stateless). A session token normally lives in the `tokens` table and every
+   request looks it up. That made the table a SINGLE POINT OF FAILURE: when it was
+   emptied by accident every employee of every company was signed out at once
+   (this really happened). A signed token removes the dependency entirely — the
+   server verifies a signature instead of consulting a database, so nothing in the
+   database can invalidate a login.
+
+   token = base64url(payload) "." base64url(HMAC-SHA256(payload, TOKEN_SECRET))
+   payload = { e: employeeId, c: companyId, x: expiresAtMs }
+
+   Rollback / safety: if TOKEN_SECRET is not configured, everything falls back to
+   the previous table-backed behaviour. Turning the secret off is a complete
+   rollback, and a half-deployed state can never lock everyone out. */
+function tokenSecret(env) { return String((env && env.TOKEN_SECRET) || '').trim(); }
+
+function b64urlFromBytes(bytes) {
+  let bin = '';
+  for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function b64urlToBytes(str) {
+  const pad = '='.repeat((4 - (str.length % 4)) % 4);
+  const bin = atob(String(str).replace(/-/g, '+').replace(/_/g, '/') + pad);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+async function hmacB64url(secret, msg) {
+  const key = await crypto.subtle.importKey('raw', te.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const sig = await crypto.subtle.sign('HMAC', key, te.encode(msg));
+  return b64urlFromBytes(new Uint8Array(sig));
+}
+// Constant-time compare — a plain === leaks the signature through timing.
+function safeEqual(a, b) {
+  const x = String(a || ''), y = String(b || '');
+  if (x.length !== y.length) return false;
+  let diff = 0;
+  for (let i = 0; i < x.length; i++) diff |= x.charCodeAt(i) ^ y.charCodeAt(i);
+  return diff === 0;
+}
+
+async function issueToken(empId, companyId, env) {
+  const secret = tokenSecret(env);
+  if (secret) {
+    const payload = { e: empId, c: companyId, x: now() + TOKEN_TTL_MS };
+    const p = b64urlFromBytes(te.encode(JSON.stringify(payload)));
+    return p + '.' + await hmacB64url(secret, p);
+  }
+  // Fallback: table-backed token (legacy behaviour).
   const token = crypto.randomUUID() + crypto.randomUUID().replace(/-/g, '');
   // The insert result used to be ignored: if the write failed (RLS, missing grants, a
   // full table, …) the client still received a token that the server had never heard
@@ -445,14 +494,36 @@ async function issueToken(empId, companyId) {
   if (error) throw new Error('token_issue_failed: ' + (error.message || error));
   return token;
 }
-async function authOf(req) {
+
+async function authOf(req, env) {
   const h = req.headers.get('authorization') || '';
   const m = h.match(/^Bearer\s+(.+)$/i);
   if (!m) return null;
-  const { data: tk } = await sb.from('tokens').select('emp_id,company_id,expires_at').eq('token', m[1]).maybeSingle();
-  if (!tk) return null;
-  if (tk.expires_at && tk.expires_at < now()) { await sb.from('tokens').delete().eq('token', m[1]); return null; }
-  const { data: e } = await sb.from('employees').select('*').eq('id', tk.emp_id).eq('company_id', tk.company_id).eq('deleted', 0).maybeSingle();
+  const presented = String(m[1] || '');
+  const secret = tokenSecret(env);
+
+  let empId = null, companyId = null;
+  if (secret && presented.includes('.')) {
+    // Stateless path: verify the signature, then honour the embedded expiry.
+    const dot = presented.lastIndexOf('.');
+    const p = presented.slice(0, dot), sig = presented.slice(dot + 1);
+    let expect;
+    try { expect = await hmacB64url(secret, p); } catch (e) { return null; }
+    if (!safeEqual(sig, expect)) return null;
+    let data;
+    try { data = JSON.parse(new TextDecoder().decode(b64urlToBytes(p))); } catch (e) { return null; }
+    if (!data || !data.e || !data.c) return null;
+    if (data.x && now() >= data.x) return null;
+    empId = data.e; companyId = data.c;
+  } else {
+    // Fallback path: table-backed lookup (also serves tokens issued before the secret existed).
+    const { data: tk } = await sb.from('tokens').select('emp_id,company_id,expires_at').eq('token', presented).maybeSingle();
+    if (!tk) return null;
+    if (tk.expires_at && tk.expires_at < now()) { await sb.from('tokens').delete().eq('token', presented); return null; }
+    empId = tk.emp_id; companyId = tk.company_id;
+  }
+
+  const { data: e } = await sb.from('employees').select('*').eq('id', empId).eq('company_id', companyId).eq('deleted', 0).maybeSingle();
   if (!e) return null;
   const emp = stripPw(e.data || {});
   emp.id = e.id; emp.companyId = e.company_id; emp.email = e.email || '';
@@ -1189,7 +1260,7 @@ const base = {
         ? await ensureEmployeeForUser(authUser, companyId, 'boss')
         : { id: emp.id, company_id: companyId, email: emp.email, data: emp.data };
       let token;
-      try { token = await issueToken(fullEmp.id, companyId); }
+      try { token = await issueToken(fullEmp.id, companyId, env); }
       catch (e) {
         return send(500, { error: 'token_issue_failed', detail: 'Signed-in identity is fine, but the server could not store your session token, so the app would sign you straight back out. Check the tokens table: ' + String((e && e.message) || e) });
       }
@@ -1271,7 +1342,7 @@ const base = {
       const { error: empErr } = await sb.from('employees').upsert({ id, company_id: companyId, user_id: authUserId, data, email: email || null, updated_at: now(), deleted: 0 }, { onConflict: 'id,company_id' });
       if (empErr) return send(500, { error: 'employee_create_failed', detail: empErr.message });
       let token;
-      try { token = await issueToken(id, companyId); }
+      try { token = await issueToken(id, companyId, env); }
       catch (e) {
         return send(500, { error: 'token_issue_failed', detail: 'Account created, but the server could not store your session token, so the app would sign you straight back out. Check the tokens table: ' + String((e && e.message) || e) });
       }
@@ -1438,7 +1509,7 @@ const base = {
     }
 
     /* ---- authenticated below ---- */
-    const emp = await authOf(req);
+    const emp = await authOf(req, env);
     if (!emp) return send(401, { error: 'unauthorized' });
 
     /* ---- owner-only: reset a staff member's password -----------------------
