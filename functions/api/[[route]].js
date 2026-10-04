@@ -390,9 +390,19 @@ async function authFail(key) {
   try {
     const { data } = await sb.from('auth_throttle').select('n').eq('k', key).limit(1);
     const n = Number(((data && data[0]) || {}).n || 0) + 1;
+    const row = { k: key, n, until: n >= AUTH_FAIL_LIMIT ? now() + AUTH_LOCK_MS : null, at: now() };
     // Concurrent failures can both read the same n and write n+1; that only ever
     // makes the lock fire one attempt late, never skip it entirely.
-    await sb.from('auth_throttle').upsert({ k: key, n, until: n >= AUTH_FAIL_LIMIT ? now() + AUTH_LOCK_MS : null, at: now() });
+    // onConflict is spelled out on purpose: the key itself contains a "|" (it is
+    // `account|ip`), and PostgREST treats "|" as OR-syntax — letting it infer the
+    // conflict target from the row left the upsert falling back to insert every
+    // time, so the counter stuck at 1 and the eighth failure never locked. The
+    // update below is the belt to that suspenders: if upsert still declines to
+    // refresh the row, force it.
+    const res = await sb.from('auth_throttle').upsert(row, { onConflict: 'k' });
+    if (res && res.error) {
+      await sb.from('auth_throttle').update({ n: row.n, until: row.until, at: row.at }).eq('k', key);
+    }
   } catch (e) { /* counting is best-effort; the audit log still records the attempt */ }
 }
 async function authPass(key) {
@@ -1239,18 +1249,24 @@ async function liveAppVersion(origin) {
       // never trips the lock. Cheaper to find out here than to watch sign-ins stay open.
       let upsertCheck = null;
       if (u.searchParams.get('diag')) {
-        const K = '__diag_upsert__@t';
+        const K0 = '__diag_upsert__@t', K1 = '__diag_upsert__@t|1.2.3.4';
         try {
-          try { await sb.from('auth_throttle').delete().eq('k', K); } catch (e0) {}
-          const ins = await sb.from('auth_throttle').insert({ k: K, n: 1, until: null, at: now() });
-          const up = await sb.from('auth_throttle').upsert({ k: K, n: 5, until: null, at: now() });
-          const chk = await sb.from('auth_throttle').select('n').eq('k', K).limit(1);
-          upsertCheck = {
-            insert: ins.error ? { ok: false, code: ins.error.code || '' } : { ok: true },
-            upsert: up.error ? { ok: false, code: up.error.code || '', message: String(up.error.message || up.error) } : { ok: true },
-            nAfter: chk.error ? null : ((chk.data && chk.data[0] && chk.data[0].n) || null),
+          // Run the same insert/upsert/read cycle twice: once with a plain key and
+          // once with a key containing the "|" that a real throttle key carries.
+          const run = async (K) => {
+            try { await sb.from('auth_throttle').delete().eq('k', K); } catch (e0) {}
+            const ins = await sb.from('auth_throttle').insert({ k: K, n: 1, until: null, at: now() });
+            const up = await sb.from('auth_throttle').upsert({ k: K, n: 5, until: null, at: now() }, { onConflict: 'k' });
+            const chk = await sb.from('auth_throttle').select('n').eq('k', K).limit(1);
+            const out = {
+              insert: ins.error ? { ok: false, code: ins.error.code || '' } : { ok: true },
+              upsert: up.error ? { ok: false, code: up.error.code || '', message: String(up.error.message || up.error) } : { ok: true },
+              nAfter: chk.error ? null : ((chk.data && chk.data[0] && chk.data[0].n) || null),
+            };
+            try { await sb.from('auth_throttle').delete().eq('k', K); } catch (e2) {}
+            return out;
           };
-          try { await sb.from('auth_throttle').delete().eq('k', K); } catch (e2) {}
+          upsertCheck = { plainKey: await run(K0), pipeKey: await run(K1) };
         } catch (e) { upsertCheck = { error: String((e && e.message) || e) }; }
       }
       let throttleProbe = null;
