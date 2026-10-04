@@ -1060,7 +1060,11 @@ async function liveAppVersion(origin) {
   } catch (e) { _verCache.why = 'outer:' + String((e && e.message) || e); }
   return _verCache.val || ('unknown(' + _verCache.why + ')');
 }
-const base = {
+      const base = {
+        // Which session strategy is ACTUALLY in force. Without this you cannot tell
+        // "stateless is working" from "silently fell back to the table" — a missing
+        // secret has no other symptom, it just quietly changes nothing.
+        tokenMode: tokenSecret(env) ? 'stateless' : 'table-fallback',
         build: await liveAppVersion(u.origin),
         commit: (env.CF_PAGES_COMMIT_SHA || '').slice(0, 7) || null,
         now: now(), version: 2, backend: APP_VER,
@@ -1266,7 +1270,7 @@ const base = {
       }
       const co = await companyById(companyId);
       const eObj = stripPw(fullEmp.data || {}); eObj.id = fullEmp.id; eObj.companyId = companyId; eObj.email = fullEmp.email || email;
-      return send(200, { token, employee: eObj, company: await publicCompanyWithDomain(co), mustChangePassword: false });
+      return send(200, { token, tokenMode: tokenSecret(env) ? 'stateless' : 'table-fallback', employee: eObj, company: await publicCompanyWithDomain(co), mustChangePassword: false });
     }
 
     /* register (creates Supabase Auth user + employee + company) */
@@ -1346,7 +1350,7 @@ const base = {
       catch (e) {
         return send(500, { error: 'token_issue_failed', detail: 'Account created, but the server could not store your session token, so the app would sign you straight back out. Check the tokens table: ' + String((e && e.message) || e) });
       }
-      return send(200, { token, employee: Object.assign({ id, companyId, email }, stripPw(data)), company: await publicCompanyWithDomain(company), authWarn });
+      return send(200, { token, tokenMode: tokenSecret(env) ? 'stateless' : 'table-fallback', employee: Object.assign({ id, companyId, email }, stripPw(data)), company: await publicCompanyWithDomain(company), authWarn });
     }
 
     /* public (no auth, company-scoped) */
