@@ -980,14 +980,17 @@ function eqJSON(a, b) {
   const x = a === undefined ? null : a, y = b === undefined ? null : b;
   try { return JSON.stringify(x) === JSON.stringify(y); } catch (e) { return x === y; }
 }
-function mergeCarData(base, incoming, server) {
+function mergeCarData(base, incoming, server, conflicts, carId) {
   try {
     const out = JSON.parse(JSON.stringify(server || {}));
     const b = base || {}, i = incoming || {};
     for (const k of Object.keys(i)) {
       if (eqJSON(i[k], b[k])) continue;               // untouched here → server wins
       if (eqJSON(out[k], b[k])) { out[k] = i[k]; continue; }  // untouched there → take it
-      /* both sides moved this field: leave the server's version in place */
+      /* both sides moved this field: keep the server's version and report it, so the
+         value snapping back on the other device's screen isn't a mystery. Capped so one
+         pathological payload can't inflate the push response. */
+      if (conflicts && conflicts.length < 6) conflicts.push({ id: carId || null, field: k });
     }
     return out;
   } catch (e) {
@@ -996,7 +999,7 @@ function mergeCarData(base, incoming, server) {
 }
 
 async function applyPush(emp, payload) {
-  const applied = [], rejected = [];
+  const applied = [], rejected = [], conflicts = [];   // conflicts = fields both devices edited
   const top = isTop(emp);
   const cid = emp.companyId;
   // 额度（**服务端强制**）：一次取出公司档位与当前用量，循环内复用。
@@ -1043,7 +1046,7 @@ async function applyPush(emp, payload) {
     // "no base" (whole-blob overwrite) rather than "every field is mine".
     const base = (c.baseData && typeof c.baseData === 'object' && !Array.isArray(c.baseData) && Object.keys(c.baseData).length) ? c.baseData : null;
     if (base && cur && !cur.deleted && !c.deleted) {
-      const merged = mergeCarData(base, incoming, cur.data || {});
+      const merged = mergeCarData(base, incoming, cur.data || {}, conflicts, c.id);
       if (merged) dataToWrite = merged;
     }
     if (!top) {
@@ -1146,7 +1149,7 @@ async function applyPush(emp, payload) {
       if (n && !keep.has(n)) await sb.from('showrooms').delete().eq('id', r.id).eq('company_id', cid);
     }
   }
-  return { applied, rejected };
+  return { applied, rejected, conflicts };
 }
 async function pull(since, withPhotos, companyId) {
   const s = +since || 0;
