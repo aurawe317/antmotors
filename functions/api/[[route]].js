@@ -1234,6 +1234,21 @@ async function liveAppVersion(origin) {
       // same swallow is why "the audit log is empty" was un-explainable: it looked
       // identical to "nobody failed to sign in". Only runs on ?diag=1 so a routine
       // health probe cannot pollute the log; the probe row is deleted again.
+      let throttleProbe = null;
+      if (u.searchParams.get('diag')) {
+        try {
+          const tp = await sb.from('auth_throttle').select('k,n,until,at').order('at', { ascending: false }).limit(10);
+          throttleProbe = {
+            // The server's own view of the caller. Included because a key is
+            // account|ip: if the caller's IP rotates, every attempt lands on a fresh
+            // key and the lock can never fire, no matter how correct the counter is.
+            clientIp: String(req.headers.get('cf-connecting-ip') || 'unknown'),
+            table: tp.error ? { ok: false, code: tp.error.code || '' } : { ok: true },
+            rows: tp.error ? null : (tp.data || []).length,
+            keys: tp.error ? null : (tp.data || []).map(r => ({ k: String(r.k).slice(0, 40), n: r.n, until: r.until || null })),
+          };
+        } catch (e) { throttleProbe = { error: String((e && e.message) || e) }; }
+      }
       let auditWrite = null;
       if (u.searchParams.get('diag')) {
         try {
@@ -1328,7 +1343,7 @@ async function liveAppVersion(origin) {
           };
         }
       } catch (e) { tokenHealth = { error: String((e && e.message) || e) }; }
-      return send(200, Object.assign({ ok: true, cars, companies, companiesDetail, supportTable, authTables, auditWrite, publicContacts: contactCols, publicContactsError: contactColsError, empContacts, empContactsError, tokenHealth }, base));
+      return send(200, Object.assign({ ok: true, cars, companies, companiesDetail, supportTable, authTables, throttleProbe, auditWrite, publicContacts: contactCols, publicContactsError: contactColsError, empContacts, empContactsError, tokenHealth }, base));
     }
 
     /* login (Supabase Auth) */
