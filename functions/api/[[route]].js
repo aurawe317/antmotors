@@ -834,18 +834,36 @@ async function videosOf(id, cid) {
   const { data } = await sb.from('videos').select('*').eq('car_id', id).eq('company_id', cid).order('idx', { ascending: true });
   return (data || []).map(r => r.url || r.data).filter(Boolean);
 }
-async function writeVideos(id, arr, cid) {
+// Videos follow the same merge rule as photos, with one simplification: a video file is
+// unique, so tombstones identify the deleted row by VALUE instead of by stable id. A
+// client that sends tombstones at all gets merge semantics; one that sends none keeps the
+// original "replace by value" behaviour (legacy app versions must not regress).
+async function writeVideos(id, arr, cid, tombs) {
   if (!Array.isArray(arr)) return;
   const { data: existing, error: selErr } = await sb.from('videos').select('*').eq('car_id', id).eq('company_id', cid);
   if (selErr) throw new Error('videos_select_failed: ' + (selErr.message || selErr));
   const want = new Set(arr.filter(d => typeof d === 'string'));
-  // Same reconcile rules as writePhotos: drop rows the client no longer wants, plus any
-  // duplicate-value rows beyond the first.
+  // The MERGE trigger is the field being present, not being non-empty: a new client always
+  // sends `videoTombs` (even as []) while a legacy one omits it entirely, and that is the
+  // only way to tell "nothing was deleted" apart from "I'm an old build that replaces".
+  const guarded = Array.isArray(tombs) ? new Set(tombs.filter(v => typeof v === 'string')) : null;
+  const existingRows = existing || [];
   const have = new Set();
   const toRemove = [];
-  for (const r of (existing || [])) {
-    const v = r.url || r.data;
-    if (!want.has(v) || have.has(v)) toRemove.push(r); else have.add(v);
+  if (guarded) {
+    // Merge: keep every video the client did NOT tombstone, even one it never mentions —
+    // that one may belong to a teammate who uploaded it after this client last pulled.
+    for (const r of existingRows) {
+      const v = r.url || r.data;
+      if (guarded.has(v)) toRemove.push(r); else have.add(v);
+    }
+  } else {
+    // Legacy: drop rows the client no longer wants, plus any duplicate-value rows beyond
+    // the first (two rows sharing a value can never be value-matched for deletion).
+    for (const r of existingRows) {
+      const v = r.url || r.data;
+      if (!want.has(v) || have.has(v)) toRemove.push(r); else have.add(v);
+    }
   }
   if (toRemove.length) {
     const idxs = toRemove.map(r => r.idx).filter(v => typeof v === 'number');
@@ -863,6 +881,7 @@ async function writeVideos(id, arr, cid) {
       ? d
       : (await uploadToStorage(d, cid, id, 'video').catch(() => null));
     if (!value) continue;
+    if (guarded && guarded.has(value)) continue;   // tombstoned value must never come back
     if (have.has(value) || seen.has(value)) continue;
     seen.add(value);
     rows.push({ car_id: id, company_id: cid, idx: nextIdx, data: value });
@@ -1005,7 +1024,7 @@ async function applyPush(emp, payload) {
     // Use Array.isArray (not truthy) so an empty array [] — i.e. "user deleted ALL
     // photos" — still reaches writePhotos and actually clears the rows on the server.
     if (Array.isArray(c.photos)) { try { await writePhotos(c.id, c.photos, cid, Array.isArray(c.photoTombs) ? c.photoTombs : null); } catch (e) { rejected.push({ id: c.id, reason: 'photos_' + ((e && e.message) || e) }); } }
-    if (Array.isArray(c.videos)) { try { await writeVideos(c.id, c.videos, cid); } catch (e) { rejected.push({ id: c.id, reason: 'videos_' + ((e && e.message) || e) }); } }
+    if (Array.isArray(c.videos)) { try { await writeVideos(c.id, c.videos, cid, Array.isArray(c.videoTombs) ? c.videoTombs : null); } catch (e) { rejected.push({ id: c.id, reason: 'videos_' + ((e && e.message) || e) }); } }
     applied.push(c.id);
   }
   for (const e of (payload.employees || [])) {
