@@ -348,8 +348,19 @@ function pwStrengthIssue(pw) {
   if (s.length < 8) return { code: 'too_short', detail: 'Password must be at least 8 characters.' };
   if (s.length > 128) return { code: 'too_long', detail: 'Password must be under 128 characters.' };
   if (/^\d+$/.test(s)) return { code: 'digits_only', detail: 'Password cannot be all digits.' };
+  // Checked before the "must mix letters and numbers" rule so that "password" is
+  // told it is a known guess rather than merely missing a digit — "add a number"
+  // invites exactly the fix that lands you one step from "password1". Matched as a
+  // substring, because "password12" is on the same list as "password": an exact
+  // match only guards the spelling, and the suffixes are the ones people reach for.
+  const low = s.toLowerCase();
+  if (PW_WEAK_LIST.some(w => w.length >= 4 && low.includes(w))) return { code: 'weak_common', detail: 'That password is too common — pick something less guessable.' };
   if (!/[a-zA-Z]/.test(s) || !/\d/.test(s)) return { code: 'needs_mixed', detail: 'Password must mix letters and numbers.' };
-  if (PW_WEAK_LIST.includes(s.toLowerCase())) return { code: 'weak_common', detail: 'That password is too common — pick something less guessable.' };
+  // "aaaaaaa1" clears every rule above: long enough, has a letter and a digit, not on
+  // the common list. It is still one letter and a digit. Four different characters is
+  // the floor — low enough not to reject real passwords, high enough to catch the
+  // one-keyboard-key-repeated shape.
+  if (new Set(s.toLowerCase()).size < 4) return { code: 'too_similar', detail: 'That password repeats too few different characters — mix in more variety.' };
   return null;
 }
 
