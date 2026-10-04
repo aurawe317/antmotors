@@ -387,8 +387,9 @@ async function authLocked(key) {
   } catch (e) { return null; }   // table missing / db down -> fail open
 }
 let _authFailErr = null;      // last swallowed failure, surfaced by the ?diag probe
+let _lastFailKey = null;      // the exact key the last failure counted under
 async function authFail(key) {
-  _authFailErr = null;
+  _authFailErr = null; _lastFailKey = key;
   try {
     const { data } = await sb.from('auth_throttle').select('n').eq('k', key).limit(1);
     const n = Number(((data && data[0]) || {}).n || 0) + 1;
@@ -403,6 +404,7 @@ async function authFail(key) {
     // refresh the row, force it.
     const res = await sb.from('auth_throttle').upsert(row, { onConflict: 'k' });
     if (res && res.error) {
+      _authFailErr = 'upsert:' + String((res.error.message || res.error.code || res.error) || '');
       await sb.from('auth_throttle').update({ n: row.n, until: row.until, at: row.at }).eq('k', key);
     }
   } catch (e) { _authFailErr = String((e && e.message) || e); /* counting is best-effort; the audit log still records the attempt */ }
@@ -1282,6 +1284,7 @@ async function liveAppVersion(origin) {
             n: chk.error ? 'select_error' : ((chk.data && chk.data[0] && chk.data[0].n) || null),
             until: chk.error ? null : ((chk.data && chk.data[0] && chk.data[0].until) || null),
             lastAuthFailErr: _authFailErr,
+            lastFailKey: _lastFailKey,   // what a REAL failed sign-in counted under
             key: simKey,
           };
         } catch (e) { upsertCheck = { error: String((e && e.message) || e) }; }
