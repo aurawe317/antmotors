@@ -2056,7 +2056,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.97';
+const APP_VER='1.2.98';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -4193,8 +4193,39 @@ function resolveApiBase(){
 /* membership state (filled after sign-in / register) */
 let MEMBERSHIP={ plan:'', active:true, periodEnd:0, planName:'', planNameEn:'', isPermanent:false };
 let MEMBERSHIP_SIMULATE=false;
-function saveMembership(m){ if(m) MEMBERSHIP=m; localStorage.setItem('am_membership',JSON.stringify(MEMBERSHIP)); }
-function loadMembership(){ try{ const m=JSON.parse(localStorage.getItem('am_membership')||'null'); if(m){ MEMBERSHIP=m; } }catch(e){} }
+function saveMembership(m){
+  if(m) MEMBERSHIP=m;
+  if(window.__MEM_QA) MEMBERSHIP=window.__MEM_QA;   // QA display state always wins
+  // never persist a QA state to disk — the next cold open must fall back to the
+  // account's real membership instead of a fake banner that follows the user around.
+  if(!window.__MEM_QA){ try{ localStorage.setItem('am_membership',JSON.stringify(MEMBERSHIP)); }catch(e){} }
+}
+function loadMembership(){
+  if(window.__MEM_QA) return;
+  try{ const m=JSON.parse(localStorage.getItem('am_membership')||'null'); if(m){ MEMBERSHIP=m; } }catch(e){}
+}
+/* ---- QA switch: ?memqa=trial3 | grace | over | expired -------------------
+   Visual only. The banner states are invisible for a lifetime tenant
+   (isPermanent hides them by design), so there was no way to eyeball them on a
+   phone without touching the database. ?memqa= paints one fake state instead:
+   no writes, no push, no effect on any other tenant. Delete this block when the
+   states stop needing a visual check. */
+(function memQA(){
+  try{
+    const k=/[?&]memqa=(trial3|grace|over|expired)/.exec(location.search||'');
+    if(!k) return;
+    const cap=7;
+    const macList={cars:cap,employees:2,showrooms:1};
+    const states={
+      grace : {trialExpired:true, inGrace:true,  graceDaysLeft:3, daysLeft:0, onTrial:false, expired:false, isPermanent:false, plan:'free',    planName:'Free',    planNameEn:'Free',    freeQuota:cap, quotas:macList, periodEnd:0},
+      over  : {trialExpired:true, inGrace:false, graceDaysLeft:0, daysLeft:0, onTrial:false, expired:false, isPermanent:false, plan:'free',    planName:'Free',    planNameEn:'Free',    freeQuota:cap, quotas:macList, periodEnd:0},
+      trial3: {trialExpired:false,inGrace:false, graceDaysLeft:0, daysLeft:3, onTrial:true,  expired:false, isPermanent:false, plan:'free',    planName:'Free',    planNameEn:'Free',    freeQuota:cap, quotas:macList, periodEnd:0},
+      expired:{trialExpired:false,inGrace:false, graceDaysLeft:0, daysLeft:0, onTrial:false, expired:true,  isPermanent:false, plan:'premium', planName:'Premium', planNameEn:'Premium', freeQuota:cap, quotas:{cars:null,employees:5,showrooms:3}, periodEnd:Date.now()}
+    };
+    const f=states[k[1]];
+    if(f){ window.__MEM_QA=f; MEMBERSHIP=f; }
+  }catch(e){}
+})();
 /* refresh membership state from the server (any signed-in member) */
 async function refreshMembership(){
   if(!SYNC.token){ renderMembershipUI(); return; }
