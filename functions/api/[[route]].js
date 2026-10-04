@@ -387,6 +387,19 @@ async function authLocked(key) {
   } catch (e) { return null; }   // audit unavailable -> count stays low -> fail open
 }
 
+// A successful sign-in clears that account's failures inside the window. Without it,
+// someone who fumbled their password seven times and then got it right would already
+// be one mistake from a lock — a real person punished for a near miss. The cleared
+// rows are the only thing dropped from the audit log; the successful attempt itself
+// is still recorded, and older failures stay.
+async function authPass(key) {
+  try {
+    await sb.from('auth_events').delete()
+      .eq('account', key).eq('event', 'signin').eq('ok', 0)
+      .gte('at', now() - AUTH_LOCK_MS);
+  } catch (e) {}
+}
+
 /* --------------------------------------------------------------------- auth audit
    Every sign-in outcome, good or bad. Writes are fire-and-forget: an audit outage
    must never stop people from working. Requires supabase-schema-auth-audit.sql;
@@ -1444,6 +1457,7 @@ async function liveAppVersion(origin) {
       }
       const co = await companyById(companyId);
       const eObj = stripPw(fullEmp.data || {}); eObj.id = fullEmp.id; eObj.companyId = companyId; eObj.email = fullEmp.email || email;
+      await authPass(failKey);   // clear this account's failures before logging the win
       await logAuthEvent(req, { account, companyId, event: 'signin', ok: true, code: 'ok' });
       return send(200, { token, tokenMode: tokenSecret(env) ? 'stateless' : 'table-fallback', employee: eObj, company: await publicCompanyWithDomain(co), mustChangePassword: false });
     }
