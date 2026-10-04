@@ -386,7 +386,9 @@ async function authLocked(key) {
     return { n: Number(row.n || 0), until };
   } catch (e) { return null; }   // table missing / db down -> fail open
 }
+let _authFailErr = null;      // last swallowed failure, surfaced by the ?diag probe
 async function authFail(key) {
+  _authFailErr = null;
   try {
     const { data } = await sb.from('auth_throttle').select('n').eq('k', key).limit(1);
     const n = Number(((data && data[0]) || {}).n || 0) + 1;
@@ -403,7 +405,7 @@ async function authFail(key) {
     if (res && res.error) {
       await sb.from('auth_throttle').update({ n: row.n, until: row.until, at: row.at }).eq('k', key);
     }
-  } catch (e) { /* counting is best-effort; the audit log still records the attempt */ }
+  } catch (e) { _authFailErr = String((e && e.message) || e); /* counting is best-effort; the audit log still records the attempt */ }
 }
 async function authPass(key) {
   try { await sb.from('auth_throttle').delete().eq('k', key); } catch (e) {}
@@ -1267,6 +1269,21 @@ async function liveAppVersion(origin) {
             return out;
           };
           upsertCheck = { plainKey: await run(K0), pipeKey: await run(K1) };
+          // Drive the REAL authFail() eight times, like a password cracker would, then
+          // read the counter back. This is the only test that exercises the shipped
+          // path end to end; the ad-hoc insert/upsert above can pass while the real
+          // handler still fails.
+          const simKey = authFailKey('__diag_flow__@t', '9.9.9.9');
+          try { await sb.from('auth_throttle').delete().eq('k', simKey); } catch (e0) {}
+          for (let i = 0; i < 8; i++) await authFail(simKey);
+          const chk = await sb.from('auth_throttle').select('n,until').eq('k', simKey).limit(1);
+          try { await sb.from('auth_throttle').delete().eq('k', simKey); } catch (e2) {}
+          upsertCheck.flow = {
+            n: chk.error ? 'select_error' : ((chk.data && chk.data[0] && chk.data[0].n) || null),
+            until: chk.error ? null : ((chk.data && chk.data[0] && chk.data[0].until) || null),
+            lastAuthFailErr: _authFailErr,
+            key: simKey,
+          };
         } catch (e) { upsertCheck = { error: String((e && e.message) || e) }; }
       }
       let throttleProbe = null;
