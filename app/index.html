@@ -537,14 +537,15 @@
   .toast{position:fixed; left:50%; bottom:90px; transform:translateX(-50%) translateY(20px); background:var(--surface); border:1px solid var(--gold-line); color:var(--text); padding:12px 16px; border-radius:10px; font-size:12px; max-width:340px; opacity:0; transition:.25s ease; pointer-events:none; z-index:50; box-shadow:0 12px 30px rgba(0,0,0,.5); line-height:1.5;}
   .toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
 
-  /* membership badge + expiry banner — ONE thin line, never a block.
-     The text must stay a single row: an earlier build let it wrap, which grew
-     the appbar into a big slab. Ellipsis instead; the sheet holds the detail. */
-  .mem-banner{display:flex; align-items:center; justify-content:center; gap:6px; background:linear-gradient(90deg,#5a3a00,#7a5200); color:#ffd87a; font-size:11.5px; font-weight:700; padding:6px 10px; border-radius:8px; margin:0 0 6px; cursor:pointer; border:1px solid #b8841f; white-space:nowrap; overflow:hidden;}
-  .mem-banner::before{content:"⚠"; flex:none;}
-  .mem-banner>span{overflow:hidden; text-overflow:ellipsis;}
-  .mem-banner-soft{background:linear-gradient(90deg,#3a3a00,#4f4a12);border-color:#8a7d2a;}
-  .mem-banner-soft::before{content:"⏳";}
+  /* The old in-appbar banner is gone (it pushed the header down). What is left
+     is ONE dialog per day — these styles are for that dialog, nothing else. */
+  .mem-notice{position:fixed;left:50%;top:50%;z-index:6000;width:min(86%,320px);padding:16px 14px 12px;border-radius:14px;background:var(--surface-2);border:1px solid var(--border);box-shadow:0 18px 44px rgba(0,0,0,.55);opacity:0;pointer-events:none;transform:translate(-50%,-46%) scale(.96);transition:opacity .18s ease, transform .18s ease;text-align:center;}
+  .mem-notice.show{opacity:1;pointer-events:auto;transform:translate(-50%,-50%) scale(1);}
+  .mem-notice .mn-ic{font-size:22px;line-height:1;}
+  .mem-notice .mn-msg{margin:9px 2px 12px;font-size:12.5px;line-height:1.65;color:var(--text);}
+  .mem-notice .mn-row{display:flex;gap:8px;}
+  .mem-notice .mn-row button{flex:1;padding:9px 10px;border-radius:10px;font-size:12px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:transparent;color:var(--text);}
+  .mem-notice .mn-ok{background:linear-gradient(180deg,#c99a2e,#8a6a12);border-color:#b8841f;color:#1a1400;}
   /* 已用/上限 只出现在会员页内部（客户/游客永远看不到），不占 appbar */
   .mem-usage{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin:0 0 8px;padding:6px 9px;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);font-size:11px;color:var(--text-dim);}
   .mem-usage .mu-lbl{font-weight:700;color:var(--text);font-size:11px;letter-spacing:.3px;}
@@ -775,7 +776,6 @@
 <div class="stage">
   <div class="phone" id="phone">
     <div class="appbar" id="appbar">
-      <div id="memBanner" class="mem-banner" style="display:none;" onclick="showMembership(true)"></div>
       <div class="brand">
         <div class="logo"><img id="appLogo" src="ant_logo_appbar.png" alt="Antoto" /></div>
         <div><b id="brandNameFoot">Antoto</b><span data-i18n="tagline">GHANA · CAR EXPORT</span><span id="footVer" style="display:block;font-size:9px;color:var(--gold);opacity:.6;"></span></div>
@@ -2062,7 +2062,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.99';
+const APP_VER='1.2.100';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -4228,8 +4228,8 @@ function qaSet(k, silent){
       f.__qaKey=k; window.__MEM_QA=f; MEMBERSHIP=f;
     } else { delete window.__MEM_QA; }
   }catch(e){}
-  try{ renderMemBanner(); }catch(e){}
   try{ renderMembershipUI(); }catch(e){}
+  try{ memDailyNotice(true); }catch(e){}
   if(!silent && window.__MEM_QA) toast('QA：'+window.__MEM_QA.__qaKey+'（刷新后回到真实状态）');
 }
 function qaTap(){
@@ -4309,43 +4309,68 @@ function memInternalOnly(){
   if(window.__MEM_QA) return true;
   return !!(SYNC.token && curRole && curRole!=='customer');
 }
-function renderMemBanner(){
-  const banner=document.getElementById('memBanner');
-  if(!banner) return;
-  if(!memInternalOnly()){ banner.style.display='none'; return; }
-  const m=MEMBERSHIP||{}, zh=(curLang==='zh');
+/* The banner lived in the appbar and pushed the header down — it read as a slab
+   sitting at the top of the screen. It is gone. What is left is a ONE-TIME
+   dialog on the first open of each day; dismissing it removes it for good.
+   A lifetime member's row still says plan='free', so an older server build
+   reports trialExpired / daysLeft for them — both are guarded below, because
+   service-worker cached clients can't rely on the newest server having run. */
+function memNoticeText(m, zh){
   const cap=(m.freeQuota==null)?0:m.freeQuota;
   const cars=memUsage().cars;
-  let html=null, soft=false;
-  // A lifetime member's row still says plan='free', so an older server build reports
-  // trialExpired / daysLeft for them. Guard here too: service-worker cached clients
-  // can't rely on the newest server having run its fix.
-  // (a lapsed PREMIUM subscription must still show its expired banner)
-  if(m.isPermanent || (m.plan==='premium' && !m.expired)){ banner.style.display='none'; return; }
-  // SHORT on purpose: this is a one-line banner. Full wording lives in the sheet.
-  if(m.expired){
-    html=zh? '会员已过期 · 续费后可继续加车' : 'Membership expired — renew to keep adding cars';
-  } else if(m.trialExpired){
+  if(m.expired) return zh? '会员已过期 · 续费后可继续加车'
+                         : 'Membership expired — renew to keep adding cars';
+  if(m.trialExpired){
     // Grace is a CUSHION, not an unlock — adding stays blocked the whole time,
     // exactly as the owner asked. What grace buys is the seller still showing
     // and selling their existing cars, plus a clear reason why new ones stop.
-    html = m.inGrace
-      ? (zh? '试用已到期 · 宽限还剩 '+(m.graceDaysLeft||0)+' 天 · 已上架照常卖，加新车请升级'
-            : 'Trial ended — '+(m.graceDaysLeft||0)+'d grace left · add cars after upgrade')
-      : (zh? '已达免费额度 '+cars+'/'+cap+' 辆 · 超出的照常卖，加新车请升级'
-            : 'Free plan full ('+cars+'/'+cap+') — upgrade to add more');
-  } else if(m.onTrial && m.daysLeft!=null && m.daysLeft<=3){
-    soft=true;
-    html = zh? '试用还剩 '+m.daysLeft+' 天 · 到期后最多 '+cap+' 辆' : 'Trial ends in '+m.daysLeft+'d · '+cap+' car limit after that';
+    if(m.inGrace) return zh? '试用已到期 · 宽限还剩 '+(m.graceDaysLeft||0)+' 天 · 已上架的车照常展示销售，加新车请先升级'
+                           : 'Trial ended — '+(m.graceDaysLeft||0)+' day(s) of grace left. Listed cars keep selling; upgrade to add new ones';
+    return zh? '已达免费档上限（'+cars+' / '+cap+' 辆）· 超出的车照常展示，加新车请先升级'
+             : 'Free plan full ('+cars+'/'+cap+') — existing cars stay listed, upgrade to add more';
   }
-  if(html==null){ banner.style.display='none'; return; }
-  banner.style.display='flex';
-  banner.className='mem-banner'+(soft?' mem-banner-soft':'');
-  banner.title=html;                       // long text is truncated; hold for the rest
-  banner.innerHTML='<span>'+html+'</span>'; // tapping anywhere opens the plan sheet
+  if(m.onTrial && m.daysLeft!=null && m.daysLeft<=3)
+    return zh? '试用还剩 '+m.daysLeft+' 天 · 到期后免费档只能放 '+cap+' 辆车（你现在 '+cars+' 辆）· 想继续加车请升级'
+             : 'Trial ends in '+m.daysLeft+' day(s) — after that the free plan allows '+cap+' vehicles (you have '+cars+'). Upgrade to keep adding';
+  return null;
+}
+function memNoticeKey(m){
+  if(m.expired) return 'expired';
+  if(m.trialExpired) return m.inGrace?'grace':'over';
+  if(m.onTrial && m.daysLeft!=null && m.daysLeft<=3) return 'trial3';
+  return '';
+}
+function memDailyNotice(force){
+  if(!memInternalOnly()) return;
+  const m=MEMBERSHIP||{};
+  if(m.isPermanent || (m.plan==='premium' && !m.expired)) return;
+  const zh=(curLang==='zh');
+  const text=memNoticeText(m, zh);
+  const key=memNoticeKey(m);
+  if(!text || !key) return;
+  const day=new Date().toDateString();
+  let last=null; try{ last=JSON.parse(localStorage.getItem('am_mem_notice')||'null'); }catch(e){}
+  // once per day per state, unless the QA panel explicitly re-runs it
+  if(!force && last && last.day===day && last.state===key) return;
+  try{ localStorage.setItem('am_mem_notice', JSON.stringify({day:day,state:key})); }catch(e){}
+  const card=document.createElement('div');
+  card.className='mem-notice';
+  card.innerHTML='<div class="mn-ic">'+(key==='trial3'?'⏳':'⚠')+'</div>'
+    +'<div class="mn-msg">'+text+'</div>'
+    +'<div class="mn-row"><button class="mn-late" onclick="showMembership(true);memCloseNotice()">'
+      +(zh?'升级 / 管理':'Upgrade / manage')+'</button>'
+    +'<button class="mn-ok" onclick="memCloseNotice()">'+(zh?'知道了':'Got it')+'</button></div>';
+  document.body.appendChild(card);
+  card.addEventListener('click', function(ev){ if(ev.target===card) memCloseNotice(); });
+  setTimeout(function(){ card.classList.add('show'); },30);
+}
+function memCloseNotice(){
+  const card=document.getElementById('memNotice');
+  if(!card) return;
+  card.classList.remove('show');
+  setTimeout(function(){ if(card.parentNode) card.remove(); },200);
 }
 function renderMembershipUI(){
-  renderMemBanner();
   const grp=document.getElementById('companyGroup');
   const badge=document.getElementById('memBadge');
   const info=document.getElementById('memInfo');
@@ -4846,6 +4871,8 @@ async function bootstrap(){
     // Membership refresh must NEVER block the car load / account resolution above.
     try{ await refreshMembership(); }catch(e){ console.error('membership refresh failed', e); }
   }
+  // First open of the day: one membership notice — dismissible, never in the appbar.
+  setTimeout(function(){ try{ memDailyNotice(); }catch(e){ console.error('mem notice failed', e); } }, 900);
 
   // 3) public API for customers / unconfigured staff preview
   // For an OWN authenticated app (signed in, no shared ?ref) the inventory already came
