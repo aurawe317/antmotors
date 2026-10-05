@@ -689,14 +689,21 @@ async function uploadToStorage(dataUrl, cid, carId, kind) {
 // photo durable the moment it is uploaded; writePhotos later de-dupes by value so no row is doubled.
 async function persistPhoto(cid, carId, url) {
   if (!carId || carId === 'unknown') return;   // can't attach without a real car id
-  try {
-    const { data: existing } = await sb.from('photos').select('idx').eq('car_id', carId).eq('company_id', cid);
-    const nextIdx = (existing || []).reduce((m, r) => Math.max(m, (r.idx || 0) + 1), 0);
-    const { error } = await sb.from('photos').insert({ car_id: carId, company_id: cid, idx: nextIdx, data: url });
-    if (error && !/duplicate|unique/i.test(error.message || '')) {
-      console.error('persistPhoto insert failed (non-fatal):', error.message || error);
-    }
-  } catch (e) { /* non-fatal: the push path still reconciles later */ }
+  // The batch uploader fires ~3 of these at once, so two of them can read the same nextIdx.
+  // Bump past the collision instead of letting the row (and its photo) go missing; the push
+  // path reconciles by value anyway, so a stray row would only ever be a duplicate.
+  for (let attempt = 0; attempt < 4; attempt++) {
+    try {
+      const { data: existing } = await sb.from('photos').select('idx').eq('car_id', carId).eq('company_id', cid);
+      const nextIdx = (existing || []).reduce((m, r) => Math.max(m, (r.idx || 0) + 1), 0);
+      const { error } = await sb.from('photos').insert({ car_id: carId, company_id: cid, idx: nextIdx, data: url });
+      if (!error) return;
+      if (!/duplicate|unique|23505/i.test(error.message || '')) {
+        console.error('persistPhoto insert failed (non-fatal):', error.message || error);
+        return;
+      }
+    } catch (e) { /* non-fatal: the push path still reconciles later */ return; }
+  }
 }
 // Remove a car's media both from the DB (photos/videos rows) and from Storage (the physical
 // files). Used on car deletion and on orphan cleanup so files never linger as orphans in the bucket.
