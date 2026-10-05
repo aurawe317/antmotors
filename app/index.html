@@ -1785,7 +1785,7 @@ const I18N = {
       addPhoto:"+ Photo",directions:"Directions",inStock:"in stock",cond_NEW:"New",cond_USED:"Used",syncDiag:"Sync diagnostics",
       bookSent:"🔔 Booking sent to {n} · they'll WhatsApp you at {p}",atLbl:"at",shoppingWith:"You're shopping with",shareAttr:"Share link now attributes to",
       favSavedToast:"Saved! Tap ♡ in top bar to view",favRemoved:"Removed from saved",msgPlaceholder:"I'd like to see the car and discuss the deal.",
-      uploading:"Uploading photos",syncRejPhotoFail:"upload failed, kept locally",selN:"Selected {n} photos · cropping…",selSkip:"Skipped {s} of {n} picks (unsupported image format)",cropApplyAll:"Same crop for the other {n}",photoUp:"Photo uploaded for",photosUp:"Photos added",noPermPhoto:"Your role cannot upload photos.",dirTo:"Directions to",
+      uploading:"Uploading photos",syncRejPhotoFail:"upload failed, kept locally",selN:"Selected {n} photos · cropping…",selSkip:"Skipped {s} of {n} picks (unsupported image format)",cropApplyAll:"Same crop for {n} more",cropTitle:"Adjust photo",photoUp:"Photo uploaded for",photosUp:"Photos added",noPermPhoto:"Your role cannot upload photos.",dirTo:"Directions to",
       moreCars:"More cars",
       markSold:"Mark as sold",markAvail:"Mark as available",deleteCar:"Delete this car",delConfirm:"Delete this car? This cannot be undone and syncs to all devices.",markedSold:"Marked as sold",markedAvail:"Marked as available",carDeleted:"Car deleted",sold:"SOLD",goneTitle:"This vehicle is no longer available",goneSoldTitle:"This vehicle has been sold",goneSeeOthers:"See other cars",del:"Delete",delSelf:"You cannot remove your own account",delDone:"Removed",delEmpConfirm:"Remove employee {n}? This cannot be undone and syncs to all devices.",delNotFound:"That employee is not in this company or was already removed",
       pvTitle:"🎛 Preview Role · Share Link",pvHint:"Switch the viewer role and the assigned sales — the same car updates its price and contact. Boss, Partner A & Partner B see cost + full edit; Manager & Sales A can upload photos on the detail page; the share link carries the sales ref so customers reach the right person.",
@@ -1833,7 +1833,7 @@ const I18N = {
       addPhoto:"+ 照片",directions:"导航",inStock:"在库",cond_NEW:"新车",cond_USED:"二手车",syncDiag:"同步诊断",
       bookSent:"🔔 预约已发给 {n} · 将通过 WhatsApp 联系您：{p}",atLbl:"于",shoppingWith:"您正在与",shareAttr:"分享链接现归属于",
       favSavedToast:"已收藏！点击顶部 ♡ 查看",favRemoved:"已取消收藏",msgPlaceholder:"我想看车并谈谈价格。",
-      uploading:"正在上传照片",syncRejPhotoFail:"上传失败，已保留在本地",selN:"已选 {n} 张照片，正在裁剪…",selSkip:"选的 {n} 张里有 {s} 张不是受支持的图片格式，已跳过",cropApplyAll:"其余 {n} 张同裁法",photoUp:"已上传照片：",photosUp:"已添加照片",noPermPhoto:"您的角色不能上传照片。",dirTo:"导航至",
+      uploading:"正在上传照片",syncRejPhotoFail:"上传失败，已保留在本地",selN:"已选 {n} 张照片，正在裁剪…",selSkip:"选的 {n} 张里有 {s} 张不是受支持的图片格式，已跳过",cropApplyAll:"其余 {n} 张同裁",cropTitle:"调整照片",photoUp:"已上传照片：",photosUp:"已添加照片",noPermPhoto:"您的角色不能上传照片。",dirTo:"导航至",
       moreCars:"更多车辆",
       markSold:"标记为已售",markAvail:"标记为在售",deleteCar:"删除此车辆",delConfirm:"确定删除这辆车吗？此操作不可撤销，并将同步到所有设备。",markedSold:"已标记为已售",markedAvail:"已标记为在售",carDeleted:"车辆已删除",sold:"已售",goneTitle:"该车辆已不再提供",goneSoldTitle:"该车辆已售出",goneSeeOthers:"查看其它车辆",del:"删除",delSelf:"不能删除你自己的账号",delDone:"已删除",delEmpConfirm:"确定删除该员工 {n} 吗？此操作不可撤销，并将同步到所有设备。",delNotFound:"该员工不在当前公司，或已被删除",
       pvTitle:"🎛 预览身份 · 分享链接",pvHint:"切换查看角色与指派销售——同一辆车会按角色显示不同价格与联系方式。老板、合伙人A、合伙人B 可见成本与全部编辑权限；店长与销售A 可在详情页上传照片；分享链接携带销售 ref，客户由此联系到对应销售。",
@@ -6958,7 +6958,7 @@ if('serviceWorker' in navigator){
   <div class="crop-overlay" id="cropOverlay" style="display:none;">
     <div class="crop-modal">
       <div class="crop-head">
-        <span id="cropTitle">Adjust photo</span>
+        <span id="cropTitle" data-i18n="cropTitle">Adjust photo</span>
         <button class="crop-x" onclick="closeCropper(false)">✕</button>
       </div>
       <div class="crop-stage" id="cropStage">
