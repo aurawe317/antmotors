@@ -818,17 +818,27 @@ async function writePhotos(id, arr, cid, tombs) {
   const haveById = new Map(keep.map(r => [r.idx, r.url || r.data]));
   const haveVals = new Set(keep.map(r => r.url || r.data));
   let nextIdx = existingRows.reduce((m, r) => Math.max(m, (r.idx || 0) + 1), 0);
+  // A tombstone marks "a row that no longer exists". Reusing that index for a brand-new
+  // photo would be harmless — EXCEPT that the tomb check below used to skip the write, so
+  // every fresh upload landing on a dead index silently vanished. Skip dead indices up front
+  // instead; this is what makes "delete a photo, then add a new one" keep working.
+  while (tombSet.has(nextIdx)) nextIdx++;
   const rows = [];
   const seenVals = new Set();
+  let dropped = 0;
   for (const it of items) {
     // Already a Storage URL → store as-is; otherwise upload the base64 blob and store the
-    // resulting CDN URL in `data` (no separate `url` column needed).
-    const value = /^https?:\/\//.test(it.url) ? it.url : (await uploadToStorage(it.url, cid, id, 'photo').catch(() => null));
-    if (!value || seenVals.has(value)) continue;
+    // resulting CDN URL in `data` (no separate `url` column needed). A blob that cannot be
+    // uploaded is counted and reported back — silently dropping it is how "I uploaded 10
+    // photos, the server kept 1" looked like a sync bug from the outside.
+    const value = /^https?:\/\//.test(it.url) ? it.url
+      : (await uploadToStorage(it.url, cid, id, 'photo').catch((e) => { console.error('photo_upload_failed:', cid, id, (e && e.message) || e); return null; }));
+    if (!value) { dropped++; continue; }   // counted once, here — the catch above must not double it
+    if (seenVals.has(value)) continue;
     seenVals.add(value);
-    // A tombstoned id must never come back — this is what stops a device holding a
-    // pre-deletion photo list from resurrecting a photo someone else deleted.
-    if (it.id !== null && tombSet.has(it.id)) continue;
+    // NOTE: a tombstoned index deliberately does NOT block a write any more. Resurrections
+    // are already handled above — the row is dropped from `keep`/`toRemove` and the client is
+    // told to stop pushing that value. Blocking by index instead only destroyed fresh uploads.
     if (it.id !== null && haveById.has(it.id)) {
       // Row kept by id — refresh its stored value if the client's URL for it changed.
       if (haveById.get(it.id) !== value) {
@@ -842,9 +852,10 @@ async function writePhotos(id, arr, cid, tombs) {
     nextIdx++;
     if (rows.length >= 30) break;
   }
-  if (!rows.length) return;
+  if (!rows.length) return dropped;
   const { error } = await sb.from('photos').insert(rows);
   if (error) throw new Error('photos_insert_failed: ' + (error.message || error));
+  return dropped;
 }
 async function videosOf(id, cid) {
   const { data } = await sb.from('videos').select('*').eq('car_id', id).eq('company_id', cid).order('idx', { ascending: true });
@@ -1089,7 +1100,7 @@ async function applyPush(emp, payload) {
     }
     // Use Array.isArray (not truthy) so an empty array [] — i.e. "user deleted ALL
     // photos" — still reaches writePhotos and actually clears the rows on the server.
-    if (Array.isArray(c.photos)) { try { await writePhotos(c.id, c.photos, cid, Array.isArray(c.photoTombs) ? c.photoTombs : null); } catch (e) { rejected.push({ id: c.id, reason: 'photos_' + ((e && e.message) || e) }); } }
+    if (Array.isArray(c.photos)) { try { const _dropped = await writePhotos(c.id, c.photos, cid, Array.isArray(c.photoTombs) ? c.photoTombs : null); if (_dropped) rejected.push({ id: c.id, reason: 'photos_dropped', dropped: _dropped }); } catch (e) { rejected.push({ id: c.id, reason: 'photos_' + ((e && e.message) || e) }); } }
     if (Array.isArray(c.videos)) { try { await writeVideos(c.id, c.videos, cid, Array.isArray(c.videoTombs) ? c.videoTombs : null); } catch (e) { rejected.push({ id: c.id, reason: 'videos_' + ((e && e.message) || e) }); } }
     applied.push(c.id);
   }
