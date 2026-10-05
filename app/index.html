@@ -1785,7 +1785,7 @@ const I18N = {
       addPhoto:"+ Photo",directions:"Directions",inStock:"in stock",cond_NEW:"New",cond_USED:"Used",syncDiag:"Sync diagnostics",
       bookSent:"🔔 Booking sent to {n} · they'll WhatsApp you at {p}",atLbl:"at",shoppingWith:"You're shopping with",shareAttr:"Share link now attributes to",
       favSavedToast:"Saved! Tap ♡ in top bar to view",favRemoved:"Removed from saved",msgPlaceholder:"I'd like to see the car and discuss the deal.",
-      uploading:"Uploading photos",syncRejPhotoFail:"upload failed, kept locally",photoUp:"Photo uploaded for",photosUp:"Photos added",noPermPhoto:"Your role cannot upload photos.",dirTo:"Directions to",
+      uploading:"Uploading photos",syncRejPhotoFail:"upload failed, kept locally",selN:"Selected {n} photos · cropping…",selSkip:"Skipped {s} of {n} picks (unsupported image format)",cropApplyAll:"Same crop for the other {n}",photoUp:"Photo uploaded for",photosUp:"Photos added",noPermPhoto:"Your role cannot upload photos.",dirTo:"Directions to",
       moreCars:"More cars",
       markSold:"Mark as sold",markAvail:"Mark as available",deleteCar:"Delete this car",delConfirm:"Delete this car? This cannot be undone and syncs to all devices.",markedSold:"Marked as sold",markedAvail:"Marked as available",carDeleted:"Car deleted",sold:"SOLD",goneTitle:"This vehicle is no longer available",goneSoldTitle:"This vehicle has been sold",goneSeeOthers:"See other cars",del:"Delete",delSelf:"You cannot remove your own account",delDone:"Removed",delEmpConfirm:"Remove employee {n}? This cannot be undone and syncs to all devices.",delNotFound:"That employee is not in this company or was already removed",
       pvTitle:"🎛 Preview Role · Share Link",pvHint:"Switch the viewer role and the assigned sales — the same car updates its price and contact. Boss, Partner A & Partner B see cost + full edit; Manager & Sales A can upload photos on the detail page; the share link carries the sales ref so customers reach the right person.",
@@ -1833,7 +1833,7 @@ const I18N = {
       addPhoto:"+ 照片",directions:"导航",inStock:"在库",cond_NEW:"新车",cond_USED:"二手车",syncDiag:"同步诊断",
       bookSent:"🔔 预约已发给 {n} · 将通过 WhatsApp 联系您：{p}",atLbl:"于",shoppingWith:"您正在与",shareAttr:"分享链接现归属于",
       favSavedToast:"已收藏！点击顶部 ♡ 查看",favRemoved:"已取消收藏",msgPlaceholder:"我想看车并谈谈价格。",
-      uploading:"正在上传照片",syncRejPhotoFail:"上传失败，已保留在本地",photoUp:"已上传照片：",photosUp:"已添加照片",noPermPhoto:"您的角色不能上传照片。",dirTo:"导航至",
+      uploading:"正在上传照片",syncRejPhotoFail:"上传失败，已保留在本地",selN:"已选 {n} 张照片，正在裁剪…",selSkip:"选的 {n} 张里有 {s} 张不是受支持的图片格式，已跳过",cropApplyAll:"其余 {n} 张同裁法",photoUp:"已上传照片：",photosUp:"已添加照片",noPermPhoto:"您的角色不能上传照片。",dirTo:"导航至",
       moreCars:"更多车辆",
       markSold:"标记为已售",markAvail:"标记为在售",deleteCar:"删除此车辆",delConfirm:"确定删除这辆车吗？此操作不可撤销，并将同步到所有设备。",markedSold:"已标记为已售",markedAvail:"已标记为在售",carDeleted:"车辆已删除",sold:"已售",goneTitle:"该车辆已不再提供",goneSoldTitle:"该车辆已售出",goneSeeOthers:"查看其它车辆",del:"删除",delSelf:"不能删除你自己的账号",delDone:"已删除",delEmpConfirm:"确定删除该员工 {n} 吗？此操作不可撤销，并将同步到所有设备。",delNotFound:"该员工不在当前公司，或已被删除",
       pvTitle:"🎛 预览身份 · 分享链接",pvHint:"切换查看角色与指派销售——同一辆车会按角色显示不同价格与联系方式。老板、合伙人A、合伙人B 可见成本与全部编辑权限；店长与销售A 可在详情页上传照片；分享链接携带销售 ref，客户由此联系到对应销售。",
@@ -2062,7 +2062,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.102';
+const APP_VER='1.2.103';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3018,34 +3018,44 @@ function cropReset(){
   s.x=s.bx+(s.bw-sw)/2; s.y=s.by+(s.bh-shh)/2;        // re-centre the photo in the frame
   applyCropTransform();
 }
-function closeCropper(apply){
+// Render one crop region (in SOURCE natural pixels, so it is resolution-independent and can be
+// reused verbatim on other photos of a different size) into a JPEG data URL.
+// 1600px / q0.82 matches what the native iOS camera path already ships (width:1600, quality:80).
+// The old 2400px @ q0.9 produced ~1–1.5MB base64 per photo, which is what made a 10-photo upload
+// take 90s+ on a mobile link. Vehicle photos show at ~300px in a grid and ~800px on the detail
+// page, so 1600 still looks sharp.
+function exportCropFromSource(img, sx, sy, sw, sh){
+  const MAXE=1600;
+  let outW=Math.max(1,Math.round(sw)), outH=Math.max(1,Math.round(sh));
+  const longer=Math.max(outW,outH);
+  if(longer>MAXE){ const r=MAXE/longer; outW=Math.round(outW*r); outH=Math.round(outH*r); }
+  const cv=document.createElement('canvas');
+  cv.width=outW; cv.height=outH;
+  const ctx=cv.getContext('2d');
+  ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
+  ctx.fillStyle='#000'; ctx.fillRect(0,0,outW,outH);
+  try{ ctx.drawImage(img, sx, sy, sw, sh, 0, 0, outW, outH); }catch(e){}
+  return cv.toDataURL('image/jpeg',0.82);
+}
+// `silent` closes the overlay without running onCancel — used when a button hands the crop
+// rectangle over to the batch path, which must NOT open the next single cropper.
+function closeCropper(apply, silent){
   const s=_cropState; if(!s){ return; }
   document.getElementById('cropOverlay').style.display='none';
   if(apply){
     const dispScale=s.cover*s.scale;
-    const sx=(s.bx - s.x)/dispScale;
-    const sy=(s.by - s.y)/dispScale;
-    const sw=s.bw/dispScale, sh=s.bh/dispScale;            // crop region in SOURCE natural pixels
-    // Export at the photo's true resolution (cap the long edge so payloads stay sane). This fixes
-    // the previous blur, where the canvas was sized to the ~330px on-screen crop box and then upscaled.
-    // 1600px / q0.82 matches what the native iOS camera path already ships (width:1600,
-    // quality:80). The old 2400px @ q0.9 produced ~1–1.5MB base64 per photo, which is what
-    // made a 10-photo upload take 90s+ on a mobile link. Vehicle photos are shown at ~300px
-    // in a grid and ~800px on the detail page, so 1600 still looks sharp.
-    const MAXE=1600;
-    let outW=Math.max(1,Math.round(sw)), outH=Math.max(1,Math.round(sh));
-    const longer=Math.max(outW,outH);
-    if(longer>MAXE){ const r=MAXE/longer; outW=Math.round(outW*r); outH=Math.round(outH*r); }
-    const cv=document.createElement('canvas');
-    cv.width=outW; cv.height=outH;
-    const ctx=cv.getContext('2d');
-    ctx.imageSmoothingEnabled=true; ctx.imageSmoothingQuality='high';
-    ctx.fillStyle='#000'; ctx.fillRect(0,0,outW,outH);
-    try{ ctx.drawImage(s.img, sx, sy, sw, sh, 0, 0, outW, outH); }catch(e){}
-    const url=cv.toDataURL('image/jpeg',0.82);
-    s.callback(url);
-  } else if(s.onCancel){ s.onCancel(); }
+    s.callback(exportCropFromSource(s.img,
+      (s.bx - s.x)/dispScale, (s.by - s.y)/dispScale,
+      s.bw/dispScale, s.bh/dispScale));
+  } else if(!silent && s.onCancel){ s.onCancel(); }
   _cropState=null;
+}
+function loadImageFromFile(file){
+  return new Promise((res, rej)=>{
+    const fr=new FileReader();
+    fr.onload=ev=>{ const im=new Image(); im.onload=()=>res(im); im.onerror=rej; im.src=ev.target.result; };
+    fr.onerror=rej; fr.readAsDataURL(file);
+  });
 }
 function wireCrop(){
   const stage=document.getElementById('cropStage');
@@ -3184,17 +3194,50 @@ async function appendCarPhotoSingle(dataUrl){
   toast(url ? (T('photoUp','Photo uploaded for')+' <b>'+(CARS[curCar]&&CARS[curCar].name)+'</b>')
             : T('photoPending','Saved locally — will upload when back online'));
 }
-// Crop each file one-by-one through the same 4:3 cropper so every photo is individually
-// adjusted. Export keeps source resolution (a 1600px cap) so clarity matches a single add.
+// Batch path: adjust ONE photo, then hand that same crop rectangle to the rest and upload
+// everything in parallel. The old flow opened the cropper per photo, so 10 photos meant 10
+// decodes and 10 taps "done" before a single byte went up — that was the "it still feels one
+// at a time" complaint, not the upload itself (the upload is now concurrent).
+// Per-photo fine tuning still works: just tap "Apply crop" instead of "same crop for the rest".
+let _batchCrop=null;
+function applyCropToRest(){
+  const s=_cropState;
+  if(!s || !_batchCrop) return;
+  const disp=s.cover*s.scale;
+  // source-pixel rectangle — resolution independent, so it reuses verbatim on photos of a
+  // different size (a 12MP shot and a 2MB Facebook export get the identical framing)
+  const rect={ sx:(s.bx-s.x)/disp, sy:(s.by-s.y)/disp, sw:s.bw/disp, sh:s.bh/disp };
+  const rest=_batchCrop.files, carId=_batchCrop.carId;
+  const first=exportCropFromSource(s.img, rect.sx, rect.sy, rect.sw, rect.sh);
+  // silent close: the batch path must NOT advance to the next single cropper
+  closeCropper(false, true);
+  _batchCrop=null;
+  const btn=document.getElementById('cropApplyAll'); if(btn) btn.style.display='none';
+  const pending=[first];
+  Promise.all(rest.map(async f=>{
+    try{ const im=await loadImageFromFile(f); pending.push(exportCropFromSource(im, rect.sx, rect.sy, rect.sw, rect.sh)); }catch(e){}
+  })).then(()=>uploadCarPhotoBatch(pending, carId));
+}
 function cropCarPhotosSequential(files){
-  const arr=Array.from(files||[]).filter(f=>f && f.type && f.type.indexOf('image/')===0);
+  const arr=pickImageFiles(files);
   if(!arr.length){ toast(T('noPermPhoto','No valid image selected.')); return; }
   const carId=curCar;          // captured once: the user can navigate away while uploads run
+  // Say how many photos the picker actually handed us. On iOS this is worth showing: if it says
+  // "1" after picking ten, the system photo picker — not our code — is the thing capping us.
+  if(arr.length>1) toast(T('selN','Selected {n} photos · cropping…').replace('{n}', arr.length));
   const pending=[];
   let i=0;
   const advance=()=>{
-    if(i>=arr.length){ uploadCarPhotoBatch(pending, carId); return; }
+    if(i>=arr.length){
+      const btn=document.getElementById('cropApplyAll'); if(btn) btn.style.display='none';
+      uploadCarPhotoBatch(pending, carId); return;
+    }
     const f=arr[i++];
+    if(arr.length>1){   // on every photo: "same crop for the remaining N" (falls back fine when touched from photo #3)
+      const btn=document.getElementById('cropApplyAll');
+      if(btn){ btn.style.display=''; btn.textContent=T('cropApplyAll','Same crop for the other {n}').replace('{n}', arr.length-i); }
+      _batchCrop={files:arr.slice(i), carId};
+    }
     openCropper(f, 4/3,
       (dataUrl)=>{ if(dataUrl && isPhotoOK(dataUrl)) pending.push(dataUrl); requestAnimationFrame(advance); },
       ()=>{ requestAnimationFrame(advance); }   // cancel one photo → skip to the next
@@ -3228,11 +3271,25 @@ async function uploadCarPhotoBatch(list, carId, silent){
   const warn = failed ? ' · '+failed+' 张未上传成功，联网后会自动重传' : '';
   toast(T('photosUp','Photos added')+' ('+added+') · <b>'+(CARS[carId]&&CARS[carId].name)+'</b>'+warn);
 }
+// iPhone photos are HEIC, and iOS/Safari can report them with an empty MIME type (or one that
+// isn't plain "image/*"). The old filter dropped every one of those, so picking 10 photos
+// arrived as 1 photo — which took the single-file branch and looked exactly like "it still
+// uploads one at a time" even though the batch path was never entered. Accept anything that
+// isn't obviously non-image; uploadMedia still validates the payload via isPhotoOK.
+function pickImageFiles(list){
+  return Array.from(list||[]).filter(f=>f && (!f.type || f.type.indexOf('image/')===0 || /heic|heif/i.test(f.type||'')));
+}
 function handleCarPhoto(e){
   if(!canUploadCarPhotos()){ toast(T('noPermPhoto','Your role cannot upload photos.')); e.target.value=''; return; }
-  const files=Array.from(e.target.files||[]).filter(f=>f && f.type && f.type.indexOf('image/')===0);
+  const picked=Array.from(e.target.files||[]);
+  const files=pickImageFiles(picked);
   e.target.value='';
-  if(!files.length) return;
+  if(!files.length){ toast(T('noPermPhoto','No valid image selected.')); return; }
+  // Count what the picker really handed us. If iOS silently converted/narrowed the selection
+  // this is the only place it ever becomes visible.
+  const skipped=picked.length-files.length;
+  if(skipped>0) toast(T('selSkip','Skipped {s} of {n} picks (unsupported image format)').replace('{n}', picked.length).replace('{s}', skipped));
+  else if(files.length>1) toast(T('selN','Selected {n} photos · cropping…').replace('{n}', files.length));
   if(files.length===1) openCropper(files[0], 4/3, appendCarPhotoSingle);   // single → 4:3 crop as before
   else cropCarPhotosSequential(files);                                     // many → crop & adjust each in turn
 }
@@ -6914,6 +6971,7 @@ if('serviceWorker' in navigator){
       <div class="crop-hint" data-i18n="cropHint">Drag to reposition · the box keeps the display ratio</div>
       <div class="crop-actions">
         <button class="crop-cancel" onclick="closeCropper(false)" data-i18n="cancel">Cancel</button>
+        <button class="crop-ok" id="cropApplyAll" onclick="applyCropToRest()" style="display:none"></button>
         <button class="crop-ok" onclick="closeCropper(true)" data-i18n="cropApply">Apply crop</button>
       </div>
     </div>
