@@ -2062,7 +2062,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.103';
+const APP_VER='1.2.104';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2921,10 +2921,16 @@ function loadCarPhotos(){ try{
 }catch(e){} }
 // Record that photo id was removed here, so the push can tell the server to delete that
 // ONE row instead of "everything my list doesn't happen to contain".
-function notePhotoTomb(carId, idx){
-  if(typeof idx!=='number' || !isFinite(idx)) return;
+// Accepts the stable row idx (preferred — survives a URL changing) OR the photo URL itself.
+// Any device whose id map is missing must still be able to delete: silently recording nothing
+// here is exactly how "I deleted those test shots, the shared link still shows them" happened
+// (2026-10-05 — a teammate's deletion only took effect on his own phone).
+function notePhotoTomb(carId, idxOrUrl){
+  if(typeof idxOrUrl!=='number' && typeof idxOrUrl!=='string') return;
+  let v=idxOrUrl;
+  if(typeof v==='string'){ const n=(CAR_PHOTO_IDS[carId]||{})[v]; if(typeof n==='number') v=n; }
   const a=CAR_PHOTO_TOMBS[carId]||(CAR_PHOTO_TOMBS[carId]=[]);
-  if(a.indexOf(idx)<0) a.push(idx);
+  if(a.indexOf(v)<0) a.push(v);
   saveCarPhotos();
 }
 // Once the server has confirmed the deletion (it keeps its own copy of the tombstone),
@@ -3354,7 +3360,7 @@ function removeCarVideo(idx){
 
 function removeCarPhoto(idx){
   if(!CAR_PHOTOS[curCar]) return;
-  notePhotoTomb(curCar, (CAR_PHOTO_IDS[curCar]||{})[CAR_PHOTOS[curCar][idx]]);
+  notePhotoTomb(curCar, CAR_PHOTOS[curCar][idx]);
   CAR_PHOTOS[curCar].splice(idx,1);
   if(CAR_PHOTOS[curCar].length===0) CAR_PHOTOS[curCar]=[];
   markCarDirty(curCar);
@@ -3365,7 +3371,7 @@ function removeCarPhoto(idx){
 // somehow stored twice, one tap removes it completely.
 function removeCarPhotoByValue(val){
   if(!CAR_PHOTOS[curCar] || typeof val!=='string') return;
-  notePhotoTomb(curCar, (CAR_PHOTO_IDS[curCar]||{})[val]);
+  notePhotoTomb(curCar, val);
   const arr=CAR_PHOTOS[curCar];
   const out=arr.filter(v=>v!==val);
   if(out.length===arr.length) return;          // nothing matched → no-op
@@ -5919,7 +5925,11 @@ async function syncNow(silent, withPhotos){
           // firing right after an add silently deletes the just-added picture.
           const pend=(pendingIds.has(c.id) && Array.isArray(CAR_PHOTOS[c.id])) ? CAR_PHOTOS[c.id].filter(v=>v && srv.indexOf(v)<0) : [];
           CAR_PHOTOS[c.id]=pend.length ? srv.concat(pend) : srv;
-          CAR_PHOTO_IDS[c.id]=imap;   // a pending local photo simply has no id yet → syncs as new
+          // Merge, never replace: a pull that arrives after the detail page already fetched
+          // the id map must not wipe it, or the next deletion has no idx to tombstone and
+          // quietly only disappears from this device. A pending local photo has no id yet
+          // and simply syncs as new.
+          CAR_PHOTO_IDS[c.id]=Object.assign({}, (CAR_PHOTO_IDS[c.id]||{}), imap);
         }
         if(c.videos && c.videos.length) CAR_VIDEOS[c.id]=c.videos;
       }

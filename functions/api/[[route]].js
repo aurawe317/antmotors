@@ -782,8 +782,12 @@ async function writePhotos(id, arr, cid, tombs) {
     else if (d && typeof d.url === 'string' && d.url) items.push({ id: (typeof d.id === 'number' ? d.id : null), url: d.url });
   }
   const existingRows = existing || [];
-  const tombSet = new Set();
-  for (const t of (Array.isArray(tombs) ? tombs : [])) if (typeof t === 'number' && isFinite(t)) tombSet.add(t);
+  const tombSet = new Set();          // stable row idx (persisted in photos_deleted)
+  const tombVals = new Set();         // photo URL, for a device that never got the id map
+  for (const t of (Array.isArray(tombs) ? tombs : [])) {
+    if (typeof t === 'number' && isFinite(t)) tombSet.add(t);
+    else if (typeof t === 'string' && t) tombVals.add(t);
+  }
   if (!tombSet.size) {
     // Also honour tombstones this car already carries — a teammate deleted that photo an
     // hour ago; a device still holding a pre-deletion list must not push it back.
@@ -800,8 +804,11 @@ async function writePhotos(id, arr, cid, tombs) {
     // tombstone, even if it never mentions it — that row may well belong to a teammate,
     // and "absent from my list" only ever meant "unknown to me".
     if (tombSet.size) await persistPhotoTombs(id, cid, Array.from(tombSet));
-    keep = existingRows.filter(r => !tombSet.has(r.idx));
-    toRemove = existingRows.filter(r => tombSet.has(r.idx));
+    // Both tombstone kinds delete a row: an idx is the durable identity, a URL covers the
+    // device whose map was empty (2026-10-05 — that device's deletions never left its own
+    // phone, so the shared link kept showing photos the user had deleted).
+    keep = existingRows.filter(r => !tombSet.has(r.idx) && !tombVals.has(r.url || r.data));
+    toRemove = existingRows.filter(r => tombSet.has(r.idx) || tombVals.has(r.url || r.data));
   } else {
     // Legacy value path: keep the rows whose value the client still wants, and collapse any
     // duplicate-value rows (two rows sharing a value can never be value-matched for deletion).
