@@ -2065,7 +2065,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.117';
+const APP_VER='1.2.118';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -4713,6 +4713,44 @@ async function qaBackfillThumbs(btn){
   try{ await amBackfillThumbs(); }
   finally{ if(btn){ btn.dataset.busy=''; } }
 }
+/* Auto-finish a half-done backfill. The manual run is a minutes-long job that people
+   navigate away from (that is how the set ended up partial), so when a STAFF device sees
+   only a small tail of photos still missing it quietly generates them in the background
+   and switches covers over once the set is complete. Bounded on purpose: a huge backlog
+   (>80) still needs the deliberate, user-confirmed run. */
+async function amAutoThumbs(){
+  try{
+    if(!SYNC.token) return;
+    if(thumbsOn()) return;                       // covers already on thumbs → nothing to fix
+    const before=await amThumbStatus(false);
+    if(!before || !before.total || before.missing===0 || before.missing>80) return;
+    const targets=[]; const seen=new Set();
+    Object.keys(CAR_PHOTOS||{}).forEach(function(cid){
+      (CAR_PHOTOS[cid]||[]).forEach(function(u){
+        if(typeof u!=='string' || !/^https?:\/\//i.test(u) || /_t\.jpe?g(\?|$)/i.test(u)) return;
+        if(seen.has(u)) return; seen.add(u); targets.push({carId:cid, url:u});
+      });
+    });
+    let made=0;
+    for(let i=0;i<targets.length;i+=2){          // gentle: 2 at a time, pause between batches
+      await Promise.all(targets.slice(i,i+2).map(async function(t){
+        try{
+          let exists=false;
+          try{ const hr=await fetch(thumbUrlOf(t.url),{method:'HEAD'}); exists=hr.ok; }catch(e){}
+          if(exists) return;
+          try{ if(await thumbBackfillOne(t)==='made') made++; }
+          catch(e){ try{ if(await thumbBackfillOne(t)==='made') made++; }catch(e2){} }
+        }catch(e){}
+      }));
+      await new Promise(r=>setTimeout(r,600));
+    }
+    const after=await amThumbStatus(false);
+    if(after && after.total>0 && after.missing===0){
+      try{ localStorage.setItem('am_thumbs_on','1'); }catch(e){}
+      toast('缩略图已补齐（'+made+' 张），图片加载会明显变快');
+    }
+  }catch(e){}
+}
 // QA-panel wrapper for amThumbStatus(): prints a readable verdict under the buttons so
 // there is no guesswork about whether the backfill actually completed.
 async function qaThumbStatus(btn){
@@ -5325,6 +5363,9 @@ async function bootstrap(){
   try{
     refreshMembership().then(()=>{ try{ renderMembershipUI(); }catch(e){} }).catch(e=>console.error('membership refresh failed', e));
   }catch(e){ console.error('membership refresh failed', e); }
+  // Well off the first-paint path: quietly finish a partial thumbnail set if there is only
+  // a small tail left (see amAutoThumbs). Deliberately late so it can never slow an open.
+  try{ setTimeout(function(){ amAutoThumbs(); }, 20000); }catch(e){}
   // capture the ?ref= from a shared link so public list/showroom fetches resolve to the right company
   let shrRef=null; try{ shrRef=new URL(location.href).searchParams.get('ref'); }catch(e){}
 
