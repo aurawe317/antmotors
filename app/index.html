@@ -1834,7 +1834,7 @@ const I18N = {
       rl_customer:"客户（报价）",rl_manager:"店长（全部底价）",rl_salesA:"销售A（底价A）",rl_salesB:"销售B（底价B）",rl_boss:"老板（成本）",rl_partnerA:"合伙人A（成本）",rl_partnerB:"合伙人B（成本）",
       addPhoto:"+ 照片",directions:"导航",inStock:"在库",cond_NEW:"新车",cond_USED:"二手车",syncDiag:"同步诊断",
       bookSent:"🔔 预约已发给 {n} · 将通过 WhatsApp 联系您：{p}",atLbl:"于",shoppingWith:"您正在与",shareAttr:"分享链接现归属于",photosRemovedElsewhere:"其他人已删除 {n} 张照片",
-      emptyBranch:"这个分支暂时没有车。请老板把车辆分配给 <b>{b}</b>，或切换到「全部分支」。",emptyShared:"展厅正在整理中——点下面的 WhatsApp 按钮直接问我们有哪些在库车辆。",syncErrState:"连不上服务器：{m}",allSoldTitle:"车都已售出",allSoldHint:"已售车辆不再挂在展厅列表里，点下面的「已售车辆」查看。",
+      emptyBranch:"这个分支暂时没有车。请老板把车辆分配给 <b>{b}</b>，或切换到「全部分支」。",emptyShared:"展厅正在整理中——点下面的 WhatsApp 按钮直接问我们有哪些在库车辆。",syncErrState:"连不上服务器：{m}",allSoldTitle:"车都已售出",allSoldHint:"已售车辆不再挂在展厅列表里，点下面的「已售车辆」查看。",dlOpenHint:"已在新标签打开这张照片。iPhone 上长按图片 →「存储到照片」。",
       favSavedToast:"已收藏！点击顶部 ♡ 查看",favRemoved:"已取消收藏",msgPlaceholder:"我想看车并谈谈价格。",
       uploading:"正在上传照片",syncRejPhotoFail:"上传失败，已保留在本地",selN:"已选 {n} 张照片，正在裁剪…",selSkip:"选的 {n} 张里有 {s} 张不是受支持的图片格式，已跳过",cropApplyAll:"其余 {n} 张同裁",cropTitle:"调整照片",photoUp:"已上传照片：",photosUp:"已添加照片",noPermPhoto:"您的角色不能上传照片。",dirTo:"导航至",
       moreCars:"更多车辆",
@@ -2065,7 +2065,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.109';
+const APP_VER='1.2.110';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3238,17 +3238,43 @@ function closePhotoViewer(){
   const v=document.getElementById('photoViewer'); if(v) v.style.display='none';
   _pvState=null;
 }
+/* iOS has no dependable <a download> for a blob once the page runs inside the installed
+   app or the Capacitor shell: the click is swallowed and nothing happens. In Safari the
+   same click saves the file to Files. Same phone, same button, two different outcomes —
+   that is why "some people can download and some can't" on nothing but iPhones.
+   So: keep the blob route where it works, and inside the app open the picture in a new
+   tab, where long-press → "Save to Photos" is the one route that actually lands the
+   photo on the phone. */
+function isIOS(){
+  try{ return /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1); }catch(e){ return false; }
+}
+// navigator.standalone = added to Home Screen; window.Capacitor = the native shell.
+function inInstalledIOS(){
+  try{ if(navigator.standalone===true) return true; }catch(e){}
+  try{ if(window.Capacitor||window.CapacitorBridge||window.CapacitorCustomPlatform) return true; }catch(e){}
+  return false;
+}
+function openImageForSave(url){
+  let moved=false;
+  try{ const w=window.open(url,'_blank'); if(w){ moved=true; try{ w.focus(); }catch(e){} } }catch(e){}
+  if(!moved){ try{ location.href=url; moved=true; }catch(e){} }
+  toast(T('dlOpenHint','Opened the photo. On iPhone, long-press it and choose “Save to Photos”.'));
+}
 async function downloadPhoto(){
   if(!_pvState) return;
+  const src=_pvState.src, name=_pvState.name||'photo.jpg';
+  if(isIOS() && inInstalledIOS()){ openImageForSave(src); return; }
   try{
-    const res=await fetch(_pvState.src); const blob=await res.blob();
+    const res=await fetch(src);
+    if(!res.ok) throw new Error('HTTP '+res.status);          // never save an error page as .jpg
+    const blob=await res.blob();
+    if(!blob || !blob.size) throw new Error('empty');
     const url=URL.createObjectURL(blob);
-    const a=document.createElement('a'); a.href=url; a.download=_pvState.name||'photo.jpg';
+    const a=document.createElement('a'); a.href=url; a.download=name;
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(()=>{ try{ URL.revokeObjectURL(url); }catch(e){} },4000);
   }catch(e){
-    // fallback: data: URLs / restrictive browsers
-    const a=document.createElement('a'); a.href=_pvState.src; a.download=_pvState.name||'photo.jpg'; a.click();
+    openImageForSave(src);   // cross-origin without CORS, offline, or a restrictive browser
   }
 }
 function pvApply(){
