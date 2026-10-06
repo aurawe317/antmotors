@@ -1837,6 +1837,7 @@ const I18N = {
       rl_customer:"客户（报价）",rl_manager:"店长（全部底价）",rl_salesA:"销售A（底价A）",rl_salesB:"销售B（底价B）",rl_boss:"老板（成本）",rl_partnerA:"合伙人A（成本）",rl_partnerB:"合伙人B（成本）",
       addPhoto:"+ 照片",directions:"导航",inStock:"在库",cond_NEW:"新车",cond_USED:"二手车",syncDiag:"同步诊断",
       bookSent:"🔔 预约已发给 {n} · 将通过 WhatsApp 联系您：{p}",atLbl:"于",shoppingWith:"您正在与",shareAttr:"分享链接现归属于",photosRemovedElsewhere:"其他人已删除 {n} 张照片",
+      emptyBranch:"这个分支暂时没有车。请老板把车辆分配给 <b>{b}</b>，或切换到「全部分支」。",emptyShared:"展厅正在整理中——点下面的 WhatsApp 按钮直接问我们有哪些在库车辆。",syncErrState:"连不上服务器：{m}",
       favSavedToast:"已收藏！点击顶部 ♡ 查看",favRemoved:"已取消收藏",msgPlaceholder:"我想看车并谈谈价格。",
       uploading:"正在上传照片",syncRejPhotoFail:"上传失败，已保留在本地",selN:"已选 {n} 张照片，正在裁剪…",selSkip:"选的 {n} 张里有 {s} 张不是受支持的图片格式，已跳过",cropApplyAll:"其余 {n} 张同裁",cropTitle:"调整照片",photoUp:"已上传照片：",photosUp:"已添加照片",noPermPhoto:"您的角色不能上传照片。",dirTo:"导航至",
       moreCars:"更多车辆",
@@ -2067,7 +2068,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.105';
+const APP_VER='1.2.106';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2351,9 +2352,36 @@ if(stockSearch) stockSearch.addEventListener('input',e=>{ FILTER.q=e.target.valu
 const homeSearch=document.getElementById('homeSearchInput');
 if(homeSearch) homeSearch.addEventListener('input',e=>{ FILTER.q=e.target.value.trim(); renderHome(); });
 
+// Why the grid is empty, in plain words. A branch-assigned staff member looking at an
+// empty showroom used to be told "enter your server address in Settings", which sends
+// them hunting through the wrong screen while their cars are sitting right there.
+function emptyInventoryHint(){
+  if(isSharedView()) return T('emptyShared','Our showroom is being updated — tap the WhatsApp button below to ask about available vehicles.');
+  // A sync failure must not be reported as "go fill in your server address" — the
+  // address is already saved and tapping Settings there just looks like a dead end.
+  try{ if(SYNC && SYNC.state==='err' && SYNC.msg) return T('syncErrState','Could not reach the server — {m}').replace('{m}',String(SYNC.msg).slice(0,160)); }catch(e){}
+  const mb=myBranch();
+  if(mb && !isTopRole() && branchTaggedCount() && Object.keys(CARS).length) return T('emptyBranch','Nothing here yet — this branch has no cars. Ask the boss to assign cars to <b>{b}</b>, or switch to All branches.');
+  return T('needServer','Please enter your server address in Settings to load inventory.');
+}
+// Is this dealer actually tagging cars with a branch? Branch scoping is a real feature,
+// but until a single car carries a branch it has nothing to scope BY — and applying it
+// anyway showed every branch-assigned manager/sales an EMPTY showroom, which reads as
+// "the sync didn't bring my cars". Self-healing: the moment cars start carrying a
+// branch, scoping turns itself back on.
+// NOTE: deliberately NOT cached. A cache seeded while CARS was still empty would
+// pin the answer to "no cars carry a branch" for the whole session and silently
+// blank every branch-scoped staff member's showroom. The scan is O(cars) and
+// matchCar runs it once per car — with tens of cars that is nothing.
+function branchTaggedCount(){
+  let n=0;
+  for(const k in CARS){ const c=CARS[k]; if(c && c.loc && c.loc.name) n++; }
+  return n>0;
+}
 function matchCar(k){
   const c=CARS[k];
-  const mb=myBranch(); if(mb && !isTopRole() && (!c.loc||c.loc.name!==mb)) return false;
+  const mb=myBranch();
+  if(mb && !isTopRole() && branchTaggedCount() && (!c.loc||c.loc.name!==mb)) return false;
   const sec = FILTER.section!=='all' ? FILTER.section : FILTER.cond;
   if(sec && sec!=='all' && c.cond!==sec) return false;
   if(FILTER.brand!=='all' && c.brand!==FILTER.brand) return false;
@@ -2458,7 +2486,12 @@ function renderStock(){
   else if(s==='priceDesc') ks.sort((a,b)=>CARS[b].price.quote-CARS[a].price.quote);
   else if(s==='newest') ks.sort((a,b)=>new Date(LISTED_AT[b])-new Date(LISTED_AT[a]));
   else if(s==='oldest') ks.sort((a,b)=>new Date(LISTED_AT[a])-new Date(LISTED_AT[b]));
-  if(ks.length===0){ g.innerHTML='<div class="empty-state" style="grid-column:1/-1;"><div class="ic">🔍</div><div class="ti">'+T('noMatch','No cars match your filters.')+'</div></div>'; return; }
+  if(ks.length===0){
+    const anyCar=Object.keys(CARS).length>0;
+    const hint=(anyCar&&!isSharedView())?emptyInventoryHint().replace('{b}',myBranch()||''):'';
+    g.innerHTML='<div class="empty-state" style="grid-column:1/-1;"><div class="ic">🔍</div><div class="ti">'+(hint?T('noCars','No cars available'):T('noMatch','No cars match your filters.'))+'</div>'+(hint?'<div class="sub">'+hint+'</div>':'')+'</div>';
+    return;
+  }
   ks.forEach(k=>g.appendChild(carCard(k)));
   lazyPhotoObserve(); // stream each visible car's photo in on demand
 }
@@ -2467,7 +2500,7 @@ function renderHome(){
   populateFilterSelects();
   const grid=document.getElementById('homeGrid'); grid.innerHTML="";
   const homeKeys=Object.keys(CARS).filter(matchCar);
-  if(homeKeys.length===0){ const emptyMsg=isSharedView()?T('emptyShared','Our showroom is being updated — tap the WhatsApp button below to ask about available vehicles.'):T('needServer','Please enter your server address in Settings to load inventory.'); grid.innerHTML='<div class="empty-state" style="grid-column:1/-1;"><div class="ic">🚗</div><div class="ti">'+T('noCars','No cars available')+'</div><div class="sub">'+emptyMsg+'</div></div>'; }
+  if(homeKeys.length===0){ const emptyMsg=emptyInventoryHint().replace('{b}',myBranch()||''); grid.innerHTML='<div class="empty-state" style="grid-column:1/-1;"><div class="ic">🚗</div><div class="ti">'+T('noCars','No cars available')+'</div><div class="sub">'+emptyMsg+'</div></div>'; }
   homeKeys.forEach(k=>{ grid.appendChild(carCard(k)); });
   // Featured cars now live in the big hero carousel (see renderHeroCarousel) — no separate section below.
   renderHeroCarousel();
@@ -2608,7 +2641,12 @@ function renderStockFiltered(){
   else if(s==='priceDesc') ks.sort((a,b)=>CARS[b].price.quote-CARS[a].price.quote);
   else if(s==='newest') ks.sort((a,b)=>new Date(LISTED_AT[b])-new Date(LISTED_AT[a]));
   else if(s==='oldest') ks.sort((a,b)=>new Date(LISTED_AT[a])-new Date(LISTED_AT[b]));
-  if(ks.length===0){ g.innerHTML='<div class="empty-state" style="grid-column:1/-1;"><div class="ic">🔍</div><div class="ti">'+T('noMatch','No cars match your filters.')+'</div></div>'; return; }
+  if(ks.length===0){
+    const anyCar=Object.keys(CARS).length>0;
+    const hint=(anyCar&&!isSharedView())?emptyInventoryHint().replace('{b}',myBranch()||''):'';
+    g.innerHTML='<div class="empty-state" style="grid-column:1/-1;"><div class="ic">🔍</div><div class="ti">'+(hint?T('noCars','No cars available'):T('noMatch','No cars match your filters.'))+'</div>'+(hint?'<div class="sub">'+hint+'</div>':'')+'</div>';
+    return;
+  }
   ks.forEach(k=>g.appendChild(carCard(k)));
   lazyPhotoObserve(); // stream each visible car's photo in on demand
 }
@@ -2783,6 +2821,22 @@ function canEditPrices(){ return isTopRole(); }
    "shopping with <salesperson>" line only for genuine customer / shared-link views.
    (renderAttrBanner must NOT write #attrText — that is what caused the
    "Kwame" flash and the Me-tab staying on Kwame.) */
+/* Who the "Shopping with …" line must name.
+   A signed-in STAFF member (sales / manager / partner / boss) must see THEMSELVES.
+   The old code swapped any non-top account for the first owner found in ALL_EMP, so a
+   salesperson's home screen read "Shopping with <boss>" while their Me tab said their
+   own name — which looked exactly like "the app is signed in as the boss".
+   Falling back to a top-tier account is kept ONLY for a genuine shopper account
+   (tier 'customer') or an id that is not in the roster yet — that is the original
+   customer/demo behaviour and is still the right thing there. */
+function attrEmployee(id){
+  const _id=(id||curEmployee||'');
+  const e=empOf(_id);
+  if(e && (!e.tier || e.tier!=='customer')) return e;
+  for(const k of Object.keys(ALL_EMP)){ const x=empOf(k); if(x&&['boss','partnerA','partnerB'].includes(x.tier)) return x; }
+  return e||null;
+}
+function empBranchLabel(e){ if(!e) return ''; return (curLang==='zh'&&I18N.zh.branch&&I18N.zh.branch[e.branch])?I18N.zh.branch[e.branch]:(e.branch||''); }
 function updateAttrBanner(){
   const b=document.getElementById('attrBanner'), t=document.getElementById('attrText'); if(!b||!t) return;
   // The "shopping with <rep>" bar is for public/customer browsing. On the owner's own
@@ -2807,14 +2861,13 @@ function updateAttrBanner(){
     return;
   }
   b.style.display='';
-  let meId=curEmployee;
-  // If the loaded employee is a low-tier account (sales/customer),
-  // walk ALL_EMP for the first owner-level account available.
-  const e0=empOf(meId); if(e0&&!['boss','partnerA','partnerB'].includes(e0.tier)){ for(const id of Object.keys(ALL_EMP)){ const x=empOf(id); if(x&&['boss','partnerA','partnerB'].includes(x.tier)){ meId=id; break; } } }
-  // Also check the am_me token in case login saved a top-tier ID directly
-  try{ const m=JSON.parse(localStorage.getItem('am_me')||'null'); if(m&&m.tier&&['boss','partnerA','partnerB'].includes(m.tier)) meId=m.id||meId; }catch(e){}
-  const e=empOf(meId); const ename=e.name||meId||'';
-  t.innerHTML=T('shoppingAs','Shopping with')+' <b>'+ename+'</b>';
+  // A login may have cached a top-tier id in am_me — prefer it when the roster knows it.
+  let who=curEmployee;
+  try{ const m=JSON.parse(localStorage.getItem('am_me')||'null'); if(m&&m.id&&empKnown(m.id)) who=m.id; }catch(e){}
+  const e=attrEmployee(who);
+  const ename=(e&&e.name)||who||'';
+  const ebr=empBranchLabel(e);
+  t.innerHTML=T('shoppingAs','Shopping with')+' <b>'+ename+'</b>'+(ebr?' · '+ebr:'');
 }
 /* Branch-scoped checks: non-top roles can only operate on cars/showrooms in their assigned branch,
    unless their branch is empty (unassigned), in which case they have no branch access. */
@@ -3900,7 +3953,8 @@ function renderMe(){
   const loggedIn=isSignedIn();
   const e=(typeof empOf==='function'? (empOf(curEmployee)||{}) : {});
   const co=(typeof loadCompany==='function')?loadCompany():null;
-  let en=e; if(en&&!['boss','partnerA','partnerB'].includes(en.tier)){ for(const id of Object.keys(ALL_EMP)){ const x=empOf(id); if(x&&['boss','partnerA','partnerB'].includes(x.tier)){ en=x; break; } } }
+  let en=e; // the account named by the "Shopping with …" line — see attrEmployee():
+  // a signed-in staff member must be named themselves, only shoppers fall back to the boss.
   // Never paint the literal "Boss" placeholder as the account name. Prefer the signed-in
   // employee's real name; fall back to the cached session name; never to the fake "Boss".
   const sess=loadSession();
@@ -3951,7 +4005,7 @@ function renderMe(){
       const b=document.getElementById('coCodeTxt'); if(b) b.textContent=co.code||'';
       const bt=document.getElementById('coBioTxt'); if(bt) bt.textContent=co.bio||'';
       const cs=document.getElementById('coShopping');
-      if(cs){ let e=empOf(curEmployee); if(e&&!['boss','partnerA','partnerB'].includes(e.tier)){ for(const id of Object.keys(ALL_EMP)){ const x=empOf(id); if(x&&['boss','partnerA','partnerB'].includes(x.tier)){ e=x; break; } } } const eb=(curLang==='zh'&&I18N.zh.branch&&I18N.zh.branch[e.branch])?I18N.zh.branch[e.branch]:e.branch; cs.innerHTML=T('shoppingAs','Shopping with')+' <b>'+e.name+'</b>'+(eb?' · '+eb:''); }
+      if(cs){ const ea=attrEmployee(); const eb=empBranchLabel(ea); cs.innerHTML=T('shoppingAs','Shopping with')+' <b>'+((ea&&ea.name)||'')+'</b>'+(eb?' · '+eb:''); }
       const be=document.getElementById('coEditBio'); if(be) be.value=co.bio||'';
       const limg=document.getElementById('coLogoImg'); if(limg) limg.src = co.logo || 'ant_logo_appbar.png';
       const eb=document.getElementById('coEditBox'); if(eb) eb.style.display='none';
