@@ -2065,7 +2065,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.113';
+const APP_VER='1.2.114';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -4616,14 +4616,27 @@ function qaTap(){
     const cur=(window.__MEM_QA&&window.__MEM_QA.__qaKey)||'';
     const box=document.createElement('div');
     box.id='qaShell'; box.className='qa-shell';
-    box.innerHTML='<b>QA · 会员状态预览</b>'
+    box.innerHTML='<b>QA · 会员状态预览 / 维护工具</b>'
       +[['trial3','试用剩 3 天'],['grace','宽限中'],['over','已超额'],['expired','已过期']]
         .map(function(x){ return '<button class="qa-btn'+(cur===x[0]?' on':'')+'" onclick="qaSet(\''+x[0]+'\')">'+x[1]+'</button>'; }).join('')
-      +'<button class="qa-btn ghost" onclick="qaSet(\'\')">恢复真实</button>';
+      +'<button class="qa-btn ghost" onclick="qaSet(\'\')">恢复真实</button>'
+      // One-off maintenance: generate the missing 480px thumbs for photos uploaded
+      // before v1.2.113. Boss-only in practice (the upload API needs a staff token)
+      // and safe to re-run — existing thumbs are skipped.
+      +'<button class="qa-btn ghost" onclick="qaBackfillThumbs(this)">生成历史缩略图</button>';
     document.body.appendChild(box);
     return;
   }
   toast('再点 '+(5-__qaTaps)+' 次打开 QA 面板');
+}
+// QA-panel wrapper for amBackfillThumbs(): confirms first, disables the button while the
+// backfill runs (it downloads every original — minutes of network work), re-enables after.
+async function qaBackfillThumbs(btn){
+  if(!SYNC.token){ toast('请先用老板账号登录，再运行缩略图回填'); return; }
+  if(btn){ if(btn.dataset.busy==='1') return; btn.dataset.busy='1'; }
+  if(!confirm('开始为所有历史照片生成缩略图？（会下载每张原图，需要几分钟，请保持页面打开；已生成过的会自动跳过）')){ if(btn) btn.dataset.busy=''; return; }
+  try{ await amBackfillThumbs(); }
+  finally{ if(btn){ btn.dataset.busy=''; } }
 }
 /* ---- QA switch: ?memqa=trial3 | grace | over | expired -------------------
    Visual only. The banner states are invisible for a lifetime tenant
