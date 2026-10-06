@@ -2065,7 +2065,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.111';
+const APP_VER='1.2.112';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -4389,7 +4389,7 @@ function clearLocalInventory(){
   for(const k in OWNERS) delete OWNERS[k];
   for(const k in ALL_EMP) delete ALL_EMP[k];
   SHOWROOMS.length=0;
-  ['am_cars','am_listed','am_car_photos','am_car_photo_ids','am_car_videos','am_emps','am_showrooms','am_dirty_cars','am_dirty_emps','am_car_deleted','am_server_cars','am_since','am_car_base'].forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
+  ['am_cars','am_listed','am_car_photos','am_car_photo_ids','am_car_videos','am_emps','am_showrooms','am_dirty_cars','am_dirty_emps','am_car_deleted','am_server_cars','am_since','am_car_base','am_shared_co'].forEach(k=>{ try{ localStorage.removeItem(k); }catch(e){} });
 }
 
 /* ================== cloud sync: one inventory across all devices ==================
@@ -5053,11 +5053,19 @@ async function bootstrap(){
   if(!loadSession()){
     try{ const raw=localStorage.getItem('am_me'); if(raw){ let id=raw; try{ const m=JSON.parse(raw); if(m&&m.id) id=m.id; }catch(e){} if(id && id!=='boss'){ curEmployee=id; } } }catch(e){}
   }
-  // GUEST CLEANUP: a signed-out user must never see a previous account's cached inventory.
-  // Clear it so a guest gets a clean welcome/home; a shared-link customer is refilled by the
-  // public branch below with the correct company's cars. (isSignedIn() stays true when a cached
-  // session exists, so an expired-but-cached owner keeps their cars — that is intentional.)
-  if(!isSignedIn()){ clearLocalInventory(); }
+  // GUEST CACHE (v1.2.112): a signed-out share-link customer used to get their whole
+  // cache wiped on boot — the early render above then painted an EMPTY homepage and the
+  // screen sat blank for the entire public-fetch chain (~8-12s on Ghana links) on EVERY
+  // visit. Keep the cached public inventory for the instant paint; the public branch
+  // below re-scopes it and evicts anything that does not belong. Still wipe when this is
+  // NOT a share visit and we hold no shared-company marker (e.g. an owner just signed
+  // out here), so nobody sees a previous account's inventory.
+  if(!isSignedIn()){
+    let shareVisit=false;
+    try{ const gu=new URL(location.href); shareVisit=!!(gu.searchParams.get('c')||gu.searchParams.get('car')||gu.searchParams.get('ref')||gu.searchParams.get('company')); }catch(e){}
+    let hadShared=false; try{ hadShared=!!localStorage.getItem('am_shared_co'); }catch(e){}
+    if(!shareVisit && !hadShared) clearLocalInventory();
+  }
   // EARLY RENDER: paint the cached inventory + account from localStorage IMMEDIATELY,
   // before any network pull. Previously the homepage stayed blank until the full server
   // sync finished (or the user tapped Sync) — bad on slow links. The pulls below then
@@ -5084,15 +5092,24 @@ async function bootstrap(){
   // This lets anyone register / sign in without typing the server address. If no API answers (e.g. a
   // plain static host), we stay in offline / public-link mode.
   if(!SYNC.base && typeof location!=='undefined' && /^https?:$/.test(location.protocol)){
-    try{
-      const hp=await fetch(location.origin+'/api/health',{method:'GET'});
-      // A real backend answers JSON {ok:true}. A plain static host (e.g. the
-      // CloudStudio public link) answers 200 with the SPA's HTML — we must NOT
-      // treat that as a backend, or registration/sync would POST to a static
-      // file server and fail. So we verify the response is real API JSON.
-      let hj=null; try{ hj=await hp.json(); }catch(e){}
-      if(hp.ok && hj && hj.ok===true){ SYNC.base=location.origin; localStorage.setItem('am_api',SYNC.base); localStorage.setItem('am_since','0'); }
-    }catch(e){ /* no backend on this origin — stay offline/public */ }
+    // SPEED (v1.2.112): our own deployments always answer /api — adopt same-origin directly
+    // instead of burning a full /api/health round-trip (0.5~2.5s+, and much worse on Ghana
+    // links) before the first public fetch on a fresh device. Unknown hosts (a static mirror
+    // of this file elsewhere) still go through the strict detection below.
+    const _h=(typeof location.hostname==='string'?location.hostname:'');
+    if(/(^|\.)antoto\.app$/i.test(_h) || /(^|\.)antmotors\.autos$/i.test(_h) || /\.pages\.dev$/i.test(_h)){
+      SYNC.base=location.origin; localStorage.setItem('am_api',SYNC.base); localStorage.setItem('am_since','0');
+    } else {
+      try{
+        const hp=await fetch(location.origin+'/api/health',{method:'GET'});
+        // A real backend answers JSON {ok:true}. A plain static host (e.g. the
+        // CloudStudio public link) answers 200 with the SPA's HTML — we must NOT
+        // treat that as a backend, or registration/sync would POST to a static
+        // file server and fail. So we verify the response is real API JSON.
+        let hj=null; try{ hj=await hp.json(); }catch(e){}
+        if(hp.ok && hj && hj.ok===true){ SYNC.base=location.origin; localStorage.setItem('am_api',SYNC.base); localStorage.setItem('am_since','0'); }
+      }catch(e){ /* no backend on this origin — stay offline/public */ }
+    }
   }
 
   // 2) authenticated pull if we are signed in
@@ -5155,9 +5172,25 @@ async function bootstrap(){
         // old code dropped (that's why shared links showed no images). We then
         // scope the homepage list + showrooms to that exact company so a customer
         // can never see a different dealership's inventory ("串公司").
+        // SPEED (v1.2.112): with a ?ref= (or ?company=) the list/showrooms are ALREADY
+        // company-scoped, so fire them in PARALLEL with the deep-linked car instead of
+        // serializing three slow round-trips into one long blank screen. Only a bare
+        // ?c= link (no ref) still has to learn the company from the car detail first.
         let cid=null;
-        if(carId){
-          const detail=await apiPublic('/api/public/car/'+encodeURIComponent(carId)+(ref?'?ref='+encodeURIComponent(ref):''));
+        const dlQ = carId ? ('/api/public/car/'+encodeURIComponent(carId)+(ref?'?ref='+encodeURIComponent(ref):'')) : null;
+        const detailP = dlQ ? apiPublic(dlQ) : Promise.resolve(null);
+        let listP, roomsP;
+        if(ref || coParam){
+          const q0 = ref ? ('?ref='+encodeURIComponent(ref)) : ('?company='+encodeURIComponent(coParam));
+          listP = apiPublic('/api/public/cars'+q0);
+          roomsP = apiPublic('/api/showrooms'+q0);
+        } else {
+          const byDetail = d => (d && !d.gone && d.company && d.company.id) ? ('?company='+encodeURIComponent(d.company.id)) : '';
+          listP = detailP.then(d=>apiPublic('/api/public/cars'+byDetail(d)));
+          roomsP = detailP.then(d=>apiPublic('/api/showrooms'+byDetail(d)));
+        }
+        const detail=await detailP;
+        if(detail){
           if(detail.gone){
             sharedGone={ reason: detail.reason, company: detail.company||null, carName: detail.carName||'' };
             if(detail.company && detail.company.id) cid=detail.company.id; // scope homepage to this company even without ?ref
@@ -5171,13 +5204,7 @@ async function bootstrap(){
           saveCars(); saveCarPhotos(); saveCarVideos(); saveEmps();
         }
 
-        const listQ = cid ? ('?company='+encodeURIComponent(cid))
-                          : (coParam ? ('?company='+encodeURIComponent(coParam))
-                            : (ref?'?ref='+encodeURIComponent(ref):''));
-        const [list, rooms] = await Promise.all([
-          apiPublic('/api/public/cars'+listQ),
-          apiPublic('/api/showrooms'+listQ)
-        ]);
+        const [list, rooms] = await Promise.all([listP, roomsP]);
         if(list.companyInfo && list.companyInfo.name) sharedCompanyName=String(list.companyInfo.name);
         if(list.companyInfo && list.companyInfo.contact) companyContact=list.companyInfo.contact;
         const listCars=list.cars||[];
@@ -5186,17 +5213,19 @@ async function bootstrap(){
         // (Old code stored only [c.cover], so a car opened from the showroom
         //  showed exactly one photo.)
         listCars.forEach(c=>{ const id=c.id; delete c.id; CARS[id]=c; if(c.listedAt) LISTED_AT[id]=c.listedAt; if(Array.isArray(c.photos)&&c.photos.length) CAR_PHOTOS[id]=c.photos.filter(isPhotoOK); else if(c.cover && isPhotoOK(c.cover) && !(CAR_PHOTOS[id]&&CAR_PHOTOS[id].length)) CAR_PHOTOS[id]=[c.cover]; });
-        // Evict any local car the server did NOT return for this company. Without this,
-        // sample cars cleared server-side keep lingering in the browser cache and
-        // re-appear on the shared-link homepage (the long-standing "复活" bug).
-        // Don't evict the local inventory if we have a cached session (even if the
-        // token just expired) — keep the owner's cars visible and let them re-auth.
-        // Never wipe local inventory just because the public list for a company
-        // happens to be empty (e.g. the owner's own company, or a hiccup during the
-        // startup pull). Only evict when we are genuinely signed out AND have no
-        // cached session AND nothing locally — otherwise a transient failure would
-        // mass-delete the owner's cars and force a manual re-sync every refresh.
-        if(!SYNC.token && !loadSession() && Object.keys(CARS).length===0){ for(const id of Object.keys(CARS)){ if(!serverIds.has(id)){ delete CARS[id]; delete CAR_BASE[id]; } } }
+        // Evict anything the public list did NOT return — but ONLY for genuinely
+        // signed-out guests: their cache is pure public data and gets refetched next
+        // visit, so a strict sweep is safe (and is what keeps company A's cars from
+        // lingering when a customer later opens company B's link). Owners with a cached
+        // session are excluded (the shared list may belong to another company via ?ref=).
+        // The deep-linked car stays even if the list omits it (e.g. marked sold after the
+        // link was shared) so the customer still sees what they clicked.
+        if(!SYNC.token && !loadSession()){
+          if(carId && CARS[carId]) serverIds.add(carId);
+          for(const id of Object.keys(CARS)){
+            if(!serverIds.has(id)){ delete CARS[id]; delete CAR_BASE[id]; delete CAR_PHOTOS[id]; delete CAR_VIDEOS[id]; }
+          }
+        }
         if(rooms.showrooms && rooms.showrooms.length){
           const serverNames=new Set(rooms.showrooms.map(x=>x.name));
           const localOnly=SHOWROOMS.filter(s=>!serverNames.has(s.name)); // keep user-added locations not yet on server
@@ -5212,6 +5241,9 @@ async function bootstrap(){
         }
         if(!cid && list.company) cid=list.company;
         sharedCompany=cid;
+        // Remember which company this guest cache belongs to — the boot-time guest-cache
+        // keep/clear decision reads this marker on the next visit.
+        try{ if(cid) localStorage.setItem('am_shared_co',cid); else localStorage.removeItem('am_shared_co'); }catch(e){}
         saveCars(); saveListed(); saveEmps(); saveShowrooms(); saveCarPhotos();
         loaded=true;
       }
