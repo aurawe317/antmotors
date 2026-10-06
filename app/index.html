@@ -1725,6 +1725,11 @@ function empOf(id){
   return {name:id||'Sales Consultant', av:String(id||'A').charAt(0).toUpperCase(), tier:'customer', role:'Sales', roleZh:'销售', wa:'', phone:'', branch:''};
 }
 const ALL_EMP = Object.assign({}, SALES, OWNERS);
+// ALL_EMP is a SNAPSHOT: `Object.assign({}, SALES, OWNERS)` ran while both maps were
+// still empty, so it starts as {} and only gains keys once upsertEmp() runs. Anything
+// that must not depend on load order has to ask the live maps instead of the snapshot —
+// otherwise `ALL_EMP[id]` is undefined until some unrelated code happens to seed it.
+function empKnown(id){ return !!id && !!(SALES[id] || OWNERS[id]); }
 
 let curTheme="dark", curLang=(typeof localStorage!=='undefined'&&localStorage.getItem('am_lang'))||"en", curRole="customer", curSales="kwame", curCar="lc", curEmployee="";
 function isTopEmployee(){ return ["boss","partnerA","partnerB"].includes(empOf(curEmployee).tier); }
@@ -1783,7 +1788,7 @@ const I18N = {
       upBoss:"Boss: upload car photos (full access)",upPartnerA:"Partner A: upload car photos (full access)",upPartnerB:"Partner B: upload car photos (full access)",upManager:"Manager: upload car photos (this branch)",upSalesA:"Sales A: upload car photos (your cars)",
       rl_customer:"Customer (quote)",rl_manager:"Manager (all floors)",rl_salesA:"Sales A (floor A)",rl_salesB:"Sales B (floor B)",rl_boss:"Boss (cost)",rl_partnerA:"Partner A (cost)",rl_partnerB:"Partner B (cost)",
       addPhoto:"+ Photo",directions:"Directions",inStock:"in stock",cond_NEW:"New",cond_USED:"Used",syncDiag:"Sync diagnostics",
-      bookSent:"🔔 Booking sent to {n} · they'll WhatsApp you at {p}",atLbl:"at",shoppingWith:"You're shopping with",shareAttr:"Share link now attributes to",
+      bookSent:"🔔 Booking sent to {n} · they'll WhatsApp you at {p}",atLbl:"at",shoppingWith:"You're shopping with",shareAttr:"Share link now attributes to",photosRemovedElsewhere:"{n} photo(s) removed elsewhere",
       favSavedToast:"Saved! Tap ♡ in top bar to view",favRemoved:"Removed from saved",msgPlaceholder:"I'd like to see the car and discuss the deal.",
       uploading:"Uploading photos",syncRejPhotoFail:"upload failed, kept locally",selN:"Selected {n} photos · cropping…",selSkip:"Skipped {s} of {n} picks (unsupported image format)",cropApplyAll:"Same crop for {n} more",cropTitle:"Adjust photo",photoUp:"Photo uploaded for",photosUp:"Photos added",noPermPhoto:"Your role cannot upload photos.",dirTo:"Directions to",
       moreCars:"More cars",
@@ -1831,7 +1836,7 @@ const I18N = {
       upBoss:"老板：可上传车辆照片（全部权限）",upPartnerA:"合伙人A：可上传车辆照片（全部权限）",upPartnerB:"合伙人B：可上传车辆照片（全部权限）",upManager:"店长：可上传车辆照片（本店）",upSalesA:"销售A：可上传车辆照片（您的车）",
       rl_customer:"客户（报价）",rl_manager:"店长（全部底价）",rl_salesA:"销售A（底价A）",rl_salesB:"销售B（底价B）",rl_boss:"老板（成本）",rl_partnerA:"合伙人A（成本）",rl_partnerB:"合伙人B（成本）",
       addPhoto:"+ 照片",directions:"导航",inStock:"在库",cond_NEW:"新车",cond_USED:"二手车",syncDiag:"同步诊断",
-      bookSent:"🔔 预约已发给 {n} · 将通过 WhatsApp 联系您：{p}",atLbl:"于",shoppingWith:"您正在与",shareAttr:"分享链接现归属于",
+      bookSent:"🔔 预约已发给 {n} · 将通过 WhatsApp 联系您：{p}",atLbl:"于",shoppingWith:"您正在与",shareAttr:"分享链接现归属于",photosRemovedElsewhere:"其他人已删除 {n} 张照片",
       favSavedToast:"已收藏！点击顶部 ♡ 查看",favRemoved:"已取消收藏",msgPlaceholder:"我想看车并谈谈价格。",
       uploading:"正在上传照片",syncRejPhotoFail:"上传失败，已保留在本地",selN:"已选 {n} 张照片，正在裁剪…",selSkip:"选的 {n} 张里有 {s} 张不是受支持的图片格式，已跳过",cropApplyAll:"其余 {n} 张同裁",cropTitle:"调整照片",photoUp:"已上传照片：",photosUp:"已添加照片",noPermPhoto:"您的角色不能上传照片。",dirTo:"导航至",
       moreCars:"更多车辆",
@@ -2062,7 +2067,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.104';
+const APP_VER='1.2.105';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2935,8 +2940,57 @@ function notePhotoTomb(carId, idxOrUrl){
 }
 // Once the server has confirmed the deletion (it keeps its own copy of the tombstone),
 // this device no longer needs to carry it.
-function clearPhotoTombs(carId){
-  if(CAR_PHOTO_TOMBS[carId] && CAR_PHOTO_TOMBS[carId].length){ delete CAR_PHOTO_TOMBS[carId]; saveCarPhotos(); }
+// `only` = the tombstones the server actually removed a row for (from the push ACK).
+// Clearing ALL of them after any ACK is what let a photo come back: the server had
+// never deleted that row, the tombstone was forgotten, and the next push re-added it —
+// "deleted 3 times before it finally stayed gone". Only drop the acked ones.
+function clearPhotoTombs(carId, only){
+  const cur=CAR_PHOTO_TOMBS[carId]; if(!cur || !cur.length) return;
+  if(!only){ delete CAR_PHOTO_TOMBS[carId]; saveCarPhotos(); return; }
+  const ackSet=Array.isArray(only)?new Set(only):null;
+  const left=ackSet?cur.filter(function(v){ return !ackSet.has(v); }):null;
+  if(!left || !left.length) delete CAR_PHOTO_TOMBS[carId];
+  else CAR_PHOTO_TOMBS[carId]=left;
+  saveCarPhotos();
+}
+// Apply the server's own tombstone list (sent on pull): a device that still holds a
+// photo the server already deleted drops it here. The server decides who has what —
+// that is what stops an old device's stale list from resurrecting a deleted photo.
+function applyServerPhotoTombs(carId, list){
+  if(!Array.isArray(list) || !list.length) return 0;
+  let removed=0;
+  // Tombstones come in both shapes: the stable row idx (what this device normally
+  // records) and the raw URL (written by a device whose id map was missing). Resolve
+  // the numeric ones through the id map, then match on the URL either way.
+  const urls=[];
+  const im=(CAR_PHOTO_IDS[carId]||{});
+  list.forEach(function(v){
+    if(typeof v==='string' && v){ urls.push(v); return; }
+    if(typeof v==='number'){
+      for(const u in im){ if(im[u]===v){ urls.push(u); break; } }
+    }
+  });
+  if(CAR_PHOTOS[carId]){
+    const keep=CAR_PHOTOS[carId].filter(function(u){ return !urls.some(function(v){ return String(v)===String(u); }); });
+    if(keep.length!==CAR_PHOTOS[carId].length){
+      removed=CAR_PHOTOS[carId].length-keep.length;
+      CAR_PHOTOS[carId]=keep;
+      const im=(CAR_PHOTO_IDS[carId]||{}); urls.forEach(function(v){ delete im[v]; });
+      CAR_PHOTO_IDS[carId]=im;
+    }
+  }
+  // Local tombstones the server has already applied are dropped: they would otherwise
+  // ride along on the next push as "please delete", and they can never un-delete anything
+  // the server didn't already do. The server's own photos_deleted list is the durable
+  // record — that, not this device's memory, is what stops a photo coming back.
+  const cur=CAR_PHOTO_TOMBS[carId];
+  if(cur && cur.length){
+    const s=new Set(list.map(function(v){ return typeof v==='number'?v:String(v); }));
+    const left=cur.filter(function(v){ return !(s.has(v) || s.has(String(v))); });
+    if(left.length!==cur.length) CAR_PHOTO_TOMBS[carId]=left;
+  }
+  if(removed||cur) saveCarPhotos();
+  return removed;
 }
 function clearVideoTombs(carId){
   if(CAR_VIDEO_TOMBS[carId] && CAR_VIDEO_TOMBS[carId].length){ delete CAR_VIDEO_TOMBS[carId]; saveCarVideos(); }
@@ -3787,8 +3841,11 @@ function shareRefVal(){
   // Only return an employee id the backend can actually resolve. The demo default
   // "kwame" (or any id not in the loaded roster) maps to NO company on the server,
   // so a link carrying it lands the recipient on an EMPTY showroom.
-  if(ALL_EMP[curSales]) return curSales;
-  if(ALL_EMP[curEmployee]) return curEmployee;
+  // empKnown() reads the LIVE maps — the ALL_EMP snapshot is empty until upsertEmp
+  // runs, which used to strip the ?ref= off every share link and leave the recipient
+  // with the company's default contact instead of the salesperson's own number.
+  if(empKnown(curSales)) return curSales;
+  if(empKnown(curEmployee)) return curEmployee;
   return '';
 }
 function syncSheet(){
@@ -5097,6 +5154,12 @@ async function bootstrap(){
     attributedSalesRef=shareRef;   // this visitor came via a salesperson's share link
     window.__deeplink=true;
     updateRoleUI();
+    // REDRAW AFTER the attribution. The consultant card + bottom contact bar were painted
+    // a few lines above, while curSales was still the default — so a customer tapping a
+    // partner's share link kept seeing the owner's (company default) contact, even though
+    // curSales held the right id. The card, the bar and the banner share one source of
+    // truth; this is the only place that refreshes all three after attribution.
+    try{ renderAttrBanner(); }catch(e){}
   } else {
     // own app: a signed-in user sees their REAL tier (boss / partner / manager / sales).
     // The owner's device-level "view as" choice is restored when present; otherwise we
@@ -5863,8 +5926,11 @@ async function syncNow(silent, withPhotos){
     if(payload.cars.length||payload.employees.length||payload.showrooms.length){
       const pr=await api('/api/push',{method:'POST',body:payload});
       rejected=pr.rejected||[];
-      // The server acked the deletions and stored its own copy — this device is done with them.
-      for(const tid in tombSent){ clearPhotoTombs(tid); clearVideoTombs(tid); }
+      // The server stored its own copy of the tombstones — but only forget the ones it
+      // actually deleted a row for. Anything it never removed stays queued for the next
+      // push, otherwise the photo silently comes back later.
+      const tombAck=(pr.tombAck||{});
+      for(const tid in tombSent){ clearPhotoTombs(tid, Array.isArray(tombAck[tid])?tombAck[tid]:null); clearVideoTombs(tid); }
       /* Base bookkeeping. For every car we pushed:
          · accepted  → what we sent IS what the server stores, so it becomes the new base.
                        Editing again before the pull comes back then still merges
@@ -5908,6 +5974,7 @@ async function syncNow(silent, withPhotos){
     const p=await api('/api/pull?photos='+(withPhotos!==false?1:0)+'&since='+SYNC.since);
     let n=0;
     let baseDirty=false;
+    let tombDropped=0;   // photos the server had already deleted — dropped locally, not re-pushed
     (p.cars||[]).forEach(c=>{
       if(c.deleted){ delete CARS[c.id]; delete LISTED_AT[c.id]; delete CAR_PHOTOS[c.id]; delete CAR_VIDEOS[c.id]; delete CAR_BASE[c.id]; baseDirty=true; }
       else{
@@ -5931,11 +5998,27 @@ async function syncNow(silent, withPhotos){
           // and simply syncs as new.
           CAR_PHOTO_IDS[c.id]=Object.assign({}, (CAR_PHOTO_IDS[c.id]||{}), imap);
         }
+        // Server wins on deletions: if the server tombstoned a photo (someone else
+        // deleted it on another device), drop it here too. Without this the local list
+        // keeps the dead URL and the next push merges it straight back in — the "I
+        // deleted it three times" loop. The server copies it into photos_deleted, so
+        // this self-clean keeps working on the next pull too.
+        let serverTombed=0;
+        try{ serverTombed=applyServerPhotoTombs(c.id, c.photosDeleted); }catch(e){}
+        if(serverTombed) tombDropped+=serverTombed;
         if(c.videos && c.videos.length) CAR_VIDEOS[c.id]=c.videos;
       }
       n++;
     });
     if(baseDirty) saveCarBases();
+    // Deletions made on another device land here, visibly: refresh the open detail page
+    // and say so. Silently swapping the gallery is indistinguishable from the app
+    // swallowing a photo.
+    if(tombDropped){
+      saveCarPhotos();
+      try{ if(curCar && CAR_PHOTOS[curCar]) renderDetailThumbs(); }catch(e){}
+      toast(T('photosRemovedElsewhere','{n} photo(s) removed').replace('{n}',tombDropped));
+    }
     /* Showrooms — the server sends the full authoritative list (it hard-deletes, so there
        is no per-row tombstone to merge). Photos live in data.photos as Storage URLs.
        Any local base64 image is still pending upload, so it is kept in front of the

@@ -269,7 +269,13 @@ function contactOf(row) {
 // including the public contact so the bottom bar can show the company contact.
 function companyInfoOf(co) {
   if (!co) return null;
-  return { id: co.id, name: co.name, logo: co.logo || null, contact: contactOf(co) };
+  // Accept EITHER a raw companies row (contact_name/…) or a publicCompany() shape
+  // that already flattened it into `contact`. The single-car public route used to
+  // call companyInfoOf(publicCompany(co)) — the second contactOf() found no
+  // contact_* columns on the already-mapped object and returned null, so every car
+  // page the customer opens from a share link lost the dealer's contact details.
+  const contact = co.contact || contactOf(co) || null;
+  return { id: co.id, name: co.name, logo: co.logo || null, contact: contact };
 }
 // The tenant's own (custom) domain, if they bound one. Decides whether a share
 // link goes out on the dealer's own domain (premium) or on the platform domain.
@@ -770,7 +776,12 @@ async function persistPhotoTombs(id, cid, idxs) {
 // deletion. Now the only deletion signal is an explicit tombstone (`photoTombs`).
 // Legacy clients (plain URL strings, no ids) keep the old "replace by value" behaviour.
 async function writePhotos(id, arr, cid, tombs) {
-  if (!Array.isArray(arr)) return;
+  // Returns { dropped, tombs }. `tombs` are the tombstone ids THIS request actually
+  // deleted a row for — the client clears a tombstone only once the server confirms
+  // the row is gone. Forgetting that ACK used to drop tombstones for rows the delete
+  // never reached, and the photo came back on the next push ("deleted 3 times before
+  // it finally stayed gone").
+  if (!Array.isArray(arr)) return { dropped: 0, tombs: [] };
   const { data: existing, error: selErr } = await sb.from('photos').select('*').eq('car_id', id).eq('company_id', cid);
   if (selErr) throw new Error('photos_select_failed: ' + (selErr.message || selErr));
   // Normalise the incoming list. A modern client sends [{id, url}] where `id` is the stable row
@@ -819,6 +830,10 @@ async function writePhotos(id, arr, cid, tombs) {
       if (!want.has(v) || seen.has(v)) toRemove.push(r); else { seen.add(v); keep.push(r); }
     }
   }
+  // Which tombstones really killed a row — the client only forgets these. A tombstone
+  // that matched nothing (the row never existed here, or the delete failed) survives
+  // the ACK, so the next push retries it instead of silently losing the deletion.
+  const tombAck = toRemove.map(r => (tombSet.has(r.idx) ? r.idx : (r.url || r.data)));
   if (toRemove.length) {
     const idxs = toRemove.map(r => r.idx).filter(v => typeof v === 'number');
     if (idxs.length) {
@@ -866,10 +881,10 @@ async function writePhotos(id, arr, cid, tombs) {
     nextIdx++;
     if (rows.length >= 30) break;
   }
-  if (!rows.length) return dropped;
+  if (!rows.length) return { dropped: dropped, tombs: tombAck };
   const { error } = await sb.from('photos').insert(rows);
   if (error) throw new Error('photos_insert_failed: ' + (error.message || error));
-  return dropped;
+  return { dropped: dropped, tombs: tombAck };
 }
 async function videosOf(id, cid) {
   const { data } = await sb.from('videos').select('*').eq('car_id', id).eq('company_id', cid).order('idx', { ascending: true });
@@ -1041,6 +1056,10 @@ function mergeCarData(base, incoming, server, conflicts, carId) {
 
 async function applyPush(emp, payload) {
   const applied = [], rejected = [], conflicts = [];   // conflicts = fields both devices edited
+  // Tombstones the server actually deleted a row for, per car. Handed back so a client
+  // forgets only the deletions the server confirmed — that is what makes a photo deletion
+  // permanent instead of "gone until the next device pushes its stale list".
+  const tombAck = {};
   const top = isTop(emp);
   const cid = emp.companyId;
   // 额度（**服务端强制**）：一次取出公司档位与当前用量，循环内复用。
@@ -1114,7 +1133,12 @@ async function applyPush(emp, payload) {
     }
     // Use Array.isArray (not truthy) so an empty array [] — i.e. "user deleted ALL
     // photos" — still reaches writePhotos and actually clears the rows on the server.
-    if (Array.isArray(c.photos)) { try { const _dropped = await writePhotos(c.id, c.photos, cid, Array.isArray(c.photoTombs) ? c.photoTombs : null); if (_dropped) rejected.push({ id: c.id, reason: 'photos_dropped', dropped: _dropped }); } catch (e) { rejected.push({ id: c.id, reason: 'photos_' + ((e && e.message) || e) }); } }
+    if (Array.isArray(c.photos)) { try {
+      const _w = await writePhotos(c.id, c.photos, cid, Array.isArray(c.photoTombs) ? c.photoTombs : null);
+      if (_w && _w.dropped) rejected.push({ id: c.id, reason: 'photos_dropped', dropped: _w.dropped });
+      // Only the deletions that really removed a row are acknowledged here.
+      if (_w && Array.isArray(_w.tombs) && _w.tombs.length) tombAck[c.id] = _w.tombs;
+    } catch (e) { rejected.push({ id: c.id, reason: 'photos_' + ((e && e.message) || e) }); } }
     if (Array.isArray(c.videos)) { try { await writeVideos(c.id, c.videos, cid, Array.isArray(c.videoTombs) ? c.videoTombs : null); } catch (e) { rejected.push({ id: c.id, reason: 'videos_' + ((e && e.message) || e) }); } }
     applied.push(c.id);
   }
@@ -1190,7 +1214,7 @@ async function applyPush(emp, payload) {
       if (n && !keep.has(n)) await sb.from('showrooms').delete().eq('id', r.id).eq('company_id', cid);
     }
   }
-  return { applied, rejected, conflicts };
+  return { applied, rejected, conflicts, tombAck };
 }
 async function pull(since, withPhotos, companyId) {
   const s = +since || 0;
@@ -1202,6 +1226,11 @@ async function pull(since, withPhotos, companyId) {
       updatedAt: r.updated_at, updatedBy: r.updated_by, deleted: !!r.deleted,
       photos: pw ? pw.urls : undefined,
       photoIds: pw ? pw.ids : undefined,
+      // Tombstones the SERVER accepted for this car. A device holding a photo the
+      // server already deleted must drop it (and its own tombstone) on pull, instead
+      // of resurrecting it on its next push. The column may not exist yet on a fresh
+      // database → [] (nothing to self-clean).
+      photosDeleted: Array.isArray(r.photos_deleted) ? r.photos_deleted : [],
       videos: withPhotos ? await videosOf(r.id, companyId) : undefined
     };
   }));
@@ -1742,7 +1771,17 @@ async function liveAppVersion(origin) {
       const gone = !!row.deleted || !!cd.sold;
       if (gone) return send(200, { gone: true, reason: row.deleted ? 'deleted' : 'sold', company: companyInfo, carName: cd.name || '' });
       const ref = u.searchParams.get('ref');
-      const empData = async (eid) => { const { data } = await sb.from('employees').select('data').eq('id', eid).eq('company_id', cid).eq('deleted', 0).maybeSingle(); return data ? stripPw(data.data) : null; };
+      // The agent object is published to UNAUTHENTICATED visitors (anyone with a share
+      // link). stripPw only removes the password record — the employee record also carries
+      // the signed-in session token, which used to ride along and hand a customer a valid
+      // session for the salesperson's account. Strip every private field before publishing.
+      const empData = async (eid) => {
+        const { data } = await sb.from('employees').select('data').eq('id', eid).eq('company_id', cid).eq('deleted', 0).maybeSingle();
+        if (!data || !data.data) return null;
+        const pub = stripPw(data.data);
+        delete pub.token; delete pub.tokenMode; delete pub._id; delete pub.session; delete pub.authProvider;
+        return pub;
+      };
       let agent = null;
       if (ref) agent = await empData(ref);
       if (!agent && cd.sales) agent = await empData(cd.sales);
