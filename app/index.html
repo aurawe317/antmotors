@@ -2065,7 +2065,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.115';
+const APP_VER='1.2.116';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -5232,6 +5232,9 @@ async function bootstrap(){
     // now, photos fill in as you look at them.
     lazyPhotoObserve();
   }catch(e){ console.error('early render failed', e); }
+  // Repeat visit with the car already in the guest cache → open the shared car NOW,
+  // before any network round-trip (see tryEarlyDeepLink).
+  try{ tryEarlyDeepLink(); }catch(e){}
   // Membership refresh runs OFF the first-paint path (fire-and-forget). It used to be
   // awaited before the early render and delayed every open by one network round-trip.
   try{
@@ -5354,6 +5357,8 @@ async function bootstrap(){
             if(detail.company && detail.company.id) cid=detail.company.id;
           }
           saveCars(); saveCarPhotos(); saveCarVideos(); saveEmps();
+          // The shared car just landed → open its detail NOW (don't wait for list/showrooms).
+          try{ tryEarlyDeepLink(); }catch(e){}
         }
 
         const [list, rooms] = await Promise.all([listP, roomsP]);
@@ -5422,6 +5427,9 @@ async function bootstrap(){
         if(d2.company && d2.company.name) sharedCompanyName=String(d2.company.name);
         if(d2.company && d2.company.contact) companyContact=d2.company.contact;
         saveCars(); saveCarPhotos(); saveCarVideos(); saveEmps();
+        // Owner-device deeplinks land here (the authenticated pull path skipped the
+        // public branch) → open the shared car as soon as it exists.
+        try{ tryEarlyDeepLink(); }catch(e){}
       }
     }
   }catch(e){ console.error('deeplink car load failed', e); }
@@ -5482,7 +5490,13 @@ async function bootstrap(){
     updateRoleUI();
   }
 
-  // 4) if nothing worked and we have zero inventory, tell the user to configure a server
+  // The early deep-link open painted the detail page BEFORE the ref attribution above —
+  // repaint it now so the consultant card / contact bar show the right salesperson
+  // (the customer's shared car must never keep the company-default contact).
+  try{
+    const act=document.querySelector('.screen.active');
+    if(window.__deeplink && curCar && CARS[curCar] && act && act.id==='scr-detail') renderDetail();
+  }catch(e){}  // 4) if nothing worked and we have zero inventory, tell the user to configure a server
   // (shared-link customers get a customer-friendly message instead — they have no Settings)
   if(!loaded && Object.keys(CARS).length===0 && !SYNC.base){
     const home=document.getElementById('homeGrid');
@@ -7230,6 +7244,19 @@ function parseDeepLink(){
     _dlCar=q.get('c')||q.get('car'); if(!_dlCar){ const m=location.pathname.match(/\/c\/([^/?#]+)/); if(m) _dlCar=m[1]; }
   }catch(e){}
 }
+// v1.2.116: deep links used to wait for the ENTIRE bootstrap chain (deeplink fetch →
+// public list → showrooms → roster renders) before resolveDeepLink() ran at the very
+// end — the customer stared at the homepage for seconds before the shared car opened.
+// Resolve as soon as the car itself is in CARS: instantly on repeat visits (the guest
+// cache already holds it), and right after the deeplink fetch lands on first visits.
+function tryEarlyDeepLink(){
+  try{
+    if(window.__dlEarly || !_dlCar || !CARS[_dlCar]) return false;
+    window.__dlEarly=true;
+    resolveDeepLink();
+    return true;
+  }catch(e){ return false; }
+}
 // Called from bootstrap().then() once data is ready.
 function resolveDeepLink(){
   try{
@@ -7292,7 +7319,10 @@ applyTheme(); syncLangUI(); applyI18n(); renderSyncUI(); updateAuthCTA();
 renderNotifs(); genDeviceId();
 bootstrap().then(()=>{
   renderRolePrices(); updateDemoState(); syncSheet(); updateRoleUI(); renderWorkbench();
-  resolveDeepLink();
+  // v1.2.116: the early-resolve path may already have opened the shared car (see
+  // tryEarlyDeepLink) — only run the late resolve when it hasn't, or openDetail would
+  // repaint the detail screen a second time.
+  if(!window.__dlEarly) resolveDeepLink();
 });
 </script>
 <script>
@@ -7303,8 +7333,19 @@ if('serviceWorker' in navigator){
   try{ const fv=document.getElementById('footVer'); if(fv) fv.textContent='v'+APP_VER; }catch(e){}
   // When a newer service worker takes control, reload automatically so a PWA
   // installed to the home screen is never stuck on an old build (e.g. v101).
+  // v1.2.116: BOTH the controllerchange event and the 'sw-updated' message fired on the
+  // same activation → location.reload() ran twice → a customer opening a shared car saw
+  // the page flash back to the homepage mid-load. One reload per activation, and at most
+  // one per browser session (the sessionStorage guard breaks reload loops too).
+  let _swReloaded=false;
+  function swReloadOnce(){
+    if(_swReloaded) return;
+    _swReloaded=true;
+    try{ if(sessionStorage.getItem('am_sw_reloaded')) return; sessionStorage.setItem('am_sw_reloaded','1'); }catch(e){}
+    location.reload();
+  }
   navigator.serviceWorker.addEventListener('message', function(e){
-    if(e.data && e.data.type==='sw-updated'){ location.reload(); }
+    if(e.data && e.data.type==='sw-updated'){ swReloadOnce(); }
   });
   window.addEventListener('load', function(){
     if(!('serviceWorker' in navigator)) return;
@@ -7329,7 +7370,7 @@ if('serviceWorker' in navigator){
   // freshly-served index.html (always fetched from network) is used. This is the key
   // fix for the app being "stuck on an old build" when the user keeps an old tab open
   // or the PWA was added to the home screen weeks ago.
-  navigator.serviceWorker.addEventListener('controllerchange', function(){ location.reload(); });
+  navigator.serviceWorker.addEventListener('controllerchange', function(){ swReloadOnce(); });
 }
 </script>
 <div class="sheet" id="carActionsSheet">
