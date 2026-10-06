@@ -2065,7 +2065,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.110';
+const APP_VER='1.2.111';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -5002,7 +5002,11 @@ async function apiPublic(p,o){
 async function bootstrap(){
   let loaded=false, error=null;
   // 1) local cache first (instant UI)
-  loadCars(); loadCarBases(); loadListed(); loadEmps(); restoreSession(); loadShowrooms(); loadCarVideos(); loadCarPhotos(); loadShowroomPhotos(); loadMembership(); try{ await refreshMembership(); }catch(e){ console.error('membership refresh failed', e); }
+  loadCars(); loadCarBases(); loadListed(); loadEmps(); restoreSession(); loadShowrooms(); loadCarVideos(); loadCarPhotos(); loadShowroomPhotos(); loadMembership();
+  // NOTE: refreshMembership() used to be awaited right here — BEFORE the early render —
+  // which added a full network round-trip (0.5~2.5s on Ghana links) to every first paint.
+  // The cached membership UI (loadMembership + renderMembershipUI below) is good enough
+  // for the first frames; the network refresh now runs fire-and-forget after the paint.
   // Clear any legacy base64 video cache old builds wrote into localStorage. Photos are now
   // persisted to am_car_photos (see saveCarPhotos), so we must NOT wipe that key on boot.
   try{ localStorage.removeItem('am_car_videos'); }catch(e){}
@@ -5068,6 +5072,11 @@ async function bootstrap(){
     // now, photos fill in as you look at them.
     lazyPhotoObserve();
   }catch(e){ console.error('early render failed', e); }
+  // Membership refresh runs OFF the first-paint path (fire-and-forget). It used to be
+  // awaited before the early render and delayed every open by one network round-trip.
+  try{
+    refreshMembership().then(()=>{ try{ renderMembershipUI(); }catch(e){} }).catch(e=>console.error('membership refresh failed', e));
+  }catch(e){ console.error('membership refresh failed', e); }
   // capture the ?ref= from a shared link so public list/showroom fetches resolve to the right company
   let shrRef=null; try{ shrRef=new URL(location.href).searchParams.get('ref'); }catch(e){}
 
