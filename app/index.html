@@ -1225,7 +1225,6 @@
     <div class="form-row"><label data-i18n="joinRole">Your role</label>
       <select id="bindTier">
         <option value="partnerA" data-i18n="jrPartner">Partner (co-owner)</option>
-        <option value="manager" data-i18n="jrManager">Manager</option>
         <option value="salesA" data-i18n="jrSalesA">Senior Sales</option>
         <option value="salesB" data-i18n="jrSalesB">Sales</option>
       </select>
@@ -1462,7 +1461,6 @@
     <div class="grp">
       <div class="lbl">Who is viewing?</div>
       <button class="opt on" onclick="setRole('customer',this)">Customer<small>Sees the selling quote</small></button>
-      <button class="opt" onclick="setRole('manager',this)">Manager · Branch<small>Sees all floors, edits cars &amp; photos</small></button>
       <button class="opt" onclick="setRole('salesA',this)">Sales A · Senior<small>Sees floor price A, uploads photos</small></button>
       <button class="opt" onclick="setRole('salesB',this)">Sales B · Junior<small>Sees floor price B, share links only</small></button>
       <button class="opt" onclick="setRole('boss',this)">Boss / Owner<small>Sees cost + all tiers, full edit</small></button>
@@ -1483,7 +1481,6 @@
   <div id="pvTopOnly">
     <div class="grp" data-grp="role"><div class="lbl" data-i18n="pvWho">Who is viewing?</div>
       <button class="opt" data-role="customer" onclick="setRole('customer',this)"><span data-i18n="pvR_customer">Customer</span><small data-i18n="pvR_customer_sub">Sees the selling quote</small></button>
-      <button class="opt" data-role="manager" onclick="setRole('manager',this)"><span data-i18n="pvR_manager">Manager · Branch</span><small data-i18n="pvR_manager_sub">Sees all floors, edits cars &amp; photos</small></button>
       <button class="opt" data-role="salesA" onclick="setRole('salesA',this)"><span data-i18n="pvR_salesA">Sales A · Senior</span><small data-i18n="pvR_salesA_sub">Sees floor price A, uploads photos</small></button>
       <button class="opt" data-role="salesB" onclick="setRole('salesB',this)"><span data-i18n="pvR_salesB">Sales B · Junior</span><small data-i18n="pvR_salesB_sub">Sees floor price B, share only</small></button>
       <button class="opt" data-role="boss" onclick="setRole('boss',this)"><span data-i18n="pvR_boss">Boss / Owner</span><small data-i18n="pvR_boss_sub">Sees cost + all tiers, full edit</small></button>
@@ -2068,7 +2065,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.107';
+const APP_VER='1.2.108';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2360,28 +2357,20 @@ function emptyInventoryHint(){
   // A sync failure must not be reported as "go fill in your server address" — the
   // address is already saved and tapping Settings there just looks like a dead end.
   try{ if(SYNC && SYNC.state==='err' && SYNC.msg) return T('syncErrState','Could not reach the server — {m}').replace('{m}',String(SYNC.msg).slice(0,160)); }catch(e){}
-  const mb=myBranch();
-  if(mb && !isTopRole() && branchTaggedCount() && Object.keys(CARS).length) return T('emptyBranch','Nothing here yet — this branch has no cars. Ask the boss to assign cars to <b>{b}</b>, or switch to All branches.');
   return T('needServer','Please enter your server address in Settings to load inventory.');
 }
-// Is this dealer actually tagging cars with a branch? Branch scoping is a real feature,
-// but until a single car carries a branch it has nothing to scope BY — and applying it
-// anyway showed every branch-assigned manager/sales an EMPTY showroom, which reads as
-// "the sync didn't bring my cars". Self-healing: the moment cars start carrying a
-// branch, scoping turns itself back on.
-// NOTE: deliberately NOT cached. A cache seeded while CARS was still empty would
-// pin the answer to "no cars carry a branch" for the whole session and silently
-// blank every branch-scoped staff member's showroom. The scan is O(cars) and
-// matchCar runs it once per car — with tens of cars that is nothing.
-function branchTaggedCount(){
-  let n=0;
-  for(const k in CARS){ const c=CARS[k]; if(c && c.loc && c.loc.name) n++; }
-  return n>0;
-}
+// Branch scoping was removed altogether — see matchCar(). This shim only exists so any
+// code that still calls it keeps working; it reports "no cars carry a branch", which is
+// the old "do not filter" answer. Nothing reads it any more.
+function branchTaggedCount(){ return false; }
+/* Branch scoping is GONE. The dealer runs one showroom and staff move cars between
+   branches freely, so per-branch visibility was pure friction: every car carries the
+   location "Ant motors and valor Motors" while the staff had typed "ANT MOTORS",
+   "ANT Motors", "VALOR MOTORS" or nothing — strict string equality matched none of
+   them, so every branch-assigned salesperson landed on an empty home screen.
+   Everyone sees every car now. c.loc is still displayed, it just never filters. */
 function matchCar(k){
   const c=CARS[k];
-  const mb=myBranch();
-  if(mb && !isTopRole() && branchTaggedCount() && (!c.loc||c.loc.name!==mb)) return false;
   const sec = FILTER.section!=='all' ? FILTER.section : FILTER.cond;
   if(sec && sec!=='all' && c.cond!==sec) return false;
   if(FILTER.brand!=='all' && c.brand!==FILTER.brand) return false;
@@ -2839,7 +2828,7 @@ function attrEmployee(id){
   for(const set of [SALES,OWNERS]) for(const k of Object.keys(set||{})){ const x=set[k]; if(x&&['boss','partnerA','partnerB'].includes(x.tier)) return x; }
   return e||null;
 }
-function empBranchLabel(e){ if(!e) return ''; return (curLang==='zh'&&I18N.zh.branch&&I18N.zh.branch[e.branch])?I18N.zh.branch[e.branch]:(e.branch||''); }
+function empBranchLabel(e){ return ''; }   // branch is retired — never shown any more
 function updateAttrBanner(){
   const b=document.getElementById('attrBanner'), t=document.getElementById('attrText'); if(!b||!t) return;
   // The "shopping with <rep>" bar is for public/customer browsing. On the owner's own
@@ -2855,9 +2844,8 @@ function updateAttrBanner(){
     // so we keep this banner hidden (avoids the legacy "kwame" placeholder).
     if(attributedSalesRef && curRole==='customer' && curSales && empOf(curSales)){
       const s=empOf(curSales);
-      const br=(curLang==='zh'&&I18N.zh.branch&&I18N.zh.branch[s.branch])?I18N.zh.branch[s.branch]:(s.branch||'');
       b.style.display='';
-      t.innerHTML=T('shoppingWith',"You're shopping with")+' <b>'+(s.name||curSales)+'</b>'+(br?' · '+br:'');
+      t.innerHTML=T('shoppingWith',"You're shopping with")+' <b>'+(s.name||curSales)+'</b>';
     } else {
       b.style.display='none';
     }
@@ -2869,14 +2857,14 @@ function updateAttrBanner(){
   try{ const m=JSON.parse(localStorage.getItem('am_me')||'null'); if(m&&m.id&&empKnown(m.id)) who=m.id; }catch(e){}
   const e=attrEmployee(who);
   const ename=(e&&e.name)||who||'';
-  const ebr=empBranchLabel(e);
-  t.innerHTML=T('shoppingAs','Shopping with')+' <b>'+ename+'</b>'+(ebr?' · '+ebr:'');
+  t.innerHTML=T('shoppingAs','Shopping with')+' <b>'+ename+'</b>';
 }
 /* Branch-scoped checks: non-top roles can only operate on cars/showrooms in their assigned branch,
-   unless their branch is empty (unassigned), in which case they have no branch access. */
-function myBranch(){ const e=empOf(curEmployee); return (e&&e.branch)||''; }
-function canEditThisCar(k){ if(isTopRole()) return true; const b=myBranch(); if(!b) return false; return CARS[k] && CARS[k].loc && CARS[k].loc.name===b; }
-function canEditThisShowroom(name){ if(isTopRole()) return true; const b=myBranch(); if(!b) return false; return name===b; }
+   Branch scoping is gone — everyone may see and edit every car, because the staff
+   move cars between showrooms themselves. */
+function myBranch(){ return ''; }   // kept so callers that still read it see "no branch"
+function canEditThisCar(k){ return true; }
+function canEditThisShowroom(name){ return true; }
 
 function updateRoleUI(){
   updateAttrBanner();
@@ -3969,7 +3957,7 @@ function renderMe(){
   const sb=document.getElementById('meSub');
   if(sb){
     if(loggedIn){
-      const bits=[]; if(co&&co.name) bits.push(co.name); if(e.branch) bits.push(e.branch);
+      const bits=[]; if(co&&co.name) bits.push(co.name);
       sb.textContent = bits.length?bits.join(' \u00B7 '):T('meSignedIn','Signed in');
     } else sb.textContent = T('meGuestSub','Sign in or create a company account');
   }
@@ -4008,7 +3996,7 @@ function renderMe(){
       const b=document.getElementById('coCodeTxt'); if(b) b.textContent=co.code||'';
       const bt=document.getElementById('coBioTxt'); if(bt) bt.textContent=co.bio||'';
       const cs=document.getElementById('coShopping');
-      if(cs){ const ea=attrEmployee(); const eb=empBranchLabel(ea); cs.innerHTML=T('shoppingAs','Shopping with')+' <b>'+((ea&&ea.name)||'')+'</b>'+(eb?' · '+eb:''); }
+      if(cs){ const ea=attrEmployee(); cs.innerHTML=T('shoppingAs','Shopping with')+' <b>'+((ea&&ea.name)||'')+'</b>'; }
       const be=document.getElementById('coEditBio'); if(be) be.value=co.bio||'';
       const limg=document.getElementById('coLogoImg'); if(limg) limg.src = co.logo || 'ant_logo_appbar.png';
       const eb=document.getElementById('coEditBox'); if(eb) eb.style.display='none';
@@ -4090,7 +4078,9 @@ function editMyContact(){
 function renderStaff(){
   const box=document.getElementById('staffList'); if(!box) return;
   box.innerHTML='';
-  const tiers=[['boss',T('rl_boss','Boss')],['partnerA',T('rl_partnerA','Partner A')],['partnerB',T('rl_partnerB','Partner B')],['manager',T('rl_manager','Manager')],['salesA',T('rl_salesA','Sales A')],['salesB',T('rl_salesB','Sales B')]];
+  // 'manager' is gone: it was the branch-scoped role ("sees all floors in own branch"),
+  // and branch scoping is gone with it. Six tiers left.
+  const tiers=[['boss',T('rl_boss','Boss')],['partnerA',T('rl_partnerA','Partner A')],['partnerB',T('rl_partnerB','Partner B')],['salesA',T('rl_salesA','Sales A')],['salesB',T('rl_salesB','Sales B')]];
   Object.keys(ALL_EMP).forEach(id=>{
     const e=ALL_EMP[id];
     const sel='<select onchange="assignTier(\''+id+'\',this.value)">'+tiers.map(t=>'<option value="'+t[0]+'"'+(e.tier===t[0]?' selected':'')+'>'+t[1]+'</option>').join('')+'</select>';
@@ -4098,8 +4088,10 @@ function renderStaff(){
     const nm=(e.name||id);
     // Name first, login id de-emphasised: the roster is for humans ("who works here"),
     // the id is only needed to sign in, so it must not read as the person's identity.
-    const who=nm+(e.branch?' <span style="opacity:.65">· '+e.branch+'</span>':'')
-             +'<span style="font-size:10px;opacity:.45;margin-left:6px;font-weight:400;">@'+id+'</span>';
+    // The "· <branch>" suffix is gone along with branch scoping: the values staff typed
+    // ("ANT MOTORS" / "ANT Motors" / "VALOR MOTORS") matched no car, so the suffix read
+    // like a working setting that quietly hid everyone's cars.
+    const who=nm+'<span style="font-size:10px;opacity:.45;margin-left:6px;font-weight:400;">@'+id+'</span>';
     box.innerHTML+='<div class="staff-row"><span>'+who+'</span>'+sel+(canDel?'<button class="staff-del" onclick="deleteEmployee(\''+id+'\')">'+T('del','Delete')+'</button>':'')+'</div>';
   });
   if(isTopEmployee()){
