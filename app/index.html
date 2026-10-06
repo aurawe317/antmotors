@@ -870,7 +870,7 @@
 
     <!-- STOCK (full inventory list — filters live on the homepage) -->
     <section class="screen" id="scr-stock">
-      <div class="sec-head"><h2 data-i18n="inventory">Inventory</h2><a onclick="go('scr-home')" data-i18n="back">Back</a></div>
+      <div class="sec-head"><h2 data-i18n="inventory">Inventory</h2><div style="display:flex;align-items:center;gap:14px;"><a onclick="go('scr-sold')" data-i18n="soldTitle">Sold vehicles</a><a onclick="go('scr-home')" data-i18n="back">Back</a></div></div>
       <div class="grid" id="stockGrid" style="margin-top:10px;"></div>
     </section>
 
@@ -1804,7 +1804,7 @@ const I18N = {
       priceSetByTop:"Only Boss/Owner & Partners can set price tiers.",loginAs:"Login as",pvLogin:"Login as (admin only)",pvL_boss:"Boss / Owner",pvL_partnerA:"Partner A",pvL_partnerB:"Partner B",boundLink:"Bound link · customers reach only you",noSwitchRole:"Roles are assigned by admin — you cannot switch",noSwitchSales:"Share link is bound to your account",viewingAs:"viewing as",loggedInAs:"Logged in as",sortDefault:"Default",sortPriceAsc:"Price ↑",sortPriceDesc:"Price ↓",sortNewest:"Listed newest",sortOldest:"Listed oldest",inStockDays:"In stock",days:"days",overstock:"overstock",settingsTitle:"Settings",myContact:"My contact (customer reaches you)",fWhatsApp:"WhatsApp number",fPhone:"Phone",saveContact:"Save",installTitle:"Install the app (employees)",installHint:"iOS: Safari → Share → Add to Home Screen. Android: Chrome → ⋮ → Install app. Customers just open the shared link — no install needed.",staffMgmt:"Staff & roles (admin)",addStaff:"+ Add staff",staffId:"Staff ID",staffName:"Name",staffRole:"Role",staffBranch:"Branch",staffWa:"WhatsApp",staffPhone:"Phone",staffPin:"PIN (4-8 digits)",staffCreate:"Create & invite",staffCreated:"Staff created",contactSaved:"Contact saved",tierAssigned:"Assigned ",pvEditContact:"Edit my WhatsApp & phone",pvLockNote:"Your share link is bound to this account — customers can only reach you. Role switching is assigned by admin.",close:"Close",edit:"Edit",noContact:"No contact set",shoppingAs:"Shopping with",cap_cost:"See cost price",cap_floors:"See all floor prices",cap_ownfloor:"See own floor price",cap_quote:"See selling quote",cap_editcar:"Edit car info (specs, highlights)",cap_editprice:"Edit prices (cost, floor, quote)",cap_photocar:"Upload car photos",cap_photoshowroom:"Upload showroom photos",cap_addcar:"Add / remove cars",cap_managestaff:"Manage sales staff",cap_sharelinks:"Generate share links",cap_leads:"View customer leads",permNote:"<b>Boss + Partner A + Partner B</b> share identical top-level access — cost, pricing, full edit. &nbsp; <b>*</b> Manager: limited to own branch. &nbsp; <b>**</b> Sales A: limited to cars they manage.",memNone:"No plan",memUpgrade:"Upgrade",memActive:"Active",ph_paste:"Smart paste: drop a full vehicle description and fields fill automatically. e.g. Toyota Camry 2021, SUV, Black, Accra, 2.5L Auto, 45,000 km, Sunroof Leather seats",bilingualPrev:"Bilingual preview (editable)",featuredCars:"Featured",browseAll:"Browse all",markFeat:"Set as Featured",unmarkFeat:"Remove from Featured",markedFeat:"Marked as featured",unmarkedFeat:"Removed from featured",noPermBranch:"This car belongs to another branch.",addShowroom:"+ Add sales point",shName:"Name",shAddr:"Address",shPhone:"Phone",shHours:"Hours",shDist:"Distance",shSave:"Save",del:"Delete",showroomsTitle:"Showrooms",shDelConfirm:"Delete showroom",unassigned:"Unassigned",shSettingsTitle:"Sales points / Showrooms",wbStatLeads:"Leads",wbStatClicks:"Link clicks",wbStatConv:"Conversion",noLeads:"No leads yet",noBookings:"No new bookings",clicksLbl:"clicks",leadsLbl:"leads",back:"Back"},
   zh:{tagline:"加纳 · 中国车出口",st_new:"新",st_contacted:"已联系",st_closed:"已成交",stAdvance:"点击推进",stUpdated:"线索状态更新为",featured:"精选",viewDetails:"查看详情",ourShowrooms:"门店网点",seeAll:"全部",allVehicles:"全部车源",
       newArrivals:"新到车源",browseAll:"浏览全部",yourConsultant:"您的销售顾问",consultRole:"销售顾问",call:"拨打",
-      inventory:"在售库存",all:"全部",new:"新车",used:"二手车",highlights:"配置亮点",bookViewing:"预约看车",back:"返回",
+      inventory:"在售库存",soldTitle:"已售车辆",all:"全部",new:"新车",used:"二手车",highlights:"配置亮点",bookViewing:"预约看车",back:"返回",
       showroomsTitle:"门店网点",noShowrooms:"尚未添加门店",searchFilter:"搜索与筛选",close:"关闭",hToyota:"丰田",hSUV:"SUV",h2021:"2021",hUnder40:"40万以下",
       cond:"车况",brand:"品牌",body:"车型",branch:"门店",priceRange:"价格区间",applyFilters:"应用筛选",
       navHome:"首页",navStock:"库存",navShops:"门店",navPerm:"价格",navMore:"搜索",
@@ -1834,11 +1834,11 @@ const I18N = {
       rl_customer:"客户（报价）",rl_manager:"店长（全部底价）",rl_salesA:"销售A（底价A）",rl_salesB:"销售B（底价B）",rl_boss:"老板（成本）",rl_partnerA:"合伙人A（成本）",rl_partnerB:"合伙人B（成本）",
       addPhoto:"+ 照片",directions:"导航",inStock:"在库",cond_NEW:"新车",cond_USED:"二手车",syncDiag:"同步诊断",
       bookSent:"🔔 预约已发给 {n} · 将通过 WhatsApp 联系您：{p}",atLbl:"于",shoppingWith:"您正在与",shareAttr:"分享链接现归属于",photosRemovedElsewhere:"其他人已删除 {n} 张照片",
-      emptyBranch:"这个分支暂时没有车。请老板把车辆分配给 <b>{b}</b>，或切换到「全部分支」。",emptyShared:"展厅正在整理中——点下面的 WhatsApp 按钮直接问我们有哪些在库车辆。",syncErrState:"连不上服务器：{m}",
+      emptyBranch:"这个分支暂时没有车。请老板把车辆分配给 <b>{b}</b>，或切换到「全部分支」。",emptyShared:"展厅正在整理中——点下面的 WhatsApp 按钮直接问我们有哪些在库车辆。",syncErrState:"连不上服务器：{m}",allSoldTitle:"车都已售出",allSoldHint:"已售车辆不再挂在展厅列表里，点下面的「已售车辆」查看。",
       favSavedToast:"已收藏！点击顶部 ♡ 查看",favRemoved:"已取消收藏",msgPlaceholder:"我想看车并谈谈价格。",
       uploading:"正在上传照片",syncRejPhotoFail:"上传失败，已保留在本地",selN:"已选 {n} 张照片，正在裁剪…",selSkip:"选的 {n} 张里有 {s} 张不是受支持的图片格式，已跳过",cropApplyAll:"其余 {n} 张同裁",cropTitle:"调整照片",photoUp:"已上传照片：",photosUp:"已添加照片",noPermPhoto:"您的角色不能上传照片。",dirTo:"导航至",
       moreCars:"更多车辆",
-      markSold:"标记为已售",markAvail:"标记为在售",deleteCar:"删除此车辆",delConfirm:"确定删除这辆车吗？此操作不可撤销，并将同步到所有设备。",markedSold:"已标记为已售",markedAvail:"已标记为在售",carDeleted:"车辆已删除",sold:"已售",goneTitle:"该车辆已不再提供",goneSoldTitle:"该车辆已售出",goneSeeOthers:"查看其它车辆",del:"删除",delSelf:"不能删除你自己的账号",delDone:"已删除",delEmpConfirm:"确定删除该员工 {n} 吗？此操作不可撤销，并将同步到所有设备。",delNotFound:"该员工不在当前公司，或已被删除",
+      markSold:"标记为已售",markAvail:"标记为在售",soldHideHint:"它已收进「已售车辆」列表。",deleteCar:"删除此车辆",delConfirm:"确定删除这辆车吗？此操作不可撤销，并将同步到所有设备。",markedSold:"已标记为已售",markedAvail:"已标记为在售",carDeleted:"车辆已删除",sold:"已售",goneTitle:"该车辆已不再提供",goneSoldTitle:"该车辆已售出",goneSeeOthers:"查看其它车辆",del:"删除",delSelf:"不能删除你自己的账号",delDone:"已删除",delEmpConfirm:"确定删除该员工 {n} 吗？此操作不可撤销，并将同步到所有设备。",delNotFound:"该员工不在当前公司，或已被删除",
       pvTitle:"🎛 预览身份 · 分享链接",pvHint:"切换查看角色与指派销售——同一辆车会按角色显示不同价格与联系方式。老板、合伙人A、合伙人B 可见成本与全部编辑权限；店长与销售A 可在详情页上传照片；分享链接携带销售 ref，客户由此联系到对应销售。",
       pvWho:"谁在查看？",pvSales:"指派销售（分享链接）",pvCopy:"复制",
       pvR_customer:"客户",pvR_customer_sub:"看到对外售价",
@@ -2065,7 +2065,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.108';
+const APP_VER='1.2.109';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2352,10 +2352,23 @@ if(homeSearch) homeSearch.addEventListener('input',e=>{ FILTER.q=e.target.value.
 // Why the grid is empty, in plain words. A branch-assigned staff member looking at an
 // empty showroom used to be told "enter your server address in Settings", which sends
 // them hunting through the wrong screen while their cars are sitting right there.
+/* Is anything still for sale? A grid that is empty because every car sold is a
+   different situation from a grid that is empty because nothing synced yet. */
+function hasLiveCar(){ return Object.keys(CARS).some(k=>CARS[k] && !CARS[k].sold); }
+/* Shown when the only thing left in the showroom is sold stock: no server hint here,
+   just the button that takes you where the cars actually are. */
+function soldOnlyEmptyState(){
+  return '<div class="empty-state" style="grid-column:1/-1;"><div class="ic">🚗</div>'+
+    '<div class="ti">'+T('allSoldTitle','All cars are sold')+'</div>'+
+    '<div class="sub">'+T('allSoldHint','Sold vehicles are no longer listed in the showroom. Open the Sold vehicles list to see them.')+'</div>'+
+    '<button class="submit ghost" style="margin-top:12px;" onclick="go(\'scr-sold\')">'+T('soldTitle','Sold vehicles')+'</button></div>';
+}
 function emptyInventoryHint(){
   if(isSharedView()) return T('emptyShared','Our showroom is being updated — tap the WhatsApp button below to ask about available vehicles.');
   // A sync failure must not be reported as "go fill in your server address" — the
   // address is already saved and tapping Settings there just looks like a dead end.
+  // Nothing to browse because everything sold: that is not a connection problem.
+  try{ if(Object.keys(CARS).length && !hasLiveCar()) return T('allSoldHint','Sold vehicles are no longer listed in the showroom. Open the Sold vehicles list to see them.'); }catch(e){}
   try{ if(SYNC && SYNC.state==='err' && SYNC.msg) return T('syncErrState','Could not reach the server — {m}').replace('{m}',String(SYNC.msg).slice(0,160)); }catch(e){}
   return T('needServer','Please enter your server address in Settings to load inventory.');
 }
@@ -2368,9 +2381,14 @@ function branchTaggedCount(){ return false; }
    location "Ant motors and valor Motors" while the staff had typed "ANT MOTORS",
    "ANT Motors", "VALOR MOTORS" or nothing — strict string equality matched none of
    them, so every branch-assigned salesperson landed on an empty home screen.
-   Everyone sees every car now. c.loc is still displayed, it just never filters. */
+   Everyone sees every car now. c.loc is still displayed, it just never filters.
+   Sold cars are the one deliberate exception: they are archived the moment they sell,
+   so a sold car leaves the home grid and the stock grid and lives only in the
+   Sold vehicles list — that is where you go to look for it again. */
 function matchCar(k){
   const c=CARS[k];
+  if(!c) return false;
+  if(c.sold) return false;   // archive, don't list
   const sec = FILTER.section!=='all' ? FILTER.section : FILTER.cond;
   if(sec && sec!=='all' && c.cond!==sec) return false;
   if(FILTER.brand!=='all' && c.brand!==FILTER.brand) return false;
@@ -2398,9 +2416,11 @@ function applyAndGo(){ renderStock(); go('scr-stock'); }
 const FACETS={branches:[],brands:[],colors:[],years:[]};
 function recomputeFacets(){
   FACETS.branches=[...new Set(Object.values(CARS).map(c=>c.branch))];
-  FACETS.brands=[...new Set(Object.values(CARS).map(c=>c.brand))].sort();
-  FACETS.colors=[...new Set(Object.keys(CARS).map(k=>carColor(k)))].sort();
-  FACETS.years=[...new Set(Object.values(CARS).map(c=>carYear(c)).filter(Boolean))].sort((a,b)=>b-a);
+  // Facets describe what can still be bought, so sold cars drop out of them too.
+  const live=Object.keys(CARS).filter(k=>!CARS[k].sold);
+  FACETS.brands=[...new Set(live.map(k=>CARS[k].brand))].sort();
+  FACETS.colors=[...new Set(live.map(k=>carColor(k)))].sort();
+  FACETS.years=[...new Set(live.map(k=>carYear(CARS[k])).filter(Boolean))].sort((a,b)=>b-a);
 }
 function resetAllFilters(){
   Object.assign(FILTER,{section:FILTER.section,q:"",brand:"all",branch:"all",brands:[],colors:[],years:[],priceMin:null,priceMax:null,cond:"all",body:"all",price:"all"});
@@ -2477,6 +2497,7 @@ function renderStock(){
   else if(s==='oldest') ks.sort((a,b)=>new Date(LISTED_AT[a])-new Date(LISTED_AT[b]));
   if(ks.length===0){
     const anyCar=Object.keys(CARS).length>0;
+    if(anyCar && !hasLiveCar()){ g.innerHTML=soldOnlyEmptyState(); return; }
     const hint=(anyCar&&!isSharedView())?emptyInventoryHint().replace('{b}',myBranch()||''):'';
     g.innerHTML='<div class="empty-state" style="grid-column:1/-1;"><div class="ic">🔍</div><div class="ti">'+(hint?T('noCars','No cars available'):T('noMatch','No cars match your filters.'))+'</div>'+(hint?'<div class="sub">'+hint+'</div>':'')+'</div>';
     return;
@@ -2489,7 +2510,10 @@ function renderHome(){
   populateFilterSelects();
   const grid=document.getElementById('homeGrid'); grid.innerHTML="";
   const homeKeys=Object.keys(CARS).filter(matchCar);
-  if(homeKeys.length===0){ const emptyMsg=emptyInventoryHint().replace('{b}',myBranch()||''); grid.innerHTML='<div class="empty-state" style="grid-column:1/-1;"><div class="ic">🚗</div><div class="ti">'+T('noCars','No cars available')+'</div><div class="sub">'+emptyMsg+'</div></div>'; }
+  if(homeKeys.length===0){
+    if(Object.keys(CARS).length && !hasLiveCar()){ grid.innerHTML=soldOnlyEmptyState(); }
+    else { grid.innerHTML='<div class="empty-state" style="grid-column:1/-1;"><div class="ic">🚗</div><div class="ti">'+T('noCars','No cars available')+'</div><div class="sub">'+emptyInventoryHint().replace('{b}',myBranch()||'')+'</div></div>'; }
+  }
   homeKeys.forEach(k=>{ grid.appendChild(carCard(k)); });
   // Featured cars now live in the big hero carousel (see renderHeroCarousel) — no separate section below.
   renderHeroCarousel();
@@ -2632,6 +2656,7 @@ function renderStockFiltered(){
   else if(s==='oldest') ks.sort((a,b)=>new Date(LISTED_AT[a])-new Date(LISTED_AT[b]));
   if(ks.length===0){
     const anyCar=Object.keys(CARS).length>0;
+    if(anyCar && !hasLiveCar()){ g.innerHTML=soldOnlyEmptyState(); return; }
     const hint=(anyCar&&!isSharedView())?emptyInventoryHint().replace('{b}',myBranch()||''):'';
     g.innerHTML='<div class="empty-state" style="grid-column:1/-1;"><div class="ic">🔍</div><div class="ti">'+(hint?T('noCars','No cars available'):T('noMatch','No cars match your filters.'))+'</div>'+(hint?'<div class="sub">'+hint+'</div>':'')+'</div>';
     return;
@@ -2671,7 +2696,7 @@ function renderDetail(){
   c.hl.forEach(h=>{ const d=document.createElement('div'); d.className="chip on"; d.style.cursor="default"; d.textContent=hlText(h); hl.appendChild(d); });
   const mc=document.getElementById('dMoreCars');
   if(mc){
-    const others=Object.keys(CARS).filter(k=>k!==curCar);
+    const others=Object.keys(CARS).filter(k=>k!==curCar && !CARS[k].sold);
     mc.innerHTML=`<h4 style="font-size:13px;font-weight:800;margin:22px 0 10px;">${T('moreCars','More cars')}</h4><div class="more-grid">`+
       others.map(k=>{ const o=CARS[k]; const oc=carCover(k); const orb=o.sold?'<span class="cond sold">SOLD</span>':`<span class="cond ${o.cond==='NEW'?'new':'used'}">${condLabel(o)}</span>`; return `<div class="more-card${o.sold?' sold':''}" onclick="openDetail('${k}')"><div class="ph ${o.grad}" data-k="${k}">${oc?`<img class="car-cover" src="${oc}" alt="" />`:carSVG(o.grad)}${orb}</div><div class="more-name">${carName(o)}</div><div class="more-price">${rolePrice(o.price)}</div></div>`; }).join('')+
       `</div>`;
@@ -3657,8 +3682,12 @@ function openCarActions(){
 function toggleSold(){
   const c=CARS[curCar]; if(!c) return;
   c.sold=!c.sold; saveCars(); markCarDirty(curCar);
-  toast(c.sold?T('markedSold','Marked as sold'):T('markedAvail','Marked as available'));
+  // The car is about to vanish from every listing — say where it went when marking sold.
+  toast(c.sold ? (T('markedSold','Marked as sold')+' · '+T('soldHideHint','It is now in the Sold vehicles list.')) : T('markedAvail','Marked as available'));
   renderDetail(); renderHome(); renderStock();
+  try{ renderSoldList(); }catch(e){}
+  try{ renderSoldScreen(); }catch(e){}
+  try{ renderWorkbench(); }catch(e){}
 }
 function confirmDeleteCar(){
   if(!confirm(T('delConfirm','Delete this car? This cannot be undone and syncs to all devices.'))) return;
@@ -6400,7 +6429,7 @@ function renderWorkbench(){
     });
   }
   const mc=document.getElementById('wbMyCars');
-  if(mc){ mc.innerHTML=''; Object.keys(CARS).forEach(k=>{
+  if(mc){ mc.innerHTML=''; Object.keys(CARS).filter(k=>!CARS[k].sold).forEach(k=>{   // sold cars live in the Sold vehicles list, not the workbench
     const c=CARS[k];
     const d=document.createElement('div'); d.className='card'; d.onclick=()=>openDetail(k);
     const dot = canEditCar() ? `<button class="card-dot" title="${T('editCar','Edit')}" onclick="event.stopPropagation();curCar='${k}';openCarActions()">⋯</button>` : '';
