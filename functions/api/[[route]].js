@@ -689,6 +689,29 @@ async function uploadToStorage(dataUrl, cid, carId, kind) {
   if (error) throw new Error('storage_upload_failed: ' + (error.message || error));
   return `${SUPABASE_URL_FIXED}/storage/v1/object/public/car-photos/${path}`;
 }
+// Storage path ("cid/carId/name.ext") behind a public photo URL.
+function storagePathOf(url) {
+  const m = /\/storage\/v1\/object\/public\/car-photos\/(.+)$/.exec(url || '');
+  return m ? m[1] : null;
+}
+// Thumbnail convention: a photo's small version lives NEXT TO it, named <name>_t<ext>
+// (e.g. 1791238043353-oyvsov.jpeg → 1791238043353-oyvsov_t.jpeg). The client derives the
+// thumb URL from the original by string rule — no data-model change, no sync impact — and
+// falls back to the original when the thumb is missing (404 → onerror).
+function thumbPathOf(path) {
+  return String(path || '').replace(/(\.[a-z0-9]+)$/i, '_t$1');
+}
+async function uploadDataUrlToPath(dataUrl, path) {
+  const m = /^data:([^;]+);base64,(.*)$/.exec(dataUrl || '');
+  if (!m) throw new Error('bad_dataurl');
+  const bin = atob(m[2]);
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  await ensureBucket(sb);
+  const { error } = await sb.storage.from('car-photos').upload(path, bytes, { contentType: m[1] || 'image/jpeg', upsert: true });
+  if (error) throw new Error('storage_upload_failed: ' + (error.message || error));
+  return `${SUPABASE_URL_FIXED}/storage/v1/object/public/car-photos/${path}`;
+}
 // Immediately persist an uploaded photo into the `photos` table. The old flow only wrote photos
 // during /api/push (writePhotos), so an upload that was NOT followed by a successful car sync left
 // the file orphaned in Storage and invisible after the next full pull. Persisting here makes the
@@ -2312,11 +2335,30 @@ async function liveAppVersion(origin) {
       const b = await readBody(req);
       const dataUrl = b && b.dataUrl;
       const carId = b && b.carId;
+      // Backfill mode: store a small thumbnail for an EXISTING photo as <orig>_t<ext>.
+      // Used by the one-off client backfill for photos uploaded before thumbs existed.
+      // Strictly scoped: the target file must live inside the caller's company folder.
+      if (dataUrl && typeof dataUrl === 'string' && /^data:/.test(dataUrl) && b.asThumbFor && typeof b.asThumbFor === 'string') {
+        try {
+          const orig = storagePathOf(b.asThumbFor);
+          if (!orig || !orig.startsWith(emp.companyId + '/')) return send(400, { error: 'bad_thumb_target' });
+          if (/_t\.[a-z0-9]+$/i.test(orig)) return send(400, { error: 'already_a_thumb' });
+          const thumbUrl = await uploadDataUrlToPath(dataUrl, thumbPathOf(orig));
+          return send(200, { ok: true, thumbUrl });
+        } catch (e) { return send(500, { error: 'upload_failed', detail: String((e && e.message) || e) }); }
+      }
       if (!dataUrl || typeof dataUrl !== 'string' || !/^data:/.test(dataUrl)) return send(400, { error: 'bad_dataurl' });
       try {
         const url = await uploadToStorage(dataUrl, emp.companyId, carId || 'unknown', 'photo');
+        // Optional 480px thumbnail uploaded alongside, named after the main file. A thumb
+        // failure must NEVER fail the photo itself — the client just falls back to the original.
+        let thumbUrl = null;
+        if (b.thumbDataUrl && typeof b.thumbDataUrl === 'string' && /^data:/.test(b.thumbDataUrl)) {
+          try { thumbUrl = await uploadDataUrlToPath(b.thumbDataUrl, thumbPathOf(storagePathOf(url))); }
+          catch (te) { console.error('thumb_upload_failed (non-fatal):', (te && te.message) || te); }
+        }
         await persistPhoto(emp.companyId, carId || 'unknown', url);   // A: persist immediately so a later failed sync can't drop it
-        return send(200, { ok: true, url });
+        return send(200, { ok: true, url, thumbUrl });
       } catch (e) { return send(500, { error: 'upload_failed', detail: String((e && e.message) || e) }); }
     }
     // B-plan recovery: re-attach orphaned Storage files (uploaded but never pushed) back to their

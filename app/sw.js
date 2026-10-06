@@ -1,4 +1,4 @@
-const CACHE = 'antmotors-v212';
+const CACHE = 'antmotors-v213';
 // Dedicated photo bucket. Photo URLs are IMMUTABLE (filename = ms timestamp + random),
 // so they can be cached forever. This bucket must SURVIVE version bumps: wiping it on
 // every release (like the old activate() did) forced every device to re-download all

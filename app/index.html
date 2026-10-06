@@ -2065,7 +2065,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.112';
+const APP_VER='1.2.113';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2562,24 +2562,102 @@ function renderHeroCarousel(){
   }
 }
 function carCover(k){ const p=CAR_PHOTOS[k]; return (p&&p.length)?p[0]:null; }
+// Small-thumbnail convention (v1.2.113): every Storage photo may have a sibling 480px
+// thumb named <name>_t.jpeg right next to it. Lists/strips/grids load the thumb (a cover
+// used to be a 450KB 1600px original — 29 covers ≈ 13MB, which is why images took forever
+// and sometimes stalled half-drawn on Ghana links); the viewer loads the ORIGINAL.
+// If the thumb is missing (photos uploaded before this version, or a failed thumb upload)
+// the <img> onerror swaps in the original — nobody ever sees a broken cover.
+function thumbOf(u){
+  try{
+    if(typeof u!=='string' || !/^https?:\/\//i.test(u) || /_t\.jpe?g(\?|$)/i.test(u)) return u;
+    return u.replace(/(\.jpe?g)(\?|$)/i, '_t$1$2');
+  }catch(e){ return u; }
+}
+// <img> attributes that load a thumb with a transparent fallback to the original.
+// Used wherever a photo is displayed small (covers, strips, sold list).
+function thumbImgAttrs(u){
+  const t=thumbOf(u);
+  if(t===u) return ' src="'+u+'"';   // data: URLs and already-thumb URLs load as-is
+  return ' src="'+t+'" onerror="this.onerror=null;this.src=\''+u+'\'"';
+}
+// Downscale an already-cropped 1600px photo dataUrl to a 480px JPEG for list covers.
+// The cropper already holds the full image in memory, so this costs ~20ms per photo.
+async function makeThumbDataUrl(dataUrl){
+  try{
+    const img=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=dataUrl; });
+    const W=480, s=Math.min(1, W/(img.naturalWidth||W));
+    const w=Math.max(1,Math.round((img.naturalWidth||W)*s)), h=Math.max(1,Math.round((img.naturalHeight||W)*s));
+    const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+    cv.getContext('2d').drawImage(img,0,0,w,h);
+    return cv.toDataURL('image/jpeg',0.6);
+  }catch(e){ return null; }
+}
 // A valid stored photo is a real base64 image blob — rejects empty "data:," strings
 // (the broken-image "?" case) and any non-image data URL.
 function isPhotoOK(p){ return typeof p==='string' && p.length>4 && (/^data:image\/(jpeg|jpg|png|webp|gif);base64,/.test(p) || /^https?:\/\//.test(p)); }
 // Upload a cropped base64 media (image or video) to our /api/upload proxy, which stores it
 // in Supabase Storage and returns a CDN URL. Keeps the DB + sync payload tiny and lets the
 // browser cache images — no more base64 blobs in localStorage, no more flicker on slow nets.
-async function uploadMedia(dataUrl, carId){
+async function uploadMedia(dataUrl, carId, thumbDataUrl){
   if(/^https?:\/\//.test(dataUrl)) return dataUrl; // already a URL — nothing to do
   let lastErr;
   for(let attempt=0; attempt<3; attempt++){
     try{
-      const r=await api('/api/upload',{method:'POST',body:{dataUrl, carId: carId||curCar}});
+      const body={dataUrl, carId: carId||curCar};
+      if(thumbDataUrl) body.thumbDataUrl=thumbDataUrl;   // 480px sibling, named <name>_t.jpeg
+      const r=await api('/api/upload',{method:'POST',body});
       if(r && r.ok && r.url) return r.url;
     }catch(e){ lastErr=e; }
     if(attempt<2) await new Promise(res=>setTimeout(res, 600*(attempt+1)));
   }
   console.error('uploadMedia failed after retries', lastErr);
   return null;
+}
+// ── One-off thumbnail backfill (boss tool, v1.2.113) ─────────────────────────────
+// Photos uploaded BEFORE v1.2.113 have no 480px sibling. Run amBackfillThumbs() once
+// in the browser console while signed in as boss (desktop recommended): for every
+// original it fetches the file (CORS allows GET), downscales it on a canvas and
+// uploads it as <name>_t.jpeg via /api/upload {asThumbFor}. Safe to re-run — thumbs
+// that already exist are skipped (HEAD probe), and a re-upload with upsert:true is
+// idempotent anyway. New uploads never need this: uploadMedia sends the thumb along.
+async function amBackfillThumbs(){
+  if(!SYNC.token){ toast('请先用老板账号登录，再运行缩略图回填'); return; }
+  const targets=[]; const seen=new Set();
+  Object.keys(CAR_PHOTOS).forEach(cid=>{
+    (CAR_PHOTOS[cid]||[]).forEach(u=>{
+      if(typeof u!=='string' || !/^https?:\/\//i.test(u) || /_t\.jpe?g(\?|$)/i.test(u)) return;
+      if(seen.has(u)) return; seen.add(u);
+      targets.push({carId:cid, url:u});
+    });
+  });
+  if(!targets.length){ toast('所有照片都有缩略图，无需回填'); return; }
+  let done=0, made=0, skipped=0, failed=0;
+  toast('缩略图回填开始 · 共 '+targets.length+' 张（请保持页面打开）');
+  const CONC=3;
+  for(let i=0;i<targets.length;i+=CONC){
+    await Promise.all(targets.slice(i,i+CONC).map(async t=>{
+      try{
+        let exists=false;
+        try{ const hr=await fetch(thumbOf(t.url),{method:'HEAD'}); exists=hr.ok; }catch(e){}
+        if(exists){ skipped++; return; }
+        const res=await fetch(t.url);
+        if(!res.ok) throw new Error('HTTP '+res.status);
+        const blob=await res.blob();
+        if(!blob || !blob.size) throw new Error('empty');
+        const dUrl=await new Promise((res2,rej2)=>{ const fr=new FileReader(); fr.onload=()=>res2(fr.result); fr.onerror=rej2; fr.readAsDataURL(blob); });
+        const td=await makeThumbDataUrl(dUrl);
+        if(!td) throw new Error('thumb gen failed');
+        const r=await api('/api/upload',{method:'POST',body:{dataUrl:td, carId:t.carId, asThumbFor:t.url}});
+        if(r && r.ok) made++; else throw new Error((r && r.error) || 'upload failed');
+      }catch(e){ failed++; console.warn('thumb backfill failed:', t.url, (e && e.message) || e); }
+      finally{
+        done++;
+        if(done%10===0 || done===targets.length) toast('缩略图回填 '+done+'/'+targets.length+'（新增 '+made+'）');
+      }
+    }));
+  }
+  toast('缩略图回填完成：新增 '+made+' · 已有 '+skipped+' · 失败 '+failed+'（失败的可重跑一次）');
 }
 // B-plan recovery trigger (boss only): re-attaches orphaned Storage photos on the server, then
 // re-pulls so they show up immediately. Calls /api/recover-photos which is scoped to this company.
@@ -2641,7 +2719,7 @@ function carCard(k){
   const saved=SAVED_CARS.has(k);
   const cover=carCover(k);
   const ribbon=c.sold?'<span class="cond sold">SOLD</span>':`<span class="cond ${c.cond==='NEW'?'new':'used'}">${condLabel(c)}</span>`;
-  d.innerHTML=`<div class="ph ${c.grad}" data-k="${k}">${cover?`<img class="car-cover" src="${cover}" alt="" />`:carSVG(c.grad)}${ribbon}
+  d.innerHTML=`<div class="ph ${c.grad}" data-k="${k}">${cover?`<img class="car-cover"${thumbImgAttrs(cover)} alt="" />`:carSVG(c.grad)}${ribbon}
       <div class="fav-toggle ${saved?'on':''}" onclick="event.stopPropagation();toggleFav(null,'${k}')">${saved?'♥':'♡'}</div></div>
     <div class="body"><h4>${carName(c)}</h4><div class="meta">${carSub(c).split('·').slice(0,2).join('·')}</div><div class="pr">${rolePrice(c.price)}</div>${stockBadge(k)}</div>`;
   return d;
@@ -2738,7 +2816,7 @@ function buildGallery(c){
   let slides;
   if(photos.length||videos.length){
     slides = [
-      ...photos.map(p=>`<img class="zoomable" src="${p}" alt="" data-name="${(c.name||'photo').replace(/[^\w\u4e00-\u9fa5\- ]/g,'')}.jpg" />`),
+      ...photos.map(p=>`<img class="zoomable" src="${thumbOf(p)}" data-full="${p}" onerror="this.onerror=null;this.src='${p}'" alt="" data-name="${(c.name||'photo').replace(/[^\w\u4e00-\u9fa5\- ]/g,'')}.jpg" />`),
       ...videos.map(v=>`<video src="${v}" controls playsinline preload="metadata"></video>`)
     ];
   } else { slides = [
@@ -3226,13 +3304,31 @@ else wireCrop();
 
 /* ===== Photo viewer: tap a photo → pinch-zoom / pan / double-tap / download ===== */
 let _pvState=null;
-function openPhotoViewer(src, name){
+function openPhotoViewer(src, name, list, idx){
   wirePhotoViewer(); // idempotent: wire handlers now that #pvStage exists in the DOM (the early
                      // module-load call found it null because the overlay is parsed later)
   const img=document.getElementById('pvImg');
   img.style.transform=''; img.src=src;
-  _pvState={scale:1, tx:0, ty:0, lastDist:0, src:src, name:name||'photo.jpg'};
+  _pvState={scale:1, tx:0, ty:0, lastDist:0, src:src, name:name||'photo.jpg',
+            list:(Array.isArray(list)&&list.length>1)?list.slice():null,
+            idx:(typeof idx==='number')?idx:0};
+  pvUpdateCount();
   document.getElementById('photoViewer').style.display='flex';
+}
+function pvUpdateCount(){
+  const el=document.getElementById('pvCount'); if(!el) return;
+  el.textContent=(_pvState && _pvState.list) ? ((_pvState.idx+1)+'/'+_pvState.list.length) : '';
+  el.style.display=(_pvState && _pvState.list)?'':'none';
+}
+function pvShow(i){
+  if(!_pvState || !_pvState.list) return;
+  const n=_pvState.list.length;
+  _pvState.idx=((i%n)+n)%n;                 // wrap around at both ends
+  _pvState.src=_pvState.list[_pvState.idx]; // always the ORIGINAL, never the thumb
+  _pvState.scale=1; _pvState.tx=0; _pvState.ty=0;
+  const img=document.getElementById('pvImg');
+  img.style.transform=''; img.src=_pvState.src;
+  pvUpdateCount();
 }
 function closePhotoViewer(){
   const v=document.getElementById('photoViewer'); if(v) v.style.display='none';
@@ -3242,9 +3338,10 @@ function closePhotoViewer(){
    app or the Capacitor shell: the click is swallowed and nothing happens. In Safari the
    same click saves the file to Files. Same phone, same button, two different outcomes —
    that is why "some people can download and some can't" on nothing but iPhones.
-   So: keep the blob route where it works, and inside the app open the picture in a new
-   tab, where long-press → "Save to Photos" is the one route that actually lands the
-   photo on the phone. */
+   v1.2.113: the user asked for ⤓ to save to PHOTOS (相册), same as long-press — and the
+   only reliable web route to the Photos app on iOS is open-in-tab + long-press. So on
+   EVERY iPhone (Safari included) ⤓ now opens the picture for long-press saving; the
+   blob/Files route stays for Android and desktop only. */
 function isIOS(){
   try{ return /iP(hone|ad|od)/.test(navigator.userAgent) || (navigator.platform==='MacIntel' && navigator.maxTouchPoints>1); }catch(e){ return false; }
 }
@@ -3263,7 +3360,7 @@ function openImageForSave(url){
 async function downloadPhoto(){
   if(!_pvState) return;
   const src=_pvState.src, name=_pvState.name||'photo.jpg';
-  if(isIOS() && inInstalledIOS()){ openImageForSave(src); return; }
+  if(isIOS()){ openImageForSave(src); return; }   // iPhone: same result as long-press → Photos
   try{
     const res=await fetch(src);
     if(!res.ok) throw new Error('HTTP '+res.status);          // never save an error page as .jpg
@@ -3311,6 +3408,24 @@ function wirePhotoViewer(){
   stage.addEventListener('touchmove',e=>{ if(!_pvState||panId===null) return; e.preventDefault(); if(e.touches.length===1){ const t=e.touches[0]; _pvState.tx+=t.clientX-lastX; _pvState.ty+=t.clientY-lastY; lastX=t.clientX; lastY=t.clientY; pvApply(); } },{passive:false});
   stage.addEventListener('touchend',e=>{ if(e.touches.length===0) panId=null; });
   stage.addEventListener('touchcancel',()=>{ panId=null; });
+  // ---- Swipe left/right to flip through this car's photos (only while zoom === 1) ----
+  let swX=null, swY=null;
+  stage.addEventListener('touchstart',e=>{ if(!_pvState){ swX=null; return; } if(e.touches.length===1){ swX=e.touches[0].clientX; swY=e.touches[0].clientY; } else { swX=null; } },{passive:true});
+  stage.addEventListener('touchend',e=>{
+    if(!_pvState || swX===null) { swX=null; return; }
+    const t=(e.changedTouches&&e.changedTouches[0]); const sx=swX, sy=swY; swX=null;
+    if(!t) return;
+    const dx=t.clientX-sx, dy=t.clientY-sy;
+    if(_pvState.scale!==1 || !_pvState.list) return;   // zoomed in → that's a pan, not a swipe
+    if(Math.abs(dx)>48 && Math.abs(dy)<64) pvShow(_pvState.idx + (dx<0?1:-1));
+  },{passive:true});
+  stage.addEventListener('touchcancel',()=>{ swX=null; });
+  // ---- Desktop: arrow keys flip photos too ----
+  window.addEventListener('keydown',e=>{
+    if(!_pvState || !_pvState.list) return;
+    if(e.key==='ArrowRight') pvShow(_pvState.idx+1);
+    else if(e.key==='ArrowLeft') pvShow(_pvState.idx-1);
+  });
   // ---- Desktop: wheel zoom + drag pan + double-click reset ----
   stage.addEventListener('wheel',e=>{ if(!_pvState) return; e.preventDefault(); const z=Math.min(6,Math.max(1,_pvState.scale-(e.deltaY>0?0.12:-0.12))); _pvState.scale=z; pvApply(); },{passive:false});
   let mDown=false, mX=0, mY=0;
@@ -3328,7 +3443,18 @@ function wirePhotoViewerClicks(){
     if(!img) return;
     if(e.target.closest('.rm')) return;            // don't hijack the ✕ remove control
     e.stopPropagation(); e.preventDefault();
-    openPhotoViewer(img.currentSrc||img.src, img.getAttribute('data-name')||'antmotors.jpg');
+    // data-full = the ORIGINAL (the visible src is the 480px thumb). The viewer always
+    // shows originals, and collects the whole gallery so ‹ › swipe works across photos.
+    const full=img.getAttribute('data-full')||img.currentSrc||img.src;
+    let gal=[full], idx=0;
+    let cont=img.parentElement;
+    for(let hop=0; hop<4 && cont && cont!==document; hop++){
+      const set=[...cont.querySelectorAll('img.zoomable')].map(x=>x.getAttribute('data-full')||x.currentSrc||x.src);
+      if(set.length>1){ gal=set; idx=set.indexOf(full); break; }
+      cont=cont.parentElement;
+    }
+    if(idx<0) idx=0;
+    openPhotoViewer(full, img.getAttribute('data-name')||'antmotors.jpg', gal, idx);
   }, true);
 }
 wirePhotoViewer(); wirePhotoViewerClicks();
@@ -3340,7 +3466,7 @@ function frameRatio(sel, fallback){
 
 /* ---- multi-photo: crop & adjust each selected image at full resolution ---- */
 async function appendCarPhotoSingle(dataUrl){
-  const url=await uploadMedia(dataUrl, curCar);
+  const url=await uploadMedia(dataUrl, curCar, await makeThumbDataUrl(dataUrl));
   if(!CAR_PHOTOS[curCar]) CAR_PHOTOS[curCar]=[];
   // On upload failure, keep the original (base64) locally so the photo is NOT silently lost;
   // reconcileLocalPhotos() will convert it to a URL (and upload it) once the network recovers.
@@ -3413,7 +3539,8 @@ async function uploadCarPhotoBatch(list, carId, silent){
     const slice=items.slice(k,k+CONC);
     started+=slice.length;
     await Promise.all(slice.map(async (d)=>{
-      const url=await uploadMedia(d, carId);
+      const td=await makeThumbDataUrl(d);   // 480px cover sibling (null → server skips it)
+      const url=await uploadMedia(d, carId, td);
       if(url){ if(!CAR_PHOTOS[carId]) CAR_PHOTOS[carId]=[]; CAR_PHOTOS[carId].push(url); added++; }
       else failed++;
     }));
@@ -3540,7 +3667,7 @@ function renderDetailThumbs(){
     // moment the list changes (sync pull / lazy load reassigns CAR_PHOTOS[curCar]), and a
     // stale/out-of-range index makes splice() a silent no-op — the classic "I keep deleting
     // it but it comes back" bug.
-    t.innerHTML=`<img class="zoomable" src="${src}" data-name="${(CARS[curCar]&&CARS[curCar].name||'photo').replace(/[^\w\u4e00-\u9fa5\- ]/g,'')}.jpg" /><${'div'} class="rm">✕</${'div'}>`;
+    t.innerHTML=`<img class="zoomable" src="${thumbOf(src)}" data-full="${src}" onerror="this.onerror=null;this.src='${src}'" data-name="${(CARS[curCar]&&CARS[curCar].name||'photo').replace(/[^\w\u4e00-\u9fa5\- ]/g,'')}.jpg" /><${'div'} class="rm">✕</${'div'}>`;
     const rm=t.lastElementChild;
     if(rm) rm.onclick=(ev)=>{ ev.stopPropagation(); removeCarPhotoByValue(src); };
     t.onclick=()=>toast(T('viewingPhoto','Viewing photo')+' '+(i+1));
@@ -4088,7 +4215,7 @@ function renderSoldList(){
   list.innerHTML = sold.map(k=>{
     const c=CARS[k]; const oc=carCover(k);
     return '<button class="me-link sold-item" onclick="openDetail(\''+k+'\')">'+
-      (oc?'<img class="sold-thumb" src="'+oc+'" alt="" />':'<span class="sold-dot"></span>')+
+      (oc?'<img class="sold-thumb"'+thumbImgAttrs(oc)+' alt="" />':'<span class="sold-dot"></span>')+
       '<span class="sold-name">'+carName(c)+'</span>'+
       (c.cond==='NEW'?'<span class="sold-tag new">NEW</span>':'<span class="sold-tag used">USED</span>')+
       '<span class="ar">&rsaquo;</span></button>';
@@ -4104,7 +4231,7 @@ function renderSoldScreen(){
   list.innerHTML = sold.map(k=>{
     const c=CARS[k]; const oc=carCover(k);
     return '<button class="me-link sold-item" onclick="openDetail(\''+k+'\')">'+
-      (oc?'<img class="sold-thumb" src="'+oc+'" alt="" />':'<span class="sold-dot"></span>')+
+      (oc?'<img class="sold-thumb"'+thumbImgAttrs(oc)+' alt="" />':'<span class="sold-dot"></span>')+
       '<span class="sold-name">'+carName(c)+'</span>'+
       (c.cond==='NEW'?'<span class="sold-tag new">NEW</span>':'<span class="sold-tag used">USED</span>')+
       '<span class="ar">&rsaquo;</span></button>';
@@ -6329,7 +6456,11 @@ function lazyPhotoFetch(id, el){
 function applyLazyPhoto(id, el){
   const ph=CAR_PHOTOS[id]&&CAR_PHOTOS[id][0]; if(!ph||!el) return;
   if(el.querySelector('img.car-cover')) return; // already has its image
-  const im=document.createElement('img'); im.className='car-cover'; im.src=ph; im.alt='';
+  const im=document.createElement('img'); im.className='car-cover'; im.decoding='async'; im.alt='';
+  // Cover = the small thumb (v1.2.113); fall back to the original when no thumb exists.
+  const t=thumbOf(ph);
+  if(t!==ph){ im.src=t; im.onerror=()=>{ im.onerror=null; im.src=ph; }; }
+  else im.src=ph;
   el.appendChild(im);
 }
 // Photos are no longer pulled in one big blob on refresh — they stream in per card via
@@ -7219,6 +7350,7 @@ if('serviceWorker' in navigator){
   <div class="photo-viewer" id="photoViewer" style="display:none">
     <div class="pv-bar">
       <button class="pv-close" onclick="closePhotoViewer()">✕</button>
+      <span id="pvCount" style="color:#cfd6e4;font-size:12px;font-weight:700;letter-spacing:.5px;"></span>
       <button class="pv-dl" onclick="downloadPhoto()">⤓ <span data-i18n="download">Download</span></button>
     </div>
     <div class="pv-stage" id="pvStage">
