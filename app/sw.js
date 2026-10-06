@@ -1,10 +1,15 @@
-const CACHE = 'antmotors-v213';
+const CACHE = 'antmotors-v214';
 // Dedicated photo bucket. Photo URLs are IMMUTABLE (filename = ms timestamp + random),
 // so they can be cached forever. This bucket must SURVIVE version bumps: wiping it on
 // every release (like the old activate() did) forced every device to re-download all
 // covers (450KB x 29 cars = ~13MB) after each deploy — that was most of the "app opens
 // slow, images slow" pain on Ghana mobile links.
-const PHOTO_CACHE = 'antmotors-photos-v1';
+// v2 (v1.2.115): the v1 bucket was poisoned — missing files (<name>_t.jpeg thumbs that
+// don't exist yet) came back as opaque no-cors responses, which the old `resp.ok ||
+// resp.type==='opaque'` check happily cached FOREVER, and iOS then showed question marks.
+// v2 re-fetches with mode:'cors' (Storage sends access-control-allow-origin: *) so the
+// true HTTP status is readable, and only real 200 images are stored.
+const PHOTO_CACHE = 'antmotors-photos-v2';
 const PHOTO_RE = /(^|\.)supabase\.co$/;
 const STATIC = ['./', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon.svg'];
 
@@ -50,17 +55,22 @@ self.addEventListener('fetch', e => {
   // Photos from Supabase Storage: cache-first forever in the dedicated bucket.
   // The HTTP cache only holds them for max-age=3600 and this bucket survives releases,
   // so a cover that was seen once never travels the wire again.
+  // Re-fetch in CORS mode to read the real status: <img> requests are no-cors/opaque
+  // (status 0 even for 404s), and caching those poisoned the v1 bucket with missing
+  // files that iOS rendered as permanent question marks.
   if (PHOTO_RE.test(url.hostname) && url.pathname.indexOf('/storage/v1/') !== -1) {
     e.respondWith(
       caches.open(PHOTO_CACHE).then(c => c.match(e.request).then(hit => {
         if (hit) return hit;
-        return fetch(e.request).then(resp => {
-          if (resp && (resp.ok || resp.type === 'opaque')) {
+        return fetch(url.href, { mode: 'cors', credentials: 'omit' }).then(resp => {
+          if (resp && resp.ok && resp.status === 200) {
             try { c.put(e.request, resp.clone()); } catch(err) {}
             trimPhotoCache(c, 500);
+            return resp;
           }
-          return resp;
-        });
+          // Missing file / error: serve a synthetic 404 (readable status), NOT cacheable.
+          return new Response('', { status: 404, statusText: 'Not Found' });
+        }).catch(() => fetch(e.request));
       }))
     );
     return;

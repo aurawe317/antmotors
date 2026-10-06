@@ -2065,7 +2065,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.114';
+const APP_VER='1.2.115';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2564,12 +2564,17 @@ function renderHeroCarousel(){
 function carCover(k){ const p=CAR_PHOTOS[k]; return (p&&p.length)?p[0]:null; }
 // Small-thumbnail convention (v1.2.113): every Storage photo may have a sibling 480px
 // thumb named <name>_t.jpeg right next to it. Lists/strips/grids load the thumb (a cover
-// used to be a 450KB 1600px original — 29 covers ≈ 13MB, which is why images took forever
-// and sometimes stalled half-drawn on Ghana links); the viewer loads the ORIGINAL.
-// If the thumb is missing (photos uploaded before this version, or a failed thumb upload)
-// the <img> onerror swaps in the original — nobody ever sees a broken cover.
+// used to be a 450KB 1600px original — 29 covers ≈ 13MB); the viewer loads the ORIGINAL.
+// v1.2.115: thumbs are OFF until the one-off backfill has verifiably produced them
+// (am_thumbs_on=1, set by amBackfillThumbs on a clean run). Rendering a guessed thumb
+// URL before it exists means a 400 from Storage — and iOS does NOT reliably fire the
+// <img> onerror fallback for those, which painted question marks over every cover.
+function thumbsOn(){
+  try{ return localStorage.getItem('am_thumbs_on')==='1'; }catch(e){ return false; }
+}
 function thumbOf(u){
   try{
+    if(!thumbsOn()) return u;
     if(typeof u!=='string' || !/^https?:\/\//i.test(u) || /_t\.jpe?g(\?|$)/i.test(u)) return u;
     return u.replace(/(\.jpe?g)(\?|$)/i, '_t$1$2');
   }catch(e){ return u; }
@@ -2658,6 +2663,13 @@ async function amBackfillThumbs(){
     }));
   }
   toast('缩略图回填完成：新增 '+made+' · 已有 '+skipped+' · 失败 '+failed+'（失败的可重跑一次）');
+  // Thumbs are now verifiably there for every photo we know of — switch covers over to
+  // them. Only on a CLEAN run: with failures there would be thumbs missing → 400s →
+  // question marks on iOS. Re-run the backfill to clear the failures first.
+  if(failed===0 && (made+skipped)>0){
+    try{ localStorage.setItem('am_thumbs_on','1'); }catch(e){}
+    toast('缩略图已全部就绪，封面启用小图（如未生效请关掉页面重开一次）');
+  }
 }
 // B-plan recovery trigger (boss only): re-attaches orphaned Storage photos on the server, then
 // re-pulls so they show up immediately. Calls /api/recover-photos which is scoped to this company.
