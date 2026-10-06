@@ -2065,7 +2065,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.116';
+const APP_VER='1.2.117';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2572,11 +2572,19 @@ function carCover(k){ const p=CAR_PHOTOS[k]; return (p&&p.length)?p[0]:null; }
 function thumbsOn(){
   try{ return localStorage.getItem('am_thumbs_on')==='1'; }catch(e){ return false; }
 }
+// Pure name derivation: "<orig>_t.jpeg". NO gate — callers that need the real thumb
+// URL regardless of whether covers currently use thumbs (the backfill probe, the
+// status check) must use this. thumbOf() adds the gate on top for rendering.
+function thumbUrlOf(u){
+  try{
+    if(typeof u!=='string' || !/^https?:\/\//i.test(u) || /_t\.jpe?g(\?|$)/i.test(u)) return u;
+    return u.replace(/(\.jpe?g)(\?|$)/i, '_t$1$2');
+  }catch(e){ return u; }
+}
 function thumbOf(u){
   try{
     if(!thumbsOn()) return u;
-    if(typeof u!=='string' || !/^https?:\/\//i.test(u) || /_t\.jpe?g(\?|$)/i.test(u)) return u;
-    return u.replace(/(\.jpe?g)(\?|$)/i, '_t$1$2');
+    return thumbUrlOf(u);
   }catch(e){ return u; }
 }
 // <img> attributes that load a thumb with a transparent fallback to the original.
@@ -2626,6 +2634,27 @@ async function uploadMedia(dataUrl, carId, thumbDataUrl){
 // uploads it as <name>_t.jpeg via /api/upload {asThumbFor}. Safe to re-run — thumbs
 // that already exist are skipped (HEAD probe), and a re-upload with upsert:true is
 // idempotent anyway. New uploads never need this: uploadMedia sends the thumb along.
+// One photo: probe → download original → downscale → upload as <orig>_t.jpeg.
+// Returns 'made' | 'skipped'; throws on failure (the caller retries once).
+async function thumbBackfillOne(t){
+  let exists=false;
+  // thumbUrlOf(), NOT thumbOf(): thumbOf is gated on am_thumbs_on, so while the gate is
+  // still OFF it returns the ORIGINAL url — probing that always answers 200, every photo
+  // looked "already has a thumb", nothing was generated, and the run then flipped the
+  // gate ON with no thumbs behind it (that is why covers stayed as huge originals).
+  try{ const hr=await fetch(thumbUrlOf(t.url),{method:'HEAD'}); exists=hr.ok; }catch(e){}
+  if(exists) return 'skipped';
+  const res=await fetch(t.url);
+  if(!res.ok) throw new Error('HTTP '+res.status);
+  const blob=await res.blob();
+  if(!blob || !blob.size) throw new Error('empty');
+  const dUrl=await new Promise((res2,rej2)=>{ const fr=new FileReader(); fr.onload=()=>res2(fr.result); fr.onerror=rej2; fr.readAsDataURL(blob); });
+  const td=await makeThumbDataUrl(dUrl);
+  if(!td) throw new Error('thumb gen failed');
+  const r=await api('/api/upload',{method:'POST',body:{dataUrl:td, carId:t.carId, asThumbFor:t.url}});
+  if(r && r.ok) return 'made';
+  throw new Error((r && r.error) || 'upload failed');
+}
 async function amBackfillThumbs(){
   if(!SYNC.token){ toast('请先用老板账号登录，再运行缩略图回填'); return; }
   const targets=[]; const seen=new Set();
@@ -2643,18 +2672,10 @@ async function amBackfillThumbs(){
   for(let i=0;i<targets.length;i+=CONC){
     await Promise.all(targets.slice(i,i+CONC).map(async t=>{
       try{
-        let exists=false;
-        try{ const hr=await fetch(thumbOf(t.url),{method:'HEAD'}); exists=hr.ok; }catch(e){}
-        if(exists){ skipped++; return; }
-        const res=await fetch(t.url);
-        if(!res.ok) throw new Error('HTTP '+res.status);
-        const blob=await res.blob();
-        if(!blob || !blob.size) throw new Error('empty');
-        const dUrl=await new Promise((res2,rej2)=>{ const fr=new FileReader(); fr.onload=()=>res2(fr.result); fr.onerror=rej2; fr.readAsDataURL(blob); });
-        const td=await makeThumbDataUrl(dUrl);
-        if(!td) throw new Error('thumb gen failed');
-        const r=await api('/api/upload',{method:'POST',body:{dataUrl:td, carId:t.carId, asThumbFor:t.url}});
-        if(r && r.ok) made++; else throw new Error((r && r.error) || 'upload failed');
+        let st=null;
+        try{ st=await thumbBackfillOne(t); }
+        catch(e1){ st=await thumbBackfillOne(t); }   // one retry: downloading a 1MB+ original over a shaky link is the usual failure
+        if(st==='made') made++; else skipped++;
       }catch(e){ failed++; console.warn('thumb backfill failed:', t.url, (e && e.message) || e); }
       finally{
         done++;
@@ -2662,14 +2683,52 @@ async function amBackfillThumbs(){
       }
     }));
   }
-  toast('缩略图回填完成：新增 '+made+' · 已有 '+skipped+' · 失败 '+failed+'（失败的可重跑一次）');
-  // Thumbs are now verifiably there for every photo we know of — switch covers over to
-  // them. Only on a CLEAN run: with failures there would be thumbs missing → 400s →
-  // question marks on iOS. Re-run the backfill to clear the failures first.
-  if(failed===0 && (made+skipped)>0){
+  // Don't trust the counters — re-probe every thumb and only switch covers over when
+  // ALL of them really answer 200. A partial set means 400s for the missing ones, and
+  // iOS does not reliably fire img onerror for those: it renders question marks.
+  const chk=await amThumbStatus(false);
+  if(chk && chk.total>0 && chk.missing===0){
     try{ localStorage.setItem('am_thumbs_on','1'); }catch(e){}
-    toast('缩略图已全部就绪，封面启用小图（如未生效请关掉页面重开一次）');
+    toast('缩略图已全部就绪（'+chk.total+' 张），封面启用小图（如未生效请关掉页面重开一次）');
+  }else{
+    // Keep covers on the originals (slow but correct) until the set is complete.
+    try{ localStorage.setItem('am_thumbs_on','0'); }catch(e){}
+    toast('回填未完成：新增 '+made+' · 已有 '+skipped+' · 失败 '+failed+' · 仍缺 '+((chk&&chk.missing)||'?')+' 张 → 继续用原图，请再跑一次直到缺 0 张');
   }
+}
+// Cheap HEAD-only audit: how many known photos actually have a stored thumb? Answers
+// "did the backfill really finish?" — the counters alone can't (see the probe bug above).
+async function amThumbStatus(verbose){
+  const urls=[]; const seen=new Set();
+  Object.keys(CAR_PHOTOS||{}).forEach(function(cid){
+    (CAR_PHOTOS[cid]||[]).forEach(function(u){
+      if(typeof u!=='string' || !/^https?:\/\//i.test(u) || /_t\.jpe?g(\?|$)/i.test(u)) return;
+      if(seen.has(u)) return; seen.add(u); urls.push(u);
+    });
+  });
+  let ok=0, missing=0;
+  const CONC=8;
+  for(let i=0;i<urls.length;i+=CONC){
+    await Promise.all(urls.slice(i,i+CONC).map(async function(u){
+      let good=false;
+      try{ const r=await fetch(thumbUrlOf(u),{method:'HEAD'}); good=!!(r && r.ok); }catch(e){}
+      if(good) ok++; else missing++;
+    }));
+  }
+  const res={total:ok+missing, ok:ok, missing:missing, on:thumbsOn()};
+  if(verbose!==false){
+    try{
+      if(res.total===0){ toast('没有检测到照片，先同步一次再检查'); }
+      else if(missing===0){
+        if(!res.on){ try{ localStorage.setItem('am_thumbs_on','1'); }catch(e){} res.on=true; }
+        toast('缩略图状态：共 '+res.total+' 张，全部就绪，小图已启用');
+      }else{
+        if(res.on){ try{ localStorage.setItem('am_thumbs_on','0'); }catch(e){} res.on=false; }
+        toast('缩略图状态：共 '+res.total+' 张 · 已就绪 '+ok+' · 缺 '+missing+' 张 → 暂用原图，再跑一次「生成历史缩略图」直到缺 0 张');
+      }
+    }catch(e){}
+  }
+  return res;
 }
 // B-plan recovery trigger (boss only): re-attaches orphaned Storage photos on the server, then
 // re-pulls so they show up immediately. Calls /api/recover-photos which is scoped to this company.
@@ -4635,7 +4694,11 @@ function qaTap(){
       // One-off maintenance: generate the missing 480px thumbs for photos uploaded
       // before v1.2.113. Boss-only in practice (the upload API needs a staff token)
       // and safe to re-run — existing thumbs are skipped.
-      +'<button class="qa-btn ghost" onclick="qaBackfillThumbs(this)">生成历史缩略图</button>';
+      +'<button class="qa-btn ghost" onclick="qaBackfillThumbs(this)">生成历史缩略图</button>'
+      // Read-only audit of the same thing the backfill flips on: how many photos still
+      // have no stored thumb, and whether covers are currently using them.
+      +'<button class="qa-btn ghost" onclick="qaThumbStatus(this)">检查缩略图状态</button>'
+      +'<div id="qaThumbOut" style="margin-top:8px;font-size:12px;line-height:1.55;opacity:.9"></div>';
     document.body.appendChild(box);
     return;
   }
@@ -4648,6 +4711,28 @@ async function qaBackfillThumbs(btn){
   if(btn){ if(btn.dataset.busy==='1') return; btn.dataset.busy='1'; }
   if(!confirm('开始为所有历史照片生成缩略图？（会下载每张原图，需要几分钟，请保持页面打开；已生成过的会自动跳过）')){ if(btn) btn.dataset.busy=''; return; }
   try{ await amBackfillThumbs(); }
+  finally{ if(btn){ btn.dataset.busy=''; } }
+}
+// QA-panel wrapper for amThumbStatus(): prints a readable verdict under the buttons so
+// there is no guesswork about whether the backfill actually completed.
+async function qaThumbStatus(btn){
+  const out=document.getElementById('qaThumbOut');
+  if(!SYNC.token){ if(out) out.textContent='请先用老板账号登录'; return; }
+  if(out) out.textContent='检查中…（只发 HEAD 请求，几秒就好）';
+  if(btn){ if(btn.dataset.busy==='1') return; btn.dataset.busy='1'; }
+  try{
+    const r=await amThumbStatus(false);
+    if(!out) return;
+    if(!r.total){ out.textContent='没有检测到照片，先同步一次再检查'; return; }
+    const gate=r.on?'封面已用小图':'封面仍在用原图';
+    out.innerHTML='照片 '+r.total+' 张 · 缩略图已就绪 <b>'+r.ok+'</b> · 缺 <b>'+r.missing+'</b><br>'
+      +gate+(r.missing===0?' ✅':' ⚠️ 再跑一次「生成历史缩略图」直到缺 0 张');
+    // Same rule as the backfill: only enable thumbs when the set is complete.
+    try{
+      if(r.missing===0 && !r.on){ localStorage.setItem('am_thumbs_on','1'); out.innerHTML+='<br>已启用小图（关掉页面重开一次生效）'; }
+      else if(r.missing>0 && r.on){ localStorage.setItem('am_thumbs_on','0'); out.innerHTML+='<br>已临时切回原图，避免问号图'; }
+    }catch(e){}
+  }catch(e){ if(out) out.textContent='检查失败：'+((e&&e.message)||e); }
   finally{ if(btn){ btn.dataset.busy=''; } }
 }
 /* ---- QA switch: ?memqa=trial3 | grace | over | expired -------------------
@@ -7338,6 +7423,23 @@ if('serviceWorker' in navigator){
   // the page flash back to the homepage mid-load. One reload per activation, and at most
   // one per browser session (the sessionStorage guard breaks reload loops too).
   let _swReloaded=false;
+  /* Safety net for partial thumb sets: if covers are using thumbs but several of them
+     come back broken, the set is incomplete (a backfill that never finished, or new
+     uploads whose thumb failed). Fall back to the originals instead of leaving broken
+     images on screen — iOS in particular will not fire the per-img onerror reliably. */
+  let _thumbErrs=0;
+  window.addEventListener('error', function(e){
+    try{
+      const t=e && e.target;
+      if(!t || t.tagName!=='IMG') return;
+      if(!/_t\.jpe?g(\?|$)/i.test(t.src||'')) return;
+      if(++_thumbErrs<3) return;
+      if(localStorage.getItem('am_thumbs_on')!=='1') return;
+      localStorage.setItem('am_thumbs_on','0');
+      try{ toast('部分缩略图缺失，已切回原图（重开页面生效）。请在 QA 面板再跑一次「生成历史缩略图」'); }catch(err){}
+    }catch(err){}
+  }, true);
+
   function swReloadOnce(){
     if(_swReloaded) return;
     _swReloaded=true;
