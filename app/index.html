@@ -1659,6 +1659,20 @@
   #membershipSheet .pc-cta{ margin-top:9px; min-height:42px; }
   #membershipSheet .share-copy[onclick="closeSheets()"]{ margin-top:6px!important; }
 }
+/* Deep-link skeleton: the first frame of a shared-car link. The car itself still needs a
+   network round-trip, and showing the homepage during that window (then again after the
+   service-worker reload) is the whole "it opens on the homepage for 3 seconds" report. */
+.dl-skeleton{ padding:16px 14px 24px; }
+.dl-sk-img{ height:230px; border-radius:14px; background:rgba(127,127,127,.16); background-image:linear-gradient(90deg,rgba(127,127,127,0) 0%,rgba(127,127,127,.20) 50%,rgba(127,127,127,0) 100%); background-size:200% 100%; animation:dlsk 1.3s linear infinite; }
+.dl-sk-line{ height:18px; border-radius:6px; background:rgba(127,127,127,.16); margin-top:14px; }
+.dl-sk-line.w45{ width:45%; }
+.dl-sk-line.w70{ width:70%; }
+.dl-sk-rows{ margin-top:18px; }
+.dl-sk-row{ height:14px; border-radius:5px; background:rgba(127,127,127,.12); margin:10px 0; }
+.dl-sk-row.r60{ width:60%; }
+.dl-sk-row.r80{ width:80%; }
+.dl-sk-row.r40{ width:40%; }
+@keyframes dlsk{ from{ background-position:100% 0; } to{ background-position:-100% 0; } }
 </style>
 
 <div class="toast" id="toast"></div>
@@ -2065,7 +2079,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.118';
+const APP_VER='1.2.119';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2569,8 +2583,15 @@ function carCover(k){ const p=CAR_PHOTOS[k]; return (p&&p.length)?p[0]:null; }
 // (am_thumbs_on=1, set by amBackfillThumbs on a clean run). Rendering a guessed thumb
 // URL before it exists means a 400 from Storage — and iOS does NOT reliably fire the
 // <img> onerror fallback for those, which painted question marks over every cover.
+// Undecided (null) now defaults to ON: the stored set is complete, every new upload
+// ships its own thumb, and a broken thumb falls back via onerror + the error net below.
+// Only an explicit '0' (set when thumbs were proven missing) keeps covers on originals.
 function thumbsOn(){
-  try{ return localStorage.getItem('am_thumbs_on')==='1'; }catch(e){ return false; }
+  try{
+    const v=localStorage.getItem('am_thumbs_on');
+    if(v===null || v===undefined || v==='') return true;
+    return v==='1';
+  }catch(e){ return false; }
 }
 // Pure name derivation: "<orig>_t.jpeg". NO gate — callers that need the real thumb
 // URL regardless of whether covers currently use thumbs (the backfill probe, the
@@ -4713,6 +4734,35 @@ async function qaBackfillThumbs(btn){
   try{ await amBackfillThumbs(); }
   finally{ if(btn){ btn.dataset.busy=''; } }
 }
+/* Cheap self-heal for devices pinned to originals: sample one cover per car (max 10) and,
+   if every sampled thumb really exists, switch covers back on. Runs for guests too — no
+   token needed — because a handful of HEADs costs nothing while leaving a visitor on 1MB
+   originals is exactly the "images crawl in one at a time" complaint. */
+async function amThumbGateHeal(){
+  try{
+    if(thumbsOn()) return;
+    const sample=[];
+    Object.keys(CAR_PHOTOS||{}).forEach(function(cid){
+      if(sample.length>=10) return;
+      const arr=CAR_PHOTOS[cid]||[];
+      for(let i=0;i<arr.length;i++){
+        const u=arr[i];
+        if(typeof u==='string' && /^https?:\/\//i.test(u) && !/_t\.jpe?g(\?|$)/i.test(u)){ sample.push(u); break; }
+      }
+    });
+    if(!sample.length) return;
+    let bad=0;
+    await Promise.all(sample.map(async function(u){
+      let good=false;
+      try{ const r=await fetch(thumbUrlOf(u),{method:'HEAD'}); good=!!(r && r.ok); }catch(e){}
+      if(!good) bad++;
+    }));
+    if(bad===0){
+      try{ localStorage.setItem('am_thumbs_on','1'); }catch(e){}
+      toast('缩略图已就绪，图片加载会明显变快');
+    }
+  }catch(e){}
+}
 /* Auto-finish a half-done backfill. The manual run is a minutes-long job that people
    navigate away from (that is how the set ended up partial), so when a STAFF device sees
    only a small tail of photos still missing it quietly generates them in the background
@@ -4723,7 +4773,16 @@ async function amAutoThumbs(){
     if(!SYNC.token) return;
     if(thumbsOn()) return;                       // covers already on thumbs → nothing to fix
     const before=await amThumbStatus(false);
-    if(!before || !before.total || before.missing===0 || before.missing>80) return;
+    if(!before || !before.total) return;
+    if(before.missing===0){
+      // Complete set on the server but the gate is still off (a device that got pinned to
+      // originals when the set was partial). Flip it on — otherwise the covers stay slow
+      // forever even though every thumb exists.
+      try{ localStorage.setItem('am_thumbs_on','1'); }catch(e){}
+      toast('缩略图已全部就绪，图片加载会明显变快');
+      return;
+    }
+    if(before.missing>80) return;
     const targets=[]; const seen=new Set();
     Object.keys(CAR_PHOTOS||{}).forEach(function(cid){
       (CAR_PHOTOS[cid]||[]).forEach(function(u){
@@ -5341,6 +5400,10 @@ async function bootstrap(){
     let hadShared=false; try{ hadShared=!!localStorage.getItem('am_shared_co'); }catch(e){}
     if(!shareVisit && !hadShared) clearLocalInventory();
   }
+  // Shared-car link? Show the detail screen (loading placeholder) right now instead of
+  // painting the homepage we are about to navigate away from. Must run BEFORE the early
+  // render so the homepage is never the first thing the visitor sees.
+  try{ if(_dlCar) showDeepLinkSkeleton(); }catch(e){}
   // EARLY RENDER: paint the cached inventory + account from localStorage IMMEDIATELY,
   // before any network pull. Previously the homepage stayed blank until the full server
   // sync finished (or the user tapped Sync) — bad on slow links. The pulls below then
@@ -5365,6 +5428,7 @@ async function bootstrap(){
   }catch(e){ console.error('membership refresh failed', e); }
   // Well off the first-paint path: quietly finish a partial thumbnail set if there is only
   // a small tail left (see amAutoThumbs). Deliberately late so it can never slow an open.
+  try{ setTimeout(function(){ amThumbGateHeal(); }, 3000); }catch(e){}
   try{ setTimeout(function(){ amAutoThumbs(); }, 20000); }catch(e){}
   // capture the ?ref= from a shared link so public list/showroom fetches resolve to the right company
   let shrRef=null; try{ shrRef=new URL(location.href).searchParams.get('ref'); }catch(e){}
@@ -7370,6 +7434,34 @@ function parseDeepLink(){
     _dlCar=q.get('c')||q.get('car'); if(!_dlCar){ const m=location.pathname.match(/\/c\/([^/?#]+)/); if(m) _dlCar=m[1]; }
   }catch(e){}
 }
+/* v1.2.119: paint the DETAIL screen — with a loading placeholder — on the very first
+   frame of a shared-car link. tryEarlyDeepLink() can only fire once the car is actually
+   in CARS, and on a first visit that needs a network round-trip (2-3s on Ghana links);
+   until then the visitor watched the homepage. This is also the frame the service-worker
+   reload lands on, so it removes the second homepage flash as well. renderDetail()
+   overwrites the placeholder the moment the real data arrives. */
+function showDeepLinkSkeleton(){
+  try{
+    if(window.__dlSkeleton) return;
+    const d=document.getElementById('scr-detail');
+    if(!d) return;
+    window.__dlSkeleton=true;
+    d.innerHTML='<div class="dl-skeleton" id="dlSk">'
+      +'<div class="dl-sk-img"></div>'
+      +'<div class="dl-sk-line w70"></div>'
+      +'<div class="dl-sk-line w45"></div>'
+      +'<div class="dl-sk-rows">'
+      +'<div class="dl-sk-row r80"></div><div class="dl-sk-row r60"></div><div class="dl-sk-row r40"></div>'
+      +'</div></div>';
+    go('scr-detail');
+    // Safety valve: if the car never arrives (dead link, network down) don't strand the
+    // visitor on an empty loading screen. Keyed on the placeholder still being in the DOM:
+    // once renderDetail() / renderCarGone() has repainted the screen, leave it alone.
+    setTimeout(function(){
+      try{ if(document.getElementById('dlSk')) go('scr-home'); }catch(e){}
+    }, 12000);
+  }catch(e){}
+}
 // v1.2.116: deep links used to wait for the ENTIRE bootstrap chain (deeplink fetch →
 // public list → showrooms → roster renders) before resolveDeepLink() ran at the very
 // end — the customer stared at the homepage for seconds before the shared car opened.
@@ -7487,8 +7579,20 @@ if('serviceWorker' in navigator){
     try{ if(sessionStorage.getItem('am_sw_reloaded')) return; sessionStorage.setItem('am_sw_reloaded','1'); }catch(e){}
     location.reload();
   }
+  /* v1.2.119: only reload when the worker version ACTUALLY changed. The worker announces
+     every activation (including the very first one on a new device), and reloading on all
+     of them meant the first open of a shared link rebuilt the page once — landing back on
+     the homepage for a frame, which is the "then it flashes the homepage again" half of
+     the report. A real upgrade still reloads (that is the kill-switch for a stuck old
+     build); a repeat install of the same version does not. */
   navigator.serviceWorker.addEventListener('message', function(e){
-    if(e.data && e.data.type==='sw-updated'){ swReloadOnce(); }
+    const d=(e && e.data)||null;
+    if(!d || d.type!=='sw-updated') return;
+    const ver=String(d.cache||'');
+    if(!ver) return;
+    let prev=null;
+    try{ prev=localStorage.getItem('am_sw_ver'); localStorage.setItem('am_sw_ver', ver); }catch(err){}
+    if(prev && prev!==ver) swReloadOnce();   // null prev = first time we ever saw this worker
   });
   window.addEventListener('load', function(){
     if(!('serviceWorker' in navigator)) return;
@@ -7513,7 +7617,9 @@ if('serviceWorker' in navigator){
   // freshly-served index.html (always fetched from network) is used. This is the key
   // fix for the app being "stuck on an old build" when the user keeps an old tab open
   // or the PWA was added to the home screen weeks ago.
-  navigator.serviceWorker.addEventListener('controllerchange', function(){ swReloadOnce(); });
+  // controllerchange fires on the FIRST takeover too, so it must NOT reload by itself —
+  // the version-aware sw-updated handler above decides that. Left wired (no-op) so the
+  // intent stays visible and a future change cannot silently reintroduce the flash.
 }
 </script>
 <div class="sheet" id="carActionsSheet">
