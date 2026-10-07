@@ -3580,7 +3580,8 @@ function wirePhotoViewer(){
   },{passive:true});
   stage.addEventListener('touchmove',e=>{
     if(!swActive || !_pvState) return;
-    let t=null; for(const x of e.touches){ if(x.identifier===swId){ t=x; break; } }
+    // index loop, not for..of: TouchList is not reliably iterable on older mobile Safari
+    let t=null; for(let k=0;k<e.touches.length;k++){ if(e.touches[k].identifier===swId){ t=e.touches[k]; break; } }
     if(!t) return;
     const dx=t.clientX-swX, dy=t.clientY-swY;
     // clearly vertical → let it go (this is a dismiss/other gesture, not a browse)
