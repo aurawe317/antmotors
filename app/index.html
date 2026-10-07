@@ -2846,6 +2846,7 @@ function rolePrice(p){
 function fmt(n){ return n.toLocaleString('en-US'); }
 
 function openDetail(k){
+  hideDeepLinkSkeleton();   // the shared car has arrived — drop the loading overlay
   curCar=k; addToRecent(k);
   renderDetail();
   go('scr-detail');
@@ -7443,24 +7444,33 @@ function parseDeepLink(){
 function showDeepLinkSkeleton(){
   try{
     if(window.__dlSkeleton) return;
-    const d=document.getElementById('scr-detail');
-    if(!d) return;
     window.__dlSkeleton=true;
-    d.innerHTML='<div class="dl-skeleton" id="dlSk">'
+    // An OVERLAY, not #scr-detail's innerHTML: renderDetail() repaints child containers
+    // only, so anything written straight into the screen would survive it and sit on top
+    // of the real car. An overlay can simply be removed the moment the car lands.
+    const el=document.createElement('div');
+    el.id='dlSk';
+    let bg=''; try{ bg=getComputedStyle(document.body).backgroundColor||''; }catch(e){}
+    el.style.cssText='position:fixed;inset:0;z-index:4000;overflow:hidden;background:'
+      +((bg && bg!=='rgba(0, 0, 0, 0)')?bg:'#0e1116');
+    el.innerHTML='<div class="dl-skeleton">'
       +'<div class="dl-sk-img"></div>'
       +'<div class="dl-sk-line w70"></div>'
       +'<div class="dl-sk-line w45"></div>'
       +'<div class="dl-sk-rows">'
       +'<div class="dl-sk-row r80"></div><div class="dl-sk-row r60"></div><div class="dl-sk-row r40"></div>'
       +'</div></div>';
+    (document.body||document.documentElement).appendChild(el);
     go('scr-detail');
     // Safety valve: if the car never arrives (dead link, network down) don't strand the
-    // visitor on an empty loading screen. Keyed on the placeholder still being in the DOM:
-    // once renderDetail() / renderCarGone() has repainted the screen, leave it alone.
+    // visitor on a loading screen — drop the overlay and show the normal homepage.
     setTimeout(function(){
-      try{ if(document.getElementById('dlSk')) go('scr-home'); }catch(e){}
+      try{ if(document.getElementById('dlSk')){ hideDeepLinkSkeleton(); go('scr-home'); } }catch(e){}
     }, 12000);
   }catch(e){}
+}
+function hideDeepLinkSkeleton(){
+  try{ const el=document.getElementById('dlSk'); if(el && el.parentNode) el.parentNode.removeChild(el); }catch(e){}
 }
 // v1.2.116: deep links used to wait for the ENTIRE bootstrap chain (deeplink fetch →
 // public list → showrooms → roster renders) before resolveDeepLink() ran at the very
@@ -7505,6 +7515,7 @@ function resolveDeepLink(){
    the customer browse the rest of THAT company's showroom (never a blank 404). */
 function renderCarGone(){
   try{
+    hideDeepLinkSkeleton();   // a sold/deleted shared car has its own screen
     const info=sharedGone||{}; const co=info.company||{};
     const logoEl=document.getElementById('goneLogo');
     if(logoEl) logoEl.innerHTML = co.logo ? `<img src="${co.logo}" alt="" style="max-height:64px;max-width:220px;object-fit:contain;" />` : '';
