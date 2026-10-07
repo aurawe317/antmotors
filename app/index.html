@@ -585,6 +585,14 @@
   .photo-viewer{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.94);display:none;flex-direction:column;align-items:center;justify-content:center;touch-action:none;-webkit-tap-highlight-color:transparent;}
   .photo-viewer .pv-stage{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;overflow:hidden;touch-action:none;}
   .photo-viewer #pvImg{max-width:100%;max-height:100%;transform-origin:center center;will-change:transform;user-select:none;-webkit-user-drag:none;touch-action:none;}
+  /* Swipe track: the three cells are parked off-screen either side of the current one and
+     the track translates as a whole, so a drag shows the real neighbouring photo moving in. */
+  .photo-viewer .pv-track{position:absolute;inset:0;will-change:transform;}
+  .photo-viewer .pv-track.pv-anim{transition:transform .3s cubic-bezier(.22,.61,.36,1);}
+  .photo-viewer .pv-cell{position:absolute;top:0;left:0;width:100%;height:100%;display:flex;align-items:center;justify-content:center;}
+  .photo-viewer .pv-cell.s-prev{transform:translateX(calc(-100% - 18px));}
+  .photo-viewer .pv-cell.s-next{transform:translateX(calc(100% + 18px));}
+  .photo-viewer .pv-cell>img{max-width:100%;max-height:100%;object-fit:contain;transform-origin:center center;will-change:transform;user-select:none;-webkit-user-drag:none;touch-action:none;}
   .photo-viewer .pv-bar{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:12px 14px;z-index:2;background:linear-gradient(180deg,rgba(0,0,0,.5),transparent);}
   .photo-viewer .pv-bar button{background:rgba(255,255,255,.16);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:14px;cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
   .photo-viewer .pv-bar .pv-dl{font-weight:600;}
@@ -2079,7 +2087,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.119';
+const APP_VER='1.2.120';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3397,6 +3405,7 @@ else wireCrop();
 
 /* ===== Photo viewer: tap a photo → pinch-zoom / pan / double-tap / download ===== */
 let _pvState=null;
+let _pvSuppressClick=false;   // set while dragging so releasing never counts as a tap-to-close
 function openPhotoViewer(src, name, list, idx){
   wirePhotoViewer(); // idempotent: wire handlers now that #pvStage exists in the DOM (the early
                      // module-load call found it null because the overlay is parsed later)
@@ -3405,8 +3414,57 @@ function openPhotoViewer(src, name, list, idx){
   _pvState={scale:1, tx:0, ty:0, lastDist:0, src:src, name:name||'photo.jpg',
             list:(Array.isArray(list)&&list.length>1)?list.slice():null,
             idx:(typeof idx==='number')?idx:0};
+  pvFill();        // park the neighbours off-screen, ready to be dragged in
+  pvSetD(0,false);
   pvUpdateCount();
   document.getElementById('photoViewer').style.display='flex';
+}
+/* ---- swipe track ------------------------------------------------------------------
+   One track holds prev / current / next. A drag translates the whole track with the
+   finger; releasing past a threshold (or with enough speed) animates the neighbour into
+   the centre and only then re-packs the cells, so the movement is continuous instead of
+   the old "one flick, one hard cut to the next photo". */
+function pvTrackEl(){ return document.getElementById('pvTrack'); }
+function pvSlideW(){
+  const s=document.getElementById('pvStage');
+  return (s && s.clientWidth ? s.clientWidth : window.innerWidth||360) + 18;   // + the 18px gutter
+}
+function pvSetD(d, anim){
+  const t=pvTrackEl(); if(!t) return;
+  try{ t.classList.toggle('pv-anim', !!anim); }catch(e){}
+  t.style.transform='translateX('+d+'px)';
+}
+function pvSetSrc(id, url){
+  const el=document.getElementById(id); if(!el) return;
+  try{
+    if(url){ if(el.getAttribute('src')!==url) el.src=url; }
+    else el.removeAttribute('src');
+  }catch(e){}
+}
+function pvPrefetch(u){ if(!u) return; try{ const im=new Image(); im.src=u; }catch(e){} }
+function pvFill(){
+  const st=_pvState; if(!st) return;
+  const list=st.list;
+  if(!list){ pvSetSrc('pvPrev',null); pvSetSrc('pvNext',null); return; }
+  const n=list.length, i=((st.idx%n)+n)%n;
+  pvSetSrc('pvPrev', n>1 ? list[((i-1)%n+n)%n] : null);
+  pvSetSrc('pvNext', n>1 ? list[((i+1)%n+n)%n] : null);
+  // Warm the ones after that too, so a fast double-swipe doesn't land on an empty cell.
+  if(n>2){ pvPrefetch(list[((i+2)%n+n)%n]); pvPrefetch(list[((i-2)%n+n)%n]); }
+}
+// dir: +1 = next, -1 = previous. Animates the neighbour in, then re-packs around it.
+function pvSlideTo(dir){
+  const st=_pvState;
+  if(!st || !st.list || st.list.length<2) return;
+  pvSetD(-dir*pvSlideW(), true);
+  window.setTimeout(function(){
+    const n=st.list.length;
+    st.idx=((st.idx+dir)%n+n)%n;
+    st.src=st.list[st.idx]; st.scale=1; st.tx=0; st.ty=0;
+    const img=document.getElementById('pvImg');
+    if(img){ img.style.transform=''; img.src=st.src; }
+    pvFill(); pvSetD(0,false); pvUpdateCount();
+  }, 300);
 }
 function pvUpdateCount(){
   const el=document.getElementById('pvCount'); if(!el) return;
@@ -3421,11 +3479,16 @@ function pvShow(i){
   _pvState.scale=1; _pvState.tx=0; _pvState.ty=0;
   const img=document.getElementById('pvImg');
   img.style.transform=''; img.src=_pvState.src;
+  pvFill();          // re-park the neighbours around the new current photo
+  pvSetD(0,false);
   pvUpdateCount();
 }
 function closePhotoViewer(){
   const v=document.getElementById('photoViewer'); if(v) v.style.display='none';
   _pvState=null;
+  const pe=document.getElementById('pvPrev'), ne=document.getElementById('pvNext');
+  try{ if(pe) pe.removeAttribute('src'); if(ne) ne.removeAttribute('src'); }catch(e){}
+  pvSetD(0,false);
 }
 /* iOS has no dependable <a download> for a blob once the page runs inside the installed
    app or the Capacitor shell: the click is swallowed and nothing happens. In Safari the
@@ -3498,36 +3561,95 @@ function wirePhotoViewer(){
   // ---- Single-finger pan (both platforms) ----
   let panId=null, lastX=0, lastY=0;
   stage.addEventListener('touchstart',e=>{ if(!_pvState) return; if(e.touches.length===1){ const t=e.touches[0]; panId=t.identifier; lastX=t.clientX; lastY=t.clientY; } else { panId=null; } },{passive:false});
-  stage.addEventListener('touchmove',e=>{ if(!_pvState||panId===null) return; e.preventDefault(); if(e.touches.length===1){ const t=e.touches[0]; _pvState.tx+=t.clientX-lastX; _pvState.ty+=t.clientY-lastY; lastX=t.clientX; lastY=t.clientY; pvApply(); } },{passive:false});
+  // Only pan while zoomed in. At scale 1 there is nothing to pan and the gesture belongs
+  // to the swipe-to-browse track below (both used to fire, which fought each other).
+  stage.addEventListener('touchmove',e=>{ if(!_pvState||panId===null||_pvState.scale<=1) return; e.preventDefault(); if(e.touches.length===1){ const t=e.touches[0]; _pvState.tx+=t.clientX-lastX; _pvState.ty+=t.clientY-lastY; lastX=t.clientX; lastY=t.clientY; pvApply(); } },{passive:false});
   stage.addEventListener('touchend',e=>{ if(e.touches.length===0) panId=null; });
   stage.addEventListener('touchcancel',()=>{ panId=null; });
-  // ---- Swipe left/right to flip through this car's photos (only while zoom === 1) ----
-  let swX=null, swY=null;
-  stage.addEventListener('touchstart',e=>{ if(!_pvState){ swX=null; return; } if(e.touches.length===1){ swX=e.touches[0].clientX; swY=e.touches[0].clientY; } else { swX=null; } },{passive:true});
-  stage.addEventListener('touchend',e=>{
-    if(!_pvState || swX===null) { swX=null; return; }
-    const t=(e.changedTouches&&e.changedTouches[0]); const sx=swX, sy=swY; swX=null;
-    if(!t) return;
-    const dx=t.clientX-sx, dy=t.clientY-sy;
-    if(_pvState.scale!==1 || !_pvState.list) return;   // zoomed in → that's a pan, not a swipe
-    if(Math.abs(dx)>48 && Math.abs(dy)<64) pvShow(_pvState.idx + (dx<0?1:-1));
+  /* ---- Drag left/right through this car's photos (only while zoom === 1) ----
+     The photo follows the finger the whole way (the neighbouring photo is already parked
+     beside it), and the release decides: far enough or fast enough → carry on to that
+     neighbour; otherwise spring back. No more "one flick, one hard jump". */
+  let swId=null, swX=0, swY=0, swDx=0, swT0=0, swActive=false;
+  stage.addEventListener('touchstart',e=>{
+    swActive=false;
+    if(!_pvState || !_pvState.list || _pvState.scale!==1) return;
+    if(e.touches.length!==1) return;
+    const t=e.touches[0];
+    swId=t.identifier; swX=t.clientX; swY=t.clientY; swDx=0; swT0=Date.now(); swActive=true;
   },{passive:true});
-  stage.addEventListener('touchcancel',()=>{ swX=null; });
+  stage.addEventListener('touchmove',e=>{
+    if(!swActive || !_pvState) return;
+    let t=null; for(const x of e.touches){ if(x.identifier===swId){ t=x; break; } }
+    if(!t) return;
+    const dx=t.clientX-swX, dy=t.clientY-swY;
+    // clearly vertical → let it go (this is a dismiss/other gesture, not a browse)
+    if(Math.abs(dy)>Math.abs(dx) && Math.abs(dy)>24){ swActive=false; pvSetD(0,true); return; }
+    swDx=dx;
+    const W=pvSlideW();
+    // mild resistance at the drag limits so the track never feels rubber-bandy
+    const d=Math.abs(dx)>W ? (dx<0?-W:W) : dx;
+    pvSetD(d,false);
+    if(e.cancelable) e.preventDefault();
+  },{passive:false});
+  const pvSwipeEnd=function(){
+    if(!swActive) return;
+    swActive=false;
+    const dt=Math.max(1, Date.now()-swT0);
+    const speed=Math.abs(swDx)/dt;                       // px per ms
+    const far=Math.abs(swDx) > Math.min(110, pvSlideW()*0.22);
+    if((far || speed>0.45) && swDx!==0) pvSlideTo(swDx<0?1:-1);
+    else pvSetD(0,true);                                 // spring back
+    swDx=0;
+  };
+  stage.addEventListener('touchend',pvSwipeEnd,{passive:true});
+  stage.addEventListener('touchcancel',function(){ swActive=false; pvSetD(0,true); });
   // ---- Desktop: arrow keys flip photos too ----
   window.addEventListener('keydown',e=>{
     if(!_pvState || !_pvState.list) return;
-    if(e.key==='ArrowRight') pvShow(_pvState.idx+1);
-    else if(e.key==='ArrowLeft') pvShow(_pvState.idx-1);
+    if(e.key==='ArrowRight') pvSlideTo(1);      // animated, same as a drag
+    else if(e.key==='ArrowLeft') pvSlideTo(-1);
   });
   // ---- Desktop: wheel zoom + drag pan + double-click reset ----
   stage.addEventListener('wheel',e=>{ if(!_pvState) return; e.preventDefault(); const z=Math.min(6,Math.max(1,_pvState.scale-(e.deltaY>0?0.12:-0.12))); _pvState.scale=z; pvApply(); },{passive:false});
-  let mDown=false, mX=0, mY=0;
-  stage.addEventListener('mousedown',e=>{ if(!_pvState) return; mDown=true; mX=e.clientX; mY=e.clientY; });
-  window.addEventListener('mousemove',e=>{ if(!_pvState||!mDown) return; _pvState.tx+=e.clientX-mX; _pvState.ty+=e.clientY-mY; mX=e.clientX; mY=e.clientY; pvApply(); });
-  window.addEventListener('mouseup',()=>{ mDown=false; });
+  // Drag with the mouse too: at scale 1 the drag browses (same track as touch); once
+  // zoomed in it pans, which is what a desktop user expects.
+  let mDown=false, mX=0, mY=0, mDrag=false, mDx=0, mT0=0;
+  stage.addEventListener('mousedown',e=>{
+    if(!_pvState) return;
+    mDown=true; mX=e.clientX; mY=e.clientY; mDx=0; mT0=Date.now();
+    mDrag=(_pvState.scale===1 && !!_pvState.list);
+  });
+  window.addEventListener('mousemove',e=>{
+    if(!_pvState||!mDown) return;
+    const dx=e.clientX-mX, dy=e.clientY-mY;
+    if(mDrag){
+      mDx=dx;
+      const W=pvSlideW();
+      pvSetD(Math.abs(dx)>W?(dx<0?-W:W):dx,false);
+      if(Math.abs(dx)>6) _pvSuppressClick=true;
+      return;
+    }
+    _pvState.tx+=dx; _pvState.ty+=dy; mX=e.clientX; mY=e.clientY; pvApply();
+  });
+  window.addEventListener('mouseup',function(){
+    if(!mDown) return;
+    mDown=false;
+    if(mDrag){
+      const dt=Math.max(1, Date.now()-mT0);
+      if(mDx!==0 && (Math.abs(mDx)>Math.min(110,pvSlideW()*0.22) || Math.abs(mDx)/dt>0.45)) pvSlideTo(mDx<0?1:-1);
+      else pvSetD(0,true);
+    }
+    mDrag=false; mDx=0;
+    setTimeout(function(){ _pvSuppressClick=false; }, 60);
+  });
   stage.addEventListener('dblclick',e=>{ if(!_pvState) return; _pvState.scale=_pvState.scale>1?1:2.5; _pvState.tx=0; _pvState.ty=0; pvApply(); });
   // ---- Tap the dark backdrop to close (taps on the image are ignored) ----
-  stage.addEventListener('click',e=>{ if(e.target===stage) closePhotoViewer(); });
+  stage.addEventListener('click',e=>{
+    if(_pvSuppressClick) return;                       // that was a drag, not a tap
+    const t=e.target;
+    if(t===stage || t===pvTrackEl() || (t && t.classList && t.classList.contains('pv-cell'))) closePhotoViewer();
+  });
 }
 function wirePhotoViewerClicks(){
   // Capture-phase so a tap on a photo opens the viewer and stops the card's openDetail from firing.
@@ -7680,7 +7802,14 @@ if('serviceWorker' in navigator){
       <button class="pv-dl" onclick="downloadPhoto()">⤓ <span data-i18n="download">Download</span></button>
     </div>
     <div class="pv-stage" id="pvStage">
-      <img id="pvImg" alt="" />
+      <!-- Three cells (prev / current / next) sit side by side in one track. Dragging
+           moves the track with the finger, so the neighbours slide in continuously
+           instead of the old "one flick = one hard jump". -->
+      <div class="pv-track" id="pvTrack">
+        <div class="pv-cell s-prev"><img id="pvPrev" alt="" /></div>
+        <div class="pv-cell s-cur"><img id="pvImg" alt="" /></div>
+        <div class="pv-cell s-next"><img id="pvNext" alt="" /></div>
+      </div>
     </div>
   </div>
 
