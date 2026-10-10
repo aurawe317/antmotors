@@ -2088,7 +2088,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.123';
+const APP_VER='1.2.124';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3560,6 +3560,34 @@ async function bioLogin(){
   const idIn=document.getElementById('setEmpId'), pwIn=document.getElementById('setPin');
   if(idIn) idIn.value=id; if(pwIn) pwIn.value=pw;
   syncLogin();
+}
+
+// Optional native push notifications. ONLY inside the Capacitor shell and ONLY when
+// @capacitor/push-notifications is installed; otherwise every call is a harmless no-op.
+// Registering the device token is a genuine native capability that strengthens the
+// App Store 4.2 review. The token is POSTed to /api/device (server endpoint added
+// alongside the plugin install); failures are swallowed so the app never breaks offline.
+async function registerPush(){
+  if(!inNativeShell()) return;
+  const P=window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.PushNotifications;
+  if(!P || !P.requestPermissions || !P.register) return;
+  try{
+    const perm=await P.requestPermissions();
+    if(perm && perm.receive==='denied') return;
+  }catch(e){ return; }
+  try{
+    const onReg=async (t)=>{
+      const token=(t&&(t.token||t.value))||'';
+      if(!token) return;
+      try{ localStorage.setItem('am_push_token',token); }catch(e){}
+      try{
+        const base=resolveApiBase();
+        if(base) await api('/api/device',{method:'POST',body:{token:token, device:genDeviceId(), platform:'ios'}});
+      }catch(e){ /* endpoint not yet deployed or offline — safe to ignore */ }
+    };
+    if(P.addListener) P.addListener('registration', onReg);
+    await P.register();
+  }catch(e){ /* no-op */ }
 }
 async function refreshBioButton(){
   const btn=document.getElementById('bioLoginBtn'); if(!btn) return;
@@ -6144,6 +6172,7 @@ async function syncLogin(){
     upsertEmp(r.employee.id,r.employee);
     curEmployee=r.employee.id; applyEmployeeScope();
     try{ biometricAvailable().then(a=>{ if(a) enrollBiometric(id, pw); }); }catch(e){}
+    try{ registerPush(); }catch(e){}
     document.getElementById('setPin').value='';
     await syncNow(true); await refreshMembership();
     updateRoleUI(); renderHome(); renderStock();
@@ -6926,7 +6955,19 @@ function exportData(){
   // backup silently lost every car photo. Keep them in so a backup is truly complete.
   const data={ v:2, cars:CARS, saved:[...SAVED_CARS], recent:RECENT_CARS, employees:ALL_EMP,
                photos:CAR_PHOTOS, videos:CAR_VIDEOS, listed:LISTED_AT };
-  const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
+  const json=JSON.stringify(data,null,2);
+  if(inNativeShell() && window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem){
+    const path='antmotors-backup-'+new Date().toISOString().slice(0,10)+'.json';
+    Capacitor.Plugins.Filesystem.writeFile({ path, data:json, directory:'DOCUMENTS', encoding:'utf8' })
+      .then(()=>toast(T('backupExported','Backup exported')+' · Files'))
+      .catch(()=>webExportBackup(json));
+    return;
+  }
+  webExportBackup(json);
+}
+// Browser / PWA fallback: trigger a standard file download. Identical to the old export path.
+function webExportBackup(json){
+  const blob=new Blob([json],{type:'application/json'});
   const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
   a.download='antmotors-backup-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
   setTimeout(()=>URL.revokeObjectURL(a.href),2000);
