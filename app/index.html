@@ -1148,6 +1148,7 @@
         <a class="link-gold" onclick="openForgot()" data-i18n="forgotPw">Forgot password?</a>
       </div>
       <button class="submit" onclick="syncLogin()" data-i18n="syncSignIn">Sign in &amp; sync</button>
+      <button class="submit bio-btn" id="bioLoginBtn" style="display:none;margin-top:8px;" onclick="bioLogin()">🔓 <span data-i18n="bioUnlock">Unlock (Face ID / fingerprint)</span></button>
     </div>
     <!-- password recovery -->
     <div id="forgotBox" style="display:none;">
@@ -1954,7 +1955,7 @@ I18N.zh.welcomeTitle="欢迎使用 ANT MOTORS"; I18N.zh.welcomeDesc="首次使�
 I18N.en.save="Save"; I18N.en.saved="Saved"; I18N.en.share="Share"; I18N.en.theme="Theme"; I18N.en.edit="Edit"; I18N.en.navGoogleSub="Navigate in Google Maps"; I18N.en.navAppleSub="Navigate in Apple Maps"; I18N.en.navAmapSub="Search in Amap"; I18N.en.noAddr="No address set for this showroom"; I18N.en.del="Delete"; I18N.en.carsUnit="cars"; I18N.en.nameReq="Name required"; I18N.en.shExists="This showroom already exists"; I18N.en.shAdded="Showroom added"; I18N.en.shDeleted="Showroom deleted"; I18N.en.shDelMsg="Delete showroom {n}? {c} cars will lose their branch."; I18N.en.shDelMsg0="Delete showroom {n}?"; I18N.en.del="Delete"; I18N.en.carsUnit="cars"; I18N.en.nameReq="Name required"; I18N.en.shExists="This showroom already exists"; I18N.en.shAdded="Showroom added"; I18N.en.shDeleted="Showroom deleted"; I18N.en.shDelMsg="Delete showroom {n}? {c} cars will lose their branch."; I18N.en.shDelMsg0="Delete showroom {n}?";
 I18N.zh.save="收藏"; I18N.zh.saved="已收藏"; I18N.zh.share="分享"; I18N.zh.theme="主题"; I18N.zh.edit="编辑"; I18N.zh.navGoogleSub="在 Google 地图中导航"; I18N.zh.navAppleSub="在 Apple 地图中导航"; I18N.zh.navAmapSub="在高德地图中搜索"; I18N.zh.noAddr="该门店未设置地址"; I18N.zh.del="删除"; I18N.zh.carsUnit="辆车"; I18N.zh.nameReq="请填写名称"; I18N.zh.shExists="该门店已存在"; I18N.zh.shAdded="门店已添加"; I18N.zh.shDeleted="门店已删除"; I18N.zh.shDelMsg="删除门店 {n}？其下的 {c} 辆车将失去归属门店。"; I18N.zh.shDelMsg0="删除门店 {n}？";
 /* --- B plan: real password / account security --- */
-I18N.en.syncEmpId="Account / e-mail"; I18N.en.syncPw="Password"; I18N.en.rememberMe="Remember me"; I18N.en.forgotPw="Forgot password?";
+I18N.en.syncEmpId="Account / e-mail"; I18N.en.syncPw="Password"; I18N.en.rememberMe="Remember me"; I18N.en.forgotPw="Forgot password?"; I18N.en.bioUnlock="Unlock (Face ID / fingerprint)"; I18N.en.bioSubtitle="Unlock with biometric"; I18N.en.bioDesc="Confirm your identity to sign in"; I18N.en.bioUnavailable="Biometric unlock is not available on this device"; I18N.en.bioNotSet="Sign in once with your password to enable biometric unlock"; I18N.en.bioFailed="Biometric unlock failed — sign in with your password";
 I18N.en.syncNeedCreds="Enter your account and password"; I18N.en.syncBadCreds="Wrong account or password";
 I18N.en.pwRule="At least 8 characters with upper & lower case, a number and a symbol."; I18N.en.pwStrong="Strong password ✓";
 I18N.en.pwTooShort="At least 8 characters"; I18N.en.pwTooLong="64 characters max"; I18N.en.pwNeedLower="Add a lower-case letter"; I18N.en.pwNeedUpper="Add a CAPITAL letter"; I18N.en.pwNeedDigit="Add a number"; I18N.en.pwNeedSymbol="Add a symbol (!@#$…)"; I18N.en.pwTooSimple="Too simple";
@@ -1966,7 +1967,7 @@ I18N.en.fgHint="Enter your account or e-mail, get a 6-digit code, then set a new
 I18N.en.fgNeedAccount="Enter your account or e-mail first"; I18N.en.fgNeedCode="Enter your account and the verification code"; I18N.en.fgSent="Code sent to"; I18N.en.fgSelfCode="No mail service configured — code filled in for you"; I18N.en.fgConsole="Code printed in the server console"; I18N.en.fgDone="Password reset — you are signed in"; I18N.en.fgBadCode="Wrong or expired code"; I18N.en.fgNoAccount="Account not found";
 I18N.en.fgTooMany="Too many attempts — request a new code"; I18N.en.fgTooSoon="Please wait a moment before requesting another code"; I18N.en.fgCodeExpired="Code expired — request a new one";
 I18N.en.regEmail="E-mail (for password recovery)"; I18N.en.regPw="Password"; I18N.en.regPw2="Confirm password"; I18N.en.regBadEmail="Invalid e-mail address"; I18N.en.regEmailExists="That e-mail is already registered";
-I18N.zh.syncEmpId="账号 / 邮箱"; I18N.zh.syncPw="密码"; I18N.zh.rememberMe="记住我"; I18N.zh.forgotPw="忘记密码？";
+I18N.zh.syncEmpId="账号 / 邮箱"; I18N.zh.syncPw="密码"; I18N.zh.rememberMe="记住我"; I18N.zh.forgotPw="忘记密码？"; I18N.zh.bioUnlock="解锁（FaceID / 指纹）"; I18N.zh.bioSubtitle="使用生物识别解锁"; I18N.zh.bioDesc="确认身份以登录"; I18N.zh.bioUnavailable="此设备不支持生物识别解锁"; I18N.zh.bioNotSet="先用密码登录一次即可开启生物识别解锁"; I18N.zh.bioFailed="生物识别解锁失败——请用密码登录";
 I18N.zh.syncNeedCreds="请输入账号和密码"; I18N.zh.syncBadCreds="账号或密码错误";
 I18N.zh.pwRule="至少 8 位，需包含大写、小写、数字和符号。"; I18N.zh.pwStrong="密码强度：强 ✓";
 I18N.zh.pwTooShort="至少 8 位字符"; I18N.zh.pwTooLong="最多 64 位字符"; I18N.zh.pwNeedLower="需要包含小写字母"; I18N.zh.pwNeedUpper="需要包含大写字母"; I18N.zh.pwNeedDigit="需要包含数字"; I18N.zh.pwNeedSymbol="需要包含符号（!@#$…）"; I18N.zh.pwTooSimple="密码过于简单";
@@ -2087,7 +2088,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.122';
+const APP_VER='1.2.123';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3515,6 +3516,55 @@ function inInstalledIOS(){
 function inNativeShell(){
   try{ if(window.Capacitor||window.CapacitorBridge||window.CapacitorCustomPlatform) return true; }catch(e){}
   return false;
+}
+// Optional native biometric unlock (Face ID / Touch ID / device biometrics). ONLY used
+// inside the Capacitor shell and ONLY when a biometric plugin is installed — until then
+// every call is a harmless no-op. It lets a returning user confirm their identity with
+// the device biometric instead of retyping the PIN: a genuine native capability that also
+// strengthens the App Store 4.2 review. The API below follows @capacitor-community/biometric;
+// methods are feature-detected so a different/older plugin can never throw.
+const BIO_SERVER='com.antmotors.app.biometric';
+async function biometricAvailable(){
+  if(!inNativeShell()) return false;
+  const B=window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Biometric;
+  if(!B || !B.isAvailable) return false;
+  try{ const r=await B.isAvailable(); return !!(r && (r.isAvailable||r.has||r.available)); }catch(e){ return false; }
+}
+async function enrollBiometric(account, password){
+  const B=window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Biometric;
+  if(!B) return false;
+  try{
+    if(B.setCredentials) await B.setCredentials({ server:BIO_SERVER, username:account, password:password });
+    else if(B.register) await B.register({ server:BIO_SERVER, username:account, password:password });
+    else return false;
+    try{ localStorage.setItem('am_bio_on','1'); }catch(e){}
+    return true;
+  }catch(e){ return false; }
+}
+async function verifyBiometric(){
+  const B=window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Biometric;
+  if(!B) return null;
+  try{
+    if(B.getCredentials) return await B.getCredentials({ server:BIO_SERVER });
+    if(B.verifyIdentity){ await B.verifyIdentity({ title:'Antoto', subtitle:T('bioSubtitle','Unlock with biometric'), description:T('bioDesc','Confirm your identity to sign in') }); return null; }
+    return null;
+  }catch(e){ return null; }
+}
+function biometricEnabled(){ try{ return localStorage.getItem('am_bio_on')==='1'; }catch(e){ return false; } }
+async function bioLogin(){
+  if(!await biometricAvailable()){ toast(T('bioUnavailable','Biometric unlock is not available on this device')); return; }
+  if(!biometricEnabled()){ toast(T('bioNotSet','Sign in once with your password to enable biometric unlock')); return; }
+  const c=await verifyBiometric();
+  const id=(c&&(c.username||c.account))||''; const pw=(c&&(c.password||c.token))||'';
+  if(!id||!pw){ toast(T('bioFailed','Biometric unlock failed — please sign in with your password')); return; }
+  const idIn=document.getElementById('setEmpId'), pwIn=document.getElementById('setPin');
+  if(idIn) idIn.value=id; if(pwIn) pwIn.value=pw;
+  syncLogin();
+}
+async function refreshBioButton(){
+  const btn=document.getElementById('bioLoginBtn'); if(!btn) return;
+  if(!(await biometricAvailable())){ btn.style.display='none'; return; }
+  btn.style.display = biometricEnabled() ? 'block' : 'none';
 }
 function openImageForSave(url){
   let moved=false;
@@ -5895,6 +5945,7 @@ function renderSyncUI(){
   el.className='sync-status '+cls;
   el.innerHTML='<span class="dot"></span><span>'+txt+'</span>';
   updateAuthCTA();
+  if(!signed) refreshBioButton();
   try{ renderMe(); }catch(err){}
 }
 /* show the "登录 / 注册" CTA only when signed out */
@@ -6092,6 +6143,7 @@ async function syncLogin(){
     if(r.company){ localStorage.setItem('am_company',JSON.stringify(r.company)); applyCompanyLogo(); }
     upsertEmp(r.employee.id,r.employee);
     curEmployee=r.employee.id; applyEmployeeScope();
+    try{ biometricAvailable().then(a=>{ if(a) enrollBiometric(id, pw); }); }catch(e){}
     document.getElementById('setPin').value='';
     await syncNow(true); await refreshMembership();
     updateRoleUI(); renderHome(); renderStock();
