@@ -135,6 +135,12 @@ function stripPw(d) {
   if (!d || typeof d !== 'object') return d || {};
   const out = Object.assign({}, d);
   delete out._pw;
+  // `devices` holds native push tokens registered via /api/device. It is SERVER-ONLY
+  // state: it must never reach a client, otherwise the client would echo it back on its
+  // next push and clobber a token another device had registered (applyPush shallow-merges
+  // employee data for owner-tier users). Stripping here covers both the login response
+  // and pull()'s employee list in one place.
+  delete out.devices;
   return out;
 }
 
@@ -2464,6 +2470,31 @@ async function liveAppVersion(origin) {
       const b = await readBody(req);
       const r = await applyPush(emp, b);
       return send(200, Object.assign({ now: now() }, r));
+    }
+    /* ---- native push: device token registration --------------------------------
+       The Capacitor shell registers for APNs (@capacitor/push-notifications) and
+       POSTs the resulting token here on every sign-in. Kept in
+       employees.data.devices — no new table, no DDL. stripPw() removes it from every
+       outbound payload, so a client can never echo it back and clobber a token another
+       device registered. `updated_at` is deliberately NOT bumped: this is server-only
+       bookkeeping and must stay invisible to the sync cursor. */
+    if (p === '/api/device' && method === 'POST') {
+      const b = await readBody(req);
+      const token = String((b && b.token) || '').slice(0, 512);
+      const platform = String((b && b.platform) || 'ios').slice(0, 16);
+      if (!token) return send(400, { error: 'missing_token' });
+      const { data: row, error: selErr } = await sb.from('employees').select('data').eq('id', emp.id).eq('company_id', emp.companyId).maybeSingle();
+      if (selErr) return send(500, { error: 'device_read_failed', detail: String(selErr.message || selErr) });
+      const d = (row && row.data) || {};
+      const devices = Array.isArray(d.devices) ? d.devices.slice() : [];
+      const rec = { token, platform, updated_at: now() };
+      const i = devices.findIndex(x => x && x.token === token);
+      if (i >= 0) devices[i] = rec; else devices.push(rec);
+      // A phone gets replaced, not accumulated — keep only the most recent tokens.
+      while (devices.length > 10) devices.shift();
+      const { error: upErr } = await sb.from('employees').update({ data: Object.assign({}, d, { devices }) }).eq('id', emp.id).eq('company_id', emp.companyId);
+      if (upErr) return send(500, { error: 'device_write_failed', detail: String(upErr.message || upErr) });
+      return send(200, { ok: true, devices: devices.length });
     }
     if (p === '/api/clear-sample' && method === 'POST') {
       const allIds = [...SEED_CAR_IDS];
