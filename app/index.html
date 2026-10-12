@@ -2088,7 +2088,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.124';
+const APP_VER='1.2.125';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3524,14 +3524,24 @@ function inNativeShell(){
 // strengthens the App Store 4.2 review. The API below follows @capacitor-community/biometric;
 // methods are feature-detected so a different/older plugin can never throw.
 const BIO_SERVER='com.antmotors.app.biometric';
+/* The retired @capacitor-community/biometric registered as Capacitor.Plugins.Biometric;
+   its maintained successor @capgo/capacitor-native-biometric registers as
+   Capacitor.Plugins.NativeBiometric. Both expose the same credential-vault API
+   (isAvailable / setCredentials / getCredentials / verifyIdentity), so accept either
+   name — whichever package the native project ends up installing. */
+function biometricPlugin(){
+  if(!window.Capacitor) return null;
+  const P=Capacitor.Plugins; if(!P) return null;
+  return P.NativeBiometric || P.Biometric || null;
+}
 async function biometricAvailable(){
   if(!inNativeShell()) return false;
-  const B=window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Biometric;
+  const B=biometricPlugin();
   if(!B || !B.isAvailable) return false;
   try{ const r=await B.isAvailable(); return !!(r && (r.isAvailable||r.has||r.available)); }catch(e){ return false; }
 }
 async function enrollBiometric(account, password){
-  const B=window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Biometric;
+  const B=biometricPlugin();
   if(!B) return false;
   try{
     if(B.setCredentials) await B.setCredentials({ server:BIO_SERVER, username:account, password:password });
@@ -3542,7 +3552,7 @@ async function enrollBiometric(account, password){
   }catch(e){ return false; }
 }
 async function verifyBiometric(){
-  const B=window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Biometric;
+  const B=biometricPlugin();
   if(!B) return null;
   try{
     if(B.getCredentials) return await B.getCredentials({ server:BIO_SERVER });
