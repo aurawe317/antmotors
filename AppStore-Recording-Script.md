@@ -2,7 +2,19 @@
 
 > 用途：在 **Capacitor 原生壳**（不是 Safari）里逐镜头录制，做成 60–90 秒 App 预览视频 / 提审演示录屏。
 > 目的：对抗 Guideline 4.2「minimum functionality / 网站套壳」判定。每个镜头都要让审核员看到**原生能力**。
-> ⚠️ 前提：原生工程已 `npm i @capacitor/camera @capacitor/share @capacitor-community/biometric @capacitor/filesystem @capacitor/push-notifications @capacitor/splash-screen @capacitor/status-bar` 且跑过 `npx cap sync ios`，否则壳内仍是网页形态，录了也白录。
+>
+> ✅ **前提已全部满足（2026-10-13/14）**：7 个插件已装并跑过 `npx cap sync ios`，
+> `xcodebuild build` 编译通过，7 个插件类已静态链入二进制。插件清单：
+> `@capacitor/camera` `@capacitor/share` `@capacitor/filesystem` `@capacitor/push-notifications`
+> `@capacitor/splash-screen` `@capacitor/status-bar` `@capgo/capacitor-native-biometric`
+> （⚠️ 老资料里的 `@capacitor-community/biometric` 在 npm 已 404，别装）。
+>
+> ⏳ **唯一还没就绪的**：Xcode 的 Push Notifications capability + APNs `.p8`。
+> 不开这个，镜头 7 的授权框不会弹。
+>
+> 🔴 **重要：7 个镜头里只有镜头 6 能靠网页单独完成**，其余 6 个全是原生能力
+> （启动屏 / 系统相机 / Face ID / 分享面板 / 沙盒文件 / APNs 授权）。
+> 这不是脚本的缺陷，**这正是录屏的意义**——如果网页全能做，4.2 就没有原生证据可拍。
 
 ---
 
@@ -16,6 +28,10 @@
 
 ### 镜头 2｜📷 相机现场拍摄车源（15s）⭐ 最强证据
 - 进「库存 → 新增车辆」，点拍照区 → **系统相机界面弹出**（Capacitor Camera 原生 UI）。
+- ⚠️ **代码里是 `source:'PROMPT'`**（`pickCarPhotoNative()`，`app/index.html:3924`），所以**不会直接进相机**，
+  而是先弹一个 iOS 操作表（`Take Photo / Photo Library`）——**必须点「拍照 / Take Photo」那一项**，
+  点了「从相册选择」就拍不到相机了，这个镜头等于白录。
+  （操作表本身也是原生 UI，但相机那一帧才是最强证据。）
 - 实拍一张车（哪怕拍桌面/停车场都行），确认缩略图出现，再拍 1–2 张。
 - 填车名/价格，保存。
 - **审核员看点**：`UIImagePickerController` 是系统相机，网页 `<input type=file>` 在壳里不会长这样。
@@ -42,6 +58,20 @@
 - 库存列表刷新看到刚拍的车；
 - 客户分享链接打开 → 只显示客户该看的报价（不露成本）——顺带证明"按角色可见"是真业务逻辑。
 - **审核员看点**：这些深度功能是"网站套壳"做不到的。
+
+> 💡 **实际能力比上面写的更强，建议加拍一个"角色切换对比"**（`app/index.html:2954-2975` 的 `priceBlock`）：
+> 同一台车，6 种身份看到的价格完全不同——这比"填一遍四级报价"硬得多，因为它证明的是**真实 RBAC**：
+>
+> | 身份 | 能看到 |
+> |---|---|
+> | customer | 只有 `quote`（Selling Price） |
+> | manager | `floorA` + `floorB` + `quote`，**明确标注 "Cost hidden"** |
+> | salesA | 本人 `floorA` + `quote` + 本人毛利 |
+> | salesB | 本人 `floorB` + `quote` + 本人毛利 |
+> | boss / partnerA / partnerB | 全量 `cost` + `quote` + `floorA` + `floorB` + 毛利 |
+>
+> 拍法：老板身份看一台车（显示成本+毛利）→ 切到客户分享链接看同一台车（只剩售价）。
+> 10 秒就能讲完"成本价永不外泄"。
 
 ### 镜头 7｜🔔 推送授权（5s，可选）
 - 若装了 push 插件：登录成功后系统弹出**"Antoto 想给您发送通知"**授权框——拍到即可（点允许）。
