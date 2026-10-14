@@ -9,5 +9,19 @@
   },
   "ios": {
     "scheme": "antoto"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "backgroundColor": "#0F0E0E",
+      "showSpinner": false,
+      "launchAutoHide": true,
+      "launchShowDuration": 600,
+      "launchFadeOutDuration": 300,
+      "androidScaleType": "CENTER_CROP"
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#0F0E0E"
+    }
   }
 }

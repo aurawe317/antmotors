@@ -84,9 +84,10 @@ antoto.app 完成。App 内不提供任何购买入口、价格或支付跳转�
 2. **@capacitor/share**
    - 接入点：原生壳内分享销售链接/车源改用 `Share.share()` 调系统分享面板（目前 app 用复制链接；在分享按钮处加 `inNativeShell()` 分支）。
    - 价值：原生分享是强原生信号。
-3. **@capacitor-community/biometric**
-   - 接入点：原生壳内登录页提供 FaceID/TouchID 解锁（读 Keychain 中保存的 PIN）。
-   - 价值：原生生物识别，明显区别于网页。
+3. **@capgo/capacitor-native-biometric**（v8.8.1）— ✅ JS 调用点已写（v1.2.123 / v1.2.125）
+   - ⚠️ **不要装 `@capacitor-community/biometric`——它在 npm 上已 404 不存在**。继任者是 `@capgo/capacitor-native-biometric`，注册名为 `Capacitor.Plugins.NativeBiometric`。JS 侧 `biometricPlugin()` 已兼容 `NativeBiometric` 和旧名 `Biometric` 两种注册名。
+   - 接入点：原生壳内登录页提供 FaceID/TouchID 解锁（读 Keychain 中保存的 PIN）；`isAvailable` / `setCredentials` / `getCredentials` / `verifyIdentity` 全部存在性判断，inert 直到插件安装。
+   - 价值：原生生物识别，明显区别于网页。iOS 需 `NSFaceIDUsageDescription`。
 4. **@capacitor/splash-screen + @capacitor/status-bar**
    - 接入点：native 项目配置品牌色启动屏（金属/玻璃/霓虹蓝粉紫）+ 状态栏主题，与 app 启动 loading 一致。
    - 价值：去"网页感"，贴合未来科技机甲风审美。
@@ -99,28 +100,9 @@ antoto.app 完成。App 内不提供任何购买入口、价格或支付跳转�
 
 > ⚠️ 前提：原生 iOS 工程不在此仓库（仅 `native/capacitor.config.json`）。上述插件需加在 Capacitor 原生项目（`npm i` + `npx cap sync ios`）。JS 侧的调用点与 `inNativeShell()` 分支可在此仓库 `app/index.html` 写好（沿用现有 `Capacitor.Plugins.X` 存在性判断模式），Xcode/Pod 集成由你或原生同学执行。
 
-### D-3. 后端待加端点：push 设备令牌（`/api/device`）
-`registerPush()` 会把 token POST 到 `/api/device`。该端点在 `functions/api/[[route]].js` 中还不存在，需在原生工程集成 push 时一并加上（无需新建表，存入 `employees.data.devices` 数组即可，避免 DDL）：
-```js
-// 在 onRequest 的路由匹配段增加（参考现有 /api/company 写法，authOf/sb/send/now 均已存在）：
-if (p === '/api/device' && method === 'POST') {
-  const auth = await authOf(req, env);          // 复用现有 Bearer token 校验
-  if (!auth) return send(401, { error: 'unauthorized' });
-  const body = await readBody(req);
-  const token = String(body.token || '').slice(0, 512);
-  const platform = String(body.platform || 'ios').slice(0, 16);
-  if (!token) return send(400, { error: 'missing token' });
-  const { data: emp } = await sb.from('employees').select('data').eq('id', auth.id).eq('company_id', auth.companyId).maybeSingle();
-  const data = (emp && emp.data) || {};
-  const devices = Array.isArray(data.devices) ? data.devices : [];
-  const idx = devices.findIndex(d => d.token === token);
-  const rec = { token, platform, updated_at: now() };
-  if (idx >= 0) devices[idx] = rec; else devices.push(rec);
-  await sb.from('employees').update({ data: { ...data, devices } }).eq('id', auth.id).eq('company_id', auth.companyId);
-  return send(200, { ok: true });
-}
-```
-> 注：`authOf` / `readBody` / `send` / `now` / `sb` 在该文件中均已存在，可直接复用。上线前请确认写入符合现有 RLS 与字段模式。
+### D-3. 后端端点：push 设备令牌（`/api/device`） — ✅ 已上线（v1.2.124）
+`registerPush()` 登录成功后把 token POST 到 `/api/device`。该端点已写入 `functions/api/[[route]].js`（`a9c5907`）：`authOf` 鉴权 → token 存入 `employees.data.devices`（无新表、无 DDL）→ `stripPw()` 在 `pull`/登录响应下发前**剥掉 `devices`**，客户端永远看不到也就永远不会回写抹掉别的设备注册的 token；单账号最多保留 10 个最近 token；不 bump `updated_at`（对同步游标不可见）。harness `/tmp/am-device.cjs` **17/17**。
+> 残留唯一动作：原生工程 `npm i @capacitor/push-notifications` + `npx cap sync ios` 后才会真正注册 APNs。
 
 ---
 
@@ -134,13 +116,14 @@ if (p === '/api/device' && method === 'POST') {
 ---
 
 ## E. 发版状态（参考）
-- v1.2.124（`待提交`）JS 侧原生调用点补全：① `exportData()` 壳内接 `Capacitor.Plugins.Filesystem`（原生文件写入，4.2 信号）；② `registerPush()` 登录成功触发（权限+注册+token→POST `/api/device`，插件未装 inert）。整段内联脚本语法 OK + harness `/tmp/am-native.cjs`（7/7：push 三种状态 inert/触发、导出原生/网页分支）。待 push 后端端点（D-3）+ 原生 `npm i` + `npx cap sync ios` 后真生效。
+- v1.2.124（`12cd35f`+`a9c5907`）JS 侧原生调用点补全 + 后端 push 端点：① `exportData()` 壳内接 `Capacitor.Plugins.Filesystem`（原生文件写入，4.2 信号）；② `registerPush()` 登录成功触发（权限+注册+token→POST `/api/device`，插件未装 inert）；③ 后端 `/api/device` 端点上线（token 存 `employees.data.devices`，`stripPw()` 下发前剥离防客户端回写抹掉，单账号上限 10 个）。整段内联脚本语法 OK + harness：`am-native` 7/7、`am-device` 17/17，回归 am-bio 10/10 + am-shell 11/11 + am-share 4/4 全绿。两域名 build `app-1.2.124`、首页 md5 `84065f7c…` 一致。待原生 `npm i` + `npx cap sync ios` 后真生效。
 - v1.2.123（`4f0fb1a`）已上线：原生壳内生物识别解锁调用点。harness am-bio 10/10、am-shell 11/11、am-share 4/4。
 - v1.2.122（`c908e13`）已上线：原生壳内真原生分享。harness am-share 4/4。
 - v1.2.121（`b69cd45`）已上线：原生壳内隐藏全部购买入口（3.1.1 合规）。harness am-shell 11/11。
 - ✅ 隐私政策/条款**已上线**：`app/privacy.html` + `app/terms.html` 随 v1.2.123 部署至 `antoto.app/privacy` 与 `/terms`，联系方式 support@antoto.app（仅需法务过目 + 填 App Store Connect「隐私政策 URL」）。
-- **仍待原生工程集成**：`@capacitor/share` + `@capacitor-community/biometric` + `@capacitor/push-notifications`（+splash/filesystem）需加在 Capacitor 原生项目 `npm i` + `npx cap sync ios`，壳内 Share/Biometric/Push/Filesystem 才真生效。
-- **仍待**：演示账号真实 staff id + PIN（A 段占位，需老板提供）；push 后端 `/api/device` 端点（D-3）；相机拍照录屏（4.2 最强证据）。
+- **仍待原生工程集成**：`@capacitor/share`(v8.0.3) + `@capgo/capacitor-native-biometric`(v8.8.1) + `@capacitor/push-notifications`(8.1.3) + `@capacitor/filesystem`(8.1.4) + `@capacitor/camera`(8.2.5) + splash/status-bar(8.0.2/8.0.4) 需加在 Capacitor 原生项目 `npm i` + `npx cap sync ios`。**完整步骤、Xcode 必改项（Info.plist 权限 / Push capability / 启动屏配置）与插件生效验证方法见同目录 `Native-CapSync-Guide.md`**。壳内 Share/Biometric/Push/Filesystem/Camera 才真生效。
+- **仍待**：演示账号真实 staff id + PIN（A 段占位，需老板提供）；~~push 后端 `/api/device` 端点~~ ✅ 已上线；相机拍照录屏（4.2 最强证据，逐镜头脚本见同目录 **`AppStore-Recording-Script.md`**）。
+- v1.2.125（`30defed`）修正：`biometricPlugin()` 同时接受 `Capacitor.Plugins.NativeBiometric`（`@capgo/capacitor-native-biometric`，v8.8.1）与旧名 `Biometric`——原文档指向的 `@capacitor-community/biometric` 在 npm 已 404 不存在。harness `/tmp/am-bio.cjs` **19/19**（含 NativeBiometric 全流程）；两域名 build `app-1.2.125`、首页 md5 `124da892…` 一致。
 
 ---
 
@@ -152,8 +135,11 @@ if (p === '/api/device' && method === 'POST') {
 
 **原生能力（4.2 抗 web-wrapper）**
 - [ ] 相机拍照上传真实录屏准备就绪（最强证据）
-- [ ] 原生工程已 `npm i` 并 `npx cap sync ios`：`@capacitor/camera`（已有）、`@capacitor/share`（v1.2.122）、`@capacitor-community/biometric`（v1.2.123）、`@capacitor/filesystem`（v1.2.124）、`@capacitor/push-notifications`（v1.2.124 + D-3 后端）
+- [ ] 原生工程已 `npm i` 并 `npx cap sync ios`：`@capacitor/camera`（8.2.5）、`@capacitor/share`（8.0.3）、`@capgo/capacitor-native-biometric`（8.8.1）、`@capacitor/filesystem`（8.1.4）、`@capacitor/push-notifications`（8.1.3）、splash-screen/status-bar（8.0.2/8.0.4）——步骤见 `Native-CapSync-Guide.md`
+- [ ] **不要装 `@capacitor-community/biometric`（npm 已 404）**，用 `@capgo/capacitor-native-biometric`
+- [ ] Info.plist 四项权限描述已加（Camera / PhotoLibrary / PhotoLibraryAdd / FaceID），Push Notifications capability 已开
 - [ ] 启动屏/状态栏主题（splash-screen + status-bar）在原生项目配置，去网页感
+- [ ] Safari Web Inspector 确认 `Capacitor.Plugins` 里出现 Camera/Share/NativeBiometric/Filesystem/PushNotifications
 - [ ] 两域名 health build 与首页字节级一致，确认壳内原生分支真正触发（用真机/模拟器验证 Share/Biometric/Push 弹窗）
 
 **隐私与法务**

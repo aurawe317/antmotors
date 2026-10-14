@@ -2088,7 +2088,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.125';
+const APP_VER='1.2.126';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -2118,6 +2118,16 @@ function applyTheme(){
   if(sbm) sbm.content = (curTheme==='dark') ? 'black' : 'default';
   const tcm=document.getElementById('themeColorMeta');
   if(tcm) tcm.content = (curTheme==='dark') ? '#171615' : '#FFFFFF';
+  // Native shell only: the apple-mobile-web-app-status-bar-style meta above is a Safari/PWA
+  // thing and does nothing inside a Capacitor shell, so drive the REAL iOS status bar here.
+  // Capacitor's naming is inverted vs. intuition: "DARK" => .lightContent (white text, for a
+  // dark background), "LIGHT" => .darkContent (dark text, for a light background). Without
+  // this, a static native StatusBar style would leave one of the two themes with an
+  // invisible (same-colour) clock/battery. Guarded so browsers stay inert.
+  try{
+    const SB=(window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.StatusBar)?Capacitor.Plugins.StatusBar:null;
+    if(SB) SB.setStyle({style: curTheme==='dark' ? 'DARK' : 'LIGHT'});
+  }catch(e){}
 }
 function setThemeMode(m){ if(m!=='light'&&m!=='dark'&&m!=='system') return; amTheme=m; try{localStorage.setItem('am_theme',m);}catch(e){} applyTheme(); }
 function toggleTheme(){ const cur=effectiveTheme(); setThemeMode(cur==='dark'?'light':'dark'); } // top icon: explicit light<->dark, overrides system
