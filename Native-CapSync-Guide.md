@@ -223,38 +223,68 @@ Xcode → 选中 `App` target → **Signing & Capabilities** → **+ Capability*
 - ⚠️ 这把 key 是给**服务端发推送**用的。见第 7 节——目前我们只做到
   「注册 + 存 token」，**还不能真的发出推送**。
 
-### 4.3 启动屏 / 状态栏主题（⏳ 可选，未配也能跑）
+### 4.3 启动屏 / 状态栏主题（✅ 已完成，v1.2.126）
 
-`native/capacitor.config.json` 当前是**定稿文件**（`appId` / `server.url` /
-`allowNavigation` 都不要动）。只**追加**一个 `plugins` 段：
+`native/capacitor.config.json` 已追加 `plugins` 段（`appId` / `server.url` /
+`allowNavigation` / `ios.scheme` 四个定稿字段一字未动）：
 
 ```jsonc
-{
-  "appId": "com.antmotors.app",
-  "appName": "Antoto",
-  "webDir": "../app",
-  "server": { /* 原样保留，一个字都别改 */ },
-  "ios": { "scheme": "antoto" },
-  // ↓ 只加这一段
-  "plugins": {
-    "SplashScreen": {
-      "backgroundColor": "#0F0E0E",
-      "showSpinner": false,
-      "launchAutoHide": true,
-      "launchShowDuration": 800,
-      "androidScaleType": "CENTER_CROP"
-    },
-    "StatusBar": {
-      "style": "DARK",
-      "backgroundColor": "#0F0E0E"
-    }
+"plugins": {
+  "SplashScreen": {
+    "backgroundColor": "#0F0E0E",
+    "showSpinner": false,
+    "launchAutoHide": true,
+    "launchShowDuration": 600,
+    "launchFadeOutDuration": 300,
+    "androidScaleType": "CENTER_CROP"
+  },
+  "StatusBar": {
+    "style": "DARK",
+    "backgroundColor": "#0F0E0E"
   }
 }
 ```
 
-> 品牌色沿用 app 现有的深底 + 金（`#0F0E0E` / `#E9C46A`）。要更「未来科技机甲风」
-> 可后续在原生工程里换启动图，但先保证不是白屏。
-> ⚠️ 改完这个文件要重跑 `npx cap sync ios`。
+> 品牌色是 `#0F0E0E`（深） / `#E8C268`（金）。⚠️ 早期草稿写的 `#E9C46A` 是错的，以 CSS 变量为准：
+> `[data-theme="dark"] --bg:#0F0E0E; --gold:#E8C268` / `[data-theme="light"] --bg:#F4F2ED; --gold:#B8902F`。
+
+#### 🔴 两个反直觉知识点（配错就是可见缺陷）
+
+**① Capacitor StatusBar 的命名和直觉相反**（`StatusBarPlugin.swift` 的 `style(fromString:)`）：
+
+```
+case "dark", "lightcontent":  return .lightContent   // "DARK" → 白字（深色底用）
+case "light", "darkcontent":  return .darkContent    // "LIGHT" → 黑字（浅色底用）
+```
+
+**② `<meta name="apple-mobile-web-app-status-bar-style">` 在 Capacitor 壳里完全无效。**
+那是 Safari/PWA 机制。App 原有的 `applyTheme()` 只改这个 meta，在壳里等于什么都没做——
+所以 v1.2.126 在 `applyTheme()` 末尾加了真正的挂钩：
+
+```js
+try{
+  const SB=(window.Capacitor&&Capacitor.Plugins&&Capacitor.Plugins.StatusBar)?Capacitor.Plugins.StatusBar:null;
+  if(SB) SB.setStyle({style: curTheme==='dark' ? 'DARK' : 'LIGHT'});
+}catch(e){}
+```
+
+**为什么不能只配静态原生样式**：`amTheme` 默认 `'system'`，新装用户跟随设备，而多数 iPhone
+默认浅色。静态配深色 → 浅色用户全程白字白底；静态配浅色 → 深色用户全程黑字黑底。
+两种都是「时钟电量看不见」，且持续整个会话。必须让 JS 跟着主题走。
+
+调用有 `window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.StatusBar` 守卫 +
+`try/catch`，浏览器/PWA 走原 meta 路径，行为零变化。
+
+#### 启动链（三层，别搞混谁先谁后）
+
+```
+iOS LaunchScreen.storyboard   ← Splash logo + systemBackgroundColor（系统渲染，App 未启动）
+        ↓
+Capacitor SplashScreen        ← 上面配置的 backgroundColor #0F0E0E（运行时可配）
+        ↓
+WebView                       ← app 自己的主题
+```
+
 
 ---
 
@@ -338,6 +368,8 @@ JSON.stringify(Object.keys(Capacitor.Plugins))
 | 改了 `app/index.html` 壳里没变 | `server.url` 远程加载，需要 GitHub push + CF 部署，**不是** `cap sync` |
 | 导出备份 toast 没有 `· Files` 后缀 | `@capacitor/filesystem` 没装，走了网页下载回退 |
 | 壳里还能看到价格/购买按钮 | 不可能——v1.2.121 已 gate 掉；若看到说明跑的是 Safari 不是壳 |
+| 状态栏时钟/电量看不见（同色） | Capacitor StatusBar 命名反直觉：`"DARK"`=白字、`"LIGHT"`=黑字；且 meta 方案在壳里无效，必须走 `StatusBar.setStyle()`（见 4.3） |
+| 冷启动闪一下白屏/反色 | SplashScreen `backgroundColor` 没配，或与 App 当前主题不一致（见 4.3 启动链） |
 | 首次打开 Xcode 卡在 "Resolving Packages" | 在从 GitHub 拉 `capacitor-swift-pm` / `ion-ios-camera` / `ion-ios-filesystem`，需要联网，等一会 |
 
 ---
@@ -351,8 +383,12 @@ JSON.stringify(Object.keys(Capacitor.Plugins))
 ✅ xcodebuild build                        BUILD SUCCEEDED
 ✅ Info.plist 四项权限                     2026-10-12 完成
 ✅ Alipay 死代码清除                       2026-10-13 完成
+✅ SplashScreen/StatusBar 配置 + 状态栏挂钩  2026-10-14 完成（v1.2.126）
+✅ 发布：commit 8f46cde，两域名 app-1.2.126，首页 md5 8696790…（591350 字节一致）
 ⏳ Xcode: Push Notifications capability + APNs .p8      ← 唯一剩余人工项
-⏳ capacitor.config.json 追加 SplashScreen/StatusBar 段（可选）
 ⏳ 验 Capacitor.Plugins 列表（第 5 节 A）
 ⏳ 按 AppStore-Recording-Script.md 录屏
 ```
+
+> 验证 harness：`/tmp/am-statusbar.cjs`(42)、`am-device.cjs`(17)、`am-bio.cjs`(19)、
+> `am-native.cjs`(7)。发版后全跑一遍。
