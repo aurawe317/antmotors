@@ -3,7 +3,7 @@
   "appName": "Antoto",
   "webDir": "../app",
   "server": {
-    "url": "https://antoto.app",
+    "url": "https://antoto.app/?company=co_a4812811971e",
     "allowNavigation": ["antoto.app", "antmotors.pages.dev", "*.supabase.co", "*.supabase.in"],
     "cleartext": false
   },
