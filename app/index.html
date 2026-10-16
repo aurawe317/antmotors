@@ -369,7 +369,7 @@
   .perm-col.sales .rows .r b{color:var(--gold);}
   .perm-col.cust .rows .r b{color:var(--rf);}
 
-  .tabbar{position:relative; flex:0 0 auto; z-index:30; height:64px; background:var(--surface); border-top:1px solid var(--border); display:flex; padding:8px 6px 0;}
+  .tabbar{position:relative; flex:0 0 auto; z-index:30; min-height:64px; background:var(--surface); border-top:1px solid var(--border); display:flex; padding:8px 6px 0;}
   /* Customer-mode bottom contact bar (client-home-v3): replaces the tabbar for
      customers — [avatar + consultant name/role] + WhatsApp(green) + Call(gold).
      The consultant shown is whoever the share link attributes (curSales). */
@@ -385,7 +385,11 @@
   .phone.cust-mode .cust-bar{display:flex;}
   .tabbar .tab{flex:1; display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--text-dim); font-size:11px; font-weight:600; cursor:pointer; background:none; border:none;}
   .tabbar .tab.on{color:var(--gold);}
-  .tabbar .tab svg{display:block; width:24px; height:24px;}
+  /* flex:none — never let the icon shrink: with a fixed bar height + safe-area
+     bottom padding the content box collapses to ~24px and the flex column
+     crushes the SVG to a few px tall (text overflows instead, so only the
+     icons looked wrong). min-height above lets the bar grow naturally. */
+  .tabbar .tab svg{display:block; flex:none; width:24px; height:24px;}
 
   .demo{width:300px; flex:0 0 300px; background:var(--surface); border:1px solid var(--border-strong); border-radius:18px; padding:18px; align-self:flex-start;}
   .demo h3{font-size:14px; font-weight:800; letter-spacing:.4px; display:flex; align-items:center; gap:8px;}
@@ -2088,7 +2092,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.126';
+const APP_VER='1.2.127';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
