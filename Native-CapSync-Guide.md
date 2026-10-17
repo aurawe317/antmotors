@@ -36,48 +36,48 @@ grep -c "Pods_" native/ios/App/App.xcodeproj/project.pbxproj   # 0 → 从没用
 `Capacitor.Plugins.NativeBiometric`（不是 `.Biometric`）。JS 侧已改成**两种名字都接受**
 （`biometricPlugin()` helper，v1.2.125），所以你装哪个都不会失效。
 
-### 🔴 坑 3：`server.url` 必须带 `?company=`，否则冷启动首页全黑
+### 🔴 坑 3：`server.url` **不能**带 `?company=`（2026-10-16 反转定论，别再加回去）
 
 `server.url` 远程加载有个容易漏的后果：**改 `app/index.html` 只需 push GitHub，壳里立刻变，
 不需要 `cap sync`**。`cap sync` 只在「加了/删了原生插件」或「改了 `capacitor.config.json`」时才需要跑。
 
-但**裸 `https://antoto.app` 是平台域名，没有租户**。后端 `resolveCompanyId()` 的解析顺序是：
+**裸 `https://antoto.app` 是平台域名，没有租户**。后端 `resolveCompanyId()` 的解析顺序是：
 
 ```
 ?ref=  ▸  ?company=  ▸  companyByHost(hostname)  ▸  登录员工
 ```
 
 四者皆空就返回 `{"company":null,"cars":[]}`。前端 `bootstrap()` 只有在 URL 带 `ref`/`company`
-时才会调 `/api/public/cars?company=...`，否则只能从 `?c=` 详情反推公司——推不出就是空。
+时才会调 `/api/public/cars?company=...`，否则只能从 `?c=` 详情反推——推不出就是空。
 
-**后果（实测）**：冷启动首页 hero 是纯黑空块、门店显示 "No showrooms added yet"，三分钟不变化。
-审核员看到这个等于自证「这是个坏 App」，是 4.2 最负面的证据。
+**🔴 10-14 曾据此给 `server.url` 加过 `?company=co_a4812811971e`（commit `d57a387`），10-16 已撤销**。
+加参数的代价（实测）：`?company=` 会置 `sharedCompany` → `onTenantDomain()` 未登录时返 true
+（`index.html:6064-6086`）→ 客户守卫把 `#welcomeBar`（Login/Register CTA）和 demo 元素**全部隐藏**
+→ 壳一打开就是某公司展厅且**没有任何登录入口**，多租户平台 App 沦为「Ant Motors 客户专供」。
 
-实测数据：
+**当前定稿配置（裸域，登录优先）**：
+
+```jsonc
+"server": {
+  "url": "https://antoto.app/",                  // ← 裸平台域，绝不带 ?company=
+  "allowNavigation": [ /* 原样不动，同一 origin */ ],
+  "cleartext": false
+}
+```
+
+- 未登录 = 平台入口（welcomeBar 显示登录/注册）→ 登录后按「登录员工」解析租户 → 各家员工看各家数据
+- 代价：裸域无租户时 hero 空（"No showrooms added yet"）——两害相权取「登录优先」
+- 🔴 **审核员演示账号（Marina staff id + PIN）因此成为提审硬性阻塞**，提审前必须拿到
+- 参数安全性（如将来再加参数）：全 App **零 `pushState` / `replaceState` / `history.`** 调用，
+  两条 SW reload 路径都走 `location.reload()`（保留完整 URL）→ 参数永远不会被 SPA 抹掉
+
+实测数据（URL → 公开车辆数）：
 
 | URL | 结果 |
 |---|---|
 | `antoto.app/api/public/cars` | `{"company":null,"cars":[]}` — **0 台** |
 | `antoto.app/api/public/cars?company=co_a4812811971e` | company 解析成功 — **30 台** |
 | `antmotors.autos/api/public/cars` | company 解析成功 — 30 台 |
-
-**已修（commit `d57a387`）**：
-
-```jsonc
-"server": {
-  "url": "https://antoto.app/?company=co_a4812811971e",   // ← 带 company 参数
-  "allowNavigation": [ /* 原样不动，同一 origin */ ],
-  "cleartext": false
-}
-```
-
-**为什么选加参数而不是换成 `antmotors.autos`**：
-1. 域名不动 → `allowNavigation` 一个字不用改
-2. 品牌不变（换域后公司名会取代 Antoto 品牌）
-3. 前端本来就支持读 `company` 参数
-
-**参数安全性**：全 App **零 `pushState` / `replaceState` / `history.`** 调用，两条 SW reload
-路径都走 `location.reload()`（保留完整 URL）→ 参数永远不会被 SPA 抹掉。
 
 > ⚠️ 改这个字段后**必须重跑 `npx cap sync ios`**（它会重新生成 `ios/App/App/capacitor.config.json`），
 > 然后在 Xcode 里重新 build。仅改 `app/index.html` 才不需要 sync。
@@ -412,7 +412,8 @@ JSON.stringify(Object.keys(Capacitor.Plugins))
 | 冷启动闪一下白屏/反色 | SplashScreen `backgroundColor` 没配，或与 App 当前主题不一致（见 4.3 启动链） |
 | 首次打开 Xcode 卡在 "Resolving Packages" | 在从 GitHub 拉 `capacitor-swift-pm` / `ion-ios-camera` / `ion-ios-filesystem`，需要联网，等一会 |
 | 🔴 **打开了错误的工程**（Xcode 最近项目列表里的 `AntMotors`） | 那是个 8 月初的废工程：`~/WorkBuddy/2026-08-02-18-29-06/ant-original/AntMotors-source/`，`AntMotors.xcodeproj` 在根目录、Objective-C、`www/` 多文件、**零插件**。一律用 `cd native && npx cap open ios`，或手动开 `native/ios/App/App.xcodeproj` |
-| 🔴 **壳里首页是空的**（hero 黑块、"No showrooms added yet"） | `server.url` 没带 `?company=`，平台域名解析不出租户。见坑 3 |
+| 🔴 **壳里首页是空的**（hero 黑块、"No showrooms added yet"） | 未登录 + 平台域名无租户 = 预期现象（坑 3 反转定论）。**先登录**，登录后按员工解析租户即有数据；若登录后仍空才是真故障 |
+| 🔴 **壳里没有登录入口**（打开就是某公司展厅） | `server.url` 被加了 `?company=` → 客户守卫隐藏 welcomeBar。见坑 3，**删掉参数** |
 
 ---
 

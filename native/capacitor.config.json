@@ -3,7 +3,7 @@
   "appName": "Antoto",
   "webDir": "../app",
   "server": {
-    "url": "https://antoto.app/?company=co_a4812811971e",
+    "url": "https://antoto.app/",
     "allowNavigation": ["antoto.app", "antmotors.pages.dev", "*.supabase.co", "*.supabase.in"],
     "cleartext": false
   },
@@ -15,7 +15,7 @@
       "backgroundColor": "#0F0E0E",
       "showSpinner": false,
       "launchAutoHide": true,
-      "launchShowDuration": 600,
+      "launchShowDuration": 1200,
       "launchFadeOutDuration": 300,
       "androidScaleType": "CENTER_CROP"
     },
