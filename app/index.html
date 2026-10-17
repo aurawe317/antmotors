@@ -686,10 +686,13 @@
   @media(min-width:480px){ .af-grid{grid-template-columns:1fr 1fr;} }
   #scr-admin .form-row{margin-bottom:12px;}
   #scr-admin .form-row input,#scr-admin .form-row select{height:var(--row-h); padding:0 12px;font-size:14px; border-radius:var(--r-btn);}
-  .af-price-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:0;}
-  .af-price-field{display:flex;flex-direction:column;gap:2px; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:10px 12px;}
+  /* minmax(0,1fr) 不能省：裸 1fr 的轨道下限=min-content，number 输入框固有宽度
+     (~20ch≈177px) 会把第二列顶出卡片右缘（393pt 屏实测溢出）。与 tabbar
+     flex-shrink 压图标同类：flex/grid 子项不设 min-width:0 就不会收缩。 */
+  .af-price-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:0;}
+  .af-price-field{display:flex;flex-direction:column;gap:2px; min-width:0; background:var(--surface-2); border:1px solid var(--border); border-radius:10px; padding:10px 12px;}
   .af-price-field label{font-size:11px;font-weight:600;color:var(--text-dim);}
-  .af-price-field input{padding:0; border:none; background:transparent; color:var(--text); font-size:15px; font-weight:700; outline:none; height:28px;}
+  .af-price-field input{padding:0; border:none; background:transparent; color:var(--text); font-size:15px; font-weight:700; outline:none; height:28px; width:100%; min-width:0;}
   .zhp-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px;}
   .zhp-edit{display:flex;flex-direction:column;gap:3px;}
   .zhp-edit label{font-size:10px;font-weight:700;color:var(--text-dim);letter-spacing:.4px;}
@@ -2092,7 +2095,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.127';
+const APP_VER='1.2.128';
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
