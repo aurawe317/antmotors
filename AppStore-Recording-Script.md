@@ -9,8 +9,14 @@
 > `@capacitor/splash-screen` `@capacitor/status-bar` `@capgo/capacitor-native-biometric`
 > （⚠️ 老资料里的 `@capacitor-community/biometric` 在 npm 已 404，别装）。
 >
-> ⏳ **唯一还没就绪的**：Xcode 的 Push Notifications capability + APNs `.p8`。
-> 不开这个，镜头 7 的授权框不会弹。
+> ✅ **推送授权（镜头 7）已就绪（2026-10-19 核实）**：授权框来自 UserNotifications 的
+> `requestAuthorization`，与 APNs entitlement 无关；`App.entitlements` 已有
+> `aps-environment=development` 且 pbxproj 双 config 都接了 `CODE_SIGN_ENTITLEMENTS`，
+> `register()` 能正常拿到 token。APNs `.p8` 只决定服务端能否**真发**推送——本镜头只拍
+> 「授权框 + 点允许」，不需要真收到通知，`.p8` 不是阻塞。
+> ⚠️ 但 iOS 推送授权框**每台设备只弹一次**：之前在真机登录过（registerPush 已跑过），
+> 要重拍必须**删 App → Xcode 重新 Run → 重新登录**，框才会再弹（删 App 会重置通知权限，
+> 与之前点过「允许」还是「不允许」无关）。
 >
 > 🔴 **重要：7 个镜头里只有镜头 6 能靠网页单独完成**，其余 6 个全是原生能力
 > （启动屏 / 系统相机 / Face ID / 分享面板 / 沙盒文件 / APNs 授权）。
@@ -42,6 +48,9 @@
 - 点它 → **系统 Face ID 弹窗**（`LAContext` 原生 UI）→ 通过后直接登录进首页。
 - **审核员看点**：原生生物识别框架，纯网页做不到。
 - 注：需要此前在本机成功登录过一次（登录成功会自动 enrol 到设备密钥库）。
+- 🔴 **真机未实测警告（2026-10-19）**：capgo 插件的真机行为从没跑过一次（只测过静态逻辑）。
+  正式录制前先在 水水 上点一次 Unlock 验证：按钮出现、系统面板弹出、不崩、能登进首页。
+  若中途删过 App，localStorage 的 `am_bio_on` 被清 → 按钮隐藏 → 需再用密码登录一次重新 enroll。
 
 ### 镜头 4｜📤 原生分享面板（10s）
 - 进任一台车详情 → 点分享 → **iOS 系统分享面板**（Share Sheet：AirDrop / 信息 / WhatsApp …）。
@@ -74,8 +83,12 @@
 > 10 秒就能讲完"成本价永不外泄"。
 
 ### 镜头 7｜🔔 推送授权（5s，可选）
-- 若装了 push 插件：登录成功后系统弹出**"Antoto 想给您发送通知"**授权框——拍到即可（点允许）。
+- 登录成功后系统弹出**"Antoto 想给您发送通知"**授权框——拍到即可（点允许）。
 - 这一步证明 App 真的注册了 APNs。
+- ⚠️ **每设备只弹一次**：若之前在真机登录过，先**删 App → 重新 Run → 重新登录**（见头部说明）。
+- 💡 删 App 会同时清掉 localStorage 的 `am_bio_on`（生物识别 enroll 标记），所以
+  「删 App → 重装 → 密码登录」这一套准备动作能**一次满足镜头 3 + 7**：登录时自动 enroll
+  生物识别 + 弹推送授权；随后退出登录即可拍镜头 3 的 Unlock 按钮。
 
 ---
 

@@ -82,6 +82,8 @@
   .screen.active{flex:1 1 auto; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:none; position:relative;}
 
   .appbar{display:flex; align-items:center; justify-content:space-between; padding:calc(env(safe-area-inset-top,0px) + 8px) 16px 10px; background:var(--surface);}
+  /* Shell fallback for the same env(safe-area-inset-top)=0 WKWebView quirk (see pv-bar note). */
+  html.nshell .appbar{padding-top:calc(max(env(safe-area-inset-top,0px),59px) + 8px);}
   .brand{display:flex; align-items:center; gap:9px;}
   .logo{width:38px; height:38px; border-radius:8px; background:transparent; display:flex; align-items:center; justify-content:center; overflow:hidden;}.logo img{width:100%; height:100%; object-fit:contain;}.brand-foot .logo{width:30px; height:30px; border-radius:7px;}
   .brand b{font-size:15px; letter-spacing:1.5px; font-weight:800;}
@@ -597,9 +599,25 @@
   .photo-viewer .pv-cell.s-prev{transform:translateX(calc(-100% - 18px));}
   .photo-viewer .pv-cell.s-next{transform:translateX(calc(100% + 18px));}
   .photo-viewer .pv-cell>img{max-width:100%;max-height:100%;object-fit:contain;transform-origin:center center;will-change:transform;user-select:none;-webkit-user-drag:none;touch-action:none;}
-  .photo-viewer .pv-bar{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:12px 14px;z-index:2;background:linear-gradient(180deg,rgba(0,0,0,.5),transparent);}
-  .photo-viewer .pv-bar button{background:rgba(255,255,255,.16);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:14px;cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
-  .photo-viewer .pv-bar .pv-dl{font-weight:600;}
+  /* Top bar: ✕ + counter. Safe-area padding is NOT optional here — viewport-fit=cover
+     lets the WebView run under the status bar, so a bare top:0 parked both controls
+     inside the system status-bar band (time, signal icons, and any third-party
+     floating widget), where they overlapped and missed taps. */
+  .photo-viewer .pv-bar{position:absolute;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:calc(10px + env(safe-area-inset-top,0px)) 14px 10px;z-index:2;background:linear-gradient(180deg,rgba(0,0,0,.55),transparent);}
+  /* Shell fallback: WKWebView reports env(safe-area-inset-top)=0 even with viewport-fit=cover,
+     so the bar rode inside the status-bar band (user screenshot: ✕ overlapped the clock and
+     could not be tapped). 59pt covers Dynamic-Island iPhones; if env ever reports a larger
+     real inset, max() keeps the larger of the two. Same guard for the home indicator below. */
+  html.nshell .photo-viewer .pv-bar{padding-top:calc(10px + max(env(safe-area-inset-top,0px),59px));}
+  html.nshell .photo-viewer .pv-foot{padding-bottom:calc(12px + max(env(safe-area-inset-bottom,0px),24px));}
+  /* Bottom bar: the save button. Moved off the top-right corner (floating widgets love
+     to park there) and kept above the home indicator with its own safe-area padding. */
+  .photo-viewer .pv-foot{position:absolute;bottom:0;left:0;right:0;display:flex;justify-content:center;padding:12px;padding-bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:2;background:linear-gradient(0deg,rgba(0,0,0,.55),transparent);}
+  .photo-viewer .pv-bar button,.photo-viewer .pv-foot button{background:rgba(255,255,255,.16);color:#fff;border:none;border-radius:10px;padding:9px 16px;font-size:14px;cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);}
+  .photo-viewer .pv-bar .pv-close{padding:9px 14px;}
+  .photo-viewer .pv-foot .pv-dl{font-weight:600;padding:10px 22px;font-size:15px;}
+  /* no native long-press callout on the photo: the viewer runs its own save gesture */
+  .photo-viewer .pv-cell>img{-webkit-touch-callout:none;}
   .upload-banner{margin:8px 16px 0;padding:10px 13px;border-radius:10px;background:var(--gold-soft);border:1px solid var(--gold-line);display:flex;align-items:center;gap:9px;font-size:12px;color:var(--gold);font-weight:600;}
   .upload-banner .lbl{flex:1;}
   .upload-actions{display:flex;gap:6px;}
@@ -782,6 +800,9 @@
     .appbar,.attr{flex:0 0 auto;}
     .screen.active{flex:1 1 auto; min-height:0; display:block; overflow-y:auto; -webkit-overflow-scrolling:touch; overscroll-behavior-y:none; position:relative; padding-bottom:12px;}
     .tabbar{position:relative; flex:0 0 auto; min-height:64px; z-index:30; padding:6px 6px max(10px, env(safe-area-inset-bottom, 0px));}
+    /* Shell fallback: env bottom also reports 0 in the WKWebView; keep the tabs clear of
+       the home indicator (24pt) without touching browser/PWA rendering. */
+    html.nshell .tabbar{padding-bottom:max(10px, env(safe-area-inset-bottom, 0px), 24px);}
     .cust-bar{padding:10px 12px max(10px, env(safe-area-inset-bottom, 0px));}
     .sticky{position:static; margin-top:10px;}
   }
@@ -1937,8 +1958,8 @@ I18N.zh.codeTitle="公司邀请码"; I18N.zh.codeHint="把这个码发给合伙�
 I18N.zh.memTitle="会员"; I18N.zh.memManage="管理会员"; I18N.zh.memActive="生效中"; I18N.zh.memExpired="已过期"; I18N.zh.memTrial="试用"; I18N.zh.memUntil="有效期至"; I18N.zh.memExpiredMsg="会员已过期，续费后可继续添加/编辑车辆并保持员工同步。"; I18N.zh.memPick="选择套餐"; I18N.zh.memScan="用支付宝扫描此码付款"; I18N.zh.memOpenAlipay="打开支付宝"; I18N.zh.memSimPay="（测试）模拟支付成功"; I18N.zh.memPaying="正在创建订单…"; I18N.zh.memPaid="已收到付款 — 会员已开通"; I18N.zh.memPayFailed="支付失败，请重试"; I18N.zh.memSimNote="开发模式：支付宝为模拟支付 — 点击测试按钮即可激活。";
 I18N.zh.memNeedServer="连接服务器后可订阅套餐"; I18N.zh.memNeedLogin="请以公司所有者身份登录后再订阅"; I18N.zh.memSubscribe="订阅"; I18N.zh.memOwnerOnly="仅所有者"; I18N.zh.memRenew="立即续费"; I18N.zh.memCurrent="当前套餐"; I18N.zh.perMonth="/月"; I18N.zh.perYear="/年"; I18N.zh.memLifetime="永久会员"; I18N.zh.memLifetimeMsg="您已拥有永久会员，永久有效，无需订阅。"; I18N.zh.memFeatDomain="独立域名（如 yourcompany.autos）"; I18N.zh.memFeatQr="专属二维码"; I18N.zh.unlimited="不限"; I18N.zh.unlimited="无限"; I18N.zh.memQuotaUnlimited="车辆、员工、门店均不限"; I18N.zh.carsUnit2="辆车"; I18N.zh.staffUnit="名员工"; I18N.zh.shopsUnit="家门店"; I18N.zh.memUpgrade="升级"; I18N.zh.memLifetimeMsgShort="永久有效，无需订阅"; I18N.zh.memTrialLeft="试用剩余 "; I18N.zh.daysUnit=" 天"; I18N.zh.free2="免费"; I18N.zh.memDevOrder="已创建开发订单 — 请使用测试按钮"; I18N.zh.memDevMode="开发模式 — 未接入真实支付网关。此按钮用于模拟支付成功以便测试。"; I18N.zh.memPayGateway="支付网关"; I18N.zh.memPayVia="通过 "; I18N.zh.memPayNow="完成支付"; I18N.zh.memWebOnly="会员订阅在 Antoto 网站管理——请在浏览器打开 antoto.app 升级或续费。"; I18N.zh.memManageWeb="在 antoto.app 管理";
 /* ---- toast/inline messages that were previously hardcoded English ---- */
-I18N.en.editModeHint="Edit mode: specs, highlights, branch can be modified."; I18N.en.videoTooLarge="Video too large — max 25MB"; I18N.en.max3Videos="Max 3 videos per car"; I18N.en.videoAdded="Video added for"; I18N.en.viewingPhoto="Viewing photo"; I18N.en.shareLinkCopied="Share link copied"; I18N.en.staffIdFmt="Staff ID: 2-20 letters/numbers/_"; I18N.en.pinFmt="PIN must be 4-8 digits"; I18N.en.linkCopiedRef="Link copied · ref"; I18N.en.backupExported="Backup exported"; I18N.en.backupRestored="Backup restored"; I18N.en.invalidBackup="Invalid backup file"; I18N.en.qrLibOffline="QR library unavailable offline"; I18N.en.createFailed="create failed"; I18N.en.reqFieldX="required"; I18N.en.regNeedMode="Choose a mode and fill the company field"; I18N.en.afNeedFields="Please fill brand, model and year"; I18N.en.afNeedQuote="Please enter a customer quote price"; I18N.en.mBoss="Boss"; I18N.en.mPA="P.A"; I18N.en.mPB="P.B"; I18N.en.mMgr="Mgr"; I18N.en.mSA="S.A"; I18N.en.mSB="S.B";
-I18N.zh.editModeHint="编辑模式：可修改规格、亮点与门店。"; I18N.zh.videoTooLarge="视频过大——最大 25MB"; I18N.zh.max3Videos="每辆车最多 3 个视频"; I18N.zh.videoAdded="已添加视频："; I18N.zh.viewingPhoto="正在查看照片"; I18N.zh.shareLinkCopied="分享链接已复制"; I18N.zh.staffIdFmt="员工账号：2-20 位字母/数字/_"; I18N.zh.pinFmt="PIN 必须为 4-8 位数字"; I18N.zh.linkCopiedRef="链接已复制 · 引用"; I18N.zh.backupExported="备份已导出"; I18N.zh.backupRestored="备份已恢复"; I18N.zh.invalidBackup="备份文件无效"; I18N.zh.qrLibOffline="离线时二维码库不可用"; I18N.zh.createFailed="创建失败"; I18N.zh.reqFieldX="必填"; I18N.zh.regNeedMode="请选择注册方式并填写对应公司信息"; I18N.zh.afNeedFields="请填写品牌、型号与年份"; I18N.zh.afNeedQuote="请填写对客户报价"; I18N.zh.mBoss="老板"; I18N.zh.mPA="合伙人A"; I18N.zh.mPB="合伙人B"; I18N.zh.mMgr="店长"; I18N.zh.mSA="销售A"; I18N.zh.mSB="销售B";
+I18N.en.editModeHint="Edit mode: specs, highlights, branch can be modified."; I18N.en.videoTooLarge="Video too large — max 25MB"; I18N.en.max3Videos="Max 3 videos per car"; I18N.en.videoAdded="Video added for"; I18N.en.viewingPhoto="Viewing photo"; I18N.en.shareLinkCopied="Share link copied"; I18N.en.staffIdFmt="Staff ID: 2-20 letters/numbers/_"; I18N.en.pinFmt="PIN must be 4-8 digits"; I18N.en.linkCopiedRef="Link copied · ref"; I18N.en.backupExported="Backup exported"; I18N.en.backupRestored="Backup restored"; I18N.en.invalidBackup="Invalid backup file"; I18N.en.qrLibOffline="QR library unavailable offline"; I18N.en.createFailed="create failed"; I18N.en.reqFieldX="required"; I18N.en.regNeedMode="Choose a mode and fill the company field"; I18N.en.afNeedFields="Please fill brand, model and year"; I18N.en.afNeedQuote="Please enter a customer quote price"; I18N.en.mBoss="Boss"; I18N.en.mPA="P.A"; I18N.en.mPB="P.B"; I18N.en.mMgr="Mgr"; I18N.en.mSA="S.A"; I18N.en.mSB="S.B"; I18N.en.backupExportedFiles="Backup exported · saved in the Files app"; I18N.en.savePhoto="Save to Photos"; I18N.en.dlPreparing="Preparing the photo…"; I18N.en.dlSaveFail="Couldn't prepare the photo — tap the save button and try again."; I18N.en.dlOpenHint="Opened the photo. On iPhone, long-press it and choose “Save to Photos”.";;
+I18N.zh.editModeHint="编辑模式：可修改规格、亮点与门店。"; I18N.zh.videoTooLarge="视频过大——最大 25MB"; I18N.zh.max3Videos="每辆车最多 3 个视频"; I18N.zh.videoAdded="已添加视频："; I18N.zh.viewingPhoto="正在查看照片"; I18N.zh.shareLinkCopied="分享链接已复制"; I18N.zh.staffIdFmt="员工账号：2-20 位字母/数字/_"; I18N.zh.pinFmt="PIN 必须为 4-8 位数字"; I18N.zh.linkCopiedRef="链接已复制 · 引用"; I18N.zh.backupExported="备份已导出"; I18N.zh.backupRestored="备份已恢复"; I18N.zh.invalidBackup="备份文件无效"; I18N.zh.qrLibOffline="离线时二维码库不可用"; I18N.zh.createFailed="创建失败"; I18N.zh.reqFieldX="必填"; I18N.zh.regNeedMode="请选择注册方式并填写对应公司信息"; I18N.zh.afNeedFields="请填写品牌、型号与年份"; I18N.zh.afNeedQuote="请填写对客户报价"; I18N.zh.mBoss="老板"; I18N.zh.mPA="合伙人A"; I18N.zh.mPB="合伙人B"; I18N.zh.mMgr="店长"; I18N.zh.mSA="销售A"; I18N.zh.mSB="销售B"; I18N.zh.backupExportedFiles="备份已导出 · 已存入「文件」App"; I18N.zh.savePhoto="保存到相册"; I18N.zh.dlPreparing="正在准备图片…"; I18N.zh.dlSaveFail="照片准备失败，请点保存按钮再试一次"; I18N.zh.dlOpenHint="已打开图片，长按它并选择「存储到照片」";;
 /* --- keys referenced via data-i18n / T() that were missing --- */
 I18N.en.bookDone="Booking Confirmed!"; I18N.en.backHome="Back to Home"; I18N.en.waOpening="Opening WhatsApp → ";
 I18N.zh.bookDone="预约成功！"; I18N.zh.backHome="返回首页"; I18N.zh.waOpening="正在打开 WhatsApp → ";
@@ -2095,7 +2116,11 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.128';
+const APP_VER='1.2.129';
+// v1.2.129: tag the Capacitor shell on <html> as early as possible. env(safe-area-inset-*)
+// reports 0 inside the shell's WKWebView even with viewport-fit=cover, which parked the
+// photo viewer's ✕/⤓ under the status bar; the .nshell rules below force a real inset.
+try{ if(window.Capacitor||window.CapacitorBridge||window.CapacitorCustomPlatform) document.documentElement.classList.add('nshell'); }catch(e){}
 // v79: global error guard — surface unexpected JS errors instead of silently breaking the screen
 let _lastErrToast=0;
 window.addEventListener('error', function(ev){
@@ -3630,7 +3655,15 @@ function openImageForSave(url){
 async function downloadPhoto(){
   if(!_pvState) return;
   const src=_pvState.src, name=_pvState.name||'photo.jpg';
-  if(isIOS()){ openImageForSave(src); return; }   // iPhone: same result as long-press → Photos
+  // Native shell: write the picture into the app's cache and hand it to the system
+  // share sheet — its "Save Image" row puts it into Photos. This is the ONE reliable
+  // route inside WKWebView (it has no built-in long-press menu of its own, and the
+  // swipe track's preventDefault kills whatever callout is left). Same flow backs the
+  // ⤓ button and the long-press gesture.
+  if(inNativeShell() && window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Share && Capacitor.Plugins.Filesystem){
+    pvSaveNative(src, name); return;
+  }
+  if(isIOS()){ openImageForSave(src); return; }   // Safari/PWA iPhone: open in tab + long-press
   try{
     const res=await fetch(src);
     if(!res.ok) throw new Error('HTTP '+res.status);          // never save an error page as .jpg
@@ -3642,6 +3675,34 @@ async function downloadPhoto(){
     setTimeout(()=>{ try{ URL.revokeObjectURL(url); }catch(e){} },4000);
   }catch(e){
     openImageForSave(src);   // cross-origin without CORS, offline, or a restrictive browser
+  }
+}
+function pvBlobToBase64(blob){
+  return new Promise((res, rej)=>{
+    const fr=new FileReader();
+    fr.onload=()=>{ const s=String(fr.result||''); const i=s.indexOf(','); res(i<0?'':s.slice(i+1)); };
+    fr.onerror=rej;
+    fr.readAsDataURL(blob);
+  });
+}
+async function pvSaveNative(src, name){
+  const P=Capacitor.Plugins;
+  try{
+    if(!P.Share || !P.Share.share) throw new Error('no share plugin');
+    toast(T('dlPreparing','Preparing the photo…'));
+    const res=await fetch(src);
+    if(!res.ok) throw new Error('HTTP '+res.status);      // never save an error page as .jpg
+    const blob=await res.blob();
+    if(!blob || !blob.size) throw new Error('empty');
+    const b64=await pvBlobToBase64(blob);
+    const path='pv-share-'+String(name||'photo.jpg').replace(/[^\w.-]+/g,'_');
+    const w=await P.Filesystem.writeFile({ path, data:b64, directory:'CACHE', recursive:true });
+    await P.Share.share({ title:'Antoto', files:[w.uri] });
+  }catch(e){
+    // In the shell the old open-in-tab fallback navigates the whole WebView to a raw
+    // image with no way back — fail loudly in place instead of stranding the user.
+    if(inNativeShell()){ toast(T('dlSaveFail',"Couldn't prepare the photo — tap the save button and try again.")); return; }
+    openImageForSave(src);   // cross-origin fetch blocked, offline, plugin missing → old path
   }
 }
 function pvApply(){
@@ -3672,6 +3733,28 @@ function wirePhotoViewer(){
     stage.addEventListener('touchend',()=>{ pinch=null; });
     stage.addEventListener('touchcancel',()=>{ pinch=null; });
   }
+  /* ---- Long-press → save to Photos ----
+     Two reasons this can't lean on the browser: the swipe track below calls
+     preventDefault on touchmove (which kills WebKit's native callout), and WKWebView
+     has no built-in "Save Image" menu at all. So a press that stays put for 450ms
+     runs the very same save flow as ⤓ (native share sheet in the shell). Any movement
+     over 10px or a second finger cancels it, so swipes/pinches never trigger it. */
+  let lpTimer=null, lpX=0, lpY=0;
+  stage.addEventListener('touchstart',e=>{
+    if(lpTimer){ clearTimeout(lpTimer); lpTimer=null; }
+    if(!_pvState || e.touches.length!==1) return;
+    const t=e.touches[0]; lpX=t.clientX; lpY=t.clientY;
+    lpTimer=setTimeout(()=>{ lpTimer=null; if(_pvState) downloadPhoto(); }, 450);
+  },{passive:true});
+  stage.addEventListener('touchmove',e=>{
+    if(!lpTimer) return;
+    if(e.touches.length!==1){ clearTimeout(lpTimer); lpTimer=null; return; }
+    const t=e.touches[0];
+    if(Math.abs(t.clientX-lpX)>18 || Math.abs(t.clientY-lpY)>18){ clearTimeout(lpTimer); lpTimer=null; }
+  },{passive:true});
+  const lpCancel=()=>{ if(lpTimer){ clearTimeout(lpTimer); lpTimer=null; } };
+  stage.addEventListener('touchend',lpCancel,{passive:true});
+  stage.addEventListener('touchcancel',lpCancel,{passive:true});
   // ---- Single-finger pan (both platforms) ----
   let panId=null, lastX=0, lastY=0;
   stage.addEventListener('touchstart',e=>{ if(!_pvState) return; if(e.touches.length===1){ const t=e.touches[0]; panId=t.identifier; lastX=t.clientX; lastY=t.clientY; } else { panId=null; } },{passive:false});
@@ -6986,7 +7069,7 @@ function exportData(){
   if(inNativeShell() && window.Capacitor && Capacitor.Plugins && Capacitor.Plugins.Filesystem){
     const path='antmotors-backup-'+new Date().toISOString().slice(0,10)+'.json';
     Capacitor.Plugins.Filesystem.writeFile({ path, data:json, directory:'DOCUMENTS', encoding:'utf8' })
-      .then(()=>toast(T('backupExported','Backup exported')+' · Files'))
+      .then(()=>toast(T('backupExportedFiles','Backup exported · saved in the Files app')))
       .catch(()=>webExportBackup(json));
     return;
   }
@@ -7961,7 +8044,7 @@ if('serviceWorker' in navigator){
     <div class="pv-bar">
       <button class="pv-close" onclick="closePhotoViewer()">✕</button>
       <span id="pvCount" style="color:#cfd6e4;font-size:12px;font-weight:700;letter-spacing:.5px;"></span>
-      <button class="pv-dl" onclick="downloadPhoto()">⤓ <span data-i18n="download">Download</span></button>
+      <span style="width:38px;flex:0 0 auto;"></span>
     </div>
     <div class="pv-stage" id="pvStage">
       <!-- Three cells (prev / current / next) sit side by side in one track. Dragging
@@ -7972,6 +8055,9 @@ if('serviceWorker' in navigator){
         <div class="pv-cell s-cur"><img id="pvImg" alt="" /></div>
         <div class="pv-cell s-next"><img id="pvNext" alt="" /></div>
       </div>
+    </div>
+    <div class="pv-foot">
+      <button class="pv-dl" onclick="downloadPhoto()">⤓ <span data-i18n="savePhoto">Save to Photos</span></button>
     </div>
   </div>
 
