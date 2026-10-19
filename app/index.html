@@ -2116,7 +2116,7 @@ const moonSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path
 const sunSVG='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="4.2" stroke="#E8C268" stroke-width="1.6"/><path d="M12 2v2.5M12 19.5V22M2 12h2.5M19.5 12H22M4.9 4.9l1.8 1.8M17.3 17.3l1.8 1.8M19.1 4.9l-1.8 1.8M6.7 17.3l-1.8 1.8" stroke="#E8C268" stroke-width="1.6" stroke-linecap="round"/></svg>';
 function renderThemeIcon(){ const ic=curTheme==="dark"?moonSVG:sunSVG; const a=document.getElementById('themeIcon'); if(a) a.innerHTML=ic; const b=document.getElementById('subThemeIcon'); if(b) b.innerHTML=ic; }
 /* ---------- theme: 3-state (light / dark / system) ---------- */
-const APP_VER='1.2.129';
+const APP_VER='1.2.130';
 // v1.2.129: tag the Capacitor shell on <html> as early as possible. env(safe-area-inset-*)
 // reports 0 inside the shell's WKWebView even with viewport-fit=cover, which parked the
 // photo viewer's ✕/⤓ under the status bar; the .nshell rules below force a real inset.
@@ -2627,7 +2627,7 @@ function renderHeroCarousel(){
   }
 }
 function carCover(k){ const p=CAR_PHOTOS[k]; return (p&&p.length)?p[0]:null; }
-// Small-thumbnail convention (v1.2.113): every Storage photo may have a sibling 480px
+// Small-thumbnail convention (v1.2.113): every Storage photo may have a sibling 1080px
 // thumb named <name>_t.jpeg right next to it. Lists/strips/grids load the thumb (a cover
 // used to be a 450KB 1600px original — 29 covers ≈ 13MB); the viewer loads the ORIGINAL.
 // v1.2.115: thumbs are OFF until the one-off backfill has verifiably produced them
@@ -2666,16 +2666,19 @@ function thumbImgAttrs(u){
   if(t===u) return ' src="'+u+'"';   // data: URLs and already-thumb URLs load as-is
   return ' src="'+t+'" onerror="this.onerror=null;this.src=\''+u+'\'"';
 }
-// Downscale an already-cropped 1600px photo dataUrl to a 480px JPEG for list covers.
+// Downscale an already-cropped 1600px photo dataUrl to a 1080px JPEG for list covers.
+// v1.2.130: bumped from 480px. On a 3x retina phone a full-width cover is ~1180 physical
+// px, so a 480px thumb was being upscaled ~2.5x and looked soft; 1080px matches the device
+// density and still weighs ~1/3 of the 1600px original.
 // The cropper already holds the full image in memory, so this costs ~20ms per photo.
 async function makeThumbDataUrl(dataUrl){
   try{
     const img=await new Promise((res,rej)=>{ const i=new Image(); i.onload=()=>res(i); i.onerror=rej; i.src=dataUrl; });
-    const W=480, s=Math.min(1, W/(img.naturalWidth||W));
+    const W=1080, s=Math.min(1, W/(img.naturalWidth||W));
     const w=Math.max(1,Math.round((img.naturalWidth||W)*s)), h=Math.max(1,Math.round((img.naturalHeight||W)*s));
     const cv=document.createElement('canvas'); cv.width=w; cv.height=h;
     cv.getContext('2d').drawImage(img,0,0,w,h);
-    return cv.toDataURL('image/jpeg',0.6);
+    return cv.toDataURL('image/jpeg',0.7);
   }catch(e){ return null; }
 }
 // A valid stored photo is a real base64 image blob — rejects empty "data:," strings
@@ -2690,7 +2693,7 @@ async function uploadMedia(dataUrl, carId, thumbDataUrl){
   for(let attempt=0; attempt<3; attempt++){
     try{
       const body={dataUrl, carId: carId||curCar};
-      if(thumbDataUrl) body.thumbDataUrl=thumbDataUrl;   // 480px sibling, named <name>_t.jpeg
+      if(thumbDataUrl) body.thumbDataUrl=thumbDataUrl;   // 1080px sibling, named <name>_t.jpeg
       const r=await api('/api/upload',{method:'POST',body});
       if(r && r.ok && r.url) return r.url;
     }catch(e){ lastErr=e; }
@@ -2715,7 +2718,11 @@ async function thumbBackfillOne(t){
   // looked "already has a thumb", nothing was generated, and the run then flipped the
   // gate ON with no thumbs behind it (that is why covers stayed as huge originals).
   try{ const hr=await fetch(thumbUrlOf(t.url),{method:'HEAD'}); exists=hr.ok; }catch(e){}
-  if(exists) return 'skipped';
+  // v1.2.130: a forced re-generation (base size bumped 480 -> 1080) sets
+  // sessionStorage.am_thumb_force='1' before the run; this skips the exists short-circuit
+  // so the old, too-small thumb is overwritten in place rather than left behind.
+  let forcing=false; try{ forcing=(sessionStorage.getItem('am_thumb_force')==='1'); }catch(e){}
+  if(exists && !forcing) return 'skipped';
   const res=await fetch(t.url);
   if(!res.ok) throw new Error('HTTP '+res.status);
   const blob=await res.blob();
@@ -5047,6 +5054,9 @@ function qaTap(){
       // before v1.2.113. Boss-only in practice (the upload API needs a staff token)
       // and safe to re-run — existing thumbs are skipped.
       +'<button class="qa-btn ghost" onclick="qaBackfillThumbs(this)">生成历史缩略图</button>'
+      // v1.2.130: re-render every existing thumb at the new 1080px base size (it was 480px
+      // and looked soft on retina). Forces an overwrite of the stored _t.jpeg files.
+      +'<button class="qa-btn ghost" onclick="qaUpgradeThumbs(this)">升级缩略图到1080</button>'
       // Read-only audit of the same thing the backfill flips on: how many photos still
       // have no stored thumb, and whether covers are currently using them.
       +'<button class="qa-btn ghost" onclick="qaThumbStatus(this)">检查缩略图状态</button>'
@@ -5064,6 +5074,23 @@ async function qaBackfillThumbs(btn){
   if(!confirm('开始为所有历史照片生成缩略图？（会下载每张原图，需要几分钟，请保持页面打开；已生成过的会自动跳过）')){ if(btn) btn.dataset.busy=''; return; }
   try{ await amBackfillThumbs(); }
   finally{ if(btn){ btn.dataset.busy=''; } }
+}
+// v1.2.130: force every stored thumb to be re-rendered at the new 1080px size. Sets the
+// sessionStorage flag thumbBackfillOne() checks so it overwrites instead of skipping, runs
+// the backfill, then clears the flag so later partial runs behave normally again.
+async function qaUpgradeThumbs(btn){
+  if(!SYNC.token){ toast('请先用老板账号登录，再升级缩略图'); return; }
+  if(btn){ if(btn.dataset.busy==='1') return; btn.dataset.busy='1'; }
+  if(!confirm('把全部历史缩略图重新生成为 1080px 高清版（会覆盖旧的 480px，需要几分钟，请保持页面打开）。生成后再杀 App 重开即可生效。')){ if(btn) btn.dataset.busy=''; return; }
+  try{ try{ sessionStorage.setItem('am_thumb_force','1'); }catch(e){} await amBackfillThumbs(); }
+  finally{
+    // v1.2.130: the regenerated 1080px thumbs share the SAME _t.jpeg URL as the old 480px
+    // ones, and photos are cached-first forever in the SW photo bucket — so the device would
+    // keep serving the stale 480 from cache. Drop every antmotors-photos-* bucket so the next
+    // cover view re-fetches the fresh 1080 version.
+    try{ if(window.caches && caches.keys){ const ks=await caches.keys(); await Promise.all(ks.filter(k=>k.indexOf('antmotors-photos')===0).map(k=>caches.delete(k))); } }catch(e){}
+    try{ sessionStorage.removeItem('am_thumb_force'); }catch(e){} if(btn) btn.dataset.busy='';
+  }
 }
 /* Cheap self-heal for devices pinned to originals: sample one cover per car (max 10) and,
    if every sampled thumb really exists, switch covers back on. Runs for guests too — no

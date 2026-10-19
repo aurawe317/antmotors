@@ -9,7 +9,7 @@ const CACHE = 'antmotors-v214';
 // resp.type==='opaque'` check happily cached FOREVER, and iOS then showed question marks.
 // v2 re-fetches with mode:'cors' (Storage sends access-control-allow-origin: *) so the
 // true HTTP status is readable, and only real 200 images are stored.
-const PHOTO_CACHE = 'antmotors-photos-v2';
+const PHOTO_CACHE = 'antmotors-photos-v3';
 const PHOTO_RE = /(^|\.)supabase\.co$/;
 const STATIC = ['./', './manifest.webmanifest', './icon-192.png', './icon-512.png', './icon.svg'];
 
