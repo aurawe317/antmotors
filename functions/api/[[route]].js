@@ -2045,7 +2045,6 @@ async function liveAppVersion(origin) {
           }
           return send(200, { messages: data || [], now: now() });
         }
-        return send(404, { error: 'no_route' });
       }
       // --- platform support side: every tenant's threads (admin-only) ---
       if (!isPlatformSupport(emp)) return send(403, { error: 'forbidden' });
